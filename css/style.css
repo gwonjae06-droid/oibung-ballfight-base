@@ -733,3 +733,73 @@ html,body {background:#090a0c;color:var(--text);font-family:"Noto Sans KR", "Mal
   .forge-cooldown-list{grid-template-columns:1fr}
   .forge-cooldown-item{grid-template-columns:minmax(0,1fr) 42px 27px}
 }
+
+/* The single speed control lives inside the arena, not in match settings. */
+.canvas-wrapper .arena-speed-control {
+  position: absolute;
+  z-index: 3;
+  top: clamp(8px, 2.2%, 14px);
+  right: clamp(8px, 2.2%, 14px);
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 4px 5px 4px 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(24, 31, 38, .18);
+  background: rgba(29, 34, 40, .63);
+  color: #f9fafb;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, .08);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  font: 600 11px/1.2 "Noto Sans KR", system-ui, sans-serif;
+  white-space: nowrap;
+  opacity: .85;
+  transition: opacity .15s ease, background-color .15s ease;
+}
+.canvas-wrapper .arena-speed-control:hover,
+.canvas-wrapper .arena-speed-control:focus-within {
+  opacity: 1;
+  background: rgba(29, 34, 40, .82);
+}
+.canvas-wrapper .arena-speed-control select {
+  width: 62px;
+  min-height: 34px;
+  padding: 5px 6px;
+  border: 1px solid rgba(255, 255, 255, .23);
+  border-radius: 7px;
+  background: rgba(255, 255, 255, .12);
+  color: #fff;
+  font: 700 13px/1.2 system-ui, sans-serif;
+  cursor: pointer;
+  color-scheme: dark;
+}
+.canvas-wrapper .arena-speed-control select option {
+  color: #fff;
+  background: #25292d;
+}
+.canvas-wrapper .arena-speed-control select:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+.bf-tools .bf-actions {
+  display: block;
+}
+.bf-tools .bf-actions #bf-apply {
+  width: 100%;
+}
+@media (max-width: 560px) {
+  .canvas-wrapper .arena-speed-control {
+    top: 7px;
+    right: 7px;
+    gap: 5px;
+    padding: 3px 4px 3px 8px;
+    border-radius: 8px;
+  }
+  .canvas-wrapper .arena-speed-control select {
+    width: 57px;
+    min-height: 36px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .canvas-wrapper .arena-speed-control { transition: none; }
+}

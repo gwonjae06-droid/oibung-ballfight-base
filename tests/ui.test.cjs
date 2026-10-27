@@ -92,3 +92,13 @@ test('expanded atlas is offered only inside collapsible advanced creator control
   assert.ok(atlas.includes('function layout('));
   assert.ok(atlas.includes('function execute('));
 });
+
+test('one translucent speed selector overlays the upper-right corner of the game canvas', () => {
+  assert.equal(ids(html).filter(id => id === 'bf-speed').length, 1);
+  assert.equal(ids(panelHtml()).filter(id => id === 'bf-speed').length, 0);
+  assert.match(html, /<div class="canvas-wrapper">[\s\S]*<label class="arena-speed-control" for="bf-speed">[\s\S]*<select id="bf-speed"/);
+  assert.match(style, /\.canvas-wrapper \.arena-speed-control\s*\{[^}]*position:\s*absolute;[^}]*top:/);
+  assert.match(style, /\.canvas-wrapper \.arena-speed-control\s*\{[^}]*right:/);
+  assert.match(style, /\.canvas-wrapper \.arena-speed-control\s*\{[^}]*background:\s*rgba\(/);
+  assert.match(read('js/features/battle-effects.js'), /getElementById\('bf-speed'\)/);
+});
