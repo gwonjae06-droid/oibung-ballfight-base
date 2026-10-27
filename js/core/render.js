@@ -15,7 +15,7 @@ function arenaEffectColor(value){
 function drawCharacter(p){
 if(!p.forge)globalThis.ForgeExpansion?.draw(p);
 const img=p.getImage(),radius=p.radius,dead=p.hp<=0,air=!!(p.jumpState&&p.jumpState!=='ground');
-let scale=1,offset=0;
+let scale=p.forgePhase?.kind==='burrow'?.65:1,offset=p.forgePhase?.kind==='flight'?-30:0;
 if(air){scale=1+p.jumpHeight/60;offset=-p.jumpHeight;ctx.save();ctx.beginPath();ctx.ellipse(p.x,p.y,radius*0.9,radius*0.4,0,0,Math.PI*2);ctx.fillStyle='rgba(0,0,0,0.3)';ctx.fill();ctx.beginPath();ctx.arc(p.x,p.y,radius+15,0,Math.PI*2);ctx.strokeStyle='rgba(239,68,68,0.8)';ctx.lineWidth=2;ctx.setLineDash([4,4]);ctx.stroke();ctx.restore();}
 if(p.id==='choi'&&p.suneungState==='success'&&!dead){ctx.save();ctx.beginPath();ctx.arc(p.x,p.y,radius+12+Math.sin(p.bullChargePulse)*4,0,Math.PI*2);ctx.strokeStyle='rgba(244,63,94,0.7)';ctx.lineWidth=4;ctx.shadowColor='#e11d48';ctx.shadowBlur=12;ctx.stroke();ctx.restore();}
 ctx.save();ctx.translate(p.x,p.y+offset);ctx.scale(scale,scale);if(dead)ctx.globalAlpha=0.3;

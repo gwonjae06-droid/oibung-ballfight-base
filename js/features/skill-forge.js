@@ -36,6 +36,26 @@ function normalize(value){
     })
   };
 }
+const THEMES={
+  sky:{name:'공중',color:'#0369a1',types:['flight','homing','retreat'],status:'shock'},
+  earth:{name:'지하',color:'#92400e',types:['burrow','mine','fortify'],status:'root'},
+  cosmos:{name:'우주',color:'#6d28d9',types:['blackhole','starfall','shield'],status:'vulnerable'},
+  dung:{name:'똥',color:'#854d0e',types:['dung','zone','retreat'],status:'poison'},
+  life:{name:'생명',color:'#047857',types:['lifebloom','drain','regen'],status:'weak'},
+  phoenix:{name:'부활',color:'#be123c',types:['resurrect','nova','homing'],status:'fire'},
+  time:{name:'시간',color:'#4338ca',types:['timestop','rewind','timeburst'],status:'ice'}
+};
+function randomProfile(theme='any',rng=Math.random){
+  const pick=items=>items[Math.min(items.length-1,Math.floor(Math.max(0,rng())*items.length))];
+  const selected=THEMES[theme]||pick(Object.values(THEMES));
+  const supportive=new Set(['resurrect','rewind','timeburst','regen','fortify','shield','lifebloom','retreat']);
+  const types=selected.types.filter(t=>TYPE[t]);
+  const skills=types.map((type,i)=>({name:TYPE[type],trigger:'auto',cooldown:4+i*1.5+Math.round(rng()*15)/10,threshold:35,
+    actions:[{type,damage:20+Math.floor(rng()*16),radius:130+Math.floor(rng()*60),count:2+Math.floor(rng()*3),duration:1.5+Math.round(rng()*10)/10,speed:5+Math.floor(rng()*3),status:supportive.has(type)?'none':selected.status,knockback:2,delay:0}]}));
+  // Every roll has an offensive option, including time/support-heavy themes.
+  if(!types.some(t=>['homing','mine','blackhole','dung','drain','nova','starfall'].includes(t)))skills.push({name:'별빛 탄환',cooldown:3,trigger:'auto',actions:[{type:'shot',damage:22,count:3,radius:170,speed:6,status:selected.status}]});
+  return normalize({name:pick(['떠도는','불굴의','장난꾸러기','고요한','빛나는'])+' '+selected.name+' '+pick(['기사','술사','방랑자','수호자']),blurb:selected.name+' 계열 랜덤 캐릭터',color:selected.color,hp:230+Math.floor(rng()*91),speed:1.5+Math.round(rng()*15)/10,skills});
+}
 let sequence=0;
 const enemies=p=>players.filter(e=>e!==p&&e.hp>0);
 function hit(p,e,action,multiplier=1) {
@@ -123,7 +143,7 @@ function update(p,target){
   else{p.vx=cruise;p.vy=0;}
   p.forge.skills.forEach((s,i)=>{
     if(global.ForgeExpansion?.blocked(p))return;
-    p.forgeTicks[i]++;
+    p.forgeTicks[i]+=global.ForgeExpansion?.active(p,'timeburst')?2:1;
     const cd=Math.round(s.cooldown*60);
     if(p.skillCooldown===60&&s.trigger==='auto')p.forgeTicks[i]=Math.max(p.forgeTicks[i],cd-60);
     if(p.forgeTicks[i]<cd)return;
@@ -379,6 +399,6 @@ function initialize(){
   const oldDraw=drawCharacter;
   drawCharacter=function(p){if(p.forge)drawFighter(p);oldDraw(p);};
 }
-global.SkillForge={normalize,register,remove,list,setDraft,refreshList:()=>refreshList(),persist,TYPE,TRIGGER,STATUS};
+global.SkillForge={THEMES,randomProfile,normalize,register,remove,list,setDraft,refreshList:()=>refreshList(),persist,TYPE,TRIGGER,STATUS};
 if(typeof document!=='undefined'&&document.querySelector('.bf-tools'))initialize();
 })(window);

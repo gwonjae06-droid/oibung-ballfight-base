@@ -13,8 +13,8 @@ function battle(type,status='none'){
   h.players.push(p,e);p.forgeQueue.push({timer:0,a:cfg.skills[0].actions[0],targetNum:2});h.BEHAVIORS[p.id].update(p,e);
   return {h,p,e};
 }
-test('all 25 action types normalize and execute, new entities stay bounded',()=>{
-  const types=Object.keys(app().SkillForge.TYPE);assert.equal(types.length,25);
+test('all 35 action types normalize and execute, new entities stay bounded',()=>{
+  const types=Object.keys(app().SkillForge.TYPE);assert.equal(types.length,35);
   for(const type of types){
     const {h,p,e}=battle(type);assert.equal(p.forge.skills[0].actions[0].type,type);
     for(let i=0;i<150;i++){e.invincible=0;h.BEHAVIORS[p.id].update(p,e);}
@@ -64,7 +64,7 @@ test('offline parser distinguishes specific actions and offers explicit choices 
     const out=await h.NaturalForge.analyze('3초마다 '+term,'확장');assert.equal(out.profile.skills[0].actions[0].type,type,term);
     assert.equal(out.profile.skills[0].actions.length,1,term);
   }
-  const text='시간을 되감아 운명을 고친다',out=await h.NaturalForge.analyze(text,'운명');assert.equal(out.profile,null);assert.equal(out.questions.length,1);
+  const text='운명의 실을 새로 짠다',out=await h.NaturalForge.analyze(text,'운명');assert.equal(out.profile,null);assert.equal(out.questions.length,1);
   const resolved=h.NaturalForge.parse(text,'운명',{[text]:'shield'});assert.equal(resolved.questions.length,0);assert.equal(resolved.profile.skills[0].actions[0].type,'shield');
   assert.equal(h.NaturalForge.parse(text,'운명',{[text]:'skip'}).profile,null);
   assert.equal(h.NaturalForge.parse('냉기 탄환을 발사해 기절시킨다').profile.skills[0].actions[0].status,'stun');
@@ -86,4 +86,52 @@ test('expanded profiles survive sharing and restoring',()=>{
   const profile=h.NaturalForge.parse('3초마다 감전 유도 미사일 3발을 발사한다','추적자').profile;
   const restored=h.CommunityForge.parseBody(h.CommunityForge.makeBody(profile));
   assert.equal(restored.skills[0].actions[0].type,'homing');assert.equal(restored.skills[0].actions[0].status,'shock');
+});
+test('flight and burrow protect while active then land with real damage',()=>{
+  for(const type of ['flight','burrow']){
+    const {h,p,e}=battle(type);assert.equal(p.forgePhase.kind,type);assert.ok(p.invincible>0);
+    for(let i=0;i<121;i++){h.ForgeExpansion.tick(p);h.BEHAVIORS[p.id].update(p,e);}
+    assert.equal(p.forgePhase,null);assert.ok(e.hp<300,type);
+    if(type==='burrow')assert.equal(p.x,e.x);
+  }
+});
+test('space fields pull and damage, life fields heal only within their radius',()=>{
+  const b=battle('blackhole');b.e.x+=50;
+  for(let i=0;i<30;i++)b.h.BEHAVIORS[b.p.id].update(b.p,b.e);
+  assert.ok(b.e.vx<0);assert.ok(b.e.hp<300);
+  const s=battle('starfall');assert.equal(s.p.forgeExtras.length,3);assert.ok(s.p.forgeExtras[0].life<s.p.forgeExtras[2].life);
+  const l=battle('lifebloom');for(let i=0;i<30;i++)l.h.BEHAVIORS[l.p.id].update(l.p,l.e);assert.equal(l.p.hp,210);
+  l.p.x=490;for(let i=0;i<30;i++)l.h.BEHAVIORS[l.p.id].update(l.p,l.e);assert.equal(l.p.hp,210);
+});
+test('dung applies both poison and slow on impact',()=>{
+  const {h,p,e}=battle('dung');for(let i=0;i<20;i++)h.BEHAVIORS[p.id].update(p,e);
+  assert.ok(e.hp<300);assert.ok(e.bfDot>0);assert.equal(e.slowMultiplier,.5);
+});
+test('rewind restores own recorded state and time acceleration doubles cooldown charging',()=>{
+  const {h,p,e}=battle('rewind');p.hp=250;p.x=100;h.ForgeExpansion.tick(p);
+  p.hp=100;p.x=300;h.ForgeExpansion.tick(p);
+  h.ForgeExpansion.execute(p,{type:'rewind',duration:3},e,{enemies:()=>[e]});assert.equal(p.hp,250);assert.equal(p.x,100);
+  const t=battle('timeburst'),before=t.p.forgeTicks[0];t.h.BEHAVIORS[t.p.id].update(t.p,t.e);assert.equal(t.p.forgeTicks[0]-before,2);
+  const frozen=battle('timestop');assert.equal(frozen.h.ForgeExpansion.movement(frozen.e),0);assert.ok(frozen.h.ForgeExpansion.blocked(frozen.e));
+});
+test('resurrection occurs before winner settlement and is usable only once',()=>{
+  const {h,p,e}=battle('resurrect');Object.assign(h,{isPlaying:true,isGameOver:false,screenShake:0,shockwaves:[],particles:[],floatingTexts:[]});
+  vm.runInContext(fs.readFileSync(path.join(__dirname,'../js/core/engine.js'),'utf8'),h);h.updateUI=()=>{};
+  let settled=0;h.settleRound=()=>settled++;h.document={getElementById:()=>({dataset:{}})};
+  p.hp=10;h.BEHAVIORS.enemy={update(){p.hp=0;}};e.id='enemy';h.update();
+  assert.equal(p.hp,105);assert.equal(h.isGameOver,false);assert.equal(settled,0);
+  h.update();assert.equal(p.hp,0);assert.equal(h.isGameOver,true);assert.equal(settled,1);
+  assert.equal(h.ForgeExpansion.revive(p),false);
+});
+test('all new themes parse offline and randomized characters remain valid and varied',()=>{
+  const h=app();
+  const words={flight:'공중 강하',burrow:'지하 습격',blackhole:'블랙홀',starfall:'우주 별비',dung:'똥 폭탄',lifebloom:'생명의 꽃',resurrect:'부활',timestop:'시간 정지',rewind:'시간 되감기',timeburst:'시간 가속'};
+  for(const [type,text] of Object.entries(words)){const out=h.NaturalForge.parse('4초마다 '+text);assert.equal(out.questions.length,0);assert.equal(out.profile.skills[0].actions[0].type,type,text);assert.equal(out.profile.skills[0].actions.length,1,text);}
+  const profiles=new Set();
+  for(const theme of Object.keys(h.SkillForge.THEMES))for(let i=0;i<30;i++){
+    const p=h.SkillForge.randomProfile(theme);assert.ok(p.skills.length>=3&&p.skills.length<=4);assert.ok(p.hp>=230&&p.hp<=320);
+    assert.deepEqual(JSON.parse(JSON.stringify(h.SkillForge.normalize(p))),JSON.parse(JSON.stringify(p)));
+    profiles.add(JSON.stringify(p));
+  }
+  assert.ok(profiles.size>100);
 });

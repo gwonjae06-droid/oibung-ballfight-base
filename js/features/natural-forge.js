@@ -16,6 +16,11 @@ const CAPABILITIES={
   zone:{name:'지속 장판',lex:/장판|영역|오라|독안개|불바다|필드|독(?!특|점|립|서)|도트\s*(?:딜|데미지|대미지|뎀|피해)|독\s*(?:딜|데미지|대미지|피해)|독딜|dot(?:\s*(?:damage|dmg))?|지속\s*(?:피해|딜|데미지|대미지)|초당\s*(?:피해|데미지|대미지)|틱(?:딜|뎀)|중독시키|중독|독(?:을|으로)\s*(?:걸|입히|묻히)/gi}
 };
 const EXTRA_LEX={
+  flight:/공중|비행|날아올|날개|하늘로|강하/gi,burrow:/지하|땅속|잠복|굴을|땅굴/gi,
+  blackhole:/블랙홀|우주\s*중력|중력장/gi,starfall:/우주|은하|별비|별의\s*비|별들이\s*떨어|유성우/gi,
+  dung:/똥|대변|배설|응가/gi,lifebloom:/생명|생명의\s*꽃|치유의\s*꽃/gi,
+  resurrect:/부활|되살아|다시\s*살아|불사조/gi,timestop:/시간\s*(?:을\s*)?(?:정지|멈)|시공간\s*정지/gi,
+  rewind:/시간\s*(?:을\s*)?되감|과거로\s*돌아|시간\s*역행/gi,timeburst:/시간\s*가속|시계를\s*빠르게/gi,
   homing:/유도탄|유도\s*미사일|추적탄|추적하는|쫓아가는|따라가는/gi,
   pierce:/관통탄|관통|꿰뚫|뚫고/gi,boomerang:/부메랑|되돌아오는|돌아오는\s*(?:칼|검|탄)/gi,
   chain:/연쇄\s*(?:번개|낙뢰|전격)|체인\s*라이트닝|옮겨\s*붙는\s*번개/gi,
@@ -99,6 +104,11 @@ function matchActions(piece){
     if(distinct.some(h=>h.type==='chain'))remove.add('bolt');
     if(distinct.some(h=>h.type==='swap'))remove.add('blink');
     if(distinct.some(h=>h.type==='regen'))remove.add('heal');
+    if(distinct.some(h=>h.type==='blackhole')){remove.add('pull');remove.add('starfall');}
+    if(distinct.some(h=>h.type==='timeburst'))remove.add('haste');
+    if(distinct.some(h=>h.type==='lifebloom'))remove.add('heal');
+    if(distinct.some(h=>h.type==='dung'))remove.add('shot');
+    if(distinct.some(h=>h.type==='starfall'))remove.add('meteor');
     for(let i=distinct.length-1;i>=0;i--)if(remove.has(distinct[i].type))distinct.splice(i,1);
   }
   const physical=distinct.some(h=>h.type!=='zone');
@@ -158,7 +168,7 @@ function parse(text,name='',choices={}){
       let matches=matchActions(fragment);
       const chosen=choices[fragment];
       if(chosen==='skip')continue;
-      if(!chosen&&/시간.*(?:정지|되감)|부활|스킬.*복사|분신.*(?:싸|공격)|지형|벽을.*만/.test(fragment)){questions.push({text:fragment,options:suggestions(fragment)});unmapped.push(fragment);continue;}
+      if(!chosen&&/스킬.*복사|분신.*(?:싸|공격)|지형|벽을.*만/.test(fragment)){questions.push({text:fragment,options:suggestions(fragment)});unmapped.push(fragment);continue;}
       if(chosen&&SkillForge.TYPE[chosen])matches=[{type:chosen}];
       if(!matches.length&&status(fragment)!=='none'&&!/않|없|제외|금지/.test(fragment)){
         questions.push({text:fragment,options:['wave','shot','zone']});
@@ -228,7 +238,7 @@ async function analyze(text,name,mode='offline'){
       if(await LM.availability(settings)==='available'){
         const model=await LM.create(settings);
         try{
-          const prompt='Interpret Korean combat abilities semantically, including colloquial synonyms. 이동/순간이동/텔포/점멸 = blink (unless 이동속도); 번개/벼락/낙뢰 = bolt; 독딜/도트데미지/지속피해 = poison DoT. Convert into JSON with name,hp,speed,color,skills and each skill name,trigger,cooldown,threshold,actions. Every action uses type,pattern,target,damage,radius,count,speed,duration,status,knockback,delay. Allowed type wave,shot,beam,bolt,dash,blink,heal,shield,pull,orbit,zone; pattern direct,fan,radial,line,cross,spiral,scatter; target nearest,farthest,lowest,highest,random,cluster; status none,ice,fire,poison. Up to 4 skills and 3 sequential actions per skill. Only JSON, no code. Name: '+name+' Description: '+text;
+          const prompt='Interpret Korean combat abilities semantically, including colloquial synonyms. 이동/순간이동/텔포/점멸 = blink (unless 이동속도); 번개/벼락/낙뢰 = bolt; 독딜/도트데미지/지속피해 = poison DoT. Convert into JSON with name,hp,speed,color,skills and each skill name,trigger,cooldown,threshold,actions. Every action uses type,pattern,target,damage,radius,count,speed,duration,status,knockback,delay. Allowed type '+Object.keys(SkillForge.TYPE).join(',')+'; mechanics '+JSON.stringify(global.ForgeExpansion?.DESCRIPTIONS||{})+'; pattern direct,fan,radial,line,cross,spiral,scatter; target nearest,farthest,lowest,highest,random,cluster; status '+Object.keys(SkillForge.STATUS).join(',')+'. Up to 4 skills and 3 sequential actions per skill. Only JSON, no code. Name: '+name+' Description: '+text;
           const raw=await model.prompt(prompt);
           const parsed=JSON.parse(String(raw).replace(/^```(?:json)?\s*|\s*```$/g,'').trim());
           const p=SkillForge.normalize(parsed);p.name=name||p.name;p.blurb=String(text).slice(0,90);
@@ -248,11 +258,16 @@ function install(){
   box.innerHTML='<label for="forge-natural-text">원하는 캐릭터 능력을 문장으로 적어주세요</label>'
     +'<textarea id="forge-natural-text" rows="6" maxlength="1400" placeholder="슬픔을 작은 별로 접어 적에게 뿌린다. 상처받으면 별들이 주변을 돌며 나를 지켜 준다."></textarea>'
     +'<label for="forge-natural-mode">해석 방식</label><select id="forge-natural-mode"><option value="offline">휴대폰 기본 · API 없이 분석</option><option value="auto">기기 내 AI (지원 기기)</option><option value="creative">창작 AI · 문장 전체 해석 (서버 필요)</option></select>'
-    +'<p class="bf-helper">기본 모드는 설치·API 없이 이 기기에서 처리합니다. 인식하지 못한 표현은 직접 효과를 선택할 수 있습니다. 창작 AI는 설명을 AI 서버로 보내 전투 동작으로 각색합니다. 생성 결과에서 실제 효과와 원문에서 달라진 부분을 확인하세요.</p>'
+    +'<p class="bf-helper">기본 분석은 API 없이 작동합니다. 모르는 표현은 효과를 직접 선택하세요. 선택형 창작 AI는 설명을 서버로 전송합니다.</p>'
     +'<button type="button" id="forge-natural-build">문장 분석 · 자동 생성</button>'
     +'<div id="forge-natural-status" role="status" aria-live="polite"></div>'
     +'<div id="forge-choices"></div>';
   body.insertBefore(box,holder);
+  const mode=document.getElementById('forge-natural-mode'),modeLabel=mode.previousElementSibling;
+  const modeDetails=document.createElement('details'),modeSummary=document.createElement('summary');modeSummary.textContent='분석 방식 변경';modeDetails.append(modeSummary,modeLabel,mode);box.append(modeDetails);
+  const randomBox=document.createElement('div');randomBox.className='forge-random';
+  randomBox.innerHTML='<label for="forge-random-theme">랜덤 캐릭터 테마</label><div class="forge-random-row"><select id="forge-random-theme"><option value="any">전체 랜덤</option>'+Object.entries(SkillForge.THEMES).map(([key,t])=>'<option value="'+key+'">'+t.name+'</option>').join('')+'</select><button type="button" id="forge-random">랜덤 초안 만들기</button></div><p class="bf-helper">이름·스킬·수치를 자동으로 조합합니다. 확인 후 캐릭터를 생성하세요.</p>';
+  box.prepend(randomBox);
   const guide=document.createElement('details'),guideTitle=document.createElement('summary');
   guideTitle.textContent='지원 동작 '+Object.keys(SkillForge.TYPE).length+'종 · 상태 효과 '+(Object.keys(SkillForge.STATUS).length-1)+'종';guide.append(guideTitle);
   const guideBody=document.createElement('div');guideBody.className='forge-effect-guide';
@@ -346,6 +361,13 @@ function install(){
     }catch(e){approved='';status.textContent='분석 실패: '+e.message;}
     finally{button.disabled=false;}
   });
+  document.getElementById('forge-random').addEventListener('click',()=>{
+    if(button.disabled)return;
+    const profile=SkillForge.randomProfile(document.getElementById('forge-random-theme').value);
+    input.value='';approved='';choices={};choiceBox.replaceChildren();SkillForge.setDraft(profile);
+    status.textContent='랜덤 초안: '+profile.name+' · 스킬 '+profile.skills.length+'개. 마음에 들면 캐릭터 생성 버튼을 누르세요.';
+    document.getElementById('bf-analyze').click();
+  });
   input.addEventListener('input',()=>{approved='';choices={};choiceBox.replaceChildren();});
   document.getElementById('forge-natural-mode').addEventListener('change',()=>{approved='';});
   const create=document.getElementById('bf-create');
@@ -354,7 +376,19 @@ function install(){
       e.preventDefault();e.stopImmediatePropagation();status.textContent='변경된 문장을 먼저 분석해 주세요.';
     }
   },true);
+  // Keep the primary flow together, with optional tuning and saved data below it.
+  const firstHelp=body.querySelector(':scope > p.bf-helper');if(firstHelp)firstHelp.remove();
+  const nameLabel=document.getElementById('bf-name').parentElement,basicGrid=nameLabel.parentElement;
+  const heading=document.createElement('div');heading.className='forge-heading';heading.innerHTML='<span class="eyebrow">CHARACTER STUDIO</span><h3>나만의 파이터</h3><p>문장으로 설계하거나, 랜덤으로 발견하세요.</p>';
+  body.prepend(heading,nameLabel);nameLabel.classList.add('forge-name');body.insertBefore(box,nameLabel.nextSibling);
+  const basics=document.createElement('details'),basicTitle=document.createElement('summary');basicTitle.textContent='외형 · 체력 · 이동 속도';basics.append(basicTitle,basicGrid,document.getElementById('bf-text').parentElement);
+  body.insertBefore(basics,advanced);
+  const actions=document.getElementById('bf-create').parentElement;actions.classList.add('forge-primary-actions');body.insertBefore(actions,box.nextSibling);
+  body.insertBefore(document.getElementById('bf-result'),actions.nextSibling);
+  const saved=document.createElement('details'),savedTitle=document.createElement('summary');savedTitle.textContent='내 캐릭터 보관함';saved.append(savedTitle,document.getElementById('bf-custom-list'));body.append(saved);
+  body.classList.add('forge-studio');
 }
+
 global.NaturalForge={parse,analyze,suggestions};
 if(typeof document!=='undefined'&&document.getElementById('forge-skills'))install();
 })(window);

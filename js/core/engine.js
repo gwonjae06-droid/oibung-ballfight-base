@@ -58,7 +58,7 @@ function updateCharacter(self) {
 }
 
 function handleCombat(pA,pB) {
-  if(pA.hp<=0||pB.hp<=0)return;
+  if(pA.hp<=0||pB.hp<=0||pA.forgePhase||pB.forgePhase)return;
   if(pA.jumpState&&pA.jumpState!=='ground')return;
   if(pB.jumpState&&pB.jumpState!=='ground')return;
   const dx=pB.x-pA.x,dy=pB.y-pA.y;
@@ -120,6 +120,7 @@ function update() {
     const f=floatingTexts[i];f.y+=f.vy;f.alpha-=0.015;
     if(f.alpha<=0)floatingTexts.splice(i,1);
   }
+  players.forEach(p=>globalThis.ForgeExpansion?.revive(p));
   const finalAlive=players.filter(p=>p.hp>0);
   if(finalAlive.length<=1){isGameOver=true;isPlaying=false;settleRound(finalAlive.length===1?finalAlive[0]:null);document.getElementById('btn-start').innerText='다음 경기';document.getElementById('btn-start').dataset.state='finished';}
   updateUI();

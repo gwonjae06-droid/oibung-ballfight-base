@@ -652,3 +652,28 @@ html,body {background:#090a0c;color:var(--text);font-family:"Noto Sans KR", "Mal
   font-size:11px; text-align:left; cursor:pointer; }
 .atlas-preset:hover,.atlas-preset:focus-visible {background:#3a3c40;border-color:#ddd;}
 @media (max-width:560px) {.atlas-list {grid-template-columns:1fr;}}
+
+/* Character studio: a single primary flow, optional controls folded away. */
+.forge-studio{display:flex;flex-direction:column;gap:14px;padding:18px!important;}
+.forge-heading h3{margin:5px 0;font-size:22px;letter-spacing:-.6px;color:#f5f5f5;}
+.forge-heading p{margin:0;color:#a3a3a3;font-size:12px;}
+.forge-name{display:block;font-size:12px;font-weight:700;color:#ddd;}
+.forge-name input{width:100%;margin-top:7px;min-height:44px;}
+.forge-studio .forge-prompt{margin:0;padding:16px;background:#161719;border:1px solid #37383c;border-radius:12px;}
+.forge-studio .forge-prompt textarea{min-height:110px;font-size:16px;}
+.forge-studio details{border:1px solid #393a3e;border-radius:9px;background:#141517;padding:11px 13px;}
+.forge-studio details summary{min-height:24px;font-size:12px;font-weight:650;cursor:pointer;}
+.forge-studio details[open]>summary{margin-bottom:12px;}
+.forge-studio .forge-prompt details{margin-top:12px;background:transparent;}
+.forge-random{padding-bottom:15px;margin-bottom:15px;border-bottom:1px solid #36373b;}
+.forge-random-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;}
+.forge-random-row select,.forge-random-row button{min-height:44px;font-size:14px;border:1px solid #555;border-radius:7px;}
+.forge-random-row button{padding:8px 12px;background:#303238;color:#fff;cursor:pointer;}
+.forge-random .bf-helper{margin:7px 0 0;font-size:11px;}
+.forge-primary-actions{display:grid;grid-template-columns:1fr 1.4fr;gap:10px;margin:0;}
+.forge-primary-actions button{min-height:48px;border-radius:8px;}
+.forge-primary-actions #bf-create{background:#f5f5f5;color:#161616;font-weight:800;border:1px solid #fff;}
+.forge-studio #bf-result:empty{display:none;}
+.forge-studio #bf-result{margin:0;padding:12px;font-size:12px;line-height:1.7;}
+.forge-studio .forge-grid{margin-top:10px;}
+@media(max-width:560px){.forge-studio{padding:12px!important;gap:11px;}.forge-studio .forge-prompt{padding:12px;}.forge-random-row select{font-size:16px;min-width:0;}.forge-random-row button{font-size:12px;}}
