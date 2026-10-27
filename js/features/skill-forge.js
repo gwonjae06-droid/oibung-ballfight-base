@@ -172,10 +172,10 @@ function contact(p,e){
 function drawFighter(p){
   if(!p.forge||p.hp<=0)return;
   global.ForgeExpansion?.draw(p);
-  const c=p.forge.color;ctx.save();ctx.globalCompositeOperation='lighter';
-  ctx.shadowColor=c;ctx.shadowBlur=14;ctx.fillStyle=c;ctx.strokeStyle=c;
+  const c=global.arenaEffectColor?.(p.forge.color)||p.forge.color;ctx.save();ctx.globalCompositeOperation='source-over';
+  ctx.shadowColor=c;ctx.shadowBlur=3;ctx.fillStyle=c;ctx.strokeStyle=c;
   p.forgeShots.forEach(b=>{ctx.globalAlpha=.35;ctx.lineWidth=8;ctx.beginPath();ctx.moveTo(b.x-b.vx*3,b.y-b.vy*3);ctx.lineTo(b.x,b.y);ctx.stroke();ctx.globalAlpha=1;ctx.beginPath();ctx.arc(b.x,b.y,7,0,2*Math.PI);ctx.fill();});
-  p.forgeZones.forEach(z=>{ctx.globalAlpha=z.type==='bolt'?.65:.25;ctx.lineWidth=2;ctx.setLineDash([6,5]);ctx.beginPath();ctx.arc(z.x,z.y,z.type==='bolt'?z.a.radius*.4:z.a.radius,0,2*Math.PI);ctx.stroke();ctx.setLineDash([]);});
+  p.forgeZones.forEach(z=>{ctx.globalAlpha=z.type==='bolt'?.9:.65;ctx.lineWidth=2;ctx.setLineDash([6,5]);ctx.beginPath();ctx.arc(z.x,z.y,z.type==='bolt'?z.a.radius*.4:z.a.radius,0,2*Math.PI);ctx.stroke();ctx.setLineDash([]);});
   p.forgeOrbs.forEach(o=>{for(let i=0;i<o.a.count;i++){const t=o.phase+i*2*Math.PI/o.a.count,r=o.a.radius*.75;ctx.globalAlpha=.9;ctx.beginPath();ctx.arc(p.x+Math.cos(t)*r,p.y+Math.sin(t)*r,8,0,2*Math.PI);ctx.fill();}});
   ctx.restore();
 }

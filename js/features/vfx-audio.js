@@ -2,8 +2,8 @@
  * FX are tick-driven (simulation time) and draw-only at the end of each frame. */
 (function (global) {
   const palette = {
-    bae:'#ff855b', oh:'#c69cff', lee:'#76d7ff', park:'#80f4bc', choi:'#ff7489',
-    ice:'#8ae9ff', fire:'#ff9e55', poison:'#83e79d', heal:'#9df4b2'
+    bae:'#b84316', oh:'#7e22ce', lee:'#0369a1', park:'#047857', choi:'#be123c',
+    ice:'#0369a1', fire:'#c2410c', poison:'#15803d', heal:'#047857'
   };
   const fx=[], captions=new Map();
   let audio=null, master=null, noise=null, muted=false, intensity='full', lastSound=-500;
@@ -13,7 +13,7 @@
   const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
   function add(kind,x,y,color,opt={}) {
     if(!Number.isFinite(x)||!Number.isFinite(y))return;
-    fx.push({kind,x,y,color:color||'#fff',age:0,life:opt.life||28,
+    fx.push({kind,x,y,color:global.arenaEffectColor?.(color)||color||'#475569',age:0,life:opt.life||28,
       radius:opt.radius||68,angle:opt.angle||0,dx:opt.dx||0,dy:opt.dy||0,
       strength:opt.strength||1,label:opt.label||'',orbit:opt.orbit||0});
     if(fx.length>maxFx)fx.splice(0,fx.length-maxFx);
@@ -154,7 +154,7 @@
         // Physical shock-front: fast moving air ring + dusty fragmented fringe,
         // no futuristic spinning glyphs on the white playfield.
         const isImpact=f.kind==='ring'||f.kind==='glyph';
-        ctx.strokeStyle=isImpact?'rgba(73,81,89,.85)':f.kind==='heal'?'#56ad79':f.color;
+        ctx.strokeStyle=isImpact?'rgba(73,81,89,.85)':f.kind==='heal'?'#047857':f.color;
         ctx.lineWidth=isImpact?Math.max(1,8*k):2.5;
         ctx.shadowColor=isImpact?'rgba(70,75,80,.28)':f.color;
         ctx.shadowBlur=intensity==='low'?0:8*k;
@@ -182,7 +182,7 @@
         ctx.beginPath();ctx.arc(f.x,f.y,r,0,Math.PI*2);ctx.fill();
       } else if(f.kind==='beam'){
         ctx.lineCap='round';ctx.shadowColor=f.color;ctx.shadowBlur=intensity==='low'?0:22*k;
-        ctx.lineWidth=14*k+3;ctx.globalAlpha=.4*k;ctx.beginPath();
+        ctx.lineWidth=14*k+3;ctx.globalAlpha=.8*k;ctx.beginPath();
         ctx.moveTo(f.x-f.dx/2,f.y-f.dy/2);ctx.lineTo(f.x+f.dx/2,f.y+f.dy/2);ctx.stroke();
         ctx.lineWidth=4*k+1;ctx.globalAlpha=k;ctx.strokeStyle='#edfaff';ctx.stroke();
       } else if(f.kind==='sweep'){

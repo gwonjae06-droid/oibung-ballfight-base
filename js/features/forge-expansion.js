@@ -102,7 +102,7 @@ function update(p,api){
 }
 function draw(p){
   if(p.hp<=0)return;
-  ctx.save();ctx.strokeStyle=p.forge?.color||p.themeColor||'#684f83';ctx.fillStyle=ctx.strokeStyle;
+  ctx.save();ctx.strokeStyle=global.arenaEffectColor?.(p.forge?.color||p.themeColor)||(p.forge?.color||p.themeColor||'#684f83');ctx.lineWidth=2.5;ctx.fillStyle=ctx.strokeStyle;
   for(const b of p.forgeExtras||[]){ctx.beginPath();ctx.arc(b.x,b.y,b.kind==='meteor'||b.kind==='mine'?b.a.radius:7,0,Math.PI*2);ctx.stroke();}
   ctx.font='11px sans-serif';ctx.textAlign='center';
   const names=Object.keys(p.forgeEffects||{}).map(k=>STATUSES[k]||TYPES[k]).filter(Boolean);

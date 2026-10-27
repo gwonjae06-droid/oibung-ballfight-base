@@ -11,9 +11,9 @@
   let frame=0,last=null,acc=0,stopUntil=0,now=0,roster=players;
   let sparks=[],pulses=[];
   const trails=new WeakMap();
-  const color=p=>({ice:'#67e8f9',fire:'#fb923c',poison:'#4ade80'}[p.spec&&p.spec.element]||'#a78bfa');
-  function pulse(x,y,c,r=70){pulses.push({x,y,c,r,life:18});if(pulses.length>48)pulses.shift();}
-  function burst(x,y,c,strong){
+  const color=p=>({ice:'#0369a1',fire:'#c2410c',poison:'#15803d'}[p.spec&&p.spec.element]||'#7e22ce');
+  function pulse(x,y,c,r=70){c=arenaEffectColor(c);pulses.push({x,y,c,r,life:18});if(pulses.length>48)pulses.shift();}
+  function burst(x,y,c,strong){c=arenaEffectColor(c);
     pulse(x,y,c,strong?90:52);
     for(let i=0;i<(gentle.checked?5:strong?18:10);i++){
       const a=Math.random()*Math.PI*2,v=(strong?3:2)+Math.random()*5;
@@ -53,7 +53,7 @@
     });
     if(gentle.checked)screenShake=0;
   };
-  function ring(x,y,r,c,width=2){ctx.beginPath();ctx.arc(x,y,Math.max(1,r),0,Math.PI*2);ctx.strokeStyle=c;ctx.lineWidth=width;ctx.stroke();}
+  function ring(x,y,r,c,width=2){ctx.beginPath();ctx.arc(x,y,Math.max(1,r),0,Math.PI*2);ctx.strokeStyle=arenaEffectColor(c);ctx.lineWidth=width;ctx.stroke();}
   drawCharacter=function(p){
     if(p.spec&&p.hp>0){
       const c=color(p),skills=p.spec.skills;
