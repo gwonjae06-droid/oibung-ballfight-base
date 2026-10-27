@@ -55,7 +55,10 @@ function togglePlay() {
 // the remaining fighters a winner. A stopped bet is returned exactly once.
 function syncStopButton(){
   const button=document.getElementById('btn-stop');
-  if(button)button.disabled=!roundStarted||isGameOver;
+  // Keep engine-only regression harnesses safe when optional state is absent.
+  const active=typeof roundStarted!=='undefined'&&roundStarted&&
+    typeof isGameOver!=='undefined'&&!isGameOver;
+  if(button)button.disabled=!active;
 }
 function stopMatch(){
   if(!roundStarted||isGameOver)return false;
