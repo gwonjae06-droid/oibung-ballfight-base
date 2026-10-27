@@ -11,18 +11,19 @@ const profile=()=>({name:'독립 타이머',hp:250,speed:1.7,skills:[
   {name:'연속 돌격',trigger:'auto',cooldown:1.1,actions:[
     {type:'heal',damage:1,delay:0},
     {type:'shield',duration:.3,delay:0},
-    {type:'heal',damage:1,delay:0}
+    {type:'heal',damage:1,delay:.35}
   ]}
 ]});
 function harness(){
   let blocked=false;
   const state={
-    window:{},document:{querySelector(){return null;}},
+    window:null,document:{querySelector(){return null;}},
     CUSTOM_DEFS:[],BEHAVIORS:{},CHARACTER_PHOTOS:{},players:[],
     canvas:{width:500,height:500},createHitParticles(){},addFloatingText(){},
     getClosestAliveEnemy(p){return state.players.find(e=>e!==p&&e.hp>0)||null;},
     ForgeExpansion:{blocked:()=>blocked,update(){},damageScale:()=>1,applyStatus(){},heal(p,amount){p.hp=Math.min(p.maxHp,p.hp+amount);},active:()=>false}
   };
+  state.window=state;
   const context=vm.createContext(state);
   vm.runInContext(script,context);
   const api=state.window.SkillForge;
@@ -48,12 +49,14 @@ test('different skills can execute in overlapping windows while a combo stays or
   const h=harness();
   let overlap=false,thirdSequence=false;
   for(let i=0;i<120;i++){
+    const comboPending=h.hero.forgeQueue.some(x=>x.skillIndex===2);
+    const priorFastCharge=h.hero.forgeTicks[0];
     h.step();
     const q=h.hero.forgeQueue;
-    if(new Set(q.map(x=>x.skillIndex)).size>1)overlap=true;
+    if(comboPending&&h.hero.forgeTicks[0]<priorFastCharge)overlap=true;
     if(q.some(x=>x.skillIndex===2&&x.step===2))thirdSequence=true;
   }
-  assert.ok(overlap,'separate skill channels should not serialize behind each other');
+  assert.ok(overlap,'fast skill can recharge and fire while combo is still pending');
   assert.ok(thirdSequence,'combo should preserve the third ordered action');
 });
 test('silence delays pending actions without dropping them, but each timer keeps charging',()=>{
