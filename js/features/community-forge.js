@@ -26,7 +26,7 @@ function install(){
   const panel=document.querySelector('.bf-tools');if(!panel)return;
   const section=document.createElement('details');
   section.className='bf-details community-section';
-  const summary=document.createElement('summary');summary.textContent='공유 캐릭터 저장소';
+  const summary=document.createElement('summary');summary.textContent='공유 캐릭터 둘러보기';
   section.appendChild(summary);
   const body=document.createElement('div');body.className='bf-details-body';
   body.innerHTML='<p class="bf-helper">모든 플레이어가 공개된 캐릭터를 불러올 수 있습니다. 공유 등록에는 GitHub 로그인이 필요합니다.</p>'
@@ -36,7 +36,11 @@ function install(){
     +'<p id="community-state" class="bf-helper" role="status" aria-live="polite"></p>'
     +'<div id="community-items" class="community-items"></div>'
     +'<p class="bf-helper">공유글을 삭제하려면 GitHub에서 해당 글을 닫거나 삭제하세요. 내 기기에서 삭제하는 것과 공개글 삭제는 별개입니다.</p>';
-  section.appendChild(body);panel.appendChild(section);
+  section.appendChild(body);
+  // Share and locally saved fighters belong in one collapsed library, not a
+  // second large top-level editor section.
+  const saved=panel.querySelector('.forge-saved');
+  (saved||panel).appendChild(section);
   const $=id=>document.getElementById(id);
   const state=$('community-state'), own=$('community-own'),list=$('community-items');
   function refreshOwn(){

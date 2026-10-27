@@ -677,3 +677,59 @@ html,body {background:#090a0c;color:var(--text);font-family:"Noto Sans KR", "Mal
 .forge-studio #bf-result{margin:0;padding:12px;font-size:12px;line-height:1.7;}
 .forge-studio .forge-grid{margin-top:10px;}
 @media(max-width:560px){.forge-studio{padding:12px!important;gap:11px;}.forge-studio .forge-prompt{padding:12px;}.forge-random-row select{font-size:16px;min-width:0;}.forge-random-row button{font-size:12px;}}
+
+
+/* Creator 2.0: a single primary flow with compact, collapsible workspaces. */
+.forge-studio{gap:12px!important}
+.forge-studio .forge-heading h3{margin-bottom:3px}
+.forge-studio .forge-prompt{padding:14px!important;border-color:#48494d}
+.forge-studio .forge-prompt textarea{min-height:114px;line-height:1.62}
+.forge-studio #forge-natural-build{margin-top:9px}
+.forge-studio .forge-primary-actions{display:block;margin:0!important}
+.forge-studio .forge-primary-actions #bf-create{
+  width:100%;min-height:48px;background:#f1f1f1;color:#191919;
+  border:1px solid #eee;font-size:14px;font-weight:800;
+}
+.forge-studio .forge-optional,
+.forge-studio .forge-tuning{
+  margin:0;border:1px solid #3a3c40!important;background:#161719!important;
+  border-radius:10px;padding:10px 13px!important
+}
+.forge-studio .forge-optional > summary,
+.forge-studio .forge-tuning > summary{color:#d6d6d6;font-size:13px;font-weight:700}
+.forge-studio .forge-optional .forge-random{padding:0;margin:0;border:0}
+.forge-studio .forge-library .forge-effect-guide{max-height:260px}
+.forge-studio .forge-library .forge-advanced{margin-top:9px}
+.forge-studio .forge-tuning .forge-inspect{
+  display:block;min-height:37px;width:100%;margin-top:11px;
+  border:1px solid #595a5e;border-radius:7px;background:#292b2e;color:#e5e5e5
+}
+.forge-studio .forge-tuning #bf-result{
+  white-space:pre-wrap;margin-top:9px;background:#222326;border:1px solid #3a3c40;
+  padding:10px;border-radius:7px
+}
+.forge-studio .forge-saved .community-section{margin-top:10px}
+.forge-studio .forge-saved .forge-json{margin-top:12px}
+.forge-studio .forge-name{margin-top:2px}
+.forge-studio .forge-name input{margin-top:5px}
+.forge-studio .forge-optional > summary:focus-visible,
+.forge-studio .forge-tuning > summary:focus-visible{outline:2px solid white;outline-offset:4px}
+.forge-cooldown-list{
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px 10px;
+  padding:9px 0 1px;margin-top:7px;border-top:1px solid rgba(120,120,120,.23)
+}
+.forge-cooldown-item{display:grid;grid-template-columns:minmax(0,1fr) 46px 28px;
+  gap:5px;align-items:center;color:#a9abae;font-size:10px;min-width:0}
+.forge-cooldown-name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.forge-cooldown-track{height:5px;border-radius:3px;background:#47494d;overflow:hidden}
+.forge-cooldown-fill{display:block;width:0;height:100%;background:#9eabb9;border-radius:3px;
+  transition:width .10s linear}
+.forge-cooldown-time{text-align:right;font-variant-numeric:tabular-nums;color:#c7c7c7}
+.forge-cooldown-item[data-ready="true"] .forge-cooldown-fill{background:#b5d3b0}
+.forge-cooldown-item[data-ready="true"] .forge-cooldown-time{color:#b5d3b0}
+@media (max-width:560px){
+  .forge-studio{padding:13px!important}
+  .forge-studio .forge-prompt{padding:11px!important}
+  .forge-cooldown-list{grid-template-columns:1fr}
+  .forge-cooldown-item{grid-template-columns:minmax(0,1fr) 42px 27px}
+}

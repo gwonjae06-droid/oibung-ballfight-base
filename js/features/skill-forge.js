@@ -77,10 +77,60 @@ function hit(p,e,action,multiplier=1,attackZ) {
   if(action.knockback>0){const dx=e.x-p.x,dy=e.y-p.y,dist=Math.hypot(dx,dy)||1;e.vx+=dx/dist*action.knockback;e.vy+=dy/dist*action.knockback;}
   return true;
 }
-function cast(p,s,target){
-  p.forgeQueue.push(...s.actions.map(a=>({timer:Math.round(a.delay*60),a,targetNum:target?.playerNum||null})));
-  if(p.forgeQueue.length>30)p.forgeQueue.splice(0,p.forgeQueue.length-30);
-  if(global.BattleFX)BattleFX.caption(p,s.name,p.forge.color);
+/* Each skill owns its cooldown and its own cast sequence.
+ * A combo has action-relative windups; different skills never wait for one
+ * another. Explicit authored delays stay meaningful. */
+const transitionLead={leap:14,hover:12,glide:12,erupt:12,uppercut:7,
+  dash:7,blink:4,slash:8,spinslash:8,thrust:8,aircombo:7,
+  arcshot:7,splitshot:7,dive:8,wall:5,portal:5,summon:5,turret:5};
+const cooldownFrames=(p,s)=>Math.max(12,Math.round((p.forgeRush?Math.min(1,s.cooldown):s.cooldown)*60));
+function cast(p,s,target,index){
+  // The queue uses independent cast IDs; casts from two skills may overlap.
+  const castId=++p.forgeSerial;
+  let start=0;
+  for(let step=0;step<s.actions.length;step++){
+    const a=s.actions[step];
+    const requested=Math.max(0,Math.round(a.delay*60));
+    start=step===0?requested:Math.max(requested,start+(transitionLead[s.actions[step-1].type]||6));
+    p.forgeQueue.push({remaining:start,step,castId,skillIndex:index,
+      a,targetNum:target?.playerNum??null,
+      waitApex:step>0&&['leap','glide','hover','uppercut'].includes(s.actions[step-1].type)&&
+        ['dive','aircombo','slash','spinslash','thrust'].includes(a.type)});
+  }
+  if(p.forgeQueue.length>48)p.forgeQueue.splice(0,p.forgeQueue.length-48);
+  global.BattleFX?.caption?.(p,s.name,p.forge.color);
+}
+function tickSkills(p,blocked=false){
+  const speed=global.ForgeExpansion?.active(p,'timeburst')?2:1;
+  p.forge.skills.forEach((s,i)=>{
+    const max=cooldownFrames(p,s);
+    p.forgeTicks[i]=Math.min(max,Math.max(0,(p.forgeTicks[i]||0)+speed));
+  });
+  // No shared global "skillCooldown": each gauge always progresses,
+  // even during a silence/stun. Only casts and execution are suspended.
+  return !blocked;
+}
+function tickQueue(p,target){
+  const blocked=!!global.ForgeExpansion?.blocked(p);
+  for(let i=0;i<p.forgeQueue.length;){
+    const q=p.forgeQueue[i];
+    if(q.remaining>0)q.remaining--;
+    if(q.remaining>0){i++;continue;}
+    if(blocked){i++;continue;} // keep the action pending instead of dropping it
+    if(q.waitApex){
+      const z=global.AdvancedCombat?.height(p)||0;
+      const pose=p.jumpMotion?.phase||p.jumpState;
+      if(pose==='prepare'||pose==='rising'||(z<24&&pose!=='ground'&&pose!=='landing')){
+        i++;continue;
+      }
+    }
+    execute(p,q.a,players.find(e=>e.playerNum===q.targetNum&&e.hp>0)||target);
+    if(q.a.type==='uppercut'&&p.forgeQueue.some(next=>next.castId===q.castId&&next.step>q.step&&next.a.type==='aircombo')){
+      // Rise with the target, so the next aerial hit shares its actual height.
+      global.AdvancedCombat?.launch(p,9);
+    }
+    p.forgeQueue.splice(i,1);
+  }
 }
 function execute(p,a,target) {
   if(global.ForgeExpansion?.execute(p,a,target,{hit,enemies}))return;
@@ -144,22 +194,16 @@ function update(p,target){
     if(target){const t=Math.atan2(target.y-p.y,target.x-p.x);p.vx+=(Math.cos(t)*p.forgeDashAction.speed-p.vx)*.18;p.vy+=(Math.sin(t)*p.forgeDashAction.speed-p.vy)*.18;}
   }else if(v>.001&&Number.isFinite(v)){const next=v+(cruise-v)*(v>cruise?.075:.16);p.vx=p.vx/v*next;p.vy=p.vy/v*next;}
   else{p.vx=cruise;p.vy=0;}
+  tickSkills(p);
   p.forge.skills.forEach((s,i)=>{
     if(global.ForgeExpansion?.blocked(p))return;
-    p.forgeTicks[i]+=global.ForgeExpansion?.active(p,'timeburst')?2:1;
-    const cd=Math.round(s.cooldown*60);
-    if(p.skillCooldown===60&&s.trigger==='auto')p.forgeTicks[i]=Math.max(p.forgeTicks[i],cd-60);
-    if(p.forgeTicks[i]<cd)return;
-    if((s.trigger==='auto'&&target)||(s.trigger==='lowhp'&&p.hp/p.maxHp*100<=s.threshold)||(s.trigger==='damaged'&&loss>0)){
-      p.forgeTicks[i]=0;cast(p,s,target);
-    }
+    const ready=p.forgeTicks[i]>=cooldownFrames(p,s);
+    if(!ready)return;
+    const active=(s.trigger==='auto'&&target)||(s.trigger==='lowhp'&&p.hp/p.maxHp*100<=s.threshold)
+      ||(s.trigger==='damaged'&&loss>0);
+    if(active){p.forgeTicks[i]=0;cast(p,s,target,i);}
   });
-  for(let i=0;i<p.forgeQueue.length;){
-    const q=p.forgeQueue[i];
-    if(--q.timer>0){i++;continue;}
-    if(!global.ForgeExpansion?.blocked(p))execute(p,q.a,players.find(e=>e.playerNum===q.targetNum&&e.hp>0)||target);
-    p.forgeQueue.splice(i,1);
-  }
+  tickQueue(p,target);
   for(let i=p.forgeShots.length-1;i>=0;i--){
     const b=p.forgeShots[i];b.x+=b.vx;b.y+=b.vy;b.life--;
     const e=enemies(p).find(e=>Math.hypot(e.x-b.x,e.y-b.y)<e.radius+8&&hit(p,e,b.a));
@@ -188,7 +232,7 @@ function contact(p,e){
   if(p.forgeDash>0&&p.forgeDashAction)hit(p,e,p.forgeDashAction);
   p.forge.skills.forEach((s,i)=>{
     if(global.ForgeExpansion?.blocked(p))return;
-    if(s.trigger==='contact'&&p.forgeTicks[i]>=s.cooldown*60){p.forgeTicks[i]=0;cast(p,s,e);}
+    if(s.trigger==='contact'&&p.forgeTicks[i]>=cooldownFrames(p,s)){p.forgeTicks[i]=0;cast(p,s,e,i);}
   });
   if(e&&e.invincible===0)hit(p,e,{damage:7,status:'none',knockback:1});
 }
@@ -210,7 +254,7 @@ function register(value){
       hp:profile.hp,maxHp:profile.hp,invincible:0,slowTimer:0,slowMultiplier:1,
       borderColor:profile.color,themeColor:profile.color,tagColor:profile.color,
       jumpState:'ground',forge:profile,forgeLastHp:profile.hp,forgeDash:0,
-      forgeDashAction:null,forgeTicks:profile.skills.map((s,i)=>Math.round(s.cooldown*15)+i*14),
+      forgeDashAction:null,forgeTicks:profile.skills.map((s,i)=>Math.min(Math.round(s.cooldown*60),Math.round(s.cooldown*15)+i*14)),forgeSerial:0,
       forgeQueue:[],forgeShots:[],forgeZones:[],forgeOrbs:[],
       getImage:()=>CHARACTER_PHOTOS[id]||null,
       getDisplayName(){return this.name;},
@@ -402,6 +446,6 @@ function initialize(){
   const oldDraw=drawCharacter;
   drawCharacter=function(p){if(p.forge)drawFighter(p);oldDraw(p);};
 }
-global.SkillForge={THEMES,randomProfile,normalize,register,remove,list,setDraft,refreshList:()=>refreshList(),persist,TYPE,TRIGGER,STATUS};
+global.SkillForge={THEMES,randomProfile,normalize,register,remove,list,setDraft,refreshList:()=>refreshList(),persist,TYPE,TRIGGER,STATUS,cooldownFrames,advanceTimers:tickSkills};
 if(typeof document!=='undefined'&&document.querySelector('.bf-tools'))initialize();
 })(window);

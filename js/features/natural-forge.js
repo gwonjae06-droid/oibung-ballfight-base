@@ -298,7 +298,7 @@ function install(){
   const modeDetails=document.createElement('details'),modeSummary=document.createElement('summary');modeSummary.textContent='분석 방식 변경';modeDetails.append(modeSummary,modeLabel,mode);box.append(modeDetails);
   const randomBox=document.createElement('div');randomBox.className='forge-random';
   randomBox.innerHTML='<label for="forge-random-theme">랜덤 캐릭터 테마</label><div class="forge-random-row"><select id="forge-random-theme"><option value="any">전체 랜덤</option>'+Object.entries(SkillForge.THEMES).map(([key,t])=>'<option value="'+key+'">'+t.name+'</option>').join('')+'</select><button type="button" id="forge-random">랜덤 초안 만들기</button></div><p class="bf-helper">이름·스킬·수치를 자동으로 조합합니다. 확인 후 캐릭터를 생성하세요.</p>';
-  box.prepend(randomBox);
+  // The random option is offered as a compact secondary workflow below the main actions.
   const guide=document.createElement('details'),guideTitle=document.createElement('summary');
   guideTitle.textContent='지원 동작 '+Object.keys(SkillForge.TYPE).length+'종 · 상태 효과 '+(Object.keys(SkillForge.STATUS).length-1)+'종';guide.append(guideTitle);
   const guideBody=document.createElement('div');guideBody.className='forge-effect-guide';
@@ -308,7 +308,7 @@ function install(){
   for(const [key,label] of Object.entries(SkillForge.STATUS)){
     const row=document.createElement('p');row.textContent=label+' — '+(global.ForgeExpansion?.STATUS_HELP[key]||label);guideBody.append(row);
   }
-  guide.append(guideBody);box.append(guide);
+  guide.append(guideBody);
   const catalogDetail=document.createElement('details');catalogDetail.className='forge-advanced';
   const catalogSummary=document.createElement('summary');
   catalogSummary.textContent='공격 동작 도감 · '+(global.AbilityAtlas?.count||0)+'가지';
@@ -397,7 +397,7 @@ function install(){
     const profile=SkillForge.randomProfile(document.getElementById('forge-random-theme').value);
     input.value='';approved='';choices={};choiceBox.replaceChildren();SkillForge.setDraft(profile);
     status.textContent='랜덤 초안: '+profile.name+' · 스킬 '+profile.skills.length+'개. 마음에 들면 캐릭터 생성 버튼을 누르세요.';
-    document.getElementById('bf-analyze').click();
+    const report=document.getElementById('bf-result');if(report)report.textContent='';
   });
   input.addEventListener('input',()=>{approved='';choices={};choiceBox.replaceChildren();});
   document.getElementById('forge-natural-mode').addEventListener('change',()=>{approved='';});
@@ -409,14 +409,39 @@ function install(){
   },true);
   // Keep the primary flow together, with optional tuning and saved data below it.
   const firstHelp=body.querySelector(':scope > p.bf-helper');if(firstHelp)firstHelp.remove();
+  // Remove duplicated preview in the primary call-to-action area. A compact
+  // optional configuration report stays available with fine-tuning.
+  const inspect=document.getElementById('bf-analyze');
+  inspect.textContent='구성 요약 확인';
+  inspect.classList.add('forge-inspect');
   const nameLabel=document.getElementById('bf-name').parentElement,basicGrid=nameLabel.parentElement;
   const heading=document.createElement('div');heading.className='forge-heading';heading.innerHTML='<span class="eyebrow">CHARACTER STUDIO</span><h3>나만의 파이터</h3><p>문장으로 설계하거나, 랜덤으로 발견하세요.</p>';
   body.prepend(heading,nameLabel);nameLabel.classList.add('forge-name');body.insertBefore(box,nameLabel.nextSibling);
   const basics=document.createElement('details'),basicTitle=document.createElement('summary');basicTitle.textContent='외형 · 체력 · 이동 속도';basics.append(basicTitle,basicGrid,document.getElementById('bf-text').parentElement);
   body.insertBefore(basics,advanced);
-  const actions=document.getElementById('bf-create').parentElement;actions.classList.add('forge-primary-actions');body.insertBefore(actions,box.nextSibling);
-  body.insertBefore(document.getElementById('bf-result'),actions.nextSibling);
-  const saved=document.createElement('details'),savedTitle=document.createElement('summary');savedTitle.textContent='내 캐릭터 보관함';saved.append(savedTitle,document.getElementById('bf-custom-list'));body.append(saved);
+  const actions=document.getElementById('bf-create').parentElement;
+  actions.classList.add('forge-primary-actions');body.insertBefore(actions,box.nextSibling);
+  const saveBtn=document.getElementById('bf-create');
+  saveBtn.textContent='캐릭터 저장 · 출전';
+  actions.replaceChildren(saveBtn); // the primary row now has one unambiguous save action
+  const randomDetail=document.createElement('details'),randomTitle=document.createElement('summary');
+  randomTitle.textContent='랜덤 캐릭터 만들기';randomDetail.className='forge-optional';
+  randomDetail.append(randomTitle,randomBox);
+  body.insertBefore(randomDetail,actions.nextSibling);
+  advanced.append(inspect,document.getElementById('bf-result'));
+  advanced.classList.add('forge-tuning');
+  const library=document.createElement('details'),libraryTitle=document.createElement('summary');
+  library.className='forge-optional forge-library';
+  libraryTitle.textContent='스킬 도감 · 동작 검색';library.append(libraryTitle,catalogDetail,guide);
+  body.insertBefore(library,basics);
+  body.insertBefore(advanced,basics);
+  // In collapsed form only the creator name, natural-language description,
+  // analyze action and one save button occupy the primary screen.
+  const saved=document.createElement('details'),savedTitle=document.createElement('summary');
+  saved.className='forge-optional forge-saved';
+  savedTitle.textContent='내 캐릭터 · 공유 · JSON';
+  saved.append(savedTitle,document.getElementById('bf-custom-list'),body.querySelector('.forge-json'));
+  body.append(saved);
   body.classList.add('forge-studio');
 }
 

@@ -50,7 +50,12 @@ function togglePlay() {
   renderEconomyUI();
 }
 function updateCharacter(self) {
-  if(self.hp<=0||globalThis.ForgeExpansion?.blocked(self))return;
+  if(self.hp<=0)return;
+  if(globalThis.ForgeExpansion?.blocked(self)){
+    // Stun/silence suspends casting, not the independent skill clocks.
+    if(self.forge)globalThis.SkillForge?.advanceTimers(self);
+    return;
+  }
   const b=BEHAVIORS[self.id];
   if(b&&b.update){
     if(globalThis.ForgeExpansion&&!self.forge)globalThis.ForgeExpansion.legacy(self,()=>b.update(self,getClosestAliveEnemy(self)));
@@ -153,6 +158,38 @@ function updateUI() {
     const tag=p.getTag(),te=document.getElementById(`p${n}-tag`);
     if(tag&&p.hp>0){te.style.display='inline-block';te.textContent=tag.text+(p.itemLabels&&p.itemLabels.length?` · ${p.itemLabels.join(' · ')}`:'');}
     else te.style.display='none';
+    const hud=document.getElementById('sec-p'+n);
+    if(p.forge&&hud&&globalThis.SkillForge){
+      let meters=hud.querySelector?.('.forge-cooldown-list');
+      if(!meters){
+        meters=document.createElement('div');
+        meters.className='forge-cooldown-list';
+        meters.setAttribute('aria-label','스킬별 독립 재사용 대기시간');
+        hud.append(meters);
+      }
+      if(meters.children.length!==p.forge.skills.length){
+        meters.replaceChildren();
+        p.forge.skills.forEach((s,i)=>{
+          const item=document.createElement('div');item.className='forge-cooldown-item';
+          const name=document.createElement('span');name.className='forge-cooldown-name';name.textContent=s.name;
+          const track=document.createElement('span');track.className='forge-cooldown-track';
+          const fill=document.createElement('span');fill.className='forge-cooldown-fill';track.append(fill);
+          const time=document.createElement('span');time.className='forge-cooldown-time';
+          item.append(name,track,time);meters.append(item);
+        });
+      }
+      for(let i=0;i<p.forge.skills.length;i++){
+        const max=SkillForge.cooldownFrames(p,p.forge.skills[i]);
+        const ticks=Math.min(max,p.forgeTicks[i]||0),ready=ticks>=max;
+        const item=meters.children[i];
+        item.children[1].firstElementChild.style.width=(ticks/max*100).toFixed(1)+'%';
+        item.children[2].textContent=ready?'준비':((max-ticks)/60).toFixed(1)+'s';
+        item.dataset.ready=ready?'true':'false';
+      }
+    }else{
+      const meters=hud?.querySelector?.('.forge-cooldown-list');
+      meters?.remove();
+    }
   });
 }
 // requestAnimationFrame scheduling is owned by battle-effects.js.

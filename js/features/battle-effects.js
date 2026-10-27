@@ -8,7 +8,7 @@
   const gentle=document.createElement('input');gentle.type='checkbox';gentle.checked=!!reduced;
   label.append(gentle,document.createTextNode('화면 효과 줄이기'));
   document.querySelector('.bf-tools').appendChild(label);
-  let frame=0,last=null,acc=0,stopUntil=0,now=0,roster=players;
+  let frame=0,last=null,acc=0,roster=players;
   let sparks=[],pulses=[];
   const trails=new WeakMap();
   const color=p=>({ice:'#0369a1',fire:'#c2410c',poison:'#15803d'}[p.spec&&p.spec.element]||'#7e22ce');
@@ -24,7 +24,7 @@
   const oldUpdate=update,oldDraw=draw,oldCharacter=drawCharacter;
   update=function(){
     if(!isPlaying||isGameOver){oldUpdate();return;}
-    if(roster!==players){roster=players;sparks=[];pulses=[];stopUntil=0;if(window.BattleFX)BattleFX.clear();}
+    if(roster!==players){roster=players;sparks=[];pulses=[];if(window.BattleFX)BattleFX.clear();}
     frame++;
     sparks.forEach(s=>{s.x+=s.vx;s.y+=s.vy;s.vx*=0.91;s.vy*=0.91;s.life--;});sparks=sparks.filter(s=>s.life>0);
     pulses.forEach(s=>s.life--);pulses=pulses.filter(s=>s.life>0);
@@ -36,7 +36,7 @@
       const p=b.p,c=color(p),loss=b.hp-p.hp;
       if(custom&&loss>0){
         const strong=loss>=20;burst(p.x,p.y,p.spec?c:'#fbbf24',strong);
-        if(!gentle.checked){screenShake=Math.max(screenShake,strong?9:4);if(strong)stopUntil=Math.max(stopUntil,now+35);}
+        if(!gentle.checked)screenShake=Math.max(screenShake,strong?4:2);
       }
       if(!p.spec)return;
       if(p.hp>b.hp)pulse(p.x,p.y,'#4ade80',58);
@@ -99,13 +99,13 @@
     if(!Number.isFinite(time)){requestAnimationFrame(gameLoop);return;}
     if(last===null)last=time;
     const delta=Math.min(100,Math.max(0,time-last));last=time;
-    if(isPlaying&&!isGameOver&&(gentle.checked||time>=stopUntil)){
+    if(isPlaying&&!isGameOver){
       const step=1000/60;
       acc+=delta*(speed.value==='2'?2:1);
       let steps=0;
       while(acc+0.000001>=step&&steps<10){
         update();acc=Math.max(0,acc-step);steps++;
-        if(isGameOver||(!gentle.checked&&time<stopUntil)){acc=0;break;}
+        if(isGameOver){acc=0;break;}
       }
       if(steps>=10)acc=0;
     }else acc=0;
@@ -114,6 +114,6 @@
     requestAnimationFrame(gameLoop);
   };
   speed.onchange=()=>{acc=0;last=null;};
-  document.addEventListener('visibilitychange',()=>{acc=0;last=null;stopUntil=0;});
+  document.addEventListener('visibilitychange',()=>{acc=0;last=null;});
   requestAnimationFrame(gameLoop);
 })();
