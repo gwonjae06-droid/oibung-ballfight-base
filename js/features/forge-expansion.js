@@ -1,0 +1,113 @@
+/* Bounded offline combat primitives shared by custom and classic fighters. */
+(function(global){
+'use strict';
+const TYPES={homing:'유도탄',pierce:'관통탄',boomerang:'부메랑',chain:'연쇄 번개',nova:'주변 폭발',meteor:'운석',mine:'지뢰',drain:'흡혈',swap:'위치 교환',retreat:'후퇴',cleanse:'정화',haste:'가속',regen:'지속 재생',fortify:'피해 감소'};
+const STATUSES={freeze:'빙결',stun:'기절',root:'속박',silence:'침묵',bleed:'출혈',shock:'감전',vulnerable:'취약',weak:'공격 약화',fear:'공포',charm:'매혹',blind:'실명',curse:'회복 저주'};
+const DESCRIPTIONS={homing:'선택한 적을 따라가는 탄환',pierce:'적을 맞혀도 사라지지 않는 탄환 (적마다 1회)',boomerang:'발사 후 시전자에게 돌아오는 탄환 (적마다 1회)',chain:'범위 안의 다른 적에게 80% 위력으로 연쇄',nova:'자신 중심 범위 공격',meteor:'적 위치를 예고하고 0.75초 후 폭발',mine:'자신 위치에 설치, 0.33초 후 접근한 적에게 폭발',drain:'범위 안 적에게 준 피해의 50% 회복',swap:'선택한 적과 위치 교환',retreat:'적 반대 방향으로 범위만큼 후퇴',cleanse:'이 제작기의 상태이상·지속 피해·둔화 제거',haste:'지속 시간 동안 이동량 60% 증가',regen:'0.5초마다 위력의 25% 회복',fortify:'직접 공격으로 받는 피해 45% 감소'};
+const STATUS_HELP={none:'추가 효과 없음',ice:'1.5초간 이동 50% 감소',fire:'지속 시간 동안 0.5초마다 지속 피해',poison:'지속 시간 동안 0.5초마다 지속 피해',freeze:'이동과 행동 정지',stun:'이동과 행동 정지',root:'이동 정지, 공격 가능',silence:'행동과 접촉 공격 정지, 이동 가능',bleed:'0.5초마다 체력 3 감소',shock:'이동 30% 감소, 0.5초마다 체력 2 감소',vulnerable:'직접 받는 피해 35% 증가',weak:'직접 주는 피해 40% 감소',fear:'시전자 반대 방향으로 이동',charm:'시전자 방향으로 이동',blind:'직접 주는 피해 35% 감소',curse:'회복량 60% 감소'};
+const active=(p,key)=>(p.forgeEffects?.[key]?.time||0)>0;
+const blocked=p=>active(p,'stun')||active(p,'freeze')||active(p,'silence');
+function effect(p,key,time,source,power=0){
+  p.forgeEffects ||= {};
+  p.forgeEffects[key]={time:Math.max(p.forgeEffects[key]?.time||0,Math.min(480,Math.max(12,time))),source:source?.playerNum,power,age:0};
+}
+function applyStatus(p,e,a){
+  if(STATUSES[a.status])effect(e,a.status,Math.round((a.duration||1.5)*60),p,a.damage);
+}
+function damageScale(p,e){return (active(p,'weak')?.6:1)*(active(p,'blind')?.65:1)*(active(e,'vulnerable')?1.35:1)*(active(e,'fortify')?.55:1);}
+function legacy(p,fn){
+  const before=players.map(e=>({e,hp:e.hp})),ownHp=p.hp;fn();
+  if(p.hp>ownHp&&active(p,'curse'))p.hp=ownHp+(p.hp-ownHp)*.4;
+  for(const {e,hp} of before)if(e!==p&&e.hp<hp)e.hp=Math.max(0,hp-(hp-e.hp)*damageScale(p,e));
+}
+function heal(p,amount){const n=active(p,'curse')?amount*.4:amount;p.hp=Math.min(p.maxHp,p.hp+n);}
+function tick(p){
+  if(p.hp<=0)return;
+  for(const [key,v] of Object.entries(p.forgeEffects||{})){
+    v.age++;v.time--;
+    if(v.age%30===0){
+      if(key==='bleed'||key==='shock'){
+        const d=key==='bleed'?3:2;p.hp=Math.max(0,p.hp-d);addFloatingText('-'+d,p.x,p.y-30,'#b34869',13);
+      }
+      if(key==='regen')heal(p,Math.max(1,v.power/4));
+    }
+    if(v.time<=0)delete p.forgeEffects[key];
+  }
+  if(active(p,'fear')||active(p,'charm')){
+    const key=active(p,'fear')?'fear':'charm',src=players.find(e=>e.playerNum===p.forgeEffects[key].source&&e.hp>0);
+    if(src){const angle=Math.atan2(src.y-p.y,src.x-p.x)+(key==='fear'?Math.PI:0),speed=Math.max(1,Math.hypot(p.vx,p.vy));p.vx=Math.cos(angle)*speed;p.vy=Math.sin(angle)*speed;}
+  }
+}
+function movement(p){return active(p,'freeze')||active(p,'stun')||active(p,'root')?0:(active(p,'haste')?1.6:1)*(active(p,'shock')?.7:1);}
+const clampPosition=p=>{p.x=Math.max(p.radius,Math.min(canvas.width-p.radius,p.x));p.y=Math.max(p.radius,Math.min(canvas.height-p.radius,p.y));};
+function execute(p,a,target,api){
+  if(!TYPES[a.type])return false;
+  const foes=api.enemies(p),near=global.AbilityAtlas?.choose(p,foes,a.target)||target;
+  const show=(x,y,r)=>{if(global.BattleFX?.mark)global.BattleFX.mark('wave',x,y,p.forge.color,r);};
+  const around=(x,y,r)=>foes.filter(e=>Math.hypot(e.x-x,e.y-y)<=r+e.radius);
+  p.forgeExtras ||= [];
+  if(['cleanse','haste','regen','fortify'].includes(a.type)){
+    if(a.type==='cleanse'){
+      for(const key of Object.keys(STATUSES))if(p.forgeEffects)delete p.forgeEffects[key];
+      p.slowTimer=0;p.slowMultiplier=1;p.bfDot=0;
+    }else effect(p,a.type,a.duration*60,p,a.damage);
+    show(p.x,p.y,p.radius+12);return true;
+  }
+  if(a.type==='nova'){show(p.x,p.y,a.radius);around(p.x,p.y,a.radius).forEach(e=>api.hit(p,e,a));return true;}
+  if(!near)return true;
+  const angle=Math.atan2(near.y-p.y,near.x-p.x);
+  if(['homing','pierce','boomerang'].includes(a.type)){
+    for(let i=0;i<a.count;i++){const t=angle+(i-(a.count-1)/2)*.15;p.forgeExtras.push({kind:a.type,x:p.x,y:p.y,vx:Math.cos(t)*a.speed,vy:Math.sin(t)*a.speed,life:Math.ceil(a.radius/a.speed*3),age:0,target:near.playerNum,hits:[],a});}
+  }else if(a.type==='chain'){
+    let origin=p;const visited=new Set();
+    for(let i=0;i<a.count;i++){
+      const next=foes.filter(e=>!visited.has(e)&&Math.hypot(e.x-origin.x,e.y-origin.y)<=a.radius).sort((x,y)=>Math.hypot(x.x-origin.x,x.y-origin.y)-Math.hypot(y.x-origin.x,y.y-origin.y))[0];
+      if(!next)break;
+      global.BattleFX?.beam?.(origin.x,origin.y,next.x,next.y,p.forge.color);api.hit(p,next,a,Math.pow(.8,i));visited.add(next);origin=next;
+    }
+  }else if(a.type==='meteor'||a.type==='mine'){
+    p.forgeExtras.push({kind:a.type,x:a.type==='mine'?p.x:near.x,y:a.type==='mine'?p.y:near.y,life:a.type==='mine'?Math.round(a.duration*60):45,age:0,a});
+  }else if(a.type==='drain'){
+    if(Math.hypot(near.x-p.x,near.y-p.y)<=a.radius){const hp=near.hp;if(api.hit(p,near,a))heal(p,(hp-near.hp)*.5);show(near.x,near.y,30);}
+  }else if(a.type==='swap'){
+    [p.x,near.x]=[near.x,p.x];[p.y,near.y]=[near.y,p.y];clampPosition(p);clampPosition(near);show(p.x,p.y,40);show(near.x,near.y,40);
+  }else if(a.type==='retreat'){
+    p.x-=Math.cos(angle)*a.radius;p.y-=Math.sin(angle)*a.radius;clampPosition(p);show(p.x,p.y,30);
+  }
+  if(p.forgeExtras.length>48)p.forgeExtras.splice(0,p.forgeExtras.length-48);
+  return true;
+}
+function update(p,api){
+  const extras=p.forgeExtras||[];
+  for(let i=extras.length-1;i>=0;i--){
+    const b=extras[i];b.age++;b.life--;
+    if(b.kind==='meteor'||b.kind==='mine'){
+      const foes=api.enemies(p).filter(e=>Math.hypot(e.x-b.x,e.y-b.y)<b.a.radius+e.radius);
+      if((b.kind==='meteor'&&b.life<=0)||(b.kind==='mine'&&b.age>=20&&foes.length)){
+        global.BattleFX?.mark?.('wave',b.x,b.y,p.forge.color,b.a.radius);foes.forEach(e=>api.hit(p,e,b.a));b.life=0;
+      }
+    }else{
+      const target=b.kind==='boomerang'&&b.age>20?p:players.find(e=>e.playerNum===b.target&&e.hp>0);
+      if(target&&(b.kind==='homing'||(b.kind==='boomerang'&&b.age>20))){
+        const angle=Math.atan2(target.y-b.y,target.x-b.x);b.vx=Math.cos(angle)*b.a.speed;b.vy=Math.sin(angle)*b.a.speed;
+      }
+      b.x+=b.vx;b.y+=b.vy;
+      for(const e of api.enemies(p))if(!b.hits.includes(e.playerNum)&&Math.hypot(e.x-b.x,e.y-b.y)<e.radius+8&&api.hit(p,e,b.a)){
+        b.hits.push(e.playerNum);if(b.kind==='homing'){b.life=0;break;}
+      }
+      if(b.kind==='boomerang'&&b.age>20&&Math.hypot(b.x-p.x,b.y-p.y)<p.radius)b.life=0;
+    }
+    if(b.life<=0)extras.splice(i,1);
+  }
+}
+function draw(p){
+  if(p.hp<=0)return;
+  ctx.save();ctx.strokeStyle=p.forge?.color||p.themeColor||'#684f83';ctx.fillStyle=ctx.strokeStyle;
+  for(const b of p.forgeExtras||[]){ctx.beginPath();ctx.arc(b.x,b.y,b.kind==='meteor'||b.kind==='mine'?b.a.radius:7,0,Math.PI*2);ctx.stroke();}
+  ctx.font='11px sans-serif';ctx.textAlign='center';
+  const names=Object.keys(p.forgeEffects||{}).map(k=>STATUSES[k]||TYPES[k]).filter(Boolean);
+  if(names.length)ctx.fillText(names.slice(0,3).join(' · '),p.x,p.y+p.radius+16);
+  ctx.restore();
+}
+global.ForgeExpansion={TYPES,STATUSES,DESCRIPTIONS,STATUS_HELP,applyStatus,damageScale,legacy,heal,tick,movement,blocked,execute,update,draw};
+})(window);

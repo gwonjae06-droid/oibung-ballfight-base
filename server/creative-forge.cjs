@@ -4,7 +4,7 @@ const path = require('node:path');
 const vm = require('node:vm');
 const root = path.join(__dirname, '..');
 const context = vm.createContext({window: {}, CUSTOM_DEFS: [], BEHAVIORS: {}});
-for (const file of ['ability-atlas.js', 'skill-forge.js']) {
+for (const file of ['ability-atlas.js', 'forge-expansion.js', 'skill-forge.js']) {
   vm.runInContext(fs.readFileSync(path.join(root, 'js/features', file), 'utf8'), context);
 }
 const forge = context.window.SkillForge;
@@ -18,7 +18,7 @@ const actionSchema = object({
   pattern: enumField('direct,fan,radial,line,cross,spiral,scatter'),
   target: enumField('nearest,farthest,lowest,highest,random,cluster'),
   damage: num(0,120), radius: num(30,300), count: {type:'integer',minimum:1,maximum:8},
-  speed: num(2,14), duration: num(.2,8), status: enumField('none,ice,fire,poison'),
+  speed: num(2,14), duration: num(.2,8), status: enumField(Object.keys(forge.STATUS).join(',')),
   knockback: num(0,9), delay: num(0,2)
 });
 const schema = object({

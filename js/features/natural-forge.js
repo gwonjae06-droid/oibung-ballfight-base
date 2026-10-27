@@ -15,6 +15,24 @@ const CAPABILITIES={
   orbit:{name:'회전 소환체',lex:/소환|주변을\s*돌|회전(?:체|구체)|드론|분신|궤도/gi},
   zone:{name:'지속 장판',lex:/장판|영역|오라|독안개|불바다|필드|독(?!특|점|립|서)|도트\s*(?:딜|데미지|대미지|뎀|피해)|독\s*(?:딜|데미지|대미지|피해)|독딜|dot(?:\s*(?:damage|dmg))?|지속\s*(?:피해|딜|데미지|대미지)|초당\s*(?:피해|데미지|대미지)|틱(?:딜|뎀)|중독시키|중독|독(?:을|으로)\s*(?:걸|입히|묻히)/gi}
 };
+const EXTRA_LEX={
+  homing:/유도탄|유도\s*미사일|추적탄|추적하는|쫓아가는|따라가는/gi,
+  pierce:/관통탄|관통|꿰뚫|뚫고/gi,boomerang:/부메랑|되돌아오는|돌아오는\s*(?:칼|검|탄)/gi,
+  chain:/연쇄\s*(?:번개|낙뢰|전격)|체인\s*라이트닝|옮겨\s*붙는\s*번개/gi,
+  nova:/주변\s*폭발|자신\s*주위.*폭발|몸에서\s*폭발/gi,
+  meteor:/운석|유성|메테오|별똥별/gi,mine:/지뢰|덫|함정/gi,
+  drain:/흡혈|생명력\s*흡수|체력\s*훔|피를\s*빨/gi,
+  swap:/위치\s*교환|자리\s*바꾸|자리를\s*바꾸/gi,
+  retreat:/후퇴|백스텝|뒤로\s*도약|거리를\s*벌/gi,
+  cleanse:/정화|해독|상태이상\s*해제|디버프\s*제거/gi,
+  haste:/가속|이속\s*증가|이동\s*속도\s*증가|신속|빠르게\s*달/gi,
+  regen:/지속\s*재생|지속\s*회복|재생|초마다\s*체력\s*회복/gi,
+  fortify:/피해\s*감소|방어력\s*증가|철갑|단단해|받는\s*피해.*줄/gi
+};
+for(const [type,lex] of Object.entries(EXTRA_LEX))if(SkillForge.TYPE?.[type])CAPABILITIES[type]={name:SkillForge.TYPE?.[type],lex};
+// Concrete physical vocabulary; abstract themes are offered as explicit choices below.
+CAPABILITIES.shot.lex=/화살|탄막|구슬|투사체|미사일|발사|연발|총알|얼음창|불덩|검기|사격|쏘(?:다|아|고|는|면)?|발포|투척|수리검|표창|창을|칼날|꽃잎|별을|별들이|씨앗|깃털|카드|동전|물방울/gi;
+const EXTRA_EFFECTS={freeze:/빙결|얼려|얼린|얼어붙|동결/,stun:/기절|스턴|정신을\s*잃|마비/,root:/속박|묶|발을\s*붙잡|뿌리로/,silence:/침묵|봉인|스킬을?\s*막|마법을?\s*금지/,bleed:/출혈|피를\s*흘|상처를\s*벌/,shock:/감전|전류/,vulnerable:/취약|방어력\s*감소|갑옷을?\s*깨/,weak:/약화|공격력\s*감소|힘을\s*빼/,fear:/공포|겁을|도망가게|두려움/,charm:/매혹|유혹|홀리|홀려/,blind:/실명|눈을\s*멀|눈부|시야를\s*가/,curse:/저주|회복\s*감소|치유\s*방해/};
 const EFFECTS={
   ice:/빙결|얼음|서리|냉기|둔화|슬로우|slow/gi,
   fire:/화염|불꽃|화상|불길|용암|폭염|burn/gi,
@@ -29,6 +47,7 @@ const pickNum=(s,re,def)=>{const m=String(s).match(re);return m?Number(m[1]):def
 const cap=(n,lo,hi)=>Math.max(lo,Math.min(hi,Number.isFinite(n)?n:lo));
 const test=(re,s)=>{re.lastIndex=0;return re.test(s);};
 const status=(s)=>{
+  for(const [key,re] of Object.entries(EXTRA_EFFECTS))if(SkillForge.STATUS?.[key]&&test(re,s))return key;
   // A named element beats a generic DoT synonym.
   if(test(EFFECTS.ice,s))return 'ice';
   if(test(EFFECTS.fire,s))return 'fire';
@@ -59,12 +78,12 @@ function matchActions(piece){
     const re=new RegExp(info.lex.source,'gi');let m;
     while((m=re.exec(piece))!==null){
       // Not performing an ability is not a positive activation.
-      const tail=piece.slice(m.index+m[0].length,m.index+m[0].length+14);
-      if(/^(?:하지\s*않|하지\s*마|못\s*하|없|금지|제외)/.test(tail))continue;
+      const tail=piece.slice(m.index+m[0].length,m.index+m[0].length+20);
+      if(/^(?:을|를|은|는|이|가)?\s*(?:하지\s*않|하지\s*마|쓰지\s*않|사용하지\s*않|못\s*하|없|금지|제외)/.test(tail))continue;
       hits.push({type,start:m.index,word:m[0],end:m.index+m[0].length});
     }
   }
-  hits.sort((a,b)=>a.start-b.start || (b.end-b.start)-(a.end-a.start));
+  hits.sort((a,b)=>a.start-b.start || (b.end-b.start)-(a.end-a.start) || Number(Object.hasOwn(EXTRA_LEX,b.type))-Number(Object.hasOwn(EXTRA_LEX,a.type)));
   // Nested synonyms such as 순간이동/이동 and 독딜/독 damage describe one action.
   const distinct=[];
   for(const hit of hits){
@@ -72,6 +91,16 @@ function matchActions(piece){
     if(!distinct.some(h=>h.type===hit.type))distinct.push(hit);
   }
   // "낙뢰에 독딜을 묻힌다": one poisonous bolt, not a redundant poison puddle.
+  // Specific delivery wins over its generic noun (유도 미사일, 연쇄 번개).
+  const specific=distinct.some(h=>Object.hasOwn(EXTRA_LEX,h.type));
+  if(specific){
+    const remove=new Set();
+    if(distinct.some(h=>['homing','pierce','boomerang'].includes(h.type)))remove.add('shot');
+    if(distinct.some(h=>h.type==='chain'))remove.add('bolt');
+    if(distinct.some(h=>h.type==='swap'))remove.add('blink');
+    if(distinct.some(h=>h.type==='regen'))remove.add('heal');
+    for(let i=distinct.length-1;i>=0;i--)if(remove.has(distinct[i].type))distinct.splice(i,1);
+  }
   const physical=distinct.some(h=>h.type!=='zone');
   if(physical && isDot(piece) && !/장판|독안개|영역|필드|바닥/.test(piece)){
     return distinct.filter(h=>h.type!=='zone');
@@ -99,15 +128,22 @@ function actionOf(type,fragment,whole,step){
     delay:cap(pickNum(fragment,/(\d+(?:\.\d+)?)\s*초\s*후/,step*.25),0,8)
   };
 }
-function parse(text,name=''){
+function suggestions(text){
+  if(/시간|운명|꿈|잠|정지/.test(text))return ['zone','shield','blink'];
+  if(/슬픔|기억|별|눈물|꽃/.test(text))return ['shot','homing','orbit'];
+  if(/복수|분노|빚/.test(text))return ['nova','drain','chain'];
+  if(/수호|지켜|보호|사랑/.test(text))return ['shield','fortify','regen'];
+  return ['shot','wave','zone'];
+}
+function parse(text,name='',choices={}){
   const original=String(text||'').trim();
   if(original.length<4)throw Error('능력을 구체적으로 적어 주세요.');
   if(original.length>1400)throw Error('능력 설명은 1,400자 이하로 작성하세요.');
   const sentences=original.split(/\.(?!\d)|[\n!?。]+|(?:그리고|또한|추가로)(?=\s*\S)/).map(s=>s.trim()).filter(Boolean);
-  const skills=[],unmapped=[],aliases=new Set();
+  const skills=[],unmapped=[],aliases=new Set(),questions=[];
   for(const [re,msg] of CONVENTIONS)if(test(re,original))aliases.add(msg);
   for(const sentence of sentences.slice(0,14)){
-    if(skills.length>=4)break;
+    if(skills.length>=4){unmapped.push('스킬은 최대 4개입니다: '+sentence);break;}
     // Connectors define ordering. Plain co-occurrences follow first mention.
     // Keep "3초 후" together for precise timing, but split
     // "이동 후 독딜" and "텔레포트하고 독딜" into distinct actions.
@@ -119,13 +155,20 @@ function parse(text,name=''){
     const fragments=segmented.split(/(?:그\s*후|그다음|그\s*다음|뒤이어|이어서|이후|한\s*뒤|한\s*후|하고\s*나서|→|->)+/).map(s=>s.trim()).filter(Boolean);
     const actions=[];
     for(const fragment of fragments){
-      const matches=matchActions(fragment);
+      let matches=matchActions(fragment);
+      const chosen=choices[fragment];
+      if(chosen==='skip')continue;
+      if(!chosen&&/시간.*(?:정지|되감)|부활|스킬.*복사|분신.*(?:싸|공격)|지형|벽을.*만/.test(fragment)){questions.push({text:fragment,options:suggestions(fragment)});unmapped.push(fragment);continue;}
+      if(chosen&&SkillForge.TYPE[chosen])matches=[{type:chosen}];
+      if(!matches.length&&status(fragment)!=='none'&&!/않|없|제외|금지/.test(fragment)){
+        questions.push({text:fragment,options:['wave','shot','zone']});
+      }
       if(!matches.length){
-        if(!/^(?:체력|HP|쿨타임|매\s*\d|주기|공격력|속도|이동\s*속도|기본\s*체력|최대\s*체력)/i.test(fragment))unmapped.push(fragment.slice(0,70));
+        if(!/^(?:체력|HP|쿨타임|매\s*\d|주기|공격력|속도|이동\s*속도|기본\s*체력|최대\s*체력)/i.test(fragment)){unmapped.push(fragment);if(!questions.some(q=>q.text===fragment))questions.push({text:fragment,options:suggestions(fragment)});}
         continue;
       }
       for(const match of matches) {
-        if(actions.length>=3)break;
+        if(actions.length>=3){unmapped.push('한 스킬의 동작은 최대 3개입니다: '+fragment);break;}
         const act=actionOf(match.type,fragment,sentence,actions.length);
         // A continuation usually describes the next action, not a second cooldown.
         actions.push(act);
@@ -150,7 +193,7 @@ function parse(text,name=''){
       actions:actions.slice(0,3)
     });
   }
-  if(!skills.length)throw Error('전투 동작을 찾지 못했습니다. 예: "3초마다 텔레포트 후 독딜을 건다"');
+  if(!skills.length)return {profile:null,unmapped,questions,aliases:[...aliases],mode:'grammar'};
   const cfg=SkillForge.normalize({
     name:name||'나만의 캐릭터',blurb:original.slice(0,90),
     color:status(original)==='fire'?'#a94f26':status(original)==='ice'?'#3d7da7':'#756483',
@@ -158,9 +201,10 @@ function parse(text,name=''){
     speed:pickNum(original,/(?:기본\s*속도|이동\s*속도)\s*(?:는|:|=)?\s*(\d+(?:\.\d+)?)/,1.8),
     skills
   });
-  return {profile:cfg,unmapped:[...new Set(unmapped)],aliases:[...aliases],mode:'grammar'};
+  return {profile:cfg,unmapped:[...new Set(unmapped)],aliases:[...aliases],questions,mode:'grammar'};
 }
-async function analyze(text,name,mode='auto'){
+async function analyze(text,name,mode='offline'){
+  if(mode==='offline')return parse(text,name);
   text=String(text||'').trim();name=String(name||'');
   if(text.length<4||text.length>1400)throw Error('능력 설명은 4~1,400자로 작성하세요.');
   if(mode==='creative'){
@@ -203,11 +247,22 @@ function install(){
   const box=document.createElement('section');box.className='forge-prompt';
   box.innerHTML='<label for="forge-natural-text">원하는 캐릭터 능력을 문장으로 적어주세요</label>'
     +'<textarea id="forge-natural-text" rows="6" maxlength="1400" placeholder="슬픔을 작은 별로 접어 적에게 뿌린다. 상처받으면 별들이 주변을 돌며 나를 지켜 준다."></textarea>'
-    +'<label for="forge-natural-mode">해석 방식</label><select id="forge-natural-mode"><option value="auto">기본 분석 · 기기 내 AI / 규칙</option><option value="creative">창작 AI · 문장 전체 해석 (서버 필요)</option></select>'
-    +'<p class="bf-helper">창작 AI는 설명을 AI 서버로 보내 전투 동작으로 각색합니다. 생성 결과에서 실제 효과와 원문에서 달라진 부분을 확인하세요.</p>'
+    +'<label for="forge-natural-mode">해석 방식</label><select id="forge-natural-mode"><option value="offline">휴대폰 기본 · API 없이 분석</option><option value="auto">기기 내 AI (지원 기기)</option><option value="creative">창작 AI · 문장 전체 해석 (서버 필요)</option></select>'
+    +'<p class="bf-helper">기본 모드는 설치·API 없이 이 기기에서 처리합니다. 인식하지 못한 표현은 직접 효과를 선택할 수 있습니다. 창작 AI는 설명을 AI 서버로 보내 전투 동작으로 각색합니다. 생성 결과에서 실제 효과와 원문에서 달라진 부분을 확인하세요.</p>'
     +'<button type="button" id="forge-natural-build">문장 분석 · 자동 생성</button>'
-    +'<div id="forge-natural-status" role="status" aria-live="polite"></div>';
+    +'<div id="forge-natural-status" role="status" aria-live="polite"></div>'
+    +'<div id="forge-choices"></div>';
   body.insertBefore(box,holder);
+  const guide=document.createElement('details'),guideTitle=document.createElement('summary');
+  guideTitle.textContent='지원 동작 '+Object.keys(SkillForge.TYPE).length+'종 · 상태 효과 '+(Object.keys(SkillForge.STATUS).length-1)+'종';guide.append(guideTitle);
+  const guideBody=document.createElement('div');guideBody.className='forge-effect-guide';
+  for(const [key,label] of Object.entries(SkillForge.TYPE)){
+    const row=document.createElement('p');row.textContent=label+' — '+(global.ForgeExpansion?.DESCRIPTIONS[key]||'기존 전투 동작 · 세부 설정에서 위력과 범위 조절');guideBody.append(row);
+  }
+  for(const [key,label] of Object.entries(SkillForge.STATUS)){
+    const row=document.createElement('p');row.textContent=label+' — '+(global.ForgeExpansion?.STATUS_HELP[key]||label);guideBody.append(row);
+  }
+  guide.append(guideBody);box.append(guide);
   const catalogDetail=document.createElement('details');catalogDetail.className='forge-advanced';
   const catalogSummary=document.createElement('summary');
   catalogSummary.textContent='공격 동작 도감 · '+(global.AbilityAtlas?.count||0)+'가지';
@@ -251,18 +306,38 @@ function install(){
   body.insertBefore(advanced,holder);advanced.append(sum,holder);
   const add=document.getElementById('forge-add-skill');if(add)advanced.append(add);
   const button=document.getElementById('forge-natural-build'),input=document.getElementById('forge-natural-text'),status=document.getElementById('forge-natural-status');
-  let approved='';
+  let approved='',choices={};
+  const choiceBox=document.getElementById('forge-choices');
+  function offer(out,text){
+    choiceBox.replaceChildren();
+    if(!out.questions?.length)return false;
+    status.textContent='이 표현은 어떤 효과인가요? 선택한 효과로 문장을 다시 분석합니다.';
+    for(const q of out.questions){
+      const group=document.createElement('section'),label=document.createElement('p');label.textContent=q.text;group.append(label);
+      const select=document.createElement('select');select.setAttribute('aria-label',q.text+' 효과 선택');
+      const initial=document.createElement('option');initial.value='';initial.textContent='효과를 선택하세요';select.append(initial);
+      const keys=[...new Set([...q.options,...Object.keys(SkillForge.TYPE)])];
+      for(const key of [...keys,'skip']){const option=document.createElement('option');option.value=key;option.textContent=key==='skip'?'이 표현은 구현하지 않음':SkillForge.TYPE[key];select.append(option);}
+      select.addEventListener('change',()=>{choices[q.text]=select.value;});group.append(select);choiceBox.append(group);
+    }
+    const retry=document.createElement('button');retry.type='button';retry.textContent='선택한 효과로 다시 만들기';
+    retry.onclick=()=>{if(out.questions.some(q=>!choices[q.text])){status.textContent='각 표현의 효과를 선택해 주세요.';return;}button.click();};choiceBox.append(retry);return true;
+  }
+
   button.addEventListener('click',async()=>{
     button.disabled=true;status.textContent='분석 중';
     try{
       const text=input.value.trim();
       const name=document.getElementById('bf-name').value.trim(),mode=document.getElementById('forge-natural-mode').value;
-      const out=await analyze(text,name,mode);
+      const out=mode==='offline'?parse(text,name,choices):await analyze(text,name,mode);
       if(input.value.trim()!==text || document.getElementById('bf-name').value.trim()!==name || document.getElementById('forge-natural-mode').value!==mode){
         approved='';status.textContent='분석 중 입력이 변경되었습니다. 다시 생성해 주세요.';return;
       }
+      approved='';if(offer(out,text))return;
+      if(!out.profile){status.textContent='구현할 효과가 없습니다. 문장을 추가하거나 선택을 바꿔 주세요.';choices={};return;}
       SkillForge.setDraft(out.profile);approved=text;
       status.textContent=(out.mode==='server-ai'?'창작 AI':out.mode==='on-device-ai'?'기기 내 AI':'의미 분석')+' 완료 · 스킬 '+out.profile.skills.length+'개'
+        +'\n'+out.profile.skills.map(s=>SkillForge.TRIGGER[s.trigger]+' / '+s.cooldown+'초: '+s.actions.map(a=>SkillForge.TYPE[a.type]+(a.status!=='none'?' + '+SkillForge.STATUS[a.status]:'')).join(' → ')).join('\n')
         +(out.interpretation?'\n구현: '+out.interpretation:'')
         +(out.adaptations?.length?'\n각색한 부분:\n'+out.adaptations.map(x=>'• '+x).join('\n'):'')
         +(out.aliases?.length?'\n유사 표현 인식: '+out.aliases.join(' / '):'')
@@ -271,7 +346,7 @@ function install(){
     }catch(e){approved='';status.textContent='분석 실패: '+e.message;}
     finally{button.disabled=false;}
   });
-  input.addEventListener('input',()=>{approved='';});
+  input.addEventListener('input',()=>{approved='';choices={};choiceBox.replaceChildren();});
   document.getElementById('forge-natural-mode').addEventListener('change',()=>{approved='';});
   const create=document.getElementById('bf-create');
   create?.addEventListener('click',e=>{
@@ -280,6 +355,6 @@ function install(){
     }
   },true);
 }
-global.NaturalForge={parse,analyze};
+global.NaturalForge={parse,analyze,suggestions};
 if(typeof document!=='undefined'&&document.getElementById('forge-skills'))install();
 })(window);
