@@ -842,3 +842,10 @@ html,body {background:#090a0c;color:var(--text);font-family:"Noto Sans KR", "Mal
 @media(prefers-reduced-motion:reduce){
   .canvas-wrapper .arena-stop-button{transition:none}
 }
+
+/* Every advanced action states its actual in-world physical effect. */
+.forge-physics-note{
+  margin:10px 0 0;padding:9px 11px;
+  border-left:2px solid #b0b3b7;border-radius:3px 7px 7px 3px;
+  background:#25272a;color:#d0d3d6;font-size:11px;line-height:1.65;
+}

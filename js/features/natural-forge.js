@@ -303,7 +303,7 @@ function install(){
   guideTitle.textContent='지원 동작 '+Object.keys(SkillForge.TYPE).length+'종 · 상태 효과 '+(Object.keys(SkillForge.STATUS).length-1)+'종';guide.append(guideTitle);
   const guideBody=document.createElement('div');guideBody.className='forge-effect-guide';
   for(const [key,label] of Object.entries(SkillForge.TYPE)){
-    const row=document.createElement('p');row.textContent=label+' — '+(global.ForgeExpansion?.DESCRIPTIONS[key]||'기존 전투 동작 · 세부 설정에서 위력과 범위 조절');guideBody.append(row);
+    const row=document.createElement('p');row.textContent=label+' — '+(global.AdvancedCombat?.DESCRIPTIONS[key]||global.ForgeExpansion?.DESCRIPTIONS[key]||'사거리·범위·상태 조건은 세부 설정에 따라 판정됩니다.');guideBody.append(row);
   }
   for(const [key,label] of Object.entries(SkillForge.STATUS)){
     const row=document.createElement('p');row.textContent=label+' — '+(global.ForgeExpansion?.STATUS_HELP[key]||label);guideBody.append(row);

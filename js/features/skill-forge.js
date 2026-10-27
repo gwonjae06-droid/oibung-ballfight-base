@@ -133,6 +133,9 @@ function tickQueue(p,target){
   }
 }
 function execute(p,a,target) {
+  // In-world actions must dispatch through the same combat implementation
+  // used by physics and visuals; they are not merely text menu entries.
+  if(global.AdvancedCombat?.execute(p,a,target,{hit,enemies}))return;
   if(global.ForgeExpansion?.execute(p,a,target,{hit,enemies}))return;
   if(global.AbilityAtlas && AbilityAtlas.execute(p,a,target,{hit,enemies}))return;
   const c=p.forge.color,near=target&&target.hp>0?target:getClosestAliveEnemy(p);
@@ -205,7 +208,7 @@ function update(p,target){
   });
   tickQueue(p,target);
   for(let i=p.forgeShots.length-1;i>=0;i--){
-    const b=p.forgeShots[i];b.x+=b.vx;b.y+=b.vy;b.life--;
+    const b=p.forgeShots[i];b.prevX=b.x;b.prevY=b.y;b.x+=b.vx;b.y+=b.vy;b.life--;
     const e=enemies(p).find(e=>Math.hypot(e.x-b.x,e.y-b.y)<e.radius+8&&hit(p,e,b.a));
     if(e||b.life<=0||b.x<0||b.y<0||b.x>canvas.width||b.y>canvas.height)p.forgeShots.splice(i,1);
   }
@@ -241,7 +244,33 @@ function drawFighter(p){
   global.ForgeExpansion?.draw(p);
   const c=global.arenaEffectColor?.(p.forge.color)||p.forge.color;ctx.save();ctx.globalCompositeOperation='source-over';
   ctx.shadowColor=c;ctx.shadowBlur=3;ctx.fillStyle=c;ctx.strokeStyle=c;
-  p.forgeShots.forEach(b=>{ctx.globalAlpha=.35;ctx.lineWidth=8;ctx.beginPath();ctx.moveTo(b.x-b.vx*3,b.y-b.vy*3);ctx.lineTo(b.x,b.y);ctx.stroke();ctx.globalAlpha=1;ctx.beginPath();ctx.arc(b.x,b.y,7,0,2*Math.PI);ctx.fill();});
+  p.forgeShots.forEach(b=>{
+    const heading=Math.atan2(b.vy,b.vx),status=b.a?.status||'none';
+    const x=global.AdvancedCombat?.blend(b.prevX,b.x)??b.x;
+    const y=global.AdvancedCombat?.blend(b.prevY,b.y)??b.y;
+    ctx.save();
+    ctx.globalAlpha=.28;ctx.lineWidth=4;ctx.lineCap='round';
+    ctx.beginPath();ctx.moveTo(x-b.vx*3,y-b.vy*3);ctx.lineTo(x,y);ctx.stroke();
+    ctx.globalAlpha=1;ctx.translate(x,y);ctx.rotate(heading);
+    ctx.strokeStyle='#253344';ctx.fillStyle=c;ctx.lineWidth=2;
+    // All projectiles have a physical pointed direction; their status
+    // adds a stable silhouette that reads against the white battleground.
+    ctx.beginPath();
+    if(status==='ice'){
+      ctx.moveTo(12,0);ctx.lineTo(0,-8);ctx.lineTo(-11,0);ctx.lineTo(0,8);
+    }else if(status==='fire'){
+      ctx.moveTo(13,0);ctx.lineTo(-7,-7);ctx.lineTo(-3,0);ctx.lineTo(-8,7);
+    }else if(status==='poison'){
+      ctx.moveTo(12,0);ctx.quadraticCurveTo(-5,-12,-9,0);
+      ctx.quadraticCurveTo(-5,12,12,0);
+    }else{
+      ctx.moveTo(13,0);ctx.lineTo(-7,-6);ctx.lineTo(-3,0);ctx.lineTo(-7,6);
+    }
+    ctx.closePath();ctx.fill();ctx.stroke();
+    ctx.strokeStyle='#fff';ctx.lineWidth=1.4;ctx.beginPath();
+    ctx.moveTo(-4,-2);ctx.lineTo(8,0);ctx.stroke();
+    ctx.restore();
+  });
   p.forgeZones.forEach(z=>{ctx.globalAlpha=z.type==='bolt'?.9:.65;ctx.lineWidth=2;ctx.setLineDash([6,5]);ctx.beginPath();ctx.arc(z.x,z.y,z.type==='bolt'?z.a.radius*.4:z.a.radius,0,2*Math.PI);ctx.stroke();ctx.setLineDash([]);});
   p.forgeOrbs.forEach(o=>{for(let i=0;i<o.a.count;i++){const t=o.phase+i*2*Math.PI/o.a.count,r=o.a.radius*.75;ctx.globalAlpha=.9;ctx.beginPath();ctx.arc(p.x+Math.cos(t)*r,p.y+Math.sin(t)*r,8,0,2*Math.PI);ctx.fill();}});
   ctx.restore();
@@ -315,7 +344,10 @@ function render(){
       +box('상태이상',choice('status',STATUS,a.status,aj))
       +box('넉백',field('knockback',a.knockback,'type="number" min="0" max="9" step=".5" '+aj))
       +box('발동 지연',field('delay',a.delay,'type="number" min="0" max="2" step=".1" '+aj))
-      +'</div></section>';
+      +'</div>'
+      +(global.AdvancedCombat?.DESCRIPTIONS?.[a.type]
+        ?'<p class="forge-physics-note">'+escape(global.AdvancedCombat.DESCRIPTIONS[a.type])+'</p>':'')
+      +'</section>';
     }).join('');
     return '<section class="forge-skill">'
       +'<div class="forge-top"><span>SKILL '+String(i+1).padStart(2,'0')+'</span><button type="button" class="forge-delete" data-command="remove-skill" '+si+'>스킬 삭제</button></div>'

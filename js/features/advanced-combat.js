@@ -11,6 +11,28 @@ const TYPES={
   burrowdash:'땅굴 돌진',erupt:'솟구치기'
 };
 const TYPE_NAMES=Object.keys(TYPES);
+const DESCRIPTIONS={
+  slash:'캐릭터가 바라보는 방향으로 부채꼴 칼날을 휘두릅니다. 칼끝이 닿은 적만 피해를 입고 실제 명중 지점에 절단 흔적이 남습니다.',
+  spinslash:'몸을 중심으로 칼날을 360도 회전시켜 범위 안의 적을 가격합니다.',
+  thrust:'바라보는 방향으로 칼끝을 뻗습니다. 좁고 긴 찌르기 궤도에 있는 적만 명중합니다.',
+  aircombo:'공중에서 칼날을 세 번 연속 휘두릅니다. 각 타격은 따로 판정하며 첫 명중 시 적과 시전자를 띄웁니다.',
+  uppercut:'가까운 적을 즉시 위로 올려치는 공격입니다. 실제 명중 시에만 적이 공중에 뜹니다.',
+  arcshot:'포탄이 바닥 그림자를 남기고 포물선을 그립니다. 착탄 지점에서만 범위 피해가 발생합니다.',
+  splitshot:'결정탄이 이동하다 파열되어 여러 개의 뾰족한 파편으로 갈라집니다. 파편이 실제로 통과한 적에게 피해를 줍니다.',
+  leap:'바닥에 준비 동작을 취한 뒤 점프하고 정점에서 체공한 다음 착지합니다.',
+  hover:'상승한 뒤 일정 시간 공중에 머물다가 착지합니다.',
+  glide:'점프 뒤 천천히 내려오며 활공합니다.',
+  dive:'높이 올라간 다음 바닥으로 급강하합니다. 착지하는 순간에만 충격파가 타격합니다.',
+  wall:'실제 충돌 판정이 있는 장벽을 설치해 이동 경로를 막습니다.',
+  portal:'입구에 닿은 캐릭터를 짝이 되는 출구로 이동시킵니다.',
+  summon:'소환수가 목표를 따라 이동하고 닿은 거리에서 공격합니다.',
+  turret:'고정 포탑이 사거리 안에 들어온 적을 주기적으로 공격합니다.',
+  trap:'바닥에 덫을 설치하여 적이 들어올 때 작동시킵니다.',
+  grow:'몸집과 실제 충돌 반경을 동시에 키웁니다.',
+  shrink:'몸집과 실제 충돌 반경을 동시에 줄입니다.',
+  burrowdash:'땅속으로 내려가 이동하고 나오면서 주변에 피해를 줍니다.',
+  erupt:'지하에서 솟구쳐 오른 뒤 착지 지점에 충격을 가합니다.'
+};
 const objects=[],projectiles=[],effects=[];
 const MAX_OBJECTS=24,MAX_PROJECTILES=90,MAX_EFFECTS=90;
 const snapshots=new WeakMap();
@@ -24,6 +46,9 @@ function sfx(kind,volume=.6){
 const easeOut=t=>1-Math.pow(1-cap(t,0,1),3);
 const lerp=(a,b,t)=>a+(b-a)*t;
 function setAlpha(value){alpha=cap(Number.isFinite(value)?value:1,0,1);}
+function blend(previous,current){
+  return lerp(Number.isFinite(previous)?previous:current,current,alpha);
+}
 function visual(p){
   const s=snapshots.get(p);
   if(!s)return {x:p.x,y:p.y,z:groundHeight(p)};
@@ -73,11 +98,14 @@ function size(p){const z=groundHeight(p);return z<0?Math.max(.38,1+z/80):1+z/140
 function renderY(p){return p.y-groundHeight(p);}
 function add(kind,x,y,opt={}){
   if(effects.length>=MAX_EFFECTS)effects.shift();
-  effects.push({kind,x,y,life:opt.life||24,max:opt.life||24,r:opt.r||55,
-    angle:opt.angle||0,col:opt.col||'#586779',stage:opt.stage||'telegraph'});
+  const e={kind,x,y,life:opt.life||24,max:opt.life||24,r:opt.r||55,
+    angle:opt.angle||0,col:opt.col||'#586779',stage:opt.stage||'telegraph',
+    follow:opt.follow||null,offsetZ:opt.offsetZ||0};
+  effects.push(e);return e;
 }
 function mark(kind,x,y,r=65,col='#516170',life=22,angle=0){
-  add(kind,x,y,{r,col,life,angle,stage:kind==='burst'||kind==='slash'?'impact':'telegraph'});
+  return add(kind,x,y,{r,col,life,angle,
+    stage:['burst','slash','cut','stab','cleave'].includes(kind)?'impact':'telegraph'});
 }
 function reset(){objects.length=0;projectiles.length=0;effects.length=0;alpha=1;}
 function pushObject(o){if(objects.length>=MAX_OBJECTS)objects.shift();objects.push(o);return o;}
@@ -140,17 +168,22 @@ function execute(p,a,target,api){
     }
     p.slam={a,owner:p.playerNum};mark('target',p.x,p.y,radius*.58,col,30);
   }else if(a.type==='uppercut'){
-    if(!enemy||distance>radius)return true;
-    mark('line',enemy.x,enemy.y,65,col,10);
-    // Knock-up applies after a real hit; no lift through invulnerability.
-    if(strike(p,enemy,a,api)&&launch(enemy,9))mark('ring',enemy.x,enemy.y,44,col,14);
+    if(!enemy||distance>radius+enemy.radius)return true;
+    // The mark appears where contact actually happens, not before it.
+    if(strike(p,enemy,a,api)){
+      launch(enemy,9);
+      mark('cleave',enemy.x,enemy.y-groundHeight(enemy),42,col,17,face);
+    }
   }else if(['slash','spinslash','thrust','aircombo'].includes(a.type)){
     if(!enemy)return true;
     const x=p.x,y=p.y;
     const shape=a.type==='thrust'?'line':a.type==='spinslash'?'ring':'sector';
-    mark(shape,x,y,radius*.7,col,18,face);
-    pushObject({kind:'melee',owner:p.playerNum,x,y,face,age:0,life:18,trigger:10,
-      a,shape,z:groundHeight(p),done:false});
+    // Shared reach and angle are used by both the drawing and hit geometry.
+    const telegraph=mark(shape,x,y,radius,col,a.type==='aircombo'?20:17,face);
+    telegraph.follow=p;
+    pushObject({kind:'melee',owner:p.playerNum,x,y,face,age:0,
+      life:a.type==='aircombo'?44:21,trigger:10,
+      a,shape,z:groundHeight(p),hits:0,impactAges:a.type==='aircombo'?[9,22,35]:[10]});
   }else if(a.type==='arcshot'||a.type==='splitshot'){
     if(!enemy)return true;
     for(let i=0;i<cap(Math.round(a.count||1),1,8);i++){
@@ -160,7 +193,7 @@ function execute(p,a,target,api){
       pushShot({kind:a.type,owner:p.playerNum,x:p.x,y:p.y,startX:p.x,startY:p.y,
         tx:destX,ty:destY,age:0,travel:a.type==='arcshot'?38:26,
         a,z:groundHeight(p),split:false,life:80});
-      mark('target',destX,destY,Math.min(radius*.35,58),col,22);
+      mark('target',destX,destY,Math.min(radius*.35,58),col,a.type==='arcshot'?42:25);
     }
   }else if(a.type==='wall'){
     const x=enemy?cap((p.x+enemy.x)/2,35,canvas.width-35):cap(p.x+Math.cos(face)*70,35,canvas.width-35);
@@ -271,21 +304,59 @@ function stepHeight(p,api){
   }
 }
 function ownerOf(o){return players.find(p=>p.playerNum===o.owner&&p.hp>0);}
+// This collision geometry is the same sector / segment / disc drawn below.
+function meleeContact(o,p,e){
+  const dx=e.x-p.x,dy=e.y-p.y,d=Math.hypot(dx,dy);
+  const reach=cap(o.a.radius||120,30,300),body=e.radius||0;
+  if(o.shape==='ring')return d<=reach+body;
+  if(o.shape==='line'){
+    const forward=dx*Math.cos(o.face)+dy*Math.sin(o.face);
+    const sideways=Math.abs(dx*Math.sin(o.face)-dy*Math.cos(o.face));
+    return forward>=-body&&forward<=reach+body&&sideways<=Math.max(10,p.radius*.32)+body;
+  }
+  const direction=Math.atan2(dy,dx);
+  const diff=Math.abs(Math.atan2(Math.sin(direction-o.face),Math.cos(direction-o.face)));
+  const bodyAngle=Math.asin(cap(body/Math.max(d,body||1),0,1));
+  return d<=reach+body&&diff<=1.03+bodyAngle;
+}
 function stepMelee(o,p,api){
-  if(o.done||o.age<o.trigger)return;
-  o.done=true;
+  // The hero can move while swinging. Advance the visible weapon origin with
+  // the physical attacker, rather than leaving a disconnected slash behind.
+  o.x=p.x;o.y=p.y;
+  const strikeIndex=o.impactAges.indexOf(o.age);
+  if(strikeIndex<0)return;
   for(const e of enemies(p)){
-    const dx=e.x-p.x,dy=e.y-p.y,d=Math.hypot(dx,dy);
-    const angle=Math.atan2(dy,dx);
-    let diff=Math.abs(Math.atan2(Math.sin(angle-o.face),Math.cos(angle-o.face)));
-    const hit=o.shape==='ring'?d<=o.a.radius:
-      o.shape==='line'?diff<.3&&d<o.a.radius:
-      diff<1.03&&d<o.a.radius;
-    if(hit&&strike(p,e,o.a,api,o.z)){
-      if(o.a.type==='aircombo')launch(e,5);
-      mark('slash',e.x,e.y,32,color(p),16);
+    if(!meleeContact(o,p,e))continue;
+    const mult=o.a.type==='aircombo'?.42:1;
+    if(strike(p,e,o.a,api,o.z,mult)){
+      o.hits++;
+      if(o.a.type==='aircombo'&&strikeIndex===0){
+        launch(e,5.5);
+        launch(p,5.5);
+      }
+      const kind=o.shape==='line'?'stab':o.shape==='ring'?'cleave':'cut';
+      // A hit mark is created only after a real hit and uses the target's
+      // rendered height, preserving the vertical layer of the collision.
+      const impactY=e.y-groundHeight(e);
+      add(kind,e.x,impactY,{
+        r:Math.min(54,Math.max(30,(e.radius||26)*1.35)),
+        angle:o.face+(kind==='cut'?Math.PI/2:0),col:color(p),
+        life:kind==='stab'?16:22,stage:'impact'
+      });
+      // The tiny directional impulse reinforces which way the blade struck.
+      e.vx=(e.vx||0)+Math.cos(o.face)*.45;
+      e.vy=(e.vy||0)+Math.sin(o.face)*.45;
     }
   }
+  if(o.a.type==='aircombo'&&strikeIndex<o.impactAges.length-1){
+    add('sector',p.x,p.y,{r:cap(o.a.radius||120,30,300),
+      angle:o.face,col:color(p),life:10,stage:'telegraph',follow:p});
+  }
+}
+function segmentDistance(x1,y1,x2,y2,px,py){
+  const dx=x2-x1,dy=y2-y1;
+  const t=cap(((px-x1)*dx+(py-y1)*dy)/(dx*dx+dy*dy||1),0,1);
+  return Math.hypot(px-(x1+dx*t),py-(y1+dy*t));
 }
 function updateProjectiles(api){
   for(let i=projectiles.length-1;i>=0;i--){
@@ -294,7 +365,7 @@ function updateProjectiles(api){
     b.age++;b.life--;
     const t=cap(b.age/b.travel,0,1);
     b.x=b.startX+(b.tx-b.startX)*t;b.y=b.startY+(b.ty-b.startY)*t;
-    b.height=b.kind==='arcshot'?Math.sin(Math.PI*t)*88:0;
+    b.height=b.kind==='arcshot'?4*t*(1-t)*88:0;
     b.trail.unshift({x:b.x,y:b.y-b.height});
     if(b.trail.length>(reduced?4:11))b.trail.pop();
     if(b.kind==='splitshot'&&!b.split&&t>=.56){
@@ -306,14 +377,32 @@ function updateProjectiles(api){
           ty:cap(b.y+Math.sin(theta)*Math.min(95,b.a.radius),15,canvas.height-15),
           age:0,travel:18,a:b.a,life:28,height:0});
       }
-      mark('burst',b.x,b.y,34,color(p),18);
+      mark('cleave',b.x,b.y,34,color(p),18,b.age*.24);
       b.life=0;
     }
-    if(t>=1){
-      if(b.kind==='arcshot')mark('burst',b.x,b.y,44,color(p),18);
-      if(b.kind==='arcshot'||b.kind==='fragment'){
-        for(const e of enemies(p))if(Math.hypot(e.x-b.x,e.y-b.y)<e.radius+Math.min(35,b.a.radius*.22))
-          strike(p,e,b.a,api,0,b.kind==='fragment'?.5:1);
+    // Shards now strike along the actual path swept between two frames:
+    // a character crossing that trajectory no longer gets inexplicably missed.
+    if(b.kind==='fragment'&&b.life>0){
+      for(const e of enemies(p)){
+        if(segmentDistance(b.prevX,b.prevY,b.x,b.y,e.x,e.y)>(e.radius||0)+8)continue;
+        if(strike(p,e,b.a,api,0,.5)){
+          b.life=0;
+          mark('stab',e.x,e.y-groundHeight(e),Math.max(24,e.radius),color(p),15,
+            Math.atan2(b.ty-b.startY,b.tx-b.startX));
+          break;
+        }
+      }
+    }
+    if(t>=1&&b.life>0){
+      if(b.kind==='arcshot'){
+        // The ground shadow, explosion ring and damage all occur on landing.
+        const impactR=Math.min(55,Math.max(19,b.a.radius*.22));
+        mark('burst',b.x,b.y,impactR*1.3,color(p),21);
+        mark('ring',b.x,b.y,impactR,color(p),17);
+        for(const e of enemies(p)){
+          if(Math.hypot(e.x-b.x,e.y-b.y)<(e.radius||0)+impactR)
+            strike(p,e,b.a,api,0);
+        }
       }
       b.life=0;
     }
@@ -361,8 +450,15 @@ function stepObjects(api){
         }
         if(o.age>=o.next&&Math.hypot(e.x-o.x,e.y-o.y)<o.a.radius+e.radius){
           const anchor={...p,x:o.x,y:o.y};
-          if(canHit(anchor,e,0))strike(p,e,o.a,api,0,o.kind==='turret'?.62:.5);
-          mark('line',e.x,e.y,34,color(p),11);
+          // The weapon visibly fires from its real world origin.
+          add('tether',o.x,o.y,{r:Math.hypot(e.x-o.x,e.y-o.y),
+            angle:Math.atan2(e.y-o.y,e.x-o.x),
+            col:color(p),life:13,stage:'impact'});
+          if(canHit(anchor,e,0)){
+            if(strike(p,e,o.a,api,0,o.kind==='turret'?.62:.5))
+              mark('stab',e.x,e.y-groundHeight(e),Math.min(28,e.radius||25),
+                color(p),14,Math.atan2(e.y-o.y,e.x-o.x));
+          }
           o.next=o.age+(o.kind==='turret'?35:29);
         }
       }
@@ -396,11 +492,61 @@ function shape(ctx,e){
   const active=t>.34;
   const r=e.r, col=e.col;
   ctx.save();
+  if(e.follow){
+    const pos=visual(e.follow);
+    ctx.translate(pos.x-e.x,pos.y-pos.z-e.y);
+  }
   ctx.lineCap='round';ctx.lineJoin='round';
   ctx.strokeStyle=col;ctx.lineWidth=active?Math.max(1.5,3.8*tOut):1.8;
   ctx.globalAlpha=Math.min(1,tOut)*(active?.9:.65);
   ctx.setLineDash(active?[]:[5,5]);
-  if(e.kind==='sector'){
+  if(['cut','stab','cleave'].includes(e.kind)){
+    // Impact glyphs mimic material being cut, never a generic explosion.
+    const ca=Math.cos(e.angle),sa=Math.sin(e.angle);
+    ctx.setLineDash([]);
+    ctx.lineCap='round';
+    ctx.globalAlpha=Math.pow(Math.max(0,1-t),.75);
+    if(e.kind==='stab'){
+      const len=e.r*(.4+.7*easeOut(t));
+      ctx.strokeStyle='#15202b';ctx.lineWidth=4.3;
+      ctx.beginPath();ctx.moveTo(e.x-ca*len*.85,e.y-sa*len*.85);
+      ctx.lineTo(e.x+ca*len*.65,e.y+sa*len*.65);ctx.stroke();
+      ctx.strokeStyle=col;ctx.lineWidth=2;
+      ctx.beginPath();ctx.moveTo(e.x-ca*len*.7,e.y-sa*len*.7);
+      ctx.lineTo(e.x+ca*len*.9,e.y+sa*len*.9);ctx.stroke();
+      const tipX=e.x+ca*len*.9,tipY=e.y+sa*len*.9;
+      ctx.beginPath();ctx.moveTo(tipX,tipY);
+      ctx.lineTo(tipX-ca*10-sa*5,tipY-sa*10+ca*5);
+      ctx.lineTo(tipX-ca*10+sa*5,tipY-sa*10-ca*5);
+      ctx.closePath();ctx.fillStyle=col;ctx.fill();
+    }else{
+      const len=e.r*(.64+.36*easeOut(t));
+      function seam(dx,dy,turn){
+        const angle=e.angle+turn,ux=Math.cos(angle),uy=Math.sin(angle);
+        const x=e.x+dx,y=e.y+dy;
+        ctx.strokeStyle='#101b26';ctx.lineWidth=4.4;
+        ctx.beginPath();ctx.moveTo(x-ux*len,y-uy*len);
+        ctx.quadraticCurveTo(x+uy*3,y-ux*3,x+ux*len,y+uy*len);
+        ctx.stroke();
+        ctx.strokeStyle=col;ctx.lineWidth=1.8;
+        ctx.beginPath();ctx.moveTo(x-ux*len-uy*2,y-uy*len+ux*2);
+        ctx.lineTo(x+ux*len-uy*2,y+uy*len+ux*2);ctx.stroke();
+      }
+      seam(0,0,0);
+      if(e.kind==='cleave')seam(0,0,Math.PI/2);
+      ctx.strokeStyle='rgba(255,255,255,.9)';ctx.lineWidth=1.5;
+      ctx.beginPath();ctx.moveTo(e.x-ca*len*.8+sa*4,e.y-sa*len*.8-ca*4);
+      ctx.lineTo(e.x+ca*len*.8+sa*4,e.y+sa*len*.8-ca*4);ctx.stroke();
+    }
+  }else if(e.kind==='tether'){
+    const dist=e.r*easeOut(t<.5?t*2:1);
+    const xx=e.x+Math.cos(e.angle)*dist,yy=e.y+Math.sin(e.angle)*dist;
+    ctx.setLineDash([]);ctx.globalAlpha=Math.max(0,1-t);
+    ctx.strokeStyle='#23303d';ctx.lineWidth=4;
+    ctx.beginPath();ctx.moveTo(e.x,e.y);ctx.lineTo(xx,yy);ctx.stroke();
+    ctx.strokeStyle=col;ctx.lineWidth=2;ctx.stroke();
+    ctx.fillStyle=col;ctx.beginPath();ctx.arc(xx,yy,3,0,Math.PI*2);ctx.fill();
+  }else if(e.kind==='sector'){
     const spread=active?(.12+easeOut((t-.34)/.6)*1.02):1.03;
     const start=e.angle-1.03;
     ctx.beginPath();ctx.moveTo(e.x,e.y);
@@ -468,28 +614,56 @@ function draw(ctx){
   for(const o of objects){
     const p=ownerOf(o);if(!p)continue;
     const col=color(p),age=o.age||0;
-    const x=lerp(Number.isFinite(o.prevX)?o.prevX:o.x,o.x,alpha);
-    const y=lerp(Number.isFinite(o.prevY)?o.prevY:o.y,o.y,alpha);
-    const enter=easeOut(cap(age/14,0,1)),leave=cap(o.life/15,0,1);
+    const attacker=o.kind==='melee'?visual(p):null;
+    const x=attacker?attacker.x:lerp(Number.isFinite(o.prevX)?o.prevX:o.x,o.x,alpha);
+    const y=attacker?attacker.y-attacker.z:lerp(Number.isFinite(o.prevY)?o.prevY:o.y,o.y,alpha);
+    const enter=o.kind==='melee'?1:easeOut(cap(age/14,0,1)),
+      leave=cap(o.life/15,0,1);
     ctx.save();ctx.translate(x,y);ctx.scale(Math.max(.08,enter),Math.max(.08,enter));
     ctx.globalAlpha=Math.min(1,leave);
     ctx.strokeStyle=col;ctx.fillStyle='rgba(63,74,88,.1)';
     ctx.lineWidth=2.4;ctx.lineJoin='round';
     if(o.kind==='melee'){
-      // The swing is drawn while its actual hit event is scheduled.
-      const t=cap(age/(o.trigger+6),0,1);
-      const span=o.a.radius*.75,ang=o.face;
-      ctx.lineCap='round';ctx.lineWidth=activeLine(t);
-      ctx.beginPath();
-      if(o.shape==='ring'){
-        ctx.arc(0,0,span*.84,ang+Math.PI*(t-.72),ang+Math.PI*(t*.92));
-      }else if(o.shape==='line'){
-        ctx.moveTo(Math.cos(ang)*12,Math.sin(ang)*12);
-        ctx.lineTo(Math.cos(ang)*span*easeOut(t),Math.sin(ang)*span*easeOut(t));
-      }else ctx.arc(0,0,span,ang-1.03,ang-1.03+2.06*easeOut(t));
-      ctx.stroke();ctx.strokeStyle='#fff';ctx.lineWidth=1.5;ctx.stroke();
+      // The visible tip reaches exactly the same attack.radius on its hit frame.
+      const ages=o.impactAges||[o.trigger];
+      const cycle=ages.findIndex(n=>age<=n);
+      const phase=cycle<0?ages.length-1:cycle;
+      const start=phase===0?0:ages[phase-1]+1;
+      const hitAge=ages[phase],local=cap((age-start)/Math.max(1,hitAge-start),0,1);
+      const fraction=easeOut(local),span=cap(o.a.radius||120,30,300),ang=o.face;
+      ctx.globalAlpha*=age>ages[ages.length-1]?Math.max(0,1-(age-ages[ages.length-1])/8):1;
+      ctx.lineCap='round';ctx.lineJoin='round';
+      ctx.lineWidth=3;ctx.strokeStyle='rgba(36,44,54,.75)';
+      ctx.beginPath();ctx.arc(0,0,10,ang-.9,ang+.9);ctx.stroke();
+      // Distinct weapon silhouettes: stabbing spear, sweeping crescent, or ring blade.
+      ctx.lineWidth=Math.max(2,8*Math.sin(Math.PI*cap(local*.83+.05,0,1)));
+      ctx.strokeStyle=col;ctx.beginPath();
+      if(o.shape==='line'){
+        ctx.moveTo(Math.cos(ang)*11,Math.sin(ang)*11);
+        ctx.lineTo(Math.cos(ang)*span*fraction,Math.sin(ang)*span*fraction);
+      }else if(o.shape==='ring'){
+        ctx.arc(0,0,span,ang,ang+2*Math.PI*fraction);
+      }else{
+        ctx.arc(0,0,span,ang-1.03,ang-1.03+2.06*fraction);
+      }
+      ctx.stroke();
+      ctx.strokeStyle='rgba(255,255,255,.92)';ctx.lineWidth=1.8;ctx.stroke();
+      if(o.shape==='line'){
+        const tipX=Math.cos(ang)*span*fraction,tipY=Math.sin(ang)*span*fraction;
+        const n=Math.max(3,8*fraction);
+        ctx.fillStyle=col;ctx.beginPath();
+        ctx.moveTo(tipX+Math.cos(ang)*n,tipY+Math.sin(ang)*n);
+        ctx.lineTo(tipX-Math.cos(ang)*n-Math.sin(ang)*5,tipY-Math.sin(ang)*n+Math.cos(ang)*5);
+        ctx.lineTo(tipX-Math.cos(ang)*n+Math.sin(ang)*5,tipY-Math.sin(ang)*n-Math.cos(ang)*5);
+        ctx.closePath();ctx.fill();
+      }
     }else if(o.kind==='wall'){
       const r=o.r;
+      // The collision is circular, so show the whole solid footprint.
+      ctx.beginPath();ctx.arc(0,0,r,0,Math.PI*2);
+      ctx.fillStyle='rgba(57,70,86,.16)';ctx.fill();
+      ctx.lineWidth=3;ctx.stroke();
+      ctx.fillStyle='rgba(63,74,88,.17)';
       ctx.beginPath();ctx.rect(-r,-r*.34,r*2,r*.68);ctx.fill();ctx.stroke();
       // Physical edges and diagonal hatching, distinct from a hologram.
       ctx.beginPath();
@@ -537,38 +711,67 @@ function draw(ctx){
     const p=ownerOf(b);if(!p)continue;
     const x=lerp(Number.isFinite(b.prevX)?b.prevX:b.x,b.x,alpha);
     const y=lerp(Number.isFinite(b.prevY)?b.prevY:b.y,b.y,alpha);
-    const z=lerp(b.prevHeight||0,b.height||0,alpha);
-    const dy=y-z,col=color(p);
+    const height=lerp(b.prevHeight||0,b.height||0,alpha);
+    const dy=y-height,col=color(p);
+    const direction=Math.atan2(b.ty-b.startY,b.tx-b.startX);
     ctx.save();ctx.lineCap='round';ctx.lineJoin='round';
-    if(z>2){
-      ctx.fillStyle='rgba(55,62,69,.17)';ctx.beginPath();
-      ctx.ellipse(x,y,8+z*.08,3.5+z*.023,0,0,Math.PI*2);ctx.fill();
+    if(height>2){
+      // A cast shadow with the projectile's exact ground footprint.
+      ctx.fillStyle='rgba(33,40,47,.2)';ctx.beginPath();
+      ctx.ellipse(x,y,9+height*.075,4+height*.025,0,0,Math.PI*2);ctx.fill();
     }
-    // Curved flight path and thinning tail, with actual interpolated tip.
     if(b.trail?.length){
-      const sequence=[{x,y:dy},...b.trail].slice(0,10);
-      for(let i=1;i<sequence.length;i++){
-        ctx.globalAlpha=.58*(1-i/sequence.length);
-        ctx.strokeStyle=col;ctx.lineWidth=Math.max(.6,4-i*.35);
-        ctx.beginPath();ctx.moveTo(sequence[i-1].x,sequence[i-1].y);
-        ctx.lineTo(sequence[i].x,sequence[i].y);ctx.stroke();
+      const path=[{x,y:dy},...b.trail].slice(0,reduced?4:9);
+      for(let i=1;i<path.length;i++){
+        ctx.globalAlpha=.50*(1-i/path.length);
+        ctx.lineWidth=Math.max(.75, (b.kind==='arcshot'?5:3.5)-i*.32);
+        ctx.strokeStyle=col;
+        ctx.beginPath();ctx.moveTo(path[i-1].x,path[i-1].y);
+        ctx.lineTo(path[i].x,path[i].y);ctx.stroke();
       }
     }
-    ctx.globalAlpha=1;ctx.strokeStyle=col;ctx.fillStyle=col;
-    ctx.beginPath();
-    if(b.kind==='fragment'){
-      ctx.moveTo(x,dy-5);ctx.lineTo(x+5,dy+4);ctx.lineTo(x-5,dy+4);ctx.closePath();
-    }else ctx.arc(x,dy,b.kind==='arcshot'?8:6,0,Math.PI*2);
-    ctx.fill();ctx.lineWidth=1.6;ctx.stroke();
-    ctx.fillStyle='rgba(255,255,255,.88)';
-    ctx.beginPath();ctx.arc(x-2,dy-2,2,0,Math.PI*2);ctx.fill();
+    ctx.globalAlpha=1;ctx.translate(x,dy);
+    ctx.rotate(direction+(b.kind==='splitshot'?b.age*.13:0));
+    ctx.strokeStyle='#273443';ctx.lineWidth=2;ctx.fillStyle=col;
+    if(b.kind==='arcshot'){
+      // Heavy round shell: seam + fuse. Never confused with a sharp shard.
+      ctx.beginPath();ctx.arc(0,0,10,0,Math.PI*2);ctx.fill();ctx.stroke();
+      ctx.fillStyle='rgba(255,255,255,.87)';
+      ctx.beginPath();ctx.arc(-3,-4,2.7,0,Math.PI*2);ctx.fill();
+      ctx.strokeStyle='#fff';ctx.lineWidth=1.3;
+      ctx.beginPath();ctx.arc(0,0,6,-.6,1.55);ctx.stroke();
+      ctx.strokeStyle='#273443';ctx.lineWidth=2;
+      ctx.beginPath();ctx.moveTo(-8,-8);ctx.lineTo(-13,-13);ctx.stroke();
+    }else if(b.kind==='splitshot'){
+      // Faceted unstable crystal with a visible fracture.
+      ctx.beginPath();ctx.moveTo(0,-13);ctx.lineTo(11,0);ctx.lineTo(0,13);
+      ctx.lineTo(-11,0);ctx.closePath();ctx.fill();ctx.stroke();
+      ctx.strokeStyle='#fff';ctx.lineWidth=2;
+      ctx.beginPath();ctx.moveTo(-2,-9);ctx.lineTo(3,-2);ctx.lineTo(-2,5);
+      ctx.lineTo(2,10);ctx.stroke();
+      ctx.strokeStyle=col;ctx.lineWidth=1.4;
+      ctx.beginPath();ctx.arc(0,0,16,-.8,.6);ctx.stroke();
+    }else{
+      // Needle shard points forward and physically damages along this vector.
+      ctx.beginPath();ctx.moveTo(12,0);ctx.lineTo(-5,-5);ctx.lineTo(-2,0);
+      ctx.lineTo(-5,5);ctx.closePath();ctx.fill();ctx.stroke();
+      ctx.strokeStyle='#fff';ctx.lineWidth=1.25;ctx.beginPath();
+      ctx.moveTo(-3,-2);ctx.lineTo(8,0);ctx.stroke();
+    }
     ctx.restore();
+    if(b.age<14&&b.kind!=='fragment'&&!reduced){
+      // A tiny typographic ID is shown only at launch; no permanent HUD clutter.
+      ctx.save();ctx.fillStyle='rgba(24,30,38,.83)';
+      const label=b.kind==='arcshot'?'곡사탄':'분열탄';
+      ctx.font='600 10px "Noto Sans KR",system-ui';ctx.textAlign='center';
+      ctx.fillText(label,x,dy-19);ctx.restore();
+    }
   }
   for(const e of effects)shape(ctx,e);
   ctx.restore();
 }
 function activeLine(t){return Math.max(1,8*Math.sin(Math.PI*cap(t,0,1)));}
-global.AdvancedCombat={TYPES,TYPE_NAMES,objects,projectiles,effects,
-  height:groundHeight,visibleHeight,visual,pose,setAlpha,setReduced,size,renderY,canHit,
+global.AdvancedCombat={TYPES,TYPE_NAMES,DESCRIPTIONS,objects,projectiles,effects,
+  height:groundHeight,visibleHeight,visual,pose,setAlpha,setReduced,blend,size,renderY,canHit,
   launch,execute,tick,draw,reset,mark,ensure};
 })(window);
