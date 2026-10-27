@@ -14,11 +14,23 @@ function arenaEffectColor(value){
 /* Photo-free renderer; optional photos are loaded only through js/photos.js. */
 function drawCharacter(p){
 if(!p.forge)globalThis.ForgeExpansion?.draw(p);
-const img=p.getImage(),radius=p.radius,dead=p.hp<=0,air=!!(p.jumpState&&p.jumpState!=='ground');
-let scale=p.forgePhase?.kind==='burrow'?.65:1,offset=p.forgePhase?.kind==='flight'?-30:0;
-if(air){scale=1+p.jumpHeight/60;offset=-p.jumpHeight;ctx.save();ctx.beginPath();ctx.ellipse(p.x,p.y,radius*0.9,radius*0.4,0,0,Math.PI*2);ctx.fillStyle='rgba(0,0,0,0.3)';ctx.fill();ctx.beginPath();ctx.arc(p.x,p.y,radius+15,0,Math.PI*2);ctx.strokeStyle='rgba(239,68,68,0.8)';ctx.lineWidth=2;ctx.setLineDash([4,4]);ctx.stroke();ctx.restore();}
+const img=p.getImage(),radius=p.radius,dead=p.hp<=0;
+const z=globalThis.AdvancedCombat?.height(p) ?? (p.jumpHeight||0);
+const scale=globalThis.AdvancedCombat?.size(p) ?? (1+Math.max(0,z)/140);
+const offset=-z;
+// Ground coordinates stay fixed: the shadow always remains beneath the body.
+if(Math.abs(z)>1){
+  ctx.save();
+  ctx.fillStyle='rgba(25,31,38,'+Math.max(.06,.24-Math.abs(z)*.001)+')';
+  ctx.beginPath();ctx.ellipse(p.x,p.y,radius*(1+Math.max(0,z)/250),radius*.28,0,0,Math.PI*2);ctx.fill();
+  if(z>20&&p.slam){ctx.setLineDash([6,6]);ctx.strokeStyle='#a44136';ctx.lineWidth=2;ctx.beginPath();
+    ctx.arc(p.x,p.y,Math.max(40,p.slam.a.radius*.65),0,2*Math.PI);ctx.stroke();}
+  if(z<0){ctx.strokeStyle='#786349';ctx.lineWidth=2;ctx.setLineDash([3,5]);ctx.beginPath();
+    ctx.ellipse(p.x,p.y,radius*.9,radius*.36,0,0,Math.PI*2);ctx.stroke();}
+  ctx.restore();
+}
 if(p.id==='choi'&&p.suneungState==='success'&&!dead){ctx.save();ctx.beginPath();ctx.arc(p.x,p.y,radius+12+Math.sin(p.bullChargePulse)*4,0,Math.PI*2);ctx.strokeStyle='rgba(244,63,94,0.7)';ctx.lineWidth=4;ctx.shadowColor='#e11d48';ctx.shadowBlur=12;ctx.stroke();ctx.restore();}
-ctx.save();ctx.translate(p.x,p.y+offset);ctx.scale(scale,scale);if(dead)ctx.globalAlpha=0.3;
+ctx.save();ctx.translate(p.x,p.y+offset);ctx.scale(scale,scale);if(dead)ctx.globalAlpha=0.3;if(z<0)ctx.globalAlpha*=.32;
 ctx.save();ctx.beginPath();ctx.arc(0,0,radius,0,Math.PI*2);ctx.clip();
 if(img&&img.complete&&img.naturalWidth!==0)ctx.drawImage(img,-radius,-radius,radius*2,radius*2);
 else{ctx.fillStyle=p.themeColor||p.borderColor||'#999';ctx.fill();ctx.fillStyle='#fff';ctx.font='bold 16px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(p.name[0],0,0);}
@@ -35,6 +47,7 @@ if(p.id==='oh'&&p.mode==='menhera'&&p.hp>0){const r=p.auraRadius+Math.sin(p.aura
 p.projectiles.forEach(b=>{ctx.save();ctx.beginPath();ctx.arc(b.x,b.y,b.radius,0,Math.PI*2);ctx.fillStyle='#a855f7';ctx.shadowColor='#c084fc';ctx.shadowBlur=8;ctx.fill();ctx.restore();});
 p.poisonTears.forEach(b=>{ctx.save();const g=ctx.createRadialGradient(b.x-2,b.y-2,1,b.x,b.y,b.radius);g.addColorStop(0,'#f3e8ff');g.addColorStop(0.45,'#c084fc');g.addColorStop(1,'#581c87');ctx.beginPath();ctx.arc(b.x,b.y,b.radius,0,Math.PI*2);ctx.fillStyle=g;ctx.shadowColor='#7e22ce';ctx.shadowBlur=12;ctx.fill();ctx.restore();});}
 });
+globalThis.AdvancedCombat?.draw(ctx);
 players.forEach(drawCharacter);
 particles.forEach(p=>{ctx.beginPath();ctx.arc(p.x,p.y,p.radius,0,Math.PI*2);ctx.fillStyle=arenaEffectColor(p.color);ctx.globalAlpha=p.alpha;ctx.fill();ctx.globalAlpha=1;});
 floatingTexts.forEach(f=>{ctx.save();ctx.font=`800 ${f.size}px -apple-system, sans-serif`;ctx.fillStyle=arenaEffectColor(f.color);ctx.globalAlpha=f.alpha;ctx.textAlign='center';ctx.fillText(f.text,f.x,f.y);ctx.restore();});

@@ -32,6 +32,7 @@ function reRollMatch(forcedDef) {
     players.push(p);
   }
   particles=[];floatingTexts=[];shockwaves=[];screenShake=0;
+  globalThis.AdvancedCombat?.reset();
   isGameOver=false;isPlaying=false;roundStarted=false;roundSettled=false;selectedBetPlayerNum=null;activeBet=null;
   Object.keys(reservedItems).forEach(id=>reservedItems[id]=[]);
   document.getElementById('btn-start').innerText='경기 시작';
@@ -59,8 +60,9 @@ function updateCharacter(self) {
 
 function handleCombat(pA,pB) {
   if(pA.hp<=0||pB.hp<=0||pA.forgePhase||pB.forgePhase)return;
-  if(pA.jumpState&&pA.jumpState!=='ground')return;
-  if(pB.jumpState&&pB.jumpState!=='ground')return;
+  if(globalThis.AdvancedCombat&&!AdvancedCombat.canHit(pA,pB))return;
+  if(!globalThis.AdvancedCombat&&pA.jumpState&&pA.jumpState!=='ground')return;
+  if(!globalThis.AdvancedCombat&&pB.jumpState&&pB.jumpState!=='ground')return;
   const dx=pB.x-pA.x,dy=pB.y-pA.y;
   const distance=Math.hypot(dx,dy),minDistance=pA.radius+pB.radius;
   if(distance>=minDistance)return;
@@ -106,6 +108,21 @@ function update() {
       if(p.x+p.radius>canvas.width){p.x=canvas.width-p.radius;p.vx*=-1;}
       if(p.y-p.radius<0){p.y=p.radius;p.vy*=-1;}
       if(p.y+p.radius>canvas.height){p.y=canvas.height-p.radius;p.vy*=-1;}
+    }
+  });
+  if(globalThis.AdvancedCombat)AdvancedCombat.tick({
+    hit(attacker,defender,action,multiplier=1,attackZ){
+      if(!AdvancedCombat.canHit(attacker,defender,attackZ))return false;
+      if(defender.invincible>0||defender.hp<=0)return false;
+      const value=Math.max(0,Math.round((action.damage||0)*multiplier));
+      if(value){
+        defender.hp=Math.max(0,defender.hp-value);defender.invincible=12;
+        addFloatingText('-'+value,defender.x,defender.y-28,attacker.forge?.color||'#4b5563',17);
+        createHitParticles(defender.x,defender.y,attacker.forge?.color||'#58687a',12);
+      }
+      if(action.status==='ice'){defender.slowTimer=Math.max(defender.slowTimer||0,90);defender.slowMultiplier=.5;}
+      if(action.status==='fire'||action.status==='poison')defender.bfDot=Math.max(defender.bfDot||0,Math.round((action.duration||2)*60));
+      return true;
     }
   });
   const alive=players.filter(p=>p.hp>0);

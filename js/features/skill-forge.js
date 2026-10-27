@@ -5,6 +5,7 @@ const STORE='oibung-forge-v3', TYPE={wave:'충격파',shot:'투사체',beam:'레
 const TRIGGER={auto:'주기적으로',lowhp:'체력 이하',contact:'접촉 시',damaged:'피격 시'};
 const STATUS={none:'없음',ice:'둔화',fire:'화상',poison:'중독'};
 Object.assign(TYPE,global.ForgeExpansion?.TYPES||{});
+Object.assign(TYPE,global.AdvancedCombat?.TYPES||{});
 Object.assign(STATUS,global.ForgeExpansion?.STATUSES||{});
 const number=(x,a,b,d=a)=>Number.isFinite(Number(x))?Math.max(a,Math.min(b,Number(x))):d;
 const clean=(v,n)=>String(v==null?'':v).replace(/[<>]/g,'').slice(0,n).trim();
@@ -58,8 +59,10 @@ function randomProfile(theme='any',rng=Math.random){
 }
 let sequence=0;
 const enemies=p=>players.filter(e=>e!==p&&e.hp>0);
-function hit(p,e,action,multiplier=1) {
-  if(!e||e===p||e.hp<=0||e.invincible>0||(e.jumpState&&e.jumpState!=='ground'))return false;
+function hit(p,e,action,multiplier=1,attackZ) {
+  if(!e||e===p||e.hp<=0||e.invincible>0)return false;
+  if(global.AdvancedCombat&&!AdvancedCombat.canHit(p,e,attackZ))return false;
+  if(!global.AdvancedCombat&&e.jumpState&&e.jumpState!=='ground')return false;
   const d=Math.round(action.damage*multiplier*(global.ForgeExpansion?.damageScale(p,e)||1));
   if(d){e.hp=Math.max(0,e.hp-d);e.invincible=12;createHitParticles(e.x,e.y,p.forge.color,12);addFloatingText('-'+d,e.x,e.y-30,p.forge.color,17);}
   if(action.status==='ice'){e.slowTimer=Math.max(e.slowTimer||0,90);e.slowMultiplier=.5;}

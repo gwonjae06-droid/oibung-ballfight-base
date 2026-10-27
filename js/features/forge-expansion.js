@@ -72,6 +72,13 @@ function execute(p,a,target,api){
   if(!near)return true;
   const angle=Math.atan2(near.y-p.y,near.x-p.x);
   if(a.type==='flight'||a.type==='burrow'){
+    if(global.AdvancedCombat){
+      if(a.type==='flight'){
+        AdvancedCombat.execute(p,{...a,type:'hover'},near,api);
+        p.slam={a,owner:p.playerNum};
+      }else AdvancedCombat.execute(p,{...a,type:'burrowdash'},near,api);
+      return true;
+    }
     if(!p.forgePhase)p.forgePhase={kind:a.type,time:Math.min(180,Math.round(a.duration*60)),a,target:near.playerNum};
     p.invincible=Math.max(p.invincible||0,2);return true;
   }

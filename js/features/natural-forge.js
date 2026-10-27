@@ -35,6 +35,30 @@ const EXTRA_LEX={
   fortify:/피해\s*감소|방어력\s*증가|철갑|단단해|받는\s*피해.*줄/gi
 };
 for(const [type,lex] of Object.entries(EXTRA_LEX))if(SkillForge.TYPE?.[type])CAPABILITIES[type]={name:SkillForge.TYPE?.[type],lex};
+const ADVANCED_LEX={
+  leap:/도약|높이\s*뛰|점프|뛰어\s*오르|솟아\s*오르/gi,
+  hover:/체공|공중에\s*(?:멈춰|떠있|떠\s*있|머물)/gi,
+  glide:/활공|글라이딩|공중\s*미끄러|날아\s*다니/gi,
+  dive:/급강하|내려찍|공중\s*강습|급히\s*내려|내리꽂/gi,
+  uppercut:/어퍼컷|올려치|띄워\s*올리|공중으로\s*띄우/gi,
+  slash:/검격|베기|베어|베다|칼로\s*치|참격/gi,
+  spinslash:/회전\s*베기|회전\s*검격|휠윈드|칼을\s*휘두르/gi,
+  thrust:/찌르기|찌른|관통\s*찌르|검으로\s*꿰뚫/gi,
+  aircombo:/공중\s*연속\s*공격|공중\s*콤보|공중에서\s*연타/gi,
+  arcshot:/곡사탄|포물선\s*(?:탄|발사|공격)|곡사\s*공격|곡선\s*투사체/gi,
+  splitshot:/분열탄|분열\s*탄환|갈라지는\s*탄|쪼개지는\s*탄/gi,
+  wall:/벽\s*(?:설치|생성|세우|만들)|장벽\s*(?:설치|생성|세우|만들)|방벽/gi,
+  portal:/포탈|포털|게이트|차원문|이동문/gi,
+  summon:/추적\s*소환수|소환수|펫\s*소환|사역마|전투\s*분신/gi,
+  turret:/포탑|터렛|자동\s*포대|방어\s*탑/gi,
+  trap:/덫|함정|트랩/gi,
+  grow:/거대화|몸(?:집|크기)을?\s*키우|커지|몸집\s*확대/gi,
+  shrink:/소형화|작아지|몸(?:집|크기)을?\s*줄이|축소/gi,
+  burrowdash:/땅굴\s*돌진|땅속\s*돌진|잠복\s*이동|지하\s*이동/gi,
+  erupt:/솟구치|지면에서\s*튀어나오|땅에서\s*등장/gi
+};
+for(const [type,lex] of Object.entries(ADVANCED_LEX))
+  if(SkillForge.TYPE?.[type])CAPABILITIES[type]={name:SkillForge.TYPE[type],lex};
 // Concrete physical vocabulary; abstract themes are offered as explicit choices below.
 CAPABILITIES.shot.lex=/화살|탄막|구슬|투사체|미사일|발사|연발|총알|얼음창|불덩|검기|사격|쏘(?:다|아|고|는|면)?|발포|투척|수리검|표창|창을|칼날|꽃잎|별을|별들이|씨앗|깃털|카드|동전|물방울/gi;
 const EXTRA_EFFECTS={freeze:/빙결|얼려|얼린|얼어붙|동결/,stun:/기절|스턴|정신을\s*잃|마비/,root:/속박|묶|발을\s*붙잡|뿌리로/,silence:/침묵|봉인|스킬을?\s*막|마법을?\s*금지/,bleed:/출혈|피를\s*흘|상처를\s*벌/,shock:/감전|전류/,vulnerable:/취약|방어력\s*감소|갑옷을?\s*깨/,weak:/약화|공격력\s*감소|힘을\s*빼/,fear:/공포|겁을|도망가게|두려움/,charm:/매혹|유혹|홀리|홀려/,blind:/실명|눈을\s*멀|눈부|시야를\s*가/,curse:/저주|회복\s*감소|치유\s*방해/};
@@ -108,6 +132,13 @@ function matchActions(piece){
     if(distinct.some(h=>h.type==='timeburst'))remove.add('haste');
     if(distinct.some(h=>h.type==='lifebloom'))remove.add('heal');
     if(distinct.some(h=>h.type==='dung'))remove.add('shot');
+    if(distinct.some(h=>h.type==='spinslash'))remove.add('slash');
+    if(distinct.some(h=>h.type==='arcshot'||h.type==='splitshot'))remove.add('shot');
+    if(distinct.some(h=>h.type==='portal'))remove.add('blink');
+    if(distinct.some(h=>h.type==='summon'||h.type==='turret'))remove.add('orbit');
+    if(distinct.some(h=>h.type==='burrowdash')){remove.add('burrow');remove.add('dash');remove.add('blink');}
+    if(distinct.some(h=>h.type==='dive'))remove.add('flight');
+    if(distinct.some(h=>h.type==='trap'))remove.add('mine');
     if(distinct.some(h=>h.type==='starfall'))remove.add('meteor');
     for(let i=distinct.length-1;i>=0;i--)if(remove.has(distinct[i].type))distinct.splice(i,1);
   }
@@ -168,7 +199,7 @@ function parse(text,name='',choices={}){
       let matches=matchActions(fragment);
       const chosen=choices[fragment];
       if(chosen==='skip')continue;
-      if(!chosen&&/스킬.*복사|분신.*(?:싸|공격)|지형|벽을.*만/.test(fragment)){questions.push({text:fragment,options:suggestions(fragment)});unmapped.push(fragment);continue;}
+      if(!chosen&&matches.length===0&&/스킬.*복사|지형을.*만/.test(fragment)){questions.push({text:fragment,options:suggestions(fragment)});unmapped.push(fragment);continue;}
       if(chosen&&SkillForge.TYPE[chosen])matches=[{type:chosen}];
       if(!matches.length&&status(fragment)!=='none'&&!/않|없|제외|금지/.test(fragment)){
         questions.push({text:fragment,options:['wave','shot','zone']});
