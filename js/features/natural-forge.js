@@ -160,7 +160,21 @@ function parse(text,name=''){
   });
   return {profile:cfg,unmapped:[...new Set(unmapped)],aliases:[...aliases],mode:'grammar'};
 }
-async function analyze(text,name){
+async function analyze(text,name,mode='auto'){
+  text=String(text||'').trim();name=String(name||'');
+  if(text.length<4||text.length>1400)throw Error('능력 설명은 4~1,400자로 작성하세요.');
+  if(mode==='creative'){
+    if(!global.location || !/^https?:$/.test(global.location.protocol))throw Error('창작 AI는 서버로 실행한 게임에서 사용할 수 있습니다. README의 AI 실행 안내를 확인하세요.');
+    const response=await global.fetch('/api/forge',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      signal:AbortSignal.timeout(50000),body:JSON.stringify({text,name})
+    });
+    if(response.status===404)throw Error('이 주소에는 AI 서버가 없습니다. 서버 실행이 필요합니다. 기본 분석은 계속 사용할 수 있습니다.');
+    let out;try{out=await response.json();}catch(_){throw Error('AI 서버 응답을 확인할 수 없습니다.');}
+    if(!response.ok)throw Error(out.error||'AI 생성 요청에 실패했습니다.');
+    if(typeof out.interpretation!=='string'||!Array.isArray(out.adaptations)||!out.adaptations.every(x=>typeof x==='string'))throw Error('AI 응답 형식이 올바르지 않습니다.');
+    return {...out,profile:SkillForge.normalize(out.profile),mode:'server-ai',unmapped:[],aliases:[]};
+  }
   // An unfamiliar description must still reach the language model; do not
   // reject it merely because the offline fallback lacks a keyword.
   const LM=global.LanguageModel;
@@ -188,7 +202,9 @@ function install(){
   const body=holder.parentElement;
   const box=document.createElement('section');box.className='forge-prompt';
   box.innerHTML='<label for="forge-natural-text">원하는 캐릭터 능력을 문장으로 적어주세요</label>'
-    +'<textarea id="forge-natural-text" rows="6" maxlength="1200" placeholder="체력 30% 이하일 때 3초마다 번개 3줄기를 떨어뜨려 피해 45를 준다. 그 후 2초간 보호막을 펼친다."></textarea>'
+    +'<textarea id="forge-natural-text" rows="6" maxlength="1400" placeholder="슬픔을 작은 별로 접어 적에게 뿌린다. 상처받으면 별들이 주변을 돌며 나를 지켜 준다."></textarea>'
+    +'<label for="forge-natural-mode">해석 방식</label><select id="forge-natural-mode"><option value="auto">기본 분석 · 기기 내 AI / 규칙</option><option value="creative">창작 AI · 문장 전체 해석 (서버 필요)</option></select>'
+    +'<p class="bf-helper">창작 AI는 설명을 AI 서버로 보내 전투 동작으로 각색합니다. 생성 결과에서 실제 효과와 원문에서 달라진 부분을 확인하세요.</p>'
     +'<button type="button" id="forge-natural-build">문장 분석 · 자동 생성</button>'
     +'<div id="forge-natural-status" role="status" aria-live="polite"></div>';
   body.insertBefore(box,holder);
@@ -240,19 +256,26 @@ function install(){
     button.disabled=true;status.textContent='분석 중';
     try{
       const text=input.value.trim();
-      const out=await analyze(text,document.getElementById('bf-name').value.trim());
+      const name=document.getElementById('bf-name').value.trim(),mode=document.getElementById('forge-natural-mode').value;
+      const out=await analyze(text,name,mode);
+      if(input.value.trim()!==text || document.getElementById('bf-name').value.trim()!==name || document.getElementById('forge-natural-mode').value!==mode){
+        approved='';status.textContent='분석 중 입력이 변경되었습니다. 다시 생성해 주세요.';return;
+      }
       SkillForge.setDraft(out.profile);approved=text;
-      status.textContent=(out.mode==='on-device-ai'?'기기 내 AI':'의미 분석')+' 완료 · 스킬 '+out.profile.skills.length+'개'
+      status.textContent=(out.mode==='server-ai'?'창작 AI':out.mode==='on-device-ai'?'기기 내 AI':'의미 분석')+' 완료 · 스킬 '+out.profile.skills.length+'개'
+        +(out.interpretation?'\n구현: '+out.interpretation:'')
+        +(out.adaptations?.length?'\n각색한 부분:\n'+out.adaptations.map(x=>'• '+x).join('\n'):'')
         +(out.aliases?.length?'\n유사 표현 인식: '+out.aliases.join(' / '):'')
         +(out.unmapped.length?'\n구현 확인이 필요한 표현: '+out.unmapped.slice(0,3).join(' / '):'')
         +'\n아래 캐릭터 생성 버튼으로 등록하거나 세부 설정을 수정할 수 있습니다.';
     }catch(e){approved='';status.textContent='분석 실패: '+e.message;}
-    button.disabled=false;
+    finally{button.disabled=false;}
   });
   input.addEventListener('input',()=>{approved='';});
+  document.getElementById('forge-natural-mode').addEventListener('change',()=>{approved='';});
   const create=document.getElementById('bf-create');
   create?.addEventListener('click',e=>{
-    if(input.value.trim()!==approved&&input.value.trim()){
+    if(button.disabled||(input.value.trim()!==approved&&input.value.trim())){
       e.preventDefault();e.stopImmediatePropagation();status.textContent='변경된 문장을 먼저 분석해 주세요.';
     }
   },true);

@@ -1,3 +1,5 @@
 # 얼굴 사진 등 개인 이미지는 커밋하지 않습니다 (js/photos.js 참고)
 assets/
 .DS_Store
+.env
+.env.*
