@@ -4,6 +4,8 @@
 const STORE='oibung-forge-v3', TYPE={wave:'충격파',shot:'투사체',beam:'레이저',bolt:'낙뢰',dash:'돌진',blink:'순간이동',heal:'회복',shield:'방어막',pull:'흡입',orbit:'회전 소환체',zone:'지속 장판'};
 const TRIGGER={auto:'주기적으로',lowhp:'체력 이하',contact:'접촉 시',damaged:'피격 시'};
 const STATUS={none:'없음',ice:'둔화',fire:'화상',poison:'중독'};
+Object.assign(TYPE,global.ForgeExpansion?.TYPES||{});
+Object.assign(STATUS,global.ForgeExpansion?.STATUSES||{});
 const number=(x,a,b,d=a)=>Number.isFinite(Number(x))?Math.max(a,Math.min(b,Number(x))):d;
 const clean=(v,n)=>String(v==null?'':v).replace(/[<>]/g,'').slice(0,n).trim();
 const color=(c)=>/^#[0-9a-f]{6}$/i.test(c)?c:'#a78bfa';
@@ -38,7 +40,7 @@ let sequence=0;
 const enemies=p=>players.filter(e=>e!==p&&e.hp>0);
 function hit(p,e,action,multiplier=1) {
   if(!e||e===p||e.hp<=0||e.invincible>0||(e.jumpState&&e.jumpState!=='ground'))return false;
-  const d=Math.round(action.damage*multiplier);
+  const d=Math.round(action.damage*multiplier*(global.ForgeExpansion?.damageScale(p,e)||1));
   if(d){e.hp=Math.max(0,e.hp-d);e.invincible=12;createHitParticles(e.x,e.y,p.forge.color,12);addFloatingText('-'+d,e.x,e.y-30,p.forge.color,17);}
   if(action.status==='ice'){e.slowTimer=Math.max(e.slowTimer||0,90);e.slowMultiplier=.5;}
   if(action.status==='fire'||action.status==='poison'){
@@ -48,6 +50,7 @@ function hit(p,e,action,multiplier=1) {
     e.bfDot=Math.max(e.bfDot||0,Math.max(30,Math.min(480,Math.round(seconds*60))));
     e.bfDotDamage=Math.max(e.bfDotDamage||2,Math.min(6,Math.max(1,Math.round(d*.12))));
   }
+  global.ForgeExpansion?.applyStatus(p,e,action);
   if(action.knockback>0){const dx=e.x-p.x,dy=e.y-p.y,dist=Math.hypot(dx,dy)||1;e.vx+=dx/dist*action.knockback;e.vy+=dy/dist*action.knockback;}
   return true;
 }
@@ -57,6 +60,7 @@ function cast(p,s,target){
   if(global.BattleFX)BattleFX.caption(p,s.name,p.forge.color);
 }
 function execute(p,a,target) {
+  if(global.ForgeExpansion?.execute(p,a,target,{hit,enemies}))return;
   if(global.AbilityAtlas && AbilityAtlas.execute(p,a,target,{hit,enemies}))return;
   const c=p.forge.color,near=target&&target.hp>0?target:getClosestAliveEnemy(p);
   const within=(x,y,r)=>enemies(p).filter(e=>Math.hypot(e.x-x,e.y-y)<r+e.radius);
@@ -90,7 +94,7 @@ function execute(p,a,target) {
     p.y=Math.max(p.radius,Math.min(canvas.height-p.radius,near.y-dy/d*68));
     visual('blink');within(p.x,p.y,a.radius*.6).forEach(e=>hit(p,e,a));
   } else if(a.type==='heal'){
-    p.hp=Math.min(p.maxHp,p.hp+a.damage);visual('heal');addFloatingText('+'+a.damage,p.x,p.y-26,'#8bf2af',17);
+    if(global.ForgeExpansion)global.ForgeExpansion.heal(p,a.damage);else p.hp=Math.min(p.maxHp,p.hp+a.damage);visual('heal');addFloatingText('+'+a.damage,p.x,p.y-26,'#8bf2af',17);
   } else if(a.type==='shield'){
     p.invincible=Math.max(p.invincible,Math.round(a.duration*60));visual('shield');
   } else if(a.type==='pull'){
@@ -109,6 +113,7 @@ function execute(p,a,target) {
   }
 }
 function update(p,target){
+  global.ForgeExpansion?.update(p,{hit,enemies});
   const loss=p.forgeLastHp-p.hp;p.forgeLastHp=p.hp;
   const cruise=p.forge.speed*(p.speedMultiplier||1),v=Math.hypot(p.vx,p.vy);
   if(p.forgeDash>0){
@@ -117,6 +122,7 @@ function update(p,target){
   }else if(v>.001&&Number.isFinite(v)){const next=v+(cruise-v)*(v>cruise?.075:.16);p.vx=p.vx/v*next;p.vy=p.vy/v*next;}
   else{p.vx=cruise;p.vy=0;}
   p.forge.skills.forEach((s,i)=>{
+    if(global.ForgeExpansion?.blocked(p))return;
     p.forgeTicks[i]++;
     const cd=Math.round(s.cooldown*60);
     if(p.skillCooldown===60&&s.trigger==='auto')p.forgeTicks[i]=Math.max(p.forgeTicks[i],cd-60);
@@ -128,7 +134,7 @@ function update(p,target){
   for(let i=0;i<p.forgeQueue.length;){
     const q=p.forgeQueue[i];
     if(--q.timer>0){i++;continue;}
-    execute(p,q.a,players.find(e=>e.playerNum===q.targetNum&&e.hp>0)||target);
+    if(!global.ForgeExpansion?.blocked(p))execute(p,q.a,players.find(e=>e.playerNum===q.targetNum&&e.hp>0)||target);
     p.forgeQueue.splice(i,1);
   }
   for(let i=p.forgeShots.length-1;i>=0;i--){
@@ -155,14 +161,17 @@ function update(p,target){
   }
 }
 function contact(p,e){
+  if(global.ForgeExpansion?.blocked(p))return;
   if(p.forgeDash>0&&p.forgeDashAction)hit(p,e,p.forgeDashAction);
   p.forge.skills.forEach((s,i)=>{
+    if(global.ForgeExpansion?.blocked(p))return;
     if(s.trigger==='contact'&&p.forgeTicks[i]>=s.cooldown*60){p.forgeTicks[i]=0;cast(p,s,e);}
   });
   if(e&&e.invincible===0)hit(p,e,{damage:7,status:'none',knockback:1});
 }
 function drawFighter(p){
   if(!p.forge||p.hp<=0)return;
+  global.ForgeExpansion?.draw(p);
   const c=p.forge.color;ctx.save();ctx.globalCompositeOperation='lighter';
   ctx.shadowColor=c;ctx.shadowBlur=14;ctx.fillStyle=c;ctx.strokeStyle=c;
   p.forgeShots.forEach(b=>{ctx.globalAlpha=.35;ctx.lineWidth=8;ctx.beginPath();ctx.moveTo(b.x-b.vx*3,b.y-b.vy*3);ctx.lineTo(b.x,b.y);ctx.stroke();ctx.globalAlpha=1;ctx.beginPath();ctx.arc(b.x,b.y,7,0,2*Math.PI);ctx.fill();});

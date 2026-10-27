@@ -49,9 +49,12 @@ function togglePlay() {
   renderEconomyUI();
 }
 function updateCharacter(self) {
-  if(self.hp<=0)return;
+  if(self.hp<=0||globalThis.ForgeExpansion?.blocked(self))return;
   const b=BEHAVIORS[self.id];
-  if(b&&b.update)b.update(self,getClosestAliveEnemy(self));
+  if(b&&b.update){
+    if(globalThis.ForgeExpansion&&!self.forge)globalThis.ForgeExpansion.legacy(self,()=>b.update(self,getClosestAliveEnemy(self)));
+    else b.update(self,getClosestAliveEnemy(self));
+  }
 }
 
 function handleCombat(pA,pB) {
@@ -76,13 +79,17 @@ function handleCombat(pA,pB) {
     pB.vx+=nx*impulse;pB.vy+=ny*impulse;
   }
   [[pA,pB],[pB,pA]]
-    .filter(([a])=>BEHAVIORS[a.id]&&BEHAVIORS[a.id].onContact)
+    .filter(([a])=>!globalThis.ForgeExpansion?.blocked(a)&&BEHAVIORS[a.id]&&BEHAVIORS[a.id].onContact)
     .sort((x,y)=>(BEHAVIORS[x[0].id].order||99)-(BEHAVIORS[y[0].id].order||99))
-    .forEach(([a,b])=>BEHAVIORS[a.id].onContact(a,b));
+    .forEach(([a,b])=>{
+      if(globalThis.ForgeExpansion&&!a.forge)globalThis.ForgeExpansion.legacy(a,()=>BEHAVIORS[a.id].onContact(a,b));
+      else BEHAVIORS[a.id].onContact(a,b);
+    });
 }
 function update() {
   if(!isPlaying||isGameOver)return;
   players.forEach(p=>{
+    globalThis.ForgeExpansion?.tick(p);
     if(p.invincible>0)p.invincible--;
     if(p.slowTimer>0){p.slowTimer--;if(p.slowTimer<=0)p.slowMultiplier=1;}
   });
@@ -90,7 +97,7 @@ function update() {
   players.forEach(updateCharacter);
   players.forEach(p=>{
     if(p.hp>0&&(!p.jumpState||p.jumpState==='ground')){
-      const m=p.slowTimer>0?p.slowMultiplier:1;
+      const m=(p.slowTimer>0?p.slowMultiplier:1)*(globalThis.ForgeExpansion?.movement(p)??1);
       const velocity=Math.hypot(p.vx,p.vy);
       if(!Number.isFinite(velocity)){p.vx=p.playerNum%2?1.4:-1.4;p.vy=0.9;}
       else if(velocity>12){p.vx=p.vx/velocity*12;p.vy=p.vy/velocity*12;}

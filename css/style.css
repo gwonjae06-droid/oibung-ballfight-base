@@ -609,6 +609,11 @@ html,body {background:#090a0c;color:var(--text);font-family:"Noto Sans KR", "Mal
 #forge-natural-build:hover{background:white;}
 #forge-natural-status{color:#c4c5c6;font-size:11px;line-height:1.65;white-space:pre-wrap;margin-top:10px;}
 #forge-natural-status:empty{display:none;}
+#forge-choices section{margin:12px 0;padding:10px;border:1px solid #555;overflow-wrap:anywhere;}
+#forge-choices select,#forge-natural-mode{width:100%;min-height:44px;font-size:16px;}
+#forge-choices button{width:100%;min-height:44px;margin:8px 0;}
+.forge-effect-guide{max-height:320px;overflow:auto;font-size:12px;line-height:1.7;}
+.forge-effect-guide p{padding:6px 0;border-bottom:1px solid #444;}
 .forge-advanced{border-top:1px solid #45474c;padding-top:8px;}
 .forge-advanced > summary{cursor:pointer;list-style:none;display:flex;align-items:center;justify-content:space-between;padding:10px 0;color:#c3c4c6;font-weight:700;font-size:12px;}
 .forge-advanced > summary::after{content:"+";}
