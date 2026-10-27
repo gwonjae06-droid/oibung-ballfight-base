@@ -32,6 +32,9 @@ test('Korean description extracts HP trigger, lightning count, cooldown and dama
   assert.equal(out.profile.skills[0].actions[0].count,3);
   assert.equal(out.profile.skills[0].actions[0].damage,45);
   assert.ok(out.profile.skills.some(s=>s.actions.some(a=>a.type==='shield')));
+  assert.equal(out.profile.skills[0].actions[1].type,'shield');
+  assert.equal(out.profile.skills[0].actions[1].duration,2);
+  assert.ok(out.profile.skills[0].actions[1].delay>=.25);
 });
 test('saved characters can be removed and their behavior unregistered',()=>{
   const h=harness();

@@ -34,13 +34,23 @@ function parse(text,name=''){
           type,damage:cap(extract(bit,/(?:피해량|데미지|공격력|피해|위력)\s*(?:가|는|을|:|=)?\s*(\d{1,3})/,/강력|거대한|필살|초강력/.test(bit)?48:18),0,120),
           radius:cap(extract(bit,/(?:범위|반경|사거리|거리)\s*(?:는|를|:|=)?\s*(\d{2,3})/,130),30,300),
           count,speed:cap(extract(bit,/(?:탄속|속도)\s*(?:는|를|:|=)?\s*(\d+(?:\.\d+)?)/,5),2,14),
-          duration:cap(extract(bit,/(?:지속|유지|동안)\s*(?:은|:|=)?\s*(\d+(?:\.\d+)?)\s*초/,1.8),.2,8),
+          duration:cap(extract(bit,/(?:지속|유지|동안)\s*(?:은|:|=)?\s*(\d+(?:\.\d+)?)\s*초/,extract(bit,/(\d+(?:\.\d+)?)\s*초\s*(?:간|동안|유지|지속)/,1.8)),.2,8),
           status:status(bit),knockback:cap(extract(bit,/넉백\s*(\d+(?:\.\d+)?)/,2),0,9),
-          delay:cap(extract(bit,/(\d+(?:\.\d+)?)\s*초\s*후/,0),0,2)
+          delay:cap(extract(bit,/(\d+(?:\.\d+)?)\s*초\s*후/,stages.length*.25),0,2)
         });
       }
     }
     if(!stages.length)continue;
+    // Korean continuation phrases extend the preceding skill instead of
+    // silently creating a second, unrelated cooldown.
+    if(skills.length&&/^(?:그\s*후|이어서|뒤이어|다음으로|그다음)/.test(sentence)){
+      const earlier=skills[skills.length-1];
+      for(const a of stages.slice(0,3-earlier.actions.length)){
+        a.delay=cap(Math.max(a.delay,earlier.actions.length*.25),0,2);
+        earlier.actions.push(a);
+      }
+      continue;
+    }
     const low=sentence.match(/(?:체력|HP)\s*(\d{1,2})\s*%\s*(?:이하|미만|남으면|떨어지면)/i);
     const trigger=low?'lowhp':/피격|공격을\s*받|맞을\s*때|맞으면/.test(sentence)?'damaged':/접촉|부딪|충돌/.test(sentence)?'contact':'auto';
     const cd=cap(extract(sentence,/(?:쿨타임|재사용\s*대기|매|마다|주기)\s*(\d+(?:\.\d+)?)\s*초/,/난사|빠르게|연속/.test(sentence)?1:3),.2,30);
