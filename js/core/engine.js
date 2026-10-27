@@ -126,7 +126,7 @@ function updateUI() {
     document.getElementById(`p${n}-maxhp`).innerText=p.maxHp;
     document.getElementById(`p${n}-hp-bar`).style.width=(Math.max(0,p.hp)/p.maxHp*100)+'%';
     const tag=p.getTag(),te=document.getElementById(`p${n}-tag`);
-    if(tag&&p.hp>0){te.style.display='inline-block';te.innerText=tag.text+(p.itemLabels&&p.itemLabels.length?` · ${p.itemLabels.join(' · ')}`:'');te.style.background=tag.bg;te.style.color=tag.color;te.style.border=`1.5px solid ${tag.border}`;}
+    if(tag&&p.hp>0){te.style.display='inline-block';te.textContent=tag.text+(p.itemLabels&&p.itemLabels.length?` · ${p.itemLabels.join(' · ')}`:'');}
     else te.style.display='none';
   });
 }
