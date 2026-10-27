@@ -4,9 +4,9 @@
   if(!speed)return;
   const reduced=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const label=document.createElement('label');
-  label.style.cssText='display:block;font-size:12px;margin-top:8px';
-  const gentle=document.createElement('input');gentle.type='checkbox';gentle.checked=!!reduced;gentle.style.width='auto';
-  label.append(gentle,document.createTextNode(' 이펙트 줄이기 (화면 흔들림·히트스톱 해제)'));
+  label.className='bf-preference';
+  const gentle=document.createElement('input');gentle.type='checkbox';gentle.checked=!!reduced;
+  label.append(gentle,document.createTextNode('화면 효과 줄이기'));
   document.querySelector('.bf-tools').appendChild(label);
   let frame=0,last=null,acc=0,stopUntil=0,now=0,roster=players;
   let sparks=[],pulses=[];

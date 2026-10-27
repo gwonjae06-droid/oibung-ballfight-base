@@ -1,14 +1,14 @@
 /* Battle engine. Character-specific logic is registered in BEHAVIORS. */
 function toggleMode() {
-  if(roundStarted&&!isGameOver){setEconomyMessage('경기가 끝난 뒤 모드를 바꿀 수 있습니다.','bad');return;}
+  if(roundStarted&&!isGameOver){const status=document.getElementById('bf-status');if(status)status.textContent='경기가 끝난 뒤 변경할 수 있습니다.';return;}
   gameMode=gameMode==='1v1'?'1v1v1':'1v1';
   const three=gameMode==='1v1v1';
   canvas.width=canvas.height=three?650:500;
   document.getElementById('container').classList[three?'add':'remove']('mode-3p');
   document.getElementById('ui-container').classList[three?'add':'remove']('mode-3p');
   document.getElementById('sec-p3').style.display=three?'block':'none';
-  document.getElementById('title-text').innerText=three?'🔥 1vs1vs1 3인 난투':'⚔️ 1vs1 랜덤 배틀';
-  document.getElementById('btn-mode').innerText=three?'⚔️ 모드: 1vs1vs1':'🔥 모드: 1vs1';
+  document.getElementById('title-text').innerText=three?'3-WAY BATTLE':'1 VS 1';
+  document.getElementById('btn-mode').innerText=three?'3인전':'2인전';
   reRollMatch();
 }
 function reRollMatch(forcedDef) {
@@ -34,18 +34,18 @@ function reRollMatch(forcedDef) {
   particles=[];floatingTexts=[];shockwaves=[];screenShake=0;
   isGameOver=false;isPlaying=false;roundStarted=false;roundSettled=false;selectedBetPlayerNum=null;activeBet=null;
   Object.keys(reservedItems).forEach(id=>reservedItems[id]=[]);
-  document.getElementById('btn-start').innerText='▶ 경기 시작';
-  document.getElementById('btn-start').style.background='#22c55e';
+  document.getElementById('btn-start').innerText='경기 시작';
+  document.getElementById('btn-start').dataset.state='ready';
   updateUI();renderEconomyUI();draw();return true;
 }
 function togglePlay() {
-  if(isGameOver){reRollMatch();setEconomyMessage('새 대진입니다. 베팅과 아이템을 설정하세요.');return;}
+  if(isGameOver){reRollMatch();return;}
   if(!players.length)return;
   if(!roundStarted){if(!beginRoundEconomy())return;roundStarted=true;}
   isPlaying=!isPlaying;
   const b=document.getElementById('btn-start');
-  b.innerText=isPlaying?'⏸ 일시정지':'▶ 경기 계속';
-  b.style.background=isPlaying?'#f59e0b':'#22c55e';
+  b.innerText=isPlaying?'일시정지':'경기 계속';
+  b.dataset.state=isPlaying?'playing':'paused';
   renderEconomyUI();
 }
 function updateCharacter(self) {
@@ -114,7 +114,7 @@ function update() {
     if(f.alpha<=0)floatingTexts.splice(i,1);
   }
   const finalAlive=players.filter(p=>p.hp>0);
-  if(finalAlive.length<=1){isGameOver=true;isPlaying=false;settleRound(finalAlive.length===1?finalAlive[0]:null);document.getElementById('btn-start').innerText='🔄 새 대진 만들기';document.getElementById('btn-start').style.background='#22c55e';}
+  if(finalAlive.length<=1){isGameOver=true;isPlaying=false;settleRound(finalAlive.length===1?finalAlive[0]:null);document.getElementById('btn-start').innerText='다음 경기';document.getElementById('btn-start').dataset.state='finished';}
   updateUI();
 }
 function updateUI() {

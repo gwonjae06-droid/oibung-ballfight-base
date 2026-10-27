@@ -5,24 +5,24 @@
   const locked = () => roundStarted && !isGameOver;
   const originalRoll = reRollMatch, originalUpdate = update, originalDrawCharacter = drawCharacter;
   let pendingPhoto = null, draft = null, photoTicket = 0, sequence = 0;
-  const css = document.createElement('style');
-  css.textContent = `.bf-tools{width:100%;background:#fff;padding:12px;border:2px solid #111;border-radius:10px;margin:12px 0}.bf-tools h2{font-size:16px;margin:0 0 8px}.bf-tools p{font-size:12px;line-height:1.5;color:#475569}.bf-row{display:flex;gap:7px;flex-wrap:wrap;margin:8px 0}.bf-row label{flex:1;min-width:100px;font-size:12px;font-weight:800}.bf-tools select,.bf-tools input,.bf-tools textarea{width:100%;padding:9px;border:1px solid #94a3b8;border-radius:6px;font:inherit;font-size:13px;user-select:text;-webkit-user-select:text}.bf-tools textarea{min-height:90px;resize:vertical}.bf-tools button{font-size:12px;min-height:40px}.bf-preview{width:76px;height:76px;border-radius:50%;object-fit:cover;border:2px solid #111;background:#eee}.bf-notice{font-size:12px;white-space:pre-wrap;line-height:1.6;padding:8px;background:#f1f5f9;border-radius:6px}.bf-fold{width:100%;margin-top:12px}.bf-fold summary{cursor:pointer;font-weight:900;padding:12px;background:#e2e8f0;border-radius:8px}.bf-fold .economy-card{margin-top:0}.bf-rules{font-size:12px;line-height:1.6}.bf-tools [hidden]{display:none!important}`;
-  document.head.appendChild(css);
   const panel = document.createElement('section');
   panel.className = 'bf-tools';
-  panel.innerHTML = `<h2>캐릭터 선택 · 경기 설정</h2><div class="bf-row" id="bf-picks"></div><div class="bf-row"><button type="button" id="bf-apply">선택한 대진 적용</button><button type="button" id="bf-random">랜덤 대진</button><label>배속<select id="bf-speed"><option value="1" selected>1배속 (기본 속도)</option><option value="2">2배속 (빠르게)</option></select></label></div><p>선택한 대진을 적용한 뒤 경기 시작을 누르세요. 경기 도중에는 사진·캐릭터를 바꿀 수 없습니다. 배속은 경기 중에도 변경할 수 있습니다.</p><div id="bf-status" class="bf-notice" role="status" aria-live="polite"></div><details><summary>사진 지정</summary><p>본인 또는 사용 허락을 받은 사진만 사용하세요. 사진은 서버로 전송하지 않으며 새로고침하면 초기화됩니다. 사진을 고른 뒤 대상 캐릭터에 적용하세요.</p><input type="file" id="bf-photo" accept="image/jpeg,image/png,image/webp" aria-label="사진 선택"><div class="bf-row"><img id="bf-face" class="bf-preview" alt="선택한 사진 미리보기" hidden><label>사진을 넣을 캐릭터<select id="bf-photo-target"></select></label></div><div class="bf-row"><button type="button" id="bf-photo-apply">사진 적용</button><button type="button" id="bf-photo-clear">대상 사진 초기화</button></div><p>오슬우에 적용하면 보인고·멘헤라 두 모드 모두 같은 사진을 사용합니다.</p></details><details><summary>내 캐릭터 만들기 · 내장 해석기</summary><p>AI API가 아닌 한국어 키워드 해석기입니다. 최대 6명, 능력 최대 3개. 입력한 수치와 자유로운 조건 전부를 해석하지는 않습니다. 분석 결과의 실제 규칙을 확인하세요.</p><label>이름<input id="bf-name" maxlength="10" placeholder="최대 10자"></label><label>원하는 능력<textarea id="bf-text" maxlength="300" placeholder="얼음 구슬을 발사하고 체력이 낮아지면 빨라진다"></textarea></label><p>파동 · 투사체 · 오라 · 돌진 · 내려찍기 · 낙뢰 · 순간이동 · 회복 · 방어막 · 끌어당기기 / 화상 · 중독 · 둔화 · 흡혈 · 폭주</p><div class="bf-row"><button type="button" id="bf-analyze">능력 분석</button><button type="button" id="bf-create" disabled>확인하고 생성 · P1 선택</button></div><div id="bf-result" class="bf-notice"></div><p>현재 선택한 사진을 새 캐릭터에도 사용합니다. 캐릭터와 사진은 이번 접속에만 유지됩니다.</p><div id="bf-custom-list" class="bf-rules"></div></details>`;
-  const battle = document.querySelector('.battle-screen');
-  battle.before(panel);
+  panel.setAttribute('aria-label', '대진 설정');
+  panel.innerHTML = "\n    <div class=\"panel-heading\">\n      <span class=\"eyebrow\">MATCH SETUP</span>\n      <h2>대진 설정</h2>\n    </div>\n    <div class=\"bf-picks\" id=\"bf-picks\" aria-label=\"출전 캐릭터 선택\"></div>\n    <div class=\"bf-actions\">\n      <button type=\"button\" id=\"bf-apply\">대진 적용</button>\n      <label class=\"bf-speed-label\">배속\n        <select id=\"bf-speed\" aria-label=\"경기 배속\">\n          <option value=\"1\" selected>1배속</option>\n          <option value=\"2\">2배속</option>\n        </select>\n      </label>\n    </div>\n    <div id=\"bf-status\" class=\"bf-notice\" role=\"status\" aria-live=\"polite\"></div>\n    <details class=\"bf-details\">\n      <summary>사진 설정</summary>\n      <div class=\"bf-details-body\">\n        <p class=\"bf-helper\">허락받은 사진만 사용하세요. 사진은 기기에만 유지됩니다.</p>\n        <input type=\"file\" id=\"bf-photo\" accept=\"image/jpeg,image/png,image/webp\" aria-label=\"사진 선택\">\n        <div class=\"bf-photo-row\">\n          <img id=\"bf-face\" class=\"bf-preview\" alt=\"선택한 사진 미리보기\" hidden>\n          <label class=\"bf-field\">적용할 캐릭터<select id=\"bf-photo-target\"></select></label>\n        </div>\n        <div class=\"bf-btn-row\">\n          <button type=\"button\" id=\"bf-photo-apply\">사진 적용</button>\n          <button type=\"button\" id=\"bf-photo-clear\">초기화</button>\n        </div>\n      </div>\n    </details>\n    <details class=\"bf-details\">\n      <summary>커스텀 캐릭터</summary>\n      <div class=\"bf-details-body\">\n        <p class=\"bf-helper\">키워드 기반 능력 생성 · 최대 6명 / 능력 3개</p>\n        <label class=\"bf-field\">이름<input id=\"bf-name\" maxlength=\"10\" placeholder=\"캐릭터 이름\"></label>\n        <label class=\"bf-field\">능력<textarea id=\"bf-text\" maxlength=\"300\" placeholder=\"얼음 구슬을 발사하고 체력이 낮아지면 빨라진다\"></textarea></label>\n        <p class=\"bf-helper\">파동 · 투사체 · 오라 · 돌진 · 낙뢰 · 회복 · 보호막 등</p>\n        <div class=\"bf-btn-row\">\n          <button type=\"button\" id=\"bf-analyze\">능력 분석</button>\n          <button type=\"button\" id=\"bf-create\" disabled>캐릭터 생성</button>\n        </div>\n        <div id=\"bf-result\" class=\"bf-result\" role=\"status\" aria-live=\"polite\"></div>\n        <div id=\"bf-custom-list\" class=\"bf-custom-list\"></div>\n      </div>\n    </details>";
+  document.querySelector('.battle-screen').after(panel);
+
   const economy = document.querySelector('.economy-card');
   const fold = document.createElement('details');
   fold.className = 'bf-fold';
   const summary = document.createElement('summary');
-  summary.textContent = '베팅 · 상점 펼치기 / 접기 (선택 사항)';
-  economy.before(fold);fold.append(summary,economy);
-  $('wager-input').value = '0';
-  economy.querySelector('.economy-help').textContent = '베팅 없이 경기 시작을 눌러도 됩니다. 베팅하려면 캐릭터와 금액을 선택하세요.';
+  const summaryName = document.createElement('span');
+  summaryName.textContent = '베팅 · 아이템';
+  summary.append(summaryName, document.getElementById('coin-balance'));
+  economy.before(fold);
+  fold.append(summary, economy);
+  document.getElementById('wager-input').value = '0';
   const notice = text => { $('bf-status').textContent = text; };
-  const allowed = () => { if (locked()) { notice('진행 중에는 변경할 수 없습니다. 경기 종료 후 다시 시도하세요.'); return false; } return true; };
+  const allowed = () => { if (locked()) { notice('경기 중에는 변경할 수 없습니다.'); return false; } return true; };
   function options(select, value) {
     select.replaceChildren();
     pool().forEach(d => { const o=document.createElement('option');o.value=d.id;o.textContent=d.name;select.appendChild(o); });
@@ -36,12 +36,12 @@
       options(select,players[i]&&players[i].id);label.appendChild(select);box.appendChild(label);
     }
     const target=$('bf-photo-target'),old=target.value;options(target,old);
-    $('bf-custom-list').textContent=CUSTOM_DEFS.length?'내 캐릭터: '+CUSTOM_DEFS.map(d=>d.name).join(' · '):'아직 만든 캐릭터가 없습니다.';
+    $('bf-custom-list').textContent=CUSTOM_DEFS.length?'생성됨: '+CUSTOM_DEFS.map(d=>d.name).join(' · '):'';
   }
   reRollMatch = function (forcedDef) {
     if(!allowed())return false;
     const ok=originalRoll(forcedDef);
-    if(ok){$('wager-input').value='0';renderEconomyUI();refreshPicks();notice('대진 준비 완료. 베팅 없이 경기 시작을 누르세요.');}
+    if(ok){$('wager-input').value='0';renderEconomyUI();refreshPicks();notice('');}
     return ok;
   };
   function applyPicks() {
@@ -53,10 +53,9 @@
       const old=players[i],p=d.createInstance(i+1);
       Object.assign(p,{x:old.x,y:old.y,vx:old.vx,vy:old.vy});return p;
     });
-    $('wager-input').value='0';updateUI();renderEconomyUI();draw();refreshPicks();notice('선택한 캐릭터로 대진을 적용했습니다. 경기 시작을 누르세요.');
+    $('wager-input').value='0';updateUI();renderEconomyUI();draw();refreshPicks();notice('대진 적용 완료');
   }
   $('bf-apply').onclick=applyPicks;
-  $('bf-random').onclick=()=>reRollMatch();
   $('bf-photo').onchange=async e=>{
     const ticket=++photoTicket,file=e.target.files[0];
     pendingPhoto=null;$('bf-face').hidden=true;
@@ -71,16 +70,16 @@
       c.getContext('2d').drawImage(image,(image.naturalWidth-side)/2,(image.naturalHeight-side)/2,side,side,0,0,192,192);
       const data=c.toDataURL('image/jpeg',0.85);
       if(ticket!==photoTicket)return;
-      pendingPhoto=data;$('bf-face').src=data;$('bf-face').hidden=false;notice('사진 준비 완료. 적용할 캐릭터를 선택하거나 새 캐릭터를 만드세요.');
+      pendingPhoto=data;$('bf-face').src=data;$('bf-face').hidden=false;notice('사진 준비 완료');
     } catch(err){if(ticket===photoTicket)notice('사진을 읽을 수 없습니다. 다른 파일을 선택하세요.');}
     finally{URL.revokeObjectURL(url);}
   };
   const photoKeys=id=>id==='oh'?['oh-boin','oh-menhera']:[id];
   $('bf-photo-apply').onclick=()=>{
     if(!allowed())return;if(!pendingPhoto){notice('사진을 먼저 선택하세요.');return;}
-    photoKeys($('bf-photo-target').value).forEach(key=>loadPhoto(key,pendingPhoto));notice('대상 캐릭터에 사진을 적용했습니다.');draw();
+    photoKeys($('bf-photo-target').value).forEach(key=>loadPhoto(key,pendingPhoto));notice('사진 적용 완료');draw();
   };
-  $('bf-photo-clear').onclick=()=>{if(!allowed())return;photoKeys($('bf-photo-target').value).forEach(key=>delete CHARACTER_PHOTOS[key]);draw();notice('대상 사진을 초기화했습니다.');};
+  $('bf-photo-clear').onclick=()=>{if(!allowed())return;photoKeys($('bf-photo-target').value).forEach(key=>delete CHARACTER_PHOTOS[key]);draw();notice('사진 초기화 완료');};
   const kinds={wave:['충격파',240,22],shot:['투사체',90,11],aura:['오라',45,5],dash:['돌진',300,16],slam:['내려찍기',260,34],lightning:['낙뢰',200,12],blink:['순간이동',270,12],heal:['회복',420,0],shield:['방어막',480,0],pull:['끌어당기기',150,0]};
   const rules=[['lightning',/번개|낙뢰|벼락|천둥/],['slam',/내려찍|도약|점프|메테오/],['blink',/순간이동|순간 이동|점멸|텔레포트/],['dash',/돌진|박치기|돌격/],['wave',/파동|충격파|폭발/],['aura',/오라|장판|영역/],['shot',/발사|투사체|구슬|화살|쏘|쏜|쏴|총알|불덩이/],['heal',/회복|치유|재생/],['shield',/보호막|방어막|무적/],['pull',/끌어당|흡입|매혹/]];
   function parse(text,name) {
@@ -188,7 +187,7 @@
     const id='custom_'+(++sequence),s=JSON.parse(JSON.stringify(draft)),def=customDef(s,id);
     BEHAVIORS[id]={order:9,update:customUpdate,onContact(p,e){hit(p,e,8+(p.bfDash>0?Math.round(16*p.spec.damageScale):0),'contact');}};
     CUSTOM_DEFS.push(def);if(pendingPhoto)loadPhoto(id,pendingPhoto);
-    refreshPicks();$('bf-pick-0').value=id;applyPicks();invalidate();notice('새 캐릭터를 P1로 적용했습니다. 경기 시작을 누르세요.');
+    refreshPicks();$('bf-pick-0').value=id;applyPicks();invalidate();notice('캐릭터 생성 완료 · P1 적용');
   };
   update=function(){
     if(isPlaying&&!isGameOver)players.forEach(p=>{if(p.bfDot>0&&p.hp>0){p.bfDot--;if(p.bfDot%30===0){p.hp=Math.max(0,p.hp-2);addFloatingText('-2 지속 피해',p.x,p.y-30,'#f97316',14);}}});
@@ -196,5 +195,5 @@
   };
   // The single fixed-step game loop starts once effects are installed.
   reRollMatch();
-  setEconomyMessage('베팅 없이 바로 시작할 수 있습니다.');
+  setEconomyMessage('');
 })();

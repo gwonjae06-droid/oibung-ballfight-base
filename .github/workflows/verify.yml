@@ -16,5 +16,5 @@ jobs:
           node-version: '22'
       - name: Syntax check all JavaScript modules
         run: find js -type f -name '*.js' -print0 | xargs -0 -n1 node --check
-      - name: Physics regression tests
-        run: node --test tests/physics.test.cjs
+      - name: Physics and UI structure regression tests
+        run: node --test tests/*.test.cjs
