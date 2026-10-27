@@ -13,7 +13,7 @@ if(p.id==='lee'&&p.pokeAnim>0&&!dead){ctx.save();const a=Math.atan2(p.pokeTarget
 ctx.save();const labelY=p.y+offset-radius*scale-10;ctx.font='bold 13px -apple-system, sans-serif';const name=dead?`💀 ${p.name} (탈락)`:p.getDisplayName(),width=ctx.measureText(name).width,rolling=p.id==='lee'&&p.isRolling&&!dead;ctx.fillStyle=rolling?(Math.floor(Date.now()/80)%2===0?'#eab308':'#ca8a04'):(dead?'rgba(71,85,105,0.75)':'rgba(0,0,0,0.75)');drawRoundedRect(ctx,p.x-width/2-6,labelY-14,width+12,18,4);ctx.fillStyle=rolling?'#111827':p.tagColor||'#fff';ctx.textAlign='center';ctx.fillText(name,p.x,labelY);ctx.restore();
 }
 function draw(){
-ctx.save();if(screenShake>0.5){const x=(Math.random()-0.5)*screenShake,y=(Math.random()-0.5)*screenShake;ctx.translate(x,y);}ctx.clearRect(0,0,canvas.width,canvas.height);
+ctx.save();ctx.clearRect(0,0,canvas.width,canvas.height);if(screenShake>0.5){const x=(Math.random()-0.5)*screenShake,y=(Math.random()-0.5)*screenShake;ctx.translate(x,y);}
 shockwaves.forEach(w=>{ctx.beginPath();ctx.arc(w.x,w.y,w.radius,0,Math.PI*2);ctx.strokeStyle=`rgba(16,185,129,${w.alpha})`;ctx.lineWidth=6;ctx.stroke();ctx.beginPath();ctx.arc(w.x,w.y,w.radius*0.7,0,Math.PI*2);ctx.fillStyle=`rgba(52,211,153,${w.alpha*0.2})`;ctx.fill();});
 players.forEach(p=>{
 if(p.id==='bae'&&p.waves)p.waves.forEach(w=>{ctx.beginPath();ctx.arc(w.x,w.y,w.currentRadius,0,Math.PI*2);ctx.strokeStyle=`rgba(234,88,12,${w.alpha})`;ctx.lineWidth=3;ctx.stroke();ctx.beginPath();ctx.arc(w.x,w.y,w.currentRadius*0.85,0,Math.PI*2);ctx.fillStyle=`rgba(249,115,22,${w.alpha*0.12})`;ctx.fill();});
@@ -22,8 +22,8 @@ p.projectiles.forEach(b=>{ctx.save();ctx.beginPath();ctx.arc(b.x,b.y,b.radius,0,
 p.poisonTears.forEach(b=>{ctx.save();const g=ctx.createRadialGradient(b.x-2,b.y-2,1,b.x,b.y,b.radius);g.addColorStop(0,'#f3e8ff');g.addColorStop(0.45,'#c084fc');g.addColorStop(1,'#581c87');ctx.beginPath();ctx.arc(b.x,b.y,b.radius,0,Math.PI*2);ctx.fillStyle=g;ctx.shadowColor='#7e22ce';ctx.shadowBlur=12;ctx.fill();ctx.restore();});}
 });
 players.forEach(drawCharacter);
-for(let i=particles.length-1;i>=0;i--){const p=particles[i];p.x+=p.vx;p.y+=p.vy;p.alpha-=0.025;if(p.alpha<=0){particles.splice(i,1);continue;}ctx.beginPath();ctx.arc(p.x,p.y,p.radius,0,Math.PI*2);ctx.fillStyle=p.color;ctx.globalAlpha=p.alpha;ctx.fill();ctx.globalAlpha=1;}
-for(let i=floatingTexts.length-1;i>=0;i--){const f=floatingTexts[i];f.y+=f.vy;f.alpha-=0.015;if(f.alpha<=0){floatingTexts.splice(i,1);continue;}ctx.save();ctx.font=`800 ${f.size}px -apple-system, sans-serif`;ctx.fillStyle=f.color;ctx.globalAlpha=f.alpha;ctx.textAlign='center';ctx.fillText(f.text,f.x,f.y);ctx.restore();}
+particles.forEach(p=>{ctx.beginPath();ctx.arc(p.x,p.y,p.radius,0,Math.PI*2);ctx.fillStyle=p.color;ctx.globalAlpha=p.alpha;ctx.fill();ctx.globalAlpha=1;});
+floatingTexts.forEach(f=>{ctx.save();ctx.font=`800 ${f.size}px -apple-system, sans-serif`;ctx.fillStyle=f.color;ctx.globalAlpha=f.alpha;ctx.textAlign='center';ctx.fillText(f.text,f.x,f.y);ctx.restore();});
 if(!isPlaying&&!isGameOver){ctx.fillStyle='rgba(255,255,255,0.5)';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.font='800 20px -apple-system, sans-serif';ctx.fillStyle='#111';ctx.textAlign='center';ctx.fillText('하단의 [▶ 경기 시작] 버튼을 눌러주세요',canvas.width/2,canvas.height/2);}
 if(isGameOver){ctx.fillStyle='rgba(255,255,255,0.88)';ctx.fillRect(0,0,canvas.width,canvas.height);const alive=players.filter(p=>p.hp>0);ctx.font='900 32px -apple-system, sans-serif';ctx.fillStyle=alive.length?(alive[0].borderColor||'#ea580c'):'#111827';ctx.textAlign='center';ctx.fillText(alive.length?`👑 ${alive[0].name} 최종 승리!`:'⚔️ 무승부!',canvas.width/2,canvas.height/2-10);}
 ctx.restore();

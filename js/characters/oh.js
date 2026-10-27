@@ -3,10 +3,10 @@ BEHAVIORS.oh={order:1,update(self,target){
 self.modeTimer++;if(self.modeTimer>=self.modeDuration){self.modeTimer=0;self.mode=self.mode==='boin'?'menhera':'boin';addFloatingText(self.mode==='boin'?'보인고':'멘헤라',self.x,self.y-45,self.mode==='boin'?'#dc2626':'#7e22ce',19);}
 if(self.mode==='boin'){
 if(target){const dx=target.x-self.x,dy=target.y-self.y,dist=Math.hypot(dx,dy)||1;self.vx+=dx/dist*self.boinAccel;self.vy+=dy/dist*self.boinAccel;}
-const speed=Math.hypot(self.vx,self.vy);if(speed>self.boinMaxSpeed){self.vx=self.vx/speed*self.boinMaxSpeed;self.vy=self.vy/speed*self.boinMaxSpeed;}
+const speed=Math.hypot(self.vx,self.vy),limit=self.boinMaxSpeed*(self.speedMultiplier||1);if(speed>limit){self.vx=self.vx/speed*limit;self.vy=self.vy/speed*limit;}
 self.charmTimer++;if(self.charmTimer>=self.charmCooldown&&target){self.charmTimer=0;const dx=self.x-target.x,dy=self.y-target.y,dist=Math.hypot(dx,dy)||1;if(dist>self.radius+target.radius+15&&target.jumpState!=='rising'&&target.jumpState!=='hovering'){target.vx+=dx/dist*3.8;target.vy+=dy/dist*3.8;addFloatingText('매혹 ♥',target.x,target.y-40,'#dc2626',18);for(let i=0;i<6;i++)particles.push({x:target.x+(Math.random()-0.5)*20,y:target.y-15+(Math.random()-0.5)*15,vx:(Math.random()-0.5)*1.5,vy:-1-Math.random()*1.2,radius:3+Math.random()*2,alpha:1,color:'#f43f5e'});}}
 }else{
-const speed=Math.hypot(self.vx,self.vy);if(speed>self.menheraBaseSpeed){self.vx=self.vx/speed*self.menheraBaseSpeed;self.vy=self.vy/speed*self.menheraBaseSpeed;}
+const speed=Math.hypot(self.vx,self.vy),limit=self.menheraBaseSpeed*(self.speedMultiplier||1);if(speed>limit){self.vx=self.vx/speed*limit;self.vy=self.vy/speed*limit;}
 self.auraPulse=(self.auraPulse+0.04)%(Math.PI*2);
 self.shootTimer++;if(self.shootTimer>=self.shootCooldown&&target){self.shootTimer=0;const dx=target.x-self.x,dy=target.y-self.y,dist=Math.hypot(dx,dy)||1;self.projectiles.push({x:self.x,y:self.y,vx:dx/dist*3.8,vy:dy/dist*3.8,radius:7,life:140});}
 self.poisonTearTimer++;if(self.poisonTearTimer>=self.poisonTearCooldown&&target){self.poisonTearTimer=0;const dx=target.x-self.x,dy=target.y-self.y,dist=Math.hypot(dx,dy)||1;self.poisonTears.push({x:self.x,y:self.y,vx:dx/dist*3,vy:dy/dist*3,radius:8,life:150});addFloatingText('독눈물!',self.x,self.y-45,'#7e22ce',18);}}

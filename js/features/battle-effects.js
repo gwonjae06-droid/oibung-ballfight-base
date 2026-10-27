@@ -1,10 +1,7 @@
-/* Loaded after main.js. Visual-only effects; combat values and physics are unchanged. */
+/* Loaded after main.js. Visual effects and the single fixed-step rendering loop. */
 (function(){
-  const oldSpeed=document.getElementById('bf-speed');
-  if(!oldSpeed)return;
-  const speed=oldSpeed.cloneNode(false);
-  speed.innerHTML='<option value="1" selected>1배속 (현재 기본 속도)</option><option value="2">2배속 (현재 속도의 2배)</option>';
-  oldSpeed.replaceWith(speed);
+  const speed=document.getElementById('bf-speed');
+  if(!speed)return;
   const reduced=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const label=document.createElement('label');
   label.style.cssText='display:block;font-size:12px;margin-top:8px';
@@ -89,18 +86,25 @@
       else{const r=s.r*(1-s.life/20);ring(s.x,s.y,r,s.c,Math.max(1,s.life/4));ring(s.x,s.y,r*0.65,'#fff',1);}
     });ctx.restore();
   };
-  // main.js scheduled one callback already; it schedules this replacement on its next frame.
-  // Do not start another RAF chain here.
+  // Fixed-step simulation: 2x doubles updates, not expensive canvas paints.
   gameLoop=function(time){
-    now=time;
+    if(!Number.isFinite(time)){requestAnimationFrame(gameLoop);return;}
     if(last===null)last=time;
     const delta=Math.min(100,Math.max(0,time-last));last=time;
-    if(time<stopUntil&&!gentle.checked){draw();requestAnimationFrame(gameLoop);return;}
-    acc+=delta*(speed.value==='2'?2:1);
-    const step=1000/60;
-    while(acc+0.000001>=step){update();draw();acc=Math.max(0,acc-step);if(now<stopUntil&&!gentle.checked){acc=0;break;}}
+    if(isPlaying&&!isGameOver&&(gentle.checked||time>=stopUntil)){
+      const step=1000/60;
+      acc+=delta*(speed.value==='2'?2:1);
+      let steps=0;
+      while(acc+0.000001>=step&&steps<10){
+        update();acc=Math.max(0,acc-step);steps++;
+        if(isGameOver||(!gentle.checked&&time<stopUntil)){acc=0;break;}
+      }
+      if(steps>=10)acc=0;
+    }else acc=0;
+    draw();
     requestAnimationFrame(gameLoop);
   };
   speed.onchange=()=>{acc=0;last=null;};
   document.addEventListener('visibilitychange',()=>{acc=0;last=null;stopUntil=0;});
+  requestAnimationFrame(gameLoop);
 })();

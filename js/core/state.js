@@ -6,7 +6,7 @@ function drawRoundedRect(context, x, y, width, height, radius) {
   context.beginPath();
   context.moveTo(x + radius, y);
   context.lineTo(x + width - radius, y);
-  context.quadraticCurveTo(x + width, y + width, x + width, y + radius);
+  context.quadraticCurveTo(x + width, y, x + width, y + radius);
   context.lineTo(x + width, y + height - radius);
   context.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
   context.lineTo(x + radius, y + height);

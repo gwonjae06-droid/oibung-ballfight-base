@@ -16,7 +16,11 @@ function reRollMatch(forcedDef) {
   const count=gameMode==='1v1'?2:3;
   const pool=[...CHARACTER_DEFS,...CUSTOM_DEFS];
   if(pool.length<count){setEconomyMessage('캐릭터 모듈이 아직 모두 로드되지 않았습니다.','bad');return false;}
-  let shuffled=[...pool].sort(()=>Math.random()-0.5);
+  const shuffled=[...pool];
+  for(let i=shuffled.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [shuffled[i],shuffled[j]]=[shuffled[j],shuffled[i]];
+  }
   if(forcedDef&&pool.includes(forcedDef))shuffled=[forcedDef,...shuffled.filter(d=>d!==forcedDef)];
   players=[];
   for(let i=0;i<count;i++) {
@@ -49,15 +53,28 @@ function updateCharacter(self) {
   const b=BEHAVIORS[self.id];
   if(b&&b.update)b.update(self,getClosestAliveEnemy(self));
 }
+
 function handleCombat(pA,pB) {
   if(pA.hp<=0||pB.hp<=0)return;
   if(pA.jumpState&&pA.jumpState!=='ground')return;
   if(pB.jumpState&&pB.jumpState!=='ground')return;
-  const dist=Math.hypot(pA.x-pB.x,pA.y-pB.y);
-  if(dist>=pA.radius+pB.radius)return;
-  // Preserve original collision response, including its B y-direction sign.
-  const nx=(pB.x-pA.x)/dist,ny=(pB.y-pA.y)/dist;
-  pA.vx-=nx*1.8;pA.vy-=ny*1.8;pB.vx+=nx*1.8;pB.vy-=ny*1.8;
+  const dx=pB.x-pA.x,dy=pB.y-pA.y;
+  const distance=Math.hypot(dx,dy),minDistance=pA.radius+pB.radius;
+  if(distance>=minDistance)return;
+  const nx=distance>0.0001?dx/distance:(pA.playerNum<=pB.playerNum?1:-1);
+  const ny=distance>0.0001?dy/distance:0;
+  // Positional separation avoids repeated wall/collision acceleration.
+  const separation=(minDistance-distance+0.01)/2;
+  pA.x=Math.max(pA.radius,Math.min(canvas.width-pA.radius,pA.x-nx*separation));
+  pA.y=Math.max(pA.radius,Math.min(canvas.height-pA.radius,pA.y-ny*separation));
+  pB.x=Math.max(pB.radius,Math.min(canvas.width-pB.radius,pB.x+nx*separation));
+  pB.y=Math.max(pB.radius,Math.min(canvas.height-pB.radius,pB.y+ny*separation));
+  const approach=(pB.vx-pA.vx)*nx+(pB.vy-pA.vy)*ny;
+  if(approach<0){
+    const impulse=Math.min(5,Math.max(1.8,-approach*0.58));
+    pA.vx-=nx*impulse;pA.vy-=ny*impulse;
+    pB.vx+=nx*impulse;pB.vy+=ny*impulse;
+  }
   [[pA,pB],[pB,pA]]
     .filter(([a])=>BEHAVIORS[a.id]&&BEHAVIORS[a.id].onContact)
     .sort((x,y)=>(BEHAVIORS[x[0].id].order||99)-(BEHAVIORS[y[0].id].order||99))
@@ -74,6 +91,9 @@ function update() {
   players.forEach(p=>{
     if(p.hp>0&&(!p.jumpState||p.jumpState==='ground')){
       const m=p.slowTimer>0?p.slowMultiplier:1;
+      const velocity=Math.hypot(p.vx,p.vy);
+      if(!Number.isFinite(velocity)){p.vx=p.playerNum%2?1.4:-1.4;p.vy=0.9;}
+      else if(velocity>12){p.vx=p.vx/velocity*12;p.vy=p.vy/velocity*12;}
       p.x+=p.vx*m;p.y+=p.vy*m;
       if(p.x-p.radius<0){p.x=p.radius;p.vx*=-1;}
       if(p.x+p.radius>canvas.width){p.x=canvas.width-p.radius;p.vx*=-1;}
@@ -84,6 +104,15 @@ function update() {
   const alive=players.filter(p=>p.hp>0);
   for(let i=0;i<alive.length;i++)for(let j=i+1;j<alive.length;j++)handleCombat(alive[i],alive[j]);
   for(let i=shockwaves.length-1;i>=0;i--){const sw=shockwaves[i];sw.radius+=5.5;sw.alpha-=0.03;if(sw.alpha<=0||sw.radius>=sw.maxRadius)shockwaves.splice(i,1);}
+  // Visual particles follow simulation time and respect pause.
+  for(let i=particles.length-1;i>=0;i--){
+    const p=particles[i];p.x+=p.vx;p.y+=p.vy;p.alpha-=0.025;
+    if(p.alpha<=0)particles.splice(i,1);
+  }
+  for(let i=floatingTexts.length-1;i>=0;i--){
+    const f=floatingTexts[i];f.y+=f.vy;f.alpha-=0.015;
+    if(f.alpha<=0)floatingTexts.splice(i,1);
+  }
   const finalAlive=players.filter(p=>p.hp>0);
   if(finalAlive.length<=1){isGameOver=true;isPlaying=false;settleRound(finalAlive.length===1?finalAlive[0]:null);document.getElementById('btn-start').innerText='🔄 새 대진 만들기';document.getElementById('btn-start').style.background='#22c55e';}
   updateUI();
@@ -101,4 +130,5 @@ function updateUI() {
     else te.style.display='none';
   });
 }
-function gameLoop(){update();draw();requestAnimationFrame(gameLoop);}
+// requestAnimationFrame scheduling is owned by battle-effects.js.
+let gameLoop;

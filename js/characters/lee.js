@@ -3,7 +3,7 @@ BEHAVIORS.lee={order:5,update(self,target){
 const list=['칼날비','치명적속도','정복자','빙결','난입'];self.runeTimer++;
 if(self.runeTimer>=self.runeDuration&&!self.isRolling){self.isRolling=true;self.rollTimer=0;}
 if(self.isRolling){self.rollTimer++;if(self.rollTimer%3===0)self.displayRune=list[Math.floor(Math.random()*list.length)];if(self.rollTimer>=45){self.isRolling=false;self.runeTimer=0;const available=list.filter(r=>r!==self.currentRune);self.currentRune=available[Math.floor(Math.random()*available.length)];self.displayRune=self.currentRune;if(self.currentRune==='칼날비')self.hailBladesHits=3;addFloatingText(`✨ [${self.currentRune}] 획득!`,self.x,self.y-45,'#0284c7',20);}}
-let cooldown=self.pokeCooldown;if(self.currentRune==='난입'){if(Math.hypot(self.vx,self.vy)<2.8){self.vx*=1.25;self.vy*=1.25;}}else if(self.currentRune==='치명적속도')cooldown=28;
+let cooldown=self.pokeCooldown;if(self.currentRune==='난입'){if(Math.hypot(self.vx,self.vy)<2.8*(self.speedMultiplier||1)){self.vx*=1.25;self.vy*=1.25;}}else if(self.currentRune==='치명적속도')cooldown=28;
 self.pokeTimer++;if(self.pokeTimer>=cooldown&&target){self.pokeTimer=0;self.pokeAnim=1;self.pokeTargetX=target.x;self.pokeTargetY=target.y;const dist=Math.hypot(target.x-self.x,target.y-self.y);if(dist<=self.pokeRange&&target.invincible===0&&target.jumpState!=='rising'&&target.jumpState!=='hovering'){let dmg=15,color='#0284c7',text=`👉 콕! -${dmg}`;
 if(self.currentRune==='칼날비'){dmg=26;color='#dc2626';text=`⚡ 칼날비 찌르기! -${dmg}`;if(self.hailBladesHits>0)self.hailBladesHits--;}
 else if(self.currentRune==='정복자'){self.conquerorStacks=Math.min(6,self.conquerorStacks+1);dmg=15+self.conquerorStacks*3;self.hp=Math.min(self.maxHp,self.hp+5);color='#ea580c';text=`🩸 정복자 찌르기! -${dmg}`;addFloatingText('+5 HP',self.x,self.y-25,'#22c55e',15);}

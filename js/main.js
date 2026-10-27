@@ -4,13 +4,13 @@
   const pool = () => [...CHARACTER_DEFS, ...CUSTOM_DEFS];
   const locked = () => roundStarted && !isGameOver;
   const originalRoll = reRollMatch, originalUpdate = update, originalDrawCharacter = drawCharacter;
-  let rate = 2, pendingPhoto = null, draft = null, photoTicket = 0, sequence = 0;
+  let pendingPhoto = null, draft = null, photoTicket = 0, sequence = 0;
   const css = document.createElement('style');
   css.textContent = `.bf-tools{width:100%;background:#fff;padding:12px;border:2px solid #111;border-radius:10px;margin:12px 0}.bf-tools h2{font-size:16px;margin:0 0 8px}.bf-tools p{font-size:12px;line-height:1.5;color:#475569}.bf-row{display:flex;gap:7px;flex-wrap:wrap;margin:8px 0}.bf-row label{flex:1;min-width:100px;font-size:12px;font-weight:800}.bf-tools select,.bf-tools input,.bf-tools textarea{width:100%;padding:9px;border:1px solid #94a3b8;border-radius:6px;font:inherit;font-size:13px;user-select:text;-webkit-user-select:text}.bf-tools textarea{min-height:90px;resize:vertical}.bf-tools button{font-size:12px;min-height:40px}.bf-preview{width:76px;height:76px;border-radius:50%;object-fit:cover;border:2px solid #111;background:#eee}.bf-notice{font-size:12px;white-space:pre-wrap;line-height:1.6;padding:8px;background:#f1f5f9;border-radius:6px}.bf-fold{width:100%;margin-top:12px}.bf-fold summary{cursor:pointer;font-weight:900;padding:12px;background:#e2e8f0;border-radius:8px}.bf-fold .economy-card{margin-top:0}.bf-rules{font-size:12px;line-height:1.6}.bf-tools [hidden]{display:none!important}`;
   document.head.appendChild(css);
   const panel = document.createElement('section');
   panel.className = 'bf-tools';
-  panel.innerHTML = `<h2>캐릭터 선택 · 경기 설정</h2><div class="bf-row" id="bf-picks"></div><div class="bf-row"><button type="button" id="bf-apply">선택한 대진 적용</button><button type="button" id="bf-random">랜덤 대진</button><label>배속<select id="bf-speed"><option value="1">1배속 (기존의 절반)</option><option value="2" selected>2배속 (기존 속도)</option></select></label></div><p>선택한 대진을 적용한 뒤 경기 시작을 누르세요. 경기 도중에는 사진·캐릭터를 바꿀 수 없습니다. 배속은 경기 중에도 변경할 수 있습니다.</p><div id="bf-status" class="bf-notice" role="status" aria-live="polite"></div><details><summary>사진 지정</summary><p>본인 또는 사용 허락을 받은 사진만 사용하세요. 사진은 서버로 전송하지 않으며 새로고침하면 초기화됩니다. 사진을 고른 뒤 대상 캐릭터에 적용하세요.</p><input type="file" id="bf-photo" accept="image/jpeg,image/png,image/webp" aria-label="사진 선택"><div class="bf-row"><img id="bf-face" class="bf-preview" alt="선택한 사진 미리보기" hidden><label>사진을 넣을 캐릭터<select id="bf-photo-target"></select></label></div><div class="bf-row"><button type="button" id="bf-photo-apply">사진 적용</button><button type="button" id="bf-photo-clear">대상 사진 초기화</button></div><p>오슬우에 적용하면 보인고·멘헤라 두 모드 모두 같은 사진을 사용합니다.</p></details><details><summary>내 캐릭터 만들기 · 내장 해석기</summary><p>AI API가 아닌 한국어 키워드 해석기입니다. 최대 6명, 능력 최대 3개. 입력한 수치와 자유로운 조건 전부를 해석하지는 않습니다. 분석 결과의 실제 규칙을 확인하세요.</p><label>이름<input id="bf-name" maxlength="10" placeholder="최대 10자"></label><label>원하는 능력<textarea id="bf-text" maxlength="300" placeholder="얼음 구슬을 발사하고 체력이 낮아지면 빨라진다"></textarea></label><p>파동 · 투사체 · 오라 · 돌진 · 내려찍기 · 낙뢰 · 순간이동 · 회복 · 방어막 · 끌어당기기 / 화상 · 중독 · 둔화 · 흡혈 · 폭주</p><div class="bf-row"><button type="button" id="bf-analyze">능력 분석</button><button type="button" id="bf-create" disabled>확인하고 생성 · P1 선택</button></div><div id="bf-result" class="bf-notice"></div><p>현재 선택한 사진을 새 캐릭터에도 사용합니다. 캐릭터와 사진은 이번 접속에만 유지됩니다.</p><div id="bf-custom-list" class="bf-rules"></div></details>`;
+  panel.innerHTML = `<h2>캐릭터 선택 · 경기 설정</h2><div class="bf-row" id="bf-picks"></div><div class="bf-row"><button type="button" id="bf-apply">선택한 대진 적용</button><button type="button" id="bf-random">랜덤 대진</button><label>배속<select id="bf-speed"><option value="1" selected>1배속 (기본 속도)</option><option value="2">2배속 (빠르게)</option></select></label></div><p>선택한 대진을 적용한 뒤 경기 시작을 누르세요. 경기 도중에는 사진·캐릭터를 바꿀 수 없습니다. 배속은 경기 중에도 변경할 수 있습니다.</p><div id="bf-status" class="bf-notice" role="status" aria-live="polite"></div><details><summary>사진 지정</summary><p>본인 또는 사용 허락을 받은 사진만 사용하세요. 사진은 서버로 전송하지 않으며 새로고침하면 초기화됩니다. 사진을 고른 뒤 대상 캐릭터에 적용하세요.</p><input type="file" id="bf-photo" accept="image/jpeg,image/png,image/webp" aria-label="사진 선택"><div class="bf-row"><img id="bf-face" class="bf-preview" alt="선택한 사진 미리보기" hidden><label>사진을 넣을 캐릭터<select id="bf-photo-target"></select></label></div><div class="bf-row"><button type="button" id="bf-photo-apply">사진 적용</button><button type="button" id="bf-photo-clear">대상 사진 초기화</button></div><p>오슬우에 적용하면 보인고·멘헤라 두 모드 모두 같은 사진을 사용합니다.</p></details><details><summary>내 캐릭터 만들기 · 내장 해석기</summary><p>AI API가 아닌 한국어 키워드 해석기입니다. 최대 6명, 능력 최대 3개. 입력한 수치와 자유로운 조건 전부를 해석하지는 않습니다. 분석 결과의 실제 규칙을 확인하세요.</p><label>이름<input id="bf-name" maxlength="10" placeholder="최대 10자"></label><label>원하는 능력<textarea id="bf-text" maxlength="300" placeholder="얼음 구슬을 발사하고 체력이 낮아지면 빨라진다"></textarea></label><p>파동 · 투사체 · 오라 · 돌진 · 내려찍기 · 낙뢰 · 순간이동 · 회복 · 방어막 · 끌어당기기 / 화상 · 중독 · 둔화 · 흡혈 · 폭주</p><div class="bf-row"><button type="button" id="bf-analyze">능력 분석</button><button type="button" id="bf-create" disabled>확인하고 생성 · P1 선택</button></div><div id="bf-result" class="bf-notice"></div><p>현재 선택한 사진을 새 캐릭터에도 사용합니다. 캐릭터와 사진은 이번 접속에만 유지됩니다.</p><div id="bf-custom-list" class="bf-rules"></div></details>`;
   const battle = document.querySelector('.battle-screen');
   battle.before(panel);
   const economy = document.querySelector('.economy-card');
@@ -57,7 +57,6 @@
   }
   $('bf-apply').onclick=applyPicks;
   $('bf-random').onclick=()=>reRollMatch();
-  $('bf-speed').onchange=()=>{rate=Number($('bf-speed').value)===1?1:2;};
   $('bf-photo').onchange=async e=>{
     const ticket=++photoTicket,file=e.target.files[0];
     pendingPhoto=null;$('bf-face').hidden=true;
@@ -137,10 +136,17 @@
   function customUpdate(p,target){
     const s=p.spec,damage=k=>Math.max(1,Math.round(kinds[k][2]*s.damageScale));
     if(s.rage&&!p.bfRaged&&p.hp<=p.maxHp*0.5){p.bfRaged=true;p.bfRage=300;addFloatingText('폭주!',p.x,p.y-45,'#ef4444',22);}
-    let speed=1.42;
+    let speed=1.42*(p.speedMultiplier||1);
     if(p.bfRage>0){p.bfRage--;speed*=1.5;if(p.bfRage===0&&s.penalty)p.bfTired=120;}else if(p.bfTired>0){p.bfTired--;speed*=0.5;}
     if(p.bfDash>0){p.bfDash--;speed*=3;if(target){const dx=target.x-p.x,dy=target.y-p.y,d=Math.hypot(dx,dy)||1;p.vx=dx/d*speed;p.vy=dy/d*speed;}}
-    const v=Math.hypot(p.vx,p.vy)||1;p.vx=p.vx/v*speed;p.vy=p.vy/v*speed;
+    // Recover cruising speed gradually; preserve knockback and item boosts.
+    const current=Math.hypot(p.vx,p.vy);
+    if(!Number.isFinite(current)||current<0.001){p.vx=speed;p.vy=0;}
+    else{
+      const blend=current>speed?0.075:0.18;
+      const next=current+(speed-current)*blend;
+      p.vx=p.vx/current*next;p.vy=p.vy/current*next;
+    }
     s.skills.forEach((k,i)=>{
       if(k==='slam'){
         const before=p.hp,orig=players.map(e=>({e,hp:e.hp}));
@@ -188,18 +194,7 @@
     if(isPlaying&&!isGameOver)players.forEach(p=>{if(p.bfDot>0&&p.hp>0){p.bfDot--;if(p.bfDot%30===0){p.hp=Math.max(0,p.hp-2);addFloatingText('-2 지속 피해',p.x,p.y-30,'#f97316',14);}}});
     originalUpdate();
   };
-  let last=null,acc=0;
-  gameLoop=function(now){
-    if(typeof now!=='number'){requestAnimationFrame(gameLoop);return;}
-    if(last===null)last=now;
-    const delta=Math.min(100,Math.max(0,now-last));last=now;
-    const step=1000/60;
-    acc+=delta*(rate/2);
-    while(acc>=step){update();draw();acc-=step;}
-    requestAnimationFrame(gameLoop);
-  };
-  document.addEventListener('visibilitychange',()=>{last=null;acc=0;});
+  // The single fixed-step game loop starts once effects are installed.
   reRollMatch();
   setEconomyMessage('베팅 없이 바로 시작할 수 있습니다.');
-  gameLoop();
 })();
