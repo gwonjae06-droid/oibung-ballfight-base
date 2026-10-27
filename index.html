@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>오이붕 맞짱뜨기 시뮬레이터</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <div class="main-container" id="container">
+    <h1 id="title-text">⚔️ 1vs1 랜덤 배틀</h1>
+
+    <div class="battle-screen">
+      <div class="canvas-wrapper">
+        <canvas id="arena" width="500" height="500"></canvas>
+      </div>
+
+      <div class="ui-container" id="ui-container">
+        <!-- P1 -->
+        <div class="player-section" id="sec-p1">
+          <div class="player-header">
+            <span class="player-title" id="p1-name" style="color: #ea580c;">P1</span>
+            <span class="hp-text"><span id="p1-hp-text">250</span>/<span id="p1-maxhp">250</span></span>
+          </div>
+          <div class="hp-bar-track">
+            <div id="p1-hp-bar" class="hp-bar-fill"></div>
+          </div>
+          <div style="margin-top: 4px; min-height: 18px;">
+            <span id="p1-tag" class="mode-tag" style="display:none;"></span>
+          </div>
+        </div>
+
+        <!-- P2 -->
+        <div class="player-section" id="sec-p2">
+          <div class="player-header">
+            <span class="player-title" id="p2-name" style="color: #0284c7;">P2</span>
+            <span class="hp-text"><span id="p2-hp-text">250</span>/<span id="p2-maxhp">250</span></span>
+          </div>
+          <div class="hp-bar-track">
+            <div id="p2-hp-bar" class="hp-bar-fill"></div>
+          </div>
+          <div style="margin-top: 4px; min-height: 18px;">
+            <span id="p2-tag" class="mode-tag" style="display:none;"></span>
+          </div>
+        </div>
+
+        <!-- P3 -->
+        <div class="player-section" id="sec-p3" style="display:none;">
+          <div class="player-header">
+            <span class="player-title" id="p3-name" style="color: #10b981;">P3</span>
+            <span class="hp-text"><span id="p3-hp-text">250</span>/<span id="p3-maxhp">250</span></span>
+          </div>
+          <div class="hp-bar-track">
+            <div id="p3-hp-bar" class="hp-bar-fill"></div>
+          </div>
+          <div style="margin-top: 4px; min-height: 18px;">
+            <span id="p3-tag" class="mode-tag" style="display:none;"></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="control-panel">
+        <button id="btn-start" onclick="togglePlay()">🎲 경기 시작</button>
+        <button id="btn-reset" onclick="reRollMatch()">🔄 재매칭</button>
+        <button id="btn-mode" onclick="toggleMode()">🔥 모드: 1vs1</button>
+      </div>
+    </div>
+
+    <section class="economy-card" aria-labelledby="economy-title">
+      <div class="economy-head"><h2 class="economy-title" id="economy-title">💰 승부 예측 &amp; 아이템 상점</h2><div class="coin-balance" id="coin-balance">1,000 G</div></div>
+      <p class="economy-help">경기 전에 승자를 고르고 베팅하세요. 1vs1은 2배, 1vs1vs1은 3배를 받습니다. 0 G는 무료 관전입니다.</p>
+      <div class="bet-players" id="bet-players" aria-label="우승 예상 캐릭터"></div>
+      <div class="wager-wrap"><input id="wager-input" type="number" min="0" step="10" value="100" inputmode="numeric" aria-label="베팅 금액" oninput="renderEconomyUI()"><button class="mini-btn" id="btn-max-bet" type="button" onclick="setMaxBet()">MAX</button></div>
+      <div class="odds-text" id="odds-text">캐릭터를 선택하세요.</div><div class="economy-message" id="economy-message" role="status" aria-live="polite">우승할 것 같은 캐릭터를 선택하세요.</div>
+      <div class="economy-divider"></div>
+      <div class="economy-row"><h2 class="economy-title">🛒 라운드 아이템</h2><span class="economy-help" style="margin:0">같은 아이템을 여러 개 사서 여러 명에게 예약 가능</span></div>
+      <div class="shop-grid">
+        <article class="shop-item"><h3>⏱ 능력 오버클럭</h3><p>주요 능력을 이번 판 동안 약 1초마다 사용합니다. 여러 명 적용 가능.</p><div class="shop-meta"><span>650 G</span><span id="inv-skillRush">보유 0</span></div><button class="shop-btn" type="button" onclick="buyItem('skillRush')">1개 구매</button><div class="target-label">적용 대상 선택</div><div class="target-buttons" id="targets-skillRush"></div></article>
+        <article class="shop-item"><h3>❤️ 강화 생명 코어</h3><p>이번 판 최대 체력과 시작 체력을 75 올립니다. 여러 명 적용 가능.</p><div class="shop-meta"><span>350 G</span><span id="inv-vitality">보유 0</span></div><button class="shop-btn" type="button" onclick="buyItem('vitality')">1개 구매</button><div class="target-label">적용 대상 선택</div><div class="target-buttons" id="targets-vitality"></div></article>
+        <article class="shop-item"><h3>🥾 돌진 부츠</h3><p>이번 판 이동 속도를 35% 높입니다. 여러 명 적용 가능.</p><div class="shop-meta"><span>300 G</span><span id="inv-speed">보유 0</span></div><button class="shop-btn" type="button" onclick="buyItem('speed')">1개 구매</button><div class="target-label">적용 대상 선택</div><div class="target-buttons" id="targets-speed"></div></article>
+      </div><div class="reserved-list" id="reserved-list">예약된 아이템 없음</div>
+    </section>
+
+    <!-- 하단 캐릭터 목록 -->
+    <div class="roster-card">
+      <div class="roster-title">참전 캐릭터 특수 능력</div>
+      <div class="roster-list">
+        <div class="roster-item"><span class="roster-name" style="color:#ea580c;">• 배서준</span>: [피싸기 2회 → 피모으기 1회] + [가하는 피해의 20% 흡혈]</div>
+        <div class="roster-item"><span class="roster-name" style="color:#7e22ce;">• 오슬우</span>: [보인고](2초 주기 가장 가까운 적 매혹 흡입) ↔ [멘헤라](장판 + 독눈물 둔화) 모드 전환</div>
+        <div class="roster-item"><span class="roster-name" style="color:#0284c7;">• 이권재</span>: [롱레인지 손가락 찌르기] + [만능의 돌 룬 룰렛] (가장 가까운 적 조준)</div>
+        <div class="roster-item"><span class="roster-name" style="color:#10b981;">• 박성원</span>: [메테오 강타] 체력 비례 쿨다운 감소 + 착지 직후 0.2초 무적</div>
+        <div class="roster-item"><span class="roster-name" style="color:#e11d48;">• 최규원</span>: [n수 할 준비..!] 수능 만점(미친황소) / 평타(체력 +25 회복) / 폭망 3단 변신</div>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/core/state.js"></script>
+  <script src="js/photos.js"></script>
+  <script src="js/features/economy.js"></script>
+  <script src="js/characters/bae.js"></script>
+  <script src="js/characters/oh.js"></script>
+  <script src="js/characters/lee.js"></script>
+  <script src="js/characters/park.js"></script>
+  <script src="js/characters/choi.js"></script>
+  <script src="js/core/engine.js"></script>
+  <script src="js/core/render.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>

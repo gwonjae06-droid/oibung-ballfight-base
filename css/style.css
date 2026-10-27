@@ -1,0 +1,233 @@
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+    }
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: #f0f2f5;
+      color: #111;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans KR", sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    .main-container {
+      width: 100%;
+      max-width: 520px;
+      padding: 14px 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      transition: max-width 0.2s ease;
+    }
+    .main-container.mode-3p {
+      max-width: 680px;
+    }
+
+    h1 {
+      margin: 4px 0 12px 0;
+      font-size: 22px;
+      font-weight: 900;
+      letter-spacing: -0.5px;
+      color: #111;
+      text-align: center;
+    }
+
+    .battle-screen {
+      width: 100%;
+      background: #ffffff;
+      padding: 12px;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .canvas-wrapper {
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      position: relative;
+    }
+
+    #arena {
+      width: 100% !important;
+      height: 100% !important;
+      background: #ffffff;
+      border: 5px solid #111111;
+      border-radius: 4px;
+      display: block;
+    }
+
+    .ui-container {
+      width: 100%;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 14px;
+    }
+    .ui-container.mode-3p {
+      grid-template-columns: 1fr 1fr 1fr;
+    }
+
+    .player-section {
+      background: #f8fafc;
+      padding: 6px 8px;
+      border-radius: 8px;
+      border: 1.5px solid #e2e8f0;
+    }
+
+    .player-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 4px;
+      gap: 4px;
+    }
+
+    .player-title {
+      font-size: 13px;
+      font-weight: 900;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .mode-tag {
+      font-size: 10px;
+      font-weight: 800;
+      padding: 1px 5px;
+      border-radius: 4px;
+      display: inline-block;
+      white-space: nowrap;
+    }
+
+    .hp-text {
+      font-size: 11px;
+      font-weight: 800;
+      color: #444;
+      white-space: nowrap;
+    }
+
+    .hp-bar-track {
+      width: 100%;
+      height: 14px;
+      background: #e5e7eb;
+      border: 2px solid #111111;
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    .hp-bar-fill {
+      height: 100%;
+      width: 100%;
+      background: #22c55e;
+      transition: width 0.15s ease;
+    }
+
+    .control-panel {
+      width: 100%;
+      margin-top: 14px;
+      display: flex;
+      gap: 8px;
+    }
+
+    button {
+      flex: 1;
+      border: 2px solid #111;
+      padding: 11px 8px;
+      font-size: 14px;
+      font-weight: 900;
+      border-radius: 8px;
+      cursor: pointer;
+      box-shadow: 2px 2px 0px #111;
+      transition: all 0.1s;
+    }
+
+    #btn-start {
+      background: #22c55e;
+      color: #111;
+    }
+
+    #btn-reset {
+      background: #ffffff;
+      color: #111;
+    }
+
+    #btn-mode {
+      background: #f8fafc;
+      color: #0f172a;
+    }
+
+    button:active {
+      transform: translate(1px, 1px);
+      box-shadow: 1px 1px 0px #111;
+    }
+
+    .roster-card {
+      width: 100%;
+      background: #ffffff;
+      margin-top: 14px;
+      padding: 12px 14px;
+      border-radius: 10px;
+      border: 2px solid #e2e8f0;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    }
+
+    .roster-title {
+      font-size: 13px;
+      font-weight: 900;
+      color: #64748b;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .roster-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .roster-item {
+      font-size: 12.5px;
+      color: #334155;
+      line-height: 1.4;
+    }
+
+    .roster-name {
+      font-weight: 800;
+      color: #0f172a;
+    }
+  
+    /* 베팅·상점 확장 UI */
+    .economy-card{width:100%;margin-top:14px;padding:14px;background:#fff;border:2px solid #111;border-radius:10px;box-shadow:3px 3px 0 #111}
+    .economy-head,.economy-row{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+    .economy-title{margin:0;font-size:16px;font-weight:900;color:#111827}
+    .coin-balance{padding:6px 10px;border:2px solid #92400e;border-radius:999px;background:#fef3c7;color:#92400e;font-size:14px;font-weight:900;font-variant-numeric:tabular-nums}
+    .economy-help{margin:8px 0 0;color:#64748b;font-size:12px;line-height:1.45}
+    .bet-players{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin-top:10px}
+    .bet-player-btn,.mini-btn,.shop-btn,.target-chip{min-height:42px;border:2px solid #111;border-radius:7px;background:#fff;color:#111;font-size:12px;font-weight:900;box-shadow:2px 2px 0 #111}
+    .bet-player-btn.selected{background:#fef3c7;border-color:#92400e;color:#92400e;box-shadow:2px 2px 0 #92400e}
+    button:disabled,input:disabled{opacity:.5;cursor:not-allowed}
+    .wager-wrap{display:grid;grid-template-columns:1fr auto;gap:7px;margin-top:9px}
+    .wager-wrap input{width:100%;min-height:42px;padding:8px 10px;border:2px solid #111;border-radius:7px;background:#fff;color:#111;font-size:14px;font-weight:800;font-variant-numeric:tabular-nums}
+    .mini-btn{padding:7px 12px;background:#f8fafc}.odds-text{margin-top:7px;font-size:12px;font-weight:800;color:#475569}
+    .economy-message{min-height:35px;margin-top:9px;padding:8px 10px;border-radius:7px;background:#f1f5f9;color:#334155;font-size:12px;font-weight:800;line-height:1.45}
+    .economy-divider{height:2px;margin:14px 0;background:#e2e8f0}
+    .shop-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:10px}
+    .shop-item{padding:10px;border:1.5px solid #cbd5e1;border-radius:8px;background:#f8fafc}
+    .shop-item h3{margin:0;font-size:13px;font-weight:900;color:#0f172a}.shop-item p{margin:5px 0 8px;min-height:52px;color:#64748b;font-size:11px;line-height:1.4}
+    .shop-meta{display:flex;justify-content:space-between;gap:4px;margin-bottom:7px;color:#334155;font-size:11px;font-weight:900}
+    .shop-btn{width:100%;min-height:36px;padding:6px;background:#fef3c7;font-size:11px}
+    .target-label{margin-top:9px;color:#475569;font-size:11px;font-weight:900}.target-buttons{display:grid;gap:5px;margin-top:5px}
+    .target-chip{min-height:34px;padding:5px;box-shadow:1px 1px 0 #111;font-size:11px}.target-chip.assigned{background:#dcfce7;border-color:#166534;color:#166534;box-shadow:1px 1px 0 #166534}
+    .reserved-list{margin-top:8px;color:#475569;font-size:11px;font-weight:800;line-height:1.5}
+    @media(max-width:500px){.shop-grid{grid-template-columns:1fr}.bet-players{grid-template-columns:1fr}.shop-item p{min-height:0}.target-buttons{grid-template-columns:repeat(2,minmax(0,1fr))}}
