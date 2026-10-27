@@ -36,7 +36,7 @@
       options(select,players[i]&&players[i].id);label.appendChild(select);box.appendChild(label);
     }
     const target=$('bf-photo-target'),old=target.value;options(target,old);
-    const customList=$('bf-custom-list');if(customList)customList.textContent=CUSTOM_DEFS.length?'생성됨: '+CUSTOM_DEFS.map(d=>d.name).join(' · '):'';
+    if(window.SkillForge)SkillForge.refreshList();
   }
   reRollMatch = function (forcedDef) {
     if(!allowed())return false;

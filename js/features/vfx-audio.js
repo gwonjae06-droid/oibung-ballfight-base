@@ -141,7 +141,7 @@
   }
   function draw(ctx,characters=[]){
     ctx.save();
-    ctx.globalCompositeOperation='lighter';
+    ctx.globalCompositeOperation='source-over';
     for(const f of fx){
       const k=1-f.age/f.life;
       ctx.save();ctx.globalAlpha=clamp(k,0,1);
@@ -151,18 +151,28 @@
         ctx.beginPath();ctx.moveTo(f.x,f.y);ctx.lineTo(f.x-f.dx*2.3,f.y-f.dy*2.3);ctx.stroke();
       } else if(f.kind==='ring'||f.kind==='glyph'||f.kind==='heal'||f.kind==='shield') {
         const r=f.kind==='ring'?f.radius*(.08+(1-k)*.94):f.radius*(1+(1-k)*.14);
-        ctx.lineWidth=f.kind==='ring'?4.5*k+1.5:2.2;
-        ctx.shadowColor=f.color;ctx.shadowBlur=intensity==='low'?0:14*k;
-        ctx.beginPath();ctx.arc(f.x,f.y,r,0,2*Math.PI);ctx.stroke();
-        if(f.kind!=='ring'){
-          ctx.save();ctx.translate(f.x,f.y);ctx.rotate(f.age*.025);
-          ctx.setLineDash([8,13]);ctx.beginPath();ctx.arc(0,0,r*.72,0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);
-          if(f.kind==='glyph') for(let i=0;i<6;i++){
-            const a=i*Math.PI/3;
-            ctx.beginPath();ctx.moveTo(Math.cos(a)*r*.86,Math.sin(a)*r*.86);
-            ctx.lineTo(Math.cos(a)*r*.95,Math.sin(a)*r*.95);ctx.stroke();
+        // Physical shock-front: fast moving air ring + dusty fragmented fringe,
+        // no futuristic spinning glyphs on the white playfield.
+        const isImpact=f.kind==='ring'||f.kind==='glyph';
+        ctx.strokeStyle=isImpact?'rgba(73,81,89,.85)':f.kind==='heal'?'#56ad79':f.color;
+        ctx.lineWidth=isImpact?Math.max(1,8*k):2.5;
+        ctx.shadowColor=isImpact?'rgba(70,75,80,.28)':f.color;
+        ctx.shadowBlur=intensity==='low'?0:8*k;
+        ctx.beginPath();
+        for(let j=0;j<=48;j++){
+          const angle=j/48*Math.PI*2;
+          const jag=(Math.sin(j*7.1+f.x)*1.8+Math.sin(j*3.1+f.y)*2.5)*k;
+          const rr=r+jag;
+          if(j===0)ctx.moveTo(f.x+Math.cos(angle)*rr,f.y+Math.sin(angle)*rr);
+          else ctx.lineTo(f.x+Math.cos(angle)*rr,f.y+Math.sin(angle)*rr);
+        }
+        ctx.stroke();
+        if(isImpact && intensity!=='low'){
+          ctx.globalAlpha=.22*k;ctx.lineWidth=3;
+          for(let j=0;j<16;j++){
+            const angle=j*Math.PI/8+f.x*.009,rr=r*(.8+.34*Math.sin(j*18+f.age));
+            ctx.beginPath();ctx.arc(f.x+Math.cos(angle)*rr,f.y+Math.sin(angle)*rr,2.3,0,Math.PI*2);ctx.stroke();
           }
-          ctx.restore();
         }
       } else if(f.kind==='flash'){
         const r=f.radius*(1.5-k);
@@ -181,10 +191,31 @@
         ctx.shadowColor=f.color;ctx.shadowBlur=12;
         ctx.beginPath();ctx.arc(0,0,f.radius*(1-k*.35),-1.2,1.2);ctx.stroke();
       } else if(f.kind==='bolt'){
-        ctx.lineWidth=7*k+1;ctx.shadowColor=f.color;ctx.shadowBlur=22;
-        ctx.beginPath();ctx.moveTo(f.x-30,f.y-260);
-        ctx.lineTo(f.x+13,f.y-158);ctx.lineTo(f.x-16,f.y-96);
-        ctx.lineTo(f.x+8,f.y-43);ctx.lineTo(f.x,f.y);ctx.stroke();
+        // Forking stepped leaders inspired by natural lightning discharges.
+        const fromY=Math.max(-35,f.y-250),segments=12;
+        const points=[];
+        for(let j=0;j<=segments;j++){
+          const t=j/segments;
+          const wobble=j===segments?0:Math.sin(j*13.28+f.x*.14+f.age*1.1)*20*(.25+t*.75);
+          points.push([f.x-33*(1-t)+wobble,fromY+(f.y-fromY)*t]);
+        }
+        const trace=()=>{
+          ctx.beginPath();ctx.moveTo(points[0][0],points[0][1]);
+          for(let j=1;j<points.length;j++)ctx.lineTo(points[j][0],points[j][1]);
+          ctx.stroke();
+        };
+        ctx.shadowBlur=intensity==='low'?0:18;
+        ctx.shadowColor='#aab7c8';ctx.strokeStyle='rgba(66,91,132,.35)';
+        ctx.lineWidth=12*k+2;trace();
+        ctx.shadowBlur=0;ctx.strokeStyle='#364c77';ctx.lineWidth=4*k+1.3;trace();
+        ctx.strokeStyle='#f9fcff';ctx.lineWidth=2.1*k+.6;trace();
+        if(intensity!=='low'){
+          for(const j of [3,6,9]){
+            const pt=points[j],out=Math.sin(j*3.2+f.age)*26;
+            ctx.strokeStyle='rgba(97,128,181,.7)';ctx.lineWidth=1.4;
+            ctx.beginPath();ctx.moveTo(pt[0],pt[1]);ctx.lineTo(pt[0]+out,pt[1]+27);ctx.lineTo(pt[0]+out+10,pt[1]+42);ctx.stroke();
+          }
+        }
       } else if(f.kind==='target'){
         ctx.lineWidth=3;ctx.setLineDash([10,7]);ctx.beginPath();
         ctx.arc(f.x,f.y,f.radius*(.8+.2*k),0,Math.PI*2);ctx.stroke();
@@ -201,11 +232,11 @@
       if(!v||p.hp<=0)continue;
       const elapsed=102-v.life,fade=clamp(Math.min(elapsed/10,v.life/23),0,1);
       ctx.globalAlpha=fade;
-      ctx.font='700 11px system-ui, sans-serif';
+      ctx.font='600 11px "Noto Sans KR", sans-serif';
       ctx.textAlign='center';
       const x=clamp(p.x,62,canvas.width-62),y=clamp(p.y-p.radius-52,27,canvas.height-25);
       const width=clamp(ctx.measureText(v.label).width+24,48,160);
-      ctx.fillStyle='rgba(7,13,21,.86)';ctx.strokeStyle=v.color;ctx.lineWidth=1;
+      ctx.fillStyle='rgba(20,20,20,.9)';ctx.strokeStyle='rgba(235,235,235,.66)';ctx.lineWidth=1;
       ctx.beginPath();if(typeof ctx.roundRect==='function')ctx.roundRect(x-width/2,y-14,width,23,7);else ctx.rect(x-width/2,y-14,width,23);ctx.fill();ctx.stroke();
       ctx.fillStyle='#f2f7f7';ctx.fillText(v.label,x,y+2);
     }

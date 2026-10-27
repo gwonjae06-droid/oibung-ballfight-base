@@ -179,6 +179,19 @@ function register(value){
   BEHAVIORS[id]={order:7,update,onContact:contact};
   return id;
 }
+function remove(id){
+  const index=CUSTOM_DEFS.findIndex(d=>d.id===id&&d.forgeData);
+  if(index<0)return false;
+  CUSTOM_DEFS.splice(index,1);
+  delete BEHAVIORS[id];if(typeof CHARACTER_PHOTOS!=='undefined')delete CHARACTER_PHOTOS[id];
+  persist();refreshList();return true;
+}
+function list(){
+  return CUSTOM_DEFS.filter(d=>d.forgeData).map(d=>({id:d.id,profile:normalize(d.forgeData)}));
+}
+function setDraft(value){
+  draft=normalize(value);refreshForm();return draft;
+}
 function saved(){
   try{const v=JSON.parse(localStorage.getItem(STORE)||'[]');return Array.isArray(v)?v.slice(0,6):[];}catch(_){return [];}
 }
@@ -188,6 +201,7 @@ function persist(){
 const escape=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const options=(values,selected)=>Object.entries(values).map(([k,v])=>'<option value="'+k+'"'+(k===selected?' selected':'')+'>'+v+'</option>').join('');
 let draft={name:'',blurb:'',color:'#a78bfa',hp:250,speed:1.8,skills:[skill()]};
+let refreshList=()=>{}, refreshForm=()=>{};
 function field(key,value,attrs){
   return '<input data-field="'+key+'" '+attrs+' value="'+escape(value)+'">';
 }
@@ -264,7 +278,26 @@ function initializeUI(){
     $('forge-speed').value=draft.speed;
   }
   function report(t){$('bf-result').textContent=t;}
-  function roster(){$('bf-custom-list').textContent=CUSTOM_DEFS.length?'등록: '+CUSTOM_DEFS.map(d=>d.name).join(' · '):'';}
+  function roster(){
+    const target=$('bf-custom-list');if(!target)return;
+    target.replaceChildren();
+    for(const def of CUSTOM_DEFS.filter(d=>d.forgeData)){
+      const row=document.createElement('div');row.className='forge-saved-row';
+      const name=document.createElement('span');name.textContent=def.name;
+      const remove=document.createElement('button');remove.type='button';remove.textContent='삭제';
+      remove.dataset.forgeId=def.id;remove.className='forge-delete';
+      row.append(name,remove);target.appendChild(row);
+    }
+  }
+  refreshList=roster;
+  refreshForm=()=>{refreshBasics();render();};
+  $('bf-custom-list').addEventListener('click',e=>{
+    const id=e.target.dataset.forgeId;
+    if(!id)return;
+    if(roundStarted&&!isGameOver){report('경기 종료 후 삭제할 수 있습니다.');return;}
+    if(!confirm('이 캐릭터를 삭제하시겠습니까?'))return;
+    if(remove(id)){reRollMatch();roster();report('캐릭터를 삭제했습니다.');}
+  });
   $('forge-skills').addEventListener('input',e=>{
     const key=e.target.dataset.field;
     if(!key)return;
@@ -325,6 +358,6 @@ function initialize(){
   const oldDraw=drawCharacter;
   drawCharacter=function(p){if(p.forge)drawFighter(p);oldDraw(p);};
 }
-global.SkillForge={normalize,register,TYPE,TRIGGER,STATUS};
+global.SkillForge={normalize,register,remove,list,setDraft,refreshList:()=>refreshList(),persist,TYPE,TRIGGER,STATUS};
 if(typeof document!=='undefined'&&document.querySelector('.bf-tools'))initialize();
 })(window);

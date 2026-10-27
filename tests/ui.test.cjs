@@ -58,6 +58,11 @@ test('control wording is short and start state is managed by CSS', () => {
 test('responsive HUD and input accessibility are preserved', () => {
   assert.ok(style.includes('.ui-container.mode-3p #sec-p3'));
   assert.ok(style.includes('@media (max-width: 560px)'));
+  assert.ok(style.includes('background:#fff!important'), 'white arena theme missing');
+  assert.ok(style.includes('color-scheme: dark'), 'black UI shell missing');
+  assert.ok(read('js/features/natural-forge.js').includes('forge-natural-text'));
+  assert.ok(read('js/features/community-forge.js').includes('community-items'));
+  assert.ok(read('js/features/skill-forge.js').includes('function remove(id)'));
   assert.ok(style.includes(':focus-visible'));
   assert.ok(html.includes('aria-label="경기 조작"'));
   assert.ok(panelHtml().includes('aria-label="경기 배속"'));
@@ -68,7 +73,9 @@ test('game scripts are loaded in dependency order', () => {
   assert.ok(scripts.indexOf('js/core/state.js') < scripts.indexOf('js/core/engine.js'));
   assert.ok(scripts.indexOf('js/core/engine.js') < scripts.indexOf('js/main.js'));
   assert.ok(scripts.indexOf('js/main.js') < scripts.indexOf('js/features/skill-forge.js'));
-  assert.ok(scripts.indexOf('js/features/skill-forge.js') < scripts.indexOf('js/features/battle-effects.js'));
+  assert.ok(scripts.indexOf('js/features/skill-forge.js') < scripts.indexOf('js/features/natural-forge.js'));
+  assert.ok(scripts.indexOf('js/features/natural-forge.js') < scripts.indexOf('js/features/community-forge.js'));
+  assert.ok(scripts.indexOf('js/features/community-forge.js') < scripts.indexOf('js/features/battle-effects.js'));
   assert.ok(scripts.indexOf('js/features/vfx-audio.js') < scripts.indexOf('js/features/character-remix.js'));
   assert.ok(scripts.indexOf('js/features/character-remix.js') < scripts.indexOf('js/main.js'));
 });
