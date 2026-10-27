@@ -75,7 +75,13 @@
       if(p.bfRage>0){ring(p.x,p.y,p.radius+8+Math.sin(frame)*2,'#fb7185',4);}
       ctx.restore();
     }
-    oldCharacter(p);
+    if(globalThis.AdvancedCombat){
+      const v=AdvancedCombat.visual(p);
+      ctx.save();
+      ctx.translate(v.x-p.x,v.y-p.y);
+      oldCharacter(p);
+      ctx.restore();
+    }else oldCharacter(p);
   };
   draw=function(){
     oldDraw();if(isGameOver)return;
@@ -103,6 +109,7 @@
       }
       if(steps>=10)acc=0;
     }else acc=0;
+    if(globalThis.AdvancedCombat){AdvancedCombat.setAlpha(isPlaying&&!isGameOver?Math.min(1,acc/(1000/60)):1);AdvancedCombat.setReduced(gentle.checked);}
     draw();
     requestAnimationFrame(gameLoop);
   };

@@ -136,3 +136,57 @@ test('all 20 new actions have executable branches and bounded objects',()=>{
   assert.ok(h.world.objects.length<=24);
   assert.ok(h.world.projectiles.length<=90);
 });
+
+test('leap uses a readable anticipation, rising, apex hover, descent and landing animation',()=>{
+  const h=boot(),a=fighter(1,100,150),b=fighter(2,240,150);
+  h.sim.players.push(a,b);
+  h.world.execute(a,action('leap',{duration:1}),b,h.api);
+  assert.equal(a.jumpMotion.phase,'prepare');
+  tick(h,5);assert.equal(a.z,0);
+  tick(h,3);assert.ok(a.vz>0);
+  const phases=new Set();
+  let peak=0;
+  for(let i=0;i<160;i++){
+    tick(h);
+    phases.add(a.jumpMotion?.phase||'ground');
+    peak=Math.max(peak,a.z);
+  }
+  assert.ok(peak>65,'leap rises visibly above ground');
+  for(const phase of ['rising','hovering','descending','landing'])assert.ok(phases.has(phase),phase);
+  assert.equal(a.z,0);
+  assert.ok(h.world.effects.length<=90);
+});
+test('render interpolation samples previous and current simulation coordinates',()=>{
+  const h=boot(),a=fighter(1,100,120);h.sim.players.push(a);
+  tick(h);a.x=180;a.y=220;
+  tick(h);
+  h.world.setAlpha(0);const previous=h.world.visual(a);
+  h.world.setAlpha(.5);const midpoint=h.world.visual(a);
+  h.world.setAlpha(1);const current=h.world.visual(a);
+  assert.equal(previous.x,100);assert.equal(current.x,180);
+  assert.equal(midpoint.x,140);assert.equal(midpoint.y,170);
+});
+test('Park jump reuses rising, hover and slam poses without changing legacy height',()=>{
+  const h=boot(),p=fighter(1,200,200);p.id='park';p.jumpHeight=80;
+  p.jumpState='rising';assert.ok(h.world.pose(p).sy>1);
+  p.jumpState='hovering';assert.ok(h.world.pose(p).sx>1);
+  p.jumpState='slamming';assert.ok(h.world.pose(p).sx>1);
+  assert.equal(h.world.height(p),80);
+});
+test('rendering the active effects, curved shot trails and portal does not mutate simulation',()=>{
+  const h=boot(),a=fighter(1,110,170),b=fighter(2,220,170);
+  h.sim.players.push(a,b);
+  h.world.execute(a,action('portal'),b,h.api);
+  h.world.execute(a,action('arcshot'),b,h.api);
+  h.world.execute(a,action('slash'),b,h.api);
+  tick(h,7);
+  const strokes=[];
+  const graphics=new Proxy({},{
+    get(obj,key){if(key==='stroke')return ()=>strokes.push('stroke');return obj[key]??(()=>{});},
+    set(obj,key,value){obj[key]=value;return true;}
+  });
+  const hp=b.hp,pos=a.x;
+  h.world.draw(graphics);
+  assert.equal(a.x,pos);assert.equal(b.hp,hp);
+  assert.ok(strokes.length>10);
+});
