@@ -631,3 +631,19 @@ html,body {background:#090a0c;color:var(--text);font-family:"Noto Sans KR", "Mal
 .community-item a{flex:1;min-height:34px;border:1px solid #555;border-radius:7px;display:flex;align-items:center;justify-content:center;color:#eee;text-decoration:none;font-size:12px;font-weight:700;}
 .community-item a:hover{text-decoration:underline;background:#343538;}
 @media(max-width:560px){.community-item-head{align-items:flex-start;flex-direction:column;gap:1px}.forge-prompt{padding:10px}}
+
+
+/* Ability Atlas: searchable list kept folded for a compact match setup. */
+.atlas-list-wrap { padding:8px 2px 14px; }
+.atlas-list-wrap > label { display:block; margin-bottom:6px; font-size:11px; color:#bfc0c2; }
+.atlas-list-wrap > input[type=search] {
+  width:100%; min-height:40px; border:1px solid #555; border-radius:7px;
+  padding:9px 11px; background:#1c1e20; color:#f1f1f1;
+}
+.atlas-list { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:6px;
+  max-height:310px; overflow-y:auto; margin-top:10px; }
+.atlas-preset { padding:9px 7px; min-height:40px; border:1px solid #46474c;
+  background:#26282b; color:#e7e7e7; border-radius:7px;
+  font-size:11px; text-align:left; cursor:pointer; }
+.atlas-preset:hover,.atlas-preset:focus-visible {background:#3a3c40;border-color:#ddd;}
+@media (max-width:560px) {.atlas-list {grid-template-columns:1fr;}}

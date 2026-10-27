@@ -73,9 +73,22 @@ test('game scripts are loaded in dependency order', () => {
   assert.ok(scripts.indexOf('js/core/state.js') < scripts.indexOf('js/core/engine.js'));
   assert.ok(scripts.indexOf('js/core/engine.js') < scripts.indexOf('js/main.js'));
   assert.ok(scripts.indexOf('js/main.js') < scripts.indexOf('js/features/skill-forge.js'));
+  assert.ok(scripts.indexOf('js/features/ability-atlas.js') < scripts.indexOf('js/features/skill-forge.js'));
   assert.ok(scripts.indexOf('js/features/skill-forge.js') < scripts.indexOf('js/features/natural-forge.js'));
   assert.ok(scripts.indexOf('js/features/natural-forge.js') < scripts.indexOf('js/features/community-forge.js'));
   assert.ok(scripts.indexOf('js/features/community-forge.js') < scripts.indexOf('js/features/battle-effects.js'));
   assert.ok(scripts.indexOf('js/features/vfx-audio.js') < scripts.indexOf('js/features/character-remix.js'));
   assert.ok(scripts.indexOf('js/features/character-remix.js') < scripts.indexOf('js/main.js'));
+});
+
+test('expanded atlas is offered only inside collapsible advanced creator controls',()=>{
+  const natural=read('js/features/natural-forge.js');
+  const atlas=read('js/features/ability-atlas.js');
+  assert.ok(natural.includes('공격 동작 도감'));
+  assert.ok(natural.includes('catalogDetail'));
+  assert.ok(natural.includes('atlas-query'));
+  assert.ok(atlas.includes('catalog=Object.freeze'));
+  assert.ok(atlas.includes('function choose('));
+  assert.ok(atlas.includes('function layout('));
+  assert.ok(atlas.includes('function execute('));
 });

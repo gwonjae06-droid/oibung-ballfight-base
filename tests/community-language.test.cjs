@@ -13,7 +13,7 @@ function harness(){
     getClosestAliveEnemy(){return null;}};
   ctx.window=ctx;
   const context=vm.createContext(ctx);
-  for(const file of ['skill-forge.js','natural-forge.js','community-forge.js'])vm.runInContext(load(file),context);
+  for(const file of ['ability-atlas.js','skill-forge.js','natural-forge.js','community-forge.js'])vm.runInContext(load(file),context);
   return ctx;
 }
 function profile(){
@@ -64,4 +64,30 @@ test('input is treated as data and impossible or malformed recipes are rejected'
   assert.equal(result.profile.skills[0].actions[0].type,'shot');
   assert.equal(result.profile.skills[0].actions[0].status,'fire');
   assert.equal(result.profile.skills[0].cooldown,2);
+});
+
+test('natural language selects formations, targets and the exact repeat interval',()=>{
+  const h=harness();
+  const recipe=h.NaturalForge.parse('7초마다 가장 멀리 있는 적에게 부채꼴로 화염탄 5발을 발사해 피해 27을 준다.','부채꼴 궁수');
+  const sk=recipe.profile.skills[0],action=sk.actions[0];
+  assert.equal(sk.cooldown,7);
+  assert.equal(action.type,'shot');
+  assert.equal(action.pattern,'fan');
+  assert.equal(action.target,'farthest');
+  assert.equal(action.count,5);
+  assert.equal(action.damage,27);
+  assert.equal(action.status,'fire');
+});
+test('a distinct five-way pattern and enemy priority survive shared profile serialization',()=>{
+  const h=harness();
+  const profile=h.SkillForge.normalize({name:'나선 마법사',skills:[{
+    name:'나선 낙뢰',trigger:'auto',cooldown:4,actions:[
+      {type:'bolt',pattern:'spiral',target:'lowest',count:5,damage:32,radius:200}
+    ]
+  }]});
+  const serialized=h.CommunityForge.makeBody(profile);
+  const loaded=h.CommunityForge.parseBody(serialized);
+  assert.equal(loaded.skills[0].actions[0].pattern,'spiral');
+  assert.equal(loaded.skills[0].actions[0].target,'lowest');
+  assert.equal(loaded.skills[0].actions[0].count,5);
 });

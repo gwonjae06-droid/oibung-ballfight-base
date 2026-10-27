@@ -249,9 +249,26 @@
     add('beam',midX,midY,c,{dx:endX-x,dy:endY-y,radius:distance,life:16});
     sound('energy');
   }
+  // Draw damage telegraphs at the actual strike coordinate (not the caster).
+  function mark(kind,x,y,color,radius=70){
+    const c=color||'#848484';
+    if(kind==='wave'){
+      add('ring',x,y,c,{radius,life:33});
+      sound('heavy',.45);
+    }else if(kind==='meteor'){
+      add('target',x,y,c,{radius,life:29});
+      sound('cast',.45);
+    }else if(kind==='lightning'){
+      add('bolt',x,y,c,{radius,life:24});
+      particles(x,y,c,12,4);
+      sound('lightning',.8);
+    }else{
+      add('ring',x,y,c,{radius,life:24});
+    }
+  }
   function clear(){fx.length=0;captions.clear();}
   global.BattleFX={
-    cast,hit,tick,draw,beam,clear,caption,unlock,sound,
+    cast,hit,tick,draw,beam,mark,clear,caption,unlock,sound,
     get muted(){return muted;},
     setMuted(value){muted=!!value;if(master)master.gain.setTargetAtTime(muted?0:.22,audio.currentTime,.025);},
     setIntensity(v){intensity=v==='low'?'low':'full';},

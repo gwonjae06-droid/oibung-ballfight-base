@@ -7,7 +7,7 @@ const STATUS={none:'없음',ice:'둔화',fire:'화상',poison:'중독'};
 const number=(x,a,b,d=a)=>Number.isFinite(Number(x))?Math.max(a,Math.min(b,Number(x))):d;
 const clean=(v,n)=>String(v==null?'':v).replace(/[<>]/g,'').slice(0,n).trim();
 const color=(c)=>/^#[0-9a-f]{6}$/i.test(c)?c:'#a78bfa';
-const stage=()=>({type:'shot',damage:18,radius:120,count:1,speed:5,duration:1.5,status:'none',knockback:2,delay:0});
+const stage=()=>({type:'shot',pattern:'fan',target:'nearest',damage:18,radius:120,count:5,speed:5,duration:1.5,status:'none',knockback:2,delay:0});
 const skill=()=>({name:'새 스킬',trigger:'auto',cooldown:3,threshold:40,actions:[stage()]});
 function normalize(value){
   if(!value||typeof value!=='object'||Array.isArray(value))throw Error('올바른 설정을 입력하세요.');
@@ -22,7 +22,10 @@ function normalize(value){
         trigger:TRIGGER[s.trigger]?s.trigger:'auto',
         cooldown:number(s.cooldown,.2,30,3),threshold:number(s.threshold,5,95,40),
         actions:s.actions.slice(0,3).map(a=>({
-          type:TYPE[a.type]?a.type:'wave',damage:Math.round(number(a.damage,0,120,18)),
+          type:TYPE[a.type]?a.type:'wave',
+          pattern:global.AbilityAtlas?.PATTERNS[a.pattern]?a.pattern:'direct',
+          target:global.AbilityAtlas?.TARGETS[a.target]?a.target:'nearest',
+          damage:Math.round(number(a.damage,0,120,18)),
           radius:number(a.radius,30,300,120),count:Math.round(number(a.count,1,8,1)),
           speed:number(a.speed,2,14,5),duration:number(a.duration,.2,8,1.5),
           status:STATUS[a.status]?a.status:'none',
@@ -48,6 +51,7 @@ function cast(p,s,target){
   if(global.BattleFX)BattleFX.caption(p,s.name,p.forge.color);
 }
 function execute(p,a,target) {
+  if(global.AbilityAtlas && AbilityAtlas.execute(p,a,target,{hit,enemies}))return;
   const c=p.forge.color,near=target&&target.hp>0?target:getClosestAliveEnemy(p);
   const within=(x,y,r)=>enemies(p).filter(e=>Math.hypot(e.x-x,e.y-y)<r+e.radius);
   const visual=(kind,opts={})=>{if(global.BattleFX)BattleFX.cast(p,kind,Object.assign({color:c},opts));};
@@ -219,6 +223,8 @@ function render(){
       +'<div class="forge-top"><span>ACTION '+(j+1)+'</span><button type="button" class="forge-delete" data-command="remove-action" '+aj+'>제거</button></div>'
       +'<div class="forge-grid">'
       +box('동작',choice('type',TYPE,a.type,aj))
+      +box('공격 배치',choice('pattern',global.AbilityAtlas?.PATTERNS||{direct:'직선 집중'},a.pattern||'direct',aj))
+      +box('대상 우선순위',choice('target',global.AbilityAtlas?.TARGETS||{nearest:'가장 가까운 적'},a.target||'nearest',aj))
       +box('위력',field('damage',a.damage,'type="number" min="0" max="120" step="1" '+aj))
       +box('범위',field('radius',a.radius,'type="number" min="30" max="300" step="5" '+aj))
       +box('개수',field('count',a.count,'type="number" min="1" max="8" step="1" '+aj))
@@ -249,7 +255,7 @@ function initializeUI(){
   if(!detail)return;
   const body=detail.querySelector('.bf-details-body');
   body.innerHTML=''
-  +'<p class="bf-helper">문장 자동 해석 없이 직접 제작합니다. 발동 조건과 각 동작을 조합하세요. 모든 수치는 실제 전투에 적용됩니다.</p>'
+  +'<p class="bf-helper">문장으로 자동 생성하고 필요할 때만 세부 설정을 수정하세요. 공격 배치와 대상 선택까지 조합할 수 있습니다.</p>'
   +'<div class="forge-grid">'
   +'<label>캐릭터 이름<input id="bf-name" maxlength="14" placeholder="나만의 파이터"></label>'
   +'<label>테마 색상<input id="forge-color" type="color" value="#a78bfa"></label>'
@@ -325,7 +331,7 @@ function initializeUI(){
     try{
       sync();const d=normalize(draft);
       report(d.skills.map((s,i)=>(i+1)+'. '+s.name+' · '+TRIGGER[s.trigger]+' / '+s.cooldown+'초'
-        +'\n   '+s.actions.map(a=>TYPE[a.type]+' ('+a.damage+'위력, '+a.radius+'범위, '+STATUS[a.status]+')').join(' → ')).join('\n'));
+        +'\n   '+s.actions.map(a=>TYPE[a.type]+' / '+(global.AbilityAtlas?.PATTERNS[a.pattern]||'직선 집중')+' / '+(global.AbilityAtlas?.TARGETS[a.target]||'가장 가까운 적')+' ('+a.damage+'위력, '+a.radius+'범위, '+STATUS[a.status]+')').join(' → ')).join('\n'));
     }catch(e){report(e.message);}
   });
   $('bf-create').addEventListener('click',()=>{
