@@ -24,13 +24,14 @@
   const oldUpdate=update,oldDraw=draw,oldCharacter=drawCharacter;
   update=function(){
     if(!isPlaying||isGameOver){oldUpdate();return;}
-    if(roster!==players){roster=players;sparks=[];pulses=[];stopUntil=0;}
+    if(roster!==players){roster=players;sparks=[];pulses=[];stopUntil=0;if(window.BattleFX)BattleFX.clear();}
     frame++;
     sparks.forEach(s=>{s.x+=s.vx;s.y+=s.vy;s.vx*=0.91;s.vy*=0.91;s.life--;});sparks=sparks.filter(s=>s.life>0);
     pulses.forEach(s=>s.life--);pulses=pulses.filter(s=>s.life>0);
     const before=players.map(p=>({p,hp:p.hp,x:p.x,y:p.y,inv:p.invincible,jump:p.jumpState,ticks:p.bfTicks&&p.bfTicks.slice(),marks:p.bfMarks&&p.bfMarks.slice()}));
     oldUpdate();
-    const custom=players.some(p=>p.spec);
+    if(window.BattleFX)BattleFX.tick();
+    const custom=players.some(p=>p.spec||p.forge);
     before.forEach(b=>{
       const p=b.p,c=color(p),loss=b.hp-p.hp;
       if(custom&&loss>0){
@@ -78,6 +79,7 @@
   };
   draw=function(){
     oldDraw();if(isGameOver)return;
+    if(window.BattleFX)BattleFX.draw(ctx,players);
     ctx.save();ctx.globalCompositeOperation='lighter';
     sparks.forEach(s=>{ctx.globalAlpha=s.life/s.max;ctx.strokeStyle=s.c;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(s.x,s.y);ctx.lineTo(s.x-s.vx*2,s.y-s.vy*2);ctx.stroke();});
     pulses.forEach(s=>{

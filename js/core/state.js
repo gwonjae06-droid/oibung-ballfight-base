@@ -55,17 +55,31 @@ function getClosestAliveEnemy(self) {
   return closest;
 }
 
-function addFloatingText(text, x, y, color = '#ea580c', size = 16) {
-  floatingTexts.push({
-    text, x, y,
-    vy: -0.7,
-    alpha: 1.0,
-    color,
-    size
-  });
+function addFloatingText(text,x,y,color='#e8f0ff',size=16) {
+  const raw=String(text??'');
+  // Numbers are damage/heal popups; skill names become compact chips instead
+  // of piling full sentences and emojis over the whole arena.
+  const damage=raw.match(/[-−]\s*(\d+)(?!\d)/);
+  const recovery=raw.match(/\+\s*(\d+)(?!\d)/);
+  if(!damage&&!recovery){
+    if(window.BattleFX&&players.length){
+      const owner=players.reduce((best,p)=>{
+        if(!best)return p;
+        return Math.hypot(p.x-x,p.y-y)<Math.hypot(best.x-x,best.y-y)?p:best;
+      },null);
+      BattleFX.caption(owner,raw.replace(/[✨💥🔥💀🩸❄️⚡🚀🛡️🎰♥]/gu,'').trim().slice(0,20),color);
+    }
+    return;
+  }
+  const value=(damage?'-':'+')+(damage?damage[1]:recovery[1]);
+  if(floatingTexts.length>75)floatingTexts.splice(0,floatingTexts.length-75);
+  floatingTexts.push({text:value,x,y,vy:-.85,alpha:1,color,size:Math.max(13,Math.min(20,size))});
 }
 
 function createHitParticles(x, y, color, count = 14) {
+  if(window.BattleFX)BattleFX.hit(x,y,color,{heavy:count>=22});
+  count=Math.min(count,20);
+  if(particles.length>320)particles.splice(0,particles.length-320);
   for (let i = 0; i < count; i++) {
     const angle = Math.random() * Math.PI * 2;
     const speed = Math.random() * 3.5 + 1.0;

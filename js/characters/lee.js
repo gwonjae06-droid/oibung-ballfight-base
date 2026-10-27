@@ -5,9 +5,9 @@ if(self.runeTimer>=self.runeDuration&&!self.isRolling){self.isRolling=true;self.
 if(self.isRolling){self.rollTimer++;if(self.rollTimer%3===0)self.displayRune=list[Math.floor(Math.random()*list.length)];if(self.rollTimer>=45){self.isRolling=false;self.runeTimer=0;const available=list.filter(r=>r!==self.currentRune);self.currentRune=available[Math.floor(Math.random()*available.length)];self.displayRune=self.currentRune;if(self.currentRune==='칼날비')self.hailBladesHits=3;addFloatingText(`✨ [${self.currentRune}] 획득!`,self.x,self.y-45,'#0284c7',20);}}
 let cooldown=self.pokeCooldown;if(self.currentRune==='난입'){if(Math.hypot(self.vx,self.vy)<2.8*(self.speedMultiplier||1)){self.vx*=1.25;self.vy*=1.25;}}else if(self.currentRune==='치명적속도')cooldown=28;
 self.pokeTimer++;if(self.pokeTimer>=cooldown&&target){self.pokeTimer=0;self.pokeAnim=1;self.pokeTargetX=target.x;self.pokeTargetY=target.y;const dist=Math.hypot(target.x-self.x,target.y-self.y);if(dist<=self.pokeRange&&target.invincible===0&&target.jumpState!=='rising'&&target.jumpState!=='hovering'){let dmg=15,color='#0284c7',text=`👉 콕! -${dmg}`;
-if(self.currentRune==='칼날비'){dmg=26;color='#dc2626';text=`⚡ 칼날비 찌르기! -${dmg}`;if(self.hailBladesHits>0)self.hailBladesHits--;}
+if(self.currentRune==='칼날비'){dmg=self.hailBladesHits>0?27:15;color='#dc2626';text=`칼날비 -${dmg}`;if(self.hailBladesHits>0)self.hailBladesHits--;}
 else if(self.currentRune==='정복자'){self.conquerorStacks=Math.min(6,self.conquerorStacks+1);dmg=15+self.conquerorStacks*3;self.hp=Math.min(self.maxHp,self.hp+5);color='#ea580c';text=`🩸 정복자 찌르기! -${dmg}`;addFloatingText('+5 HP',self.x,self.y-25,'#22c55e',15);}
-else if(self.currentRune==='빙결'){dmg=15;target.vx*=0.15;target.vy*=0.15;color='#0284c7';text=`❄️ 빙결 찌르기! -${dmg}`;}
+else if(self.currentRune==='빙결'){dmg=15;target.slowTimer=Math.max(target.slowTimer||0,60);target.slowMultiplier=0.55;color='#0284c7';text=`빙결 -${dmg}`;}
 else if(self.currentRune==='치명적속도'){dmg=14;color='#d97706';text=`⚡ 치속 찌르기! -${dmg}`;}
 target.hp=Math.max(0,target.hp-dmg);target.invincible=14;createHitParticles(target.x,target.y,color,14);addFloatingText(text,target.x,target.y-25,color,18);}}
 if(self.pokeAnim>0){self.pokeAnim-=0.07;if(self.pokeAnim<0)self.pokeAnim=0;}

@@ -7,6 +7,7 @@ const root = path.join(__dirname, '..');
 const read = file => fs.readFileSync(path.join(root, file), 'utf8');
 const html = read('index.html');
 const main = read('js/main.js');
+const forge = read('js/features/skill-forge.js');
 const engine = read('js/core/engine.js');
 const economy = read('js/features/economy.js');
 const style = read('css/style.css');
@@ -20,7 +21,7 @@ function panelHtml() {
 const ids = text => [...text.matchAll(/\bid="([^"]+)"/g)].map(match => match[1]);
 
 test('all required game and optional feature controls still exist', () => {
-  const all = [...ids(html), ...ids(panelHtml())];
+  const all = [...ids(html), ...ids(panelHtml()), ...ids(forge)];
   const required = [
     'arena', 'container', 'title-text', 'ui-container', 'sec-p1', 'sec-p2', 'sec-p3',
     'btn-start', 'btn-reset', 'btn-mode', 'coin-balance', 'economy-message',
@@ -40,6 +41,8 @@ test('only one random-match control exists and advanced tools are collapsed', ()
   assert.ok(panelHtml().includes('<details class="bf-details">'));
   assert.equal((panelHtml().match(/<details class="bf-details">/g) || []).length, 2);
   assert.ok(main.includes("document.querySelector('.battle-screen').after(panel)"));
+  assert.ok(!main.includes('function parse('), 'old keyword parser remains');
+  assert.ok(forge.includes('const TRIGGER='));
   assert.ok(html.includes('<details class="roster-card">'));
   assert.ok(main.includes("fold.className = 'bf-fold'"));
 });
@@ -64,5 +67,8 @@ test('game scripts are loaded in dependency order', () => {
   const scripts = [...html.matchAll(/<script src="([^"]+)"/g)].map(match => match[1]);
   assert.ok(scripts.indexOf('js/core/state.js') < scripts.indexOf('js/core/engine.js'));
   assert.ok(scripts.indexOf('js/core/engine.js') < scripts.indexOf('js/main.js'));
-  assert.ok(scripts.indexOf('js/main.js') < scripts.indexOf('js/features/battle-effects.js'));
+  assert.ok(scripts.indexOf('js/main.js') < scripts.indexOf('js/features/skill-forge.js'));
+  assert.ok(scripts.indexOf('js/features/skill-forge.js') < scripts.indexOf('js/features/battle-effects.js'));
+  assert.ok(scripts.indexOf('js/features/vfx-audio.js') < scripts.indexOf('js/features/character-remix.js'));
+  assert.ok(scripts.indexOf('js/features/character-remix.js') < scripts.indexOf('js/main.js'));
 });
