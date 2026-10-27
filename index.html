@@ -25,13 +25,18 @@
       </div>
       <div class="canvas-wrapper">
         <canvas id="arena" width="500" height="500" aria-label="캐릭터 자동 전투 화면"></canvas>
-        <label class="arena-speed-control" for="bf-speed">
-          <span>배속</span>
-          <select id="bf-speed" aria-label="경기 배속">
-            <option value="1" selected>1×</option>
-            <option value="2">2×</option>
-          </select>
-        </label>
+        <div class="arena-top-controls" role="group" aria-label="경기 속도 및 종료">
+          <label class="arena-speed-control" for="bf-speed">
+            <span>배속</span>
+            <select id="bf-speed" aria-label="경기 배속">
+              <option value="1" selected>1×</option>
+              <option value="2">2×</option>
+            </select>
+          </label>
+          <button id="btn-stop" class="arena-stop-button" type="button"
+                  onclick="stopMatch()" aria-label="경기 중지 및 무승부 처리"
+                  title="진행 중인 경기를 승자 없이 종료하고 베팅금을 반환합니다" disabled>■ 중지</button>
+        </div>
       </div>
 
       <div class="ui-container" id="ui-container" aria-label="캐릭터 체력">

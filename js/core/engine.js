@@ -33,7 +33,8 @@ function reRollMatch(forcedDef) {
   }
   particles=[];floatingTexts=[];shockwaves=[];screenShake=0;
   globalThis.AdvancedCombat?.reset();
-  isGameOver=false;isPlaying=false;roundStarted=false;roundSettled=false;selectedBetPlayerNum=null;activeBet=null;
+  isGameOver=false;isPlaying=false;roundStarted=false;roundStopped=false;roundSettled=false;selectedBetPlayerNum=null;activeBet=null;
+  syncStopButton();
   Object.keys(reservedItems).forEach(id=>reservedItems[id]=[]);
   document.getElementById('btn-start').innerText='경기 시작';
   document.getElementById('btn-start').dataset.state='ready';
@@ -44,10 +45,31 @@ function togglePlay() {
   if(!players.length)return;
   if(!roundStarted){if(!beginRoundEconomy())return;roundStarted=true;}
   isPlaying=!isPlaying;
+  syncStopButton();
   const b=document.getElementById('btn-start');
   b.innerText=isPlaying?'일시정지':'경기 계속';
   b.dataset.state=isPlaying?'playing':'paused';
   renderEconomyUI();
+}
+// Kept separate from pause: this closes the current round without declaring
+// the remaining fighters a winner. A stopped bet is returned exactly once.
+function syncStopButton(){
+  const button=document.getElementById('btn-stop');
+  if(button)button.disabled=!roundStarted||isGameOver;
+}
+function stopMatch(){
+  if(!roundStarted||isGameOver)return false;
+  isPlaying=false;
+  isGameOver=true;
+  roundStopped=true;
+  screenShake=0;
+  settleRound(null,'stopped');
+  const start=document.getElementById('btn-start');
+  start.innerText='다음 경기';
+  start.dataset.state='finished';
+  syncStopButton();
+  if(typeof draw==='function')draw();
+  return true;
 }
 function updateCharacter(self) {
   if(self.hp<=0)return;
@@ -144,7 +166,7 @@ function update() {
   }
   players.forEach(p=>globalThis.ForgeExpansion?.revive(p));
   const finalAlive=players.filter(p=>p.hp>0);
-  if(finalAlive.length<=1){isGameOver=true;isPlaying=false;settleRound(finalAlive.length===1?finalAlive[0]:null);document.getElementById('btn-start').innerText='다음 경기';document.getElementById('btn-start').dataset.state='finished';}
+  if(finalAlive.length<=1){isGameOver=true;isPlaying=false;settleRound(finalAlive.length===1?finalAlive[0]:null);document.getElementById('btn-start').innerText='다음 경기';document.getElementById('btn-start').dataset.state='finished';syncStopButton();}
   updateUI();
 }
 function updateUI() {

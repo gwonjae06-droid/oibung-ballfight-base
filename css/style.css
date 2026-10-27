@@ -803,3 +803,42 @@ html,body {background:#090a0c;color:var(--text);font-family:"Noto Sans KR", "Mal
 @media (prefers-reduced-motion: reduce) {
   .canvas-wrapper .arena-speed-control { transition: none; }
 }
+
+/* Arena controls: stop and speed sit together in the translucent top-right overlay. */
+.canvas-wrapper .arena-top-controls{
+  position:absolute;z-index:4;
+  top:clamp(8px,2.2%,14px);right:clamp(8px,2.2%,14px);
+  display:flex;align-items:stretch;gap:6px;
+}
+.canvas-wrapper .arena-top-controls .arena-speed-control{
+  position:static;top:auto;right:auto;
+  display:inline-flex;align-items:center;flex-shrink:0;
+}
+.canvas-wrapper .arena-stop-button{
+  min-height:42px;min-width:66px;
+  padding:6px 10px;border:1px solid rgba(255,255,255,.25);
+  border-radius:10px;background:rgba(67,35,38,.75);
+  color:#fff;font:700 12px/1.2 "Noto Sans KR",system-ui,sans-serif;
+  white-space:nowrap;cursor:pointer;
+  -webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);
+  transition:background-color .15s ease,opacity .15s ease;
+}
+.canvas-wrapper .arena-stop-button:hover:not(:disabled),
+.canvas-wrapper .arena-stop-button:focus-visible{
+  background:rgba(112,45,52,.93);
+}
+.canvas-wrapper .arena-stop-button:focus-visible{
+  outline:2px solid #fff;outline-offset:2px;
+}
+.canvas-wrapper .arena-stop-button:disabled{
+  opacity:.4;cursor:default;
+}
+@media(max-width:560px){
+  .canvas-wrapper .arena-top-controls{top:7px;right:7px;gap:5px}
+  .canvas-wrapper .arena-stop-button{
+    min-height:42px;min-width:58px;padding:4px 7px;border-radius:8px;font-size:11px;
+  }
+}
+@media(prefers-reduced-motion:reduce){
+  .canvas-wrapper .arena-stop-button{transition:none}
+}

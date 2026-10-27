@@ -20,6 +20,7 @@ function drawRoundedRect(context, x, y, width, height, radius) {
 let gameMode = '1v1'; // '1v1' | '1v1v1'
 let isPlaying = false;
 let isGameOver = false;
+let roundStopped = false; // manual termination must not be mistaken for a victory
 let particles = [];
 let floatingTexts = [];
 let screenShake = 0;

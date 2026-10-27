@@ -24,7 +24,7 @@ test('all required game and optional feature controls still exist', () => {
   const all = [...ids(html), ...ids(panelHtml()), ...ids(forge)];
   const required = [
     'arena', 'container', 'title-text', 'ui-container', 'sec-p1', 'sec-p2', 'sec-p3',
-    'btn-start', 'btn-reset', 'btn-mode', 'coin-balance', 'economy-message',
+    'btn-start', 'btn-reset', 'btn-mode', 'btn-stop', 'coin-balance', 'economy-message',
     'wager-input', 'odds-text', 'bet-players', 'reserved-list', 'btn-max-bet',
     'targets-skillRush', 'targets-vitality', 'targets-speed',
     'bf-picks', 'bf-speed', 'bf-apply', 'bf-photo', 'bf-face', 'bf-photo-target',
@@ -101,4 +101,17 @@ test('one translucent speed selector overlays the upper-right corner of the game
   assert.match(style, /\.canvas-wrapper \.arena-speed-control\s*\{[^}]*right:/);
   assert.match(style, /\.canvas-wrapper \.arena-speed-control\s*\{[^}]*background:\s*rgba\(/);
   assert.match(read('js/features/battle-effects.js'), /getElementById\('bf-speed'\)/);
+});
+
+test('stop action is adjacent to speed and marked as an actual round termination',()=>{
+  const overlay=html.slice(html.indexOf('<div class="arena-top-controls"'),html.indexOf('</div>',html.indexOf('<div class="arena-top-controls"'))+6);
+  assert.ok(overlay.includes('id="bf-speed"'));
+  assert.ok(overlay.includes('id="btn-stop"'));
+  assert.ok(overlay.includes('onclick="stopMatch()"'));
+  assert.ok(overlay.includes('disabled'));
+  assert.match(style,/\.canvas-wrapper \.arena-top-controls\s*\{[^}]*position:\s*absolute/);
+  assert.match(style,/\.canvas-wrapper \.arena-stop-button\s*\{[^}]*background:rgba/);
+  assert.ok(engine.includes("function stopMatch()"));
+  assert.ok(engine.includes("syncStopButton()"));
+  assert.ok(render.includes("roundStopped?'경기 중단 · 무승부'"));
 });

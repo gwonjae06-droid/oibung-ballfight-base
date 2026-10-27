@@ -53,6 +53,6 @@ players.forEach(drawCharacter);
 particles.forEach(p=>{ctx.beginPath();ctx.arc(p.x,p.y,p.radius,0,Math.PI*2);ctx.fillStyle=arenaEffectColor(p.color);ctx.globalAlpha=p.alpha;ctx.fill();ctx.globalAlpha=1;});
 floatingTexts.forEach(f=>{ctx.save();ctx.font=`800 ${f.size}px -apple-system, sans-serif`;ctx.fillStyle=arenaEffectColor(f.color);ctx.globalAlpha=f.alpha;ctx.textAlign='center';ctx.fillText(f.text,f.x,f.y);ctx.restore();});
 if(!isPlaying&&!isGameOver){ctx.fillStyle='rgba(255,255,255,.45)';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.font='700 23px "Noto Sans KR", sans-serif';ctx.fillStyle='#252525';ctx.textAlign='center';ctx.fillText(roundStarted?'일시정지':'대기 중',canvas.width/2,canvas.height/2);}
-if(isGameOver){ctx.fillStyle='rgba(255,255,255,.88)';ctx.fillRect(0,0,canvas.width,canvas.height);const alive=players.filter(p=>p.hp>0);ctx.font='750 28px "Noto Sans KR", sans-serif';ctx.fillStyle='#202020';ctx.textAlign='center';ctx.fillText(alive.length?`${alive[0].name} 승리`:'무승부',canvas.width/2,canvas.height/2-10);}
+if(isGameOver){ctx.fillStyle='rgba(255,255,255,.88)';ctx.fillRect(0,0,canvas.width,canvas.height);const alive=players.filter(p=>p.hp>0);ctx.font='750 28px "Noto Sans KR", sans-serif';ctx.fillStyle='#202020';ctx.textAlign='center';ctx.fillText(roundStopped?'경기 중단 · 무승부':alive.length===1?`${alive[0].name} 승리`:'무승부',canvas.width/2,canvas.height/2-10);}
 ctx.restore();
 }
