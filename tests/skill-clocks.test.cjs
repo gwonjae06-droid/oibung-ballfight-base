@@ -21,7 +21,7 @@ function harness(){
     CUSTOM_DEFS:[],BEHAVIORS:{},CHARACTER_PHOTOS:{},players:[],
     canvas:{width:500,height:500},createHitParticles(){},addFloatingText(){},
     getClosestAliveEnemy(p){return state.players.find(e=>e!==p&&e.hp>0)||null;},
-    ForgeExpansion:{blocked:()=>blocked,update(){},damageScale:()=>1,applyStatus(){},heal(p,amount){p.hp=Math.min(p.maxHp,p.hp+amount);},active:()=>false}
+    ForgeExpansion:{blocked:()=>blocked,update(){},execute(){return false;},damageScale:()=>1,applyStatus(){},heal(p,amount){p.hp=Math.min(p.maxHp,p.hp+amount);},active:()=>false}
   };
   state.window=state;
   const context=vm.createContext(state);
