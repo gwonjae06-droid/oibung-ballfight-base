@@ -32,7 +32,7 @@ function canHit(source,target,attackZ){
   // Two fighters have to occupy compatible vertical layers.
   return Math.abs(a-z)<=Math.max(30,26*(target.bodyScale||1));
 }
-function size(p){return 1+Math.max(0,groundHeight(p))/140;} // radius already accounts for bodyScale
+function size(p){const z=groundHeight(p);return z<0?Math.max(.38,1+z/80):1+z/140;} // radius already accounts for bodyScale
 function renderY(p){return p.y-groundHeight(p);}
 function add(kind,x,y,opt={}){
   if(effects.length>=MAX_EFFECTS)effects.shift();
@@ -240,9 +240,10 @@ function stepObjects(api){
     else if(o.kind==='wall'){
       for(const e of players){
         if(e.hp<=0||Math.abs(groundHeight(e))>27)continue;
-        const dx=e.x-o.x,dy=e.y-o.y,dist=Math.hypot(dx,dy)||.01,minimum=e.radius+o.r;
-        if(dist<minimum){
-          const normalX=dx/dist,normalY=dy/dist;
+        const dx=e.x-o.x,dy=e.y-o.y,rawDistance=Math.hypot(dx,dy),dist=rawDistance||1,minimum=e.radius+o.r;
+        if(rawDistance<minimum){
+          const normalX=rawDistance>1e-6?dx/dist:(e.playerNum%2?1:-1);
+          const normalY=rawDistance>1e-6?dy/dist:0;
           e.x=cap(o.x+normalX*minimum,e.radius,canvas.width-e.radius);
           e.y=cap(o.y+normalY*minimum,e.radius,canvas.height-e.radius);
           e.vx=normalX*Math.max(1,Math.abs(e.vx));

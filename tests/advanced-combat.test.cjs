@@ -37,7 +37,7 @@ test('ground attacks cannot strike a high flyer or an underground fighter',()=>{
   h.sim.players.push(a,b);
   b.z=80;
   assert.equal(h.world.canHit(a,b),false);
-  b.z=-31;assert.equal(h.world.canHit(a,b),false);
+  b.z=-31;assert.equal(h.world.canHit(a,b),false);assert.ok(h.world.size(b)<1);
   b.z=10;assert.equal(h.world.canHit(a,b),true);
 });
 test('park legacy jump is projected through the same height and hit rule',()=>{
