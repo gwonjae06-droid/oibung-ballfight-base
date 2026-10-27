@@ -57,10 +57,10 @@
   drawCharacter=function(p){
     if(p.spec&&p.hp>0){
       const c=color(p),skills=p.spec.skills;
-      ctx.save();ctx.globalCompositeOperation='lighter';ctx.shadowColor=c;ctx.shadowBlur=gentle.checked?0:14;
+      ctx.save();ctx.globalCompositeOperation='source-over';ctx.shadowColor=c;ctx.shadowBlur=gentle.checked?0:5;
       p.bfShots.forEach(b=>{
         const a=trails.get(b)||[];
-        a.forEach((v,i)=>{ctx.globalAlpha=(1-i/8)*0.6;ctx.fillStyle=c;ctx.beginPath();ctx.arc(v.x,v.y,Math.max(1,7-i),0,Math.PI*2);ctx.fill();});
+        a.forEach((v,i)=>{ctx.globalAlpha=(1-i/8)*0.4;ctx.fillStyle=c;ctx.beginPath();ctx.arc(v.x,v.y,Math.max(1,7-i),0,Math.PI*2);ctx.fill();});
         ctx.globalAlpha=1;ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(b.x,b.y,3,0,Math.PI*2);ctx.fill();ring(b.x,b.y,10,c);
       });
       p.bfRings.forEach(b=>{ctx.globalAlpha=Math.min(0.9,b.t/30);ring(b.x,b.y,b.r,c,5);ring(b.x,b.y,b.r*0.82,'#fff',1);ring(b.x,b.y,b.r*0.64,c,2);});
@@ -69,7 +69,7 @@
         const r=105+Math.sin(frame/12)*5;ring(p.x,p.y,r,c,2);
         for(let i=0;i<6;i++){const a=frame/35+i*Math.PI/3;ctx.fillStyle=c;ctx.beginPath();ctx.arc(p.x+Math.cos(a)*r,p.y+Math.sin(a)*r,3,0,Math.PI*2);ctx.fill();}
       }
-      if(p.bfDash>0){ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(p.x-p.vx*10,p.y-p.vy*10);ctx.strokeStyle=c;ctx.lineWidth=12;ctx.globalAlpha=0.55;ctx.stroke();ctx.globalAlpha=1;}
+      if(p.bfDash>0){ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(p.x-p.vx*10,p.y-p.vy*10);ctx.strokeStyle=c;ctx.lineWidth=9;ctx.globalAlpha=0.42;ctx.stroke();ctx.globalAlpha=1;}
       if(p.jumpState!=='ground'&&skills.includes('slam')){ring(p.x,p.y,70+Math.sin(frame/3)*6,c,3);ring(p.x,p.y,140,c,1);}
       if(p.invincible>20&&skills.includes('shield')){ring(p.x,p.y,p.radius+10,'#67e8f9',4);ring(p.x,p.y,p.radius+16,'#fff',1);}
       if(p.bfRage>0){ring(p.x,p.y,p.radius+8+Math.sin(frame)*2,'#fb7185',4);}
@@ -80,10 +80,10 @@
   draw=function(){
     oldDraw();if(isGameOver)return;
     if(window.BattleFX)BattleFX.draw(ctx,players);
-    ctx.save();ctx.globalCompositeOperation='lighter';
+    ctx.save();ctx.globalCompositeOperation='source-over';
     sparks.forEach(s=>{ctx.globalAlpha=s.life/s.max;ctx.strokeStyle=s.c;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(s.x,s.y);ctx.lineTo(s.x-s.vx*2,s.y-s.vy*2);ctx.stroke();});
     pulses.forEach(s=>{
-      ctx.globalAlpha=Math.min(1,s.life/12);ctx.shadowColor=s.c;ctx.shadowBlur=gentle.checked?0:12;
+      ctx.globalAlpha=Math.min(1,s.life/12);ctx.shadowColor=s.c;ctx.shadowBlur=gentle.checked?0:5;
       if(s.bolt){ctx.beginPath();ctx.moveTo(s.x-10,s.y-160);ctx.lineTo(s.x+8,s.y-90);ctx.lineTo(s.x-7,s.y-55);ctx.lineTo(s.x,s.y);ctx.strokeStyle=s.c;ctx.lineWidth=5;ctx.stroke();}
       else{const r=s.r*(1-s.life/20);ring(s.x,s.y,r,s.c,Math.max(1,s.life/4));ring(s.x,s.y,r*0.65,'#fff',1);}
     });ctx.restore();
