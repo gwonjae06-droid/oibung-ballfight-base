@@ -65,7 +65,7 @@ test('responsive HUD and input accessibility are preserved', () => {
   assert.ok(read('js/features/skill-forge.js').includes('function remove(id)'));
   assert.ok(style.includes(':focus-visible'));
   assert.ok(html.includes('aria-label="경기 조작"'));
-  assert.ok(panelHtml().includes('aria-label="경기 배속"'));
+  assert.ok(html.includes('aria-label="경기 배속"'));
 });
 
 test('game scripts are loaded in dependency order', () => {
