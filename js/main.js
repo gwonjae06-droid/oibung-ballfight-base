@@ -81,7 +81,7 @@
   };
   $('bf-photo-clear').onclick=()=>{if(!allowed())return;photoKeys($('bf-photo-target').value).forEach(key=>delete CHARACTER_PHOTOS[key]);draw();notice('사진 초기화 완료');};
   update=function(){
-    if(isPlaying&&!isGameOver)players.forEach(p=>{if(p.bfDot>0&&p.hp>0){p.bfDot--;if(p.bfDot%30===0){p.hp=Math.max(0,p.hp-2);addFloatingText('-2 지속 피해',p.x,p.y-30,'#f97316',14);}}});
+    if(isPlaying&&!isGameOver)players.forEach(p=>{if(p.bfDot>0&&p.hp>0){p.bfDot--;if(p.bfDot%30===0){const amount=Math.max(1,Math.min(6,p.bfDotDamage||2));p.hp=Math.max(0,p.hp-amount);addFloatingText('-'+amount,p.x,p.y-30,'#a75f2b',14);}}});
     originalUpdate();
   };
   // The single fixed-step game loop starts once effects are installed.

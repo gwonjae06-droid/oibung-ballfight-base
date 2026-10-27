@@ -41,7 +41,13 @@ function hit(p,e,action,multiplier=1) {
   const d=Math.round(action.damage*multiplier);
   if(d){e.hp=Math.max(0,e.hp-d);e.invincible=12;createHitParticles(e.x,e.y,p.forge.color,12);addFloatingText('-'+d,e.x,e.y-30,p.forge.color,17);}
   if(action.status==='ice'){e.slowTimer=Math.max(e.slowTimer||0,90);e.slowMultiplier=.5;}
-  if(action.status==='fire'||action.status==='poison')e.bfDot=Math.max(e.bfDot||0,action.status==='fire'?120:180);
+  if(action.status==='fire'||action.status==='poison'){
+    const seconds=Number.isFinite(action.duration)?action.duration:(action.status==='fire'?2:3);
+    // A DoT lasts as long as requested; its half-second damage ticks are
+    // handled by the single existing simulation loop.
+    e.bfDot=Math.max(e.bfDot||0,Math.max(30,Math.min(480,Math.round(seconds*60))));
+    e.bfDotDamage=Math.max(e.bfDotDamage||2,Math.min(6,Math.max(1,Math.round(d*.12))));
+  }
   if(action.knockback>0){const dx=e.x-p.x,dy=e.y-p.y,dist=Math.hypot(dx,dy)||1;e.vx+=dx/dist*action.knockback;e.vy+=dy/dist*action.knockback;}
   return true;
 }

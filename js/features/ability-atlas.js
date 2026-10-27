@@ -134,7 +134,11 @@ function execute(caster,action,originalTarget,api){
     }
   }else if(action.type==='zone'){
     for(const point of points){
-      show(point.x,point.y,'meteor',Math.max(30,action.radius*.35));
+      const radius=Math.max(30,action.radius*.35);
+      show(point.x,point.y,'meteor',radius);
+      // Apply the opening poison/DoT hit instantly. Previously moving targets
+      // could leave the zone before its first 30-frame tick.
+      hitAt(point.x,point.y,radius,count>3?.66:1);
       caster.forgeZones.push({
         type:'zone',x:point.x,y:point.y,timer:Math.round(action.duration*60),
         a:action,ticks:0
