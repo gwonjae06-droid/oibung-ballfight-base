@@ -275,10 +275,10 @@
       if(!v||p.hp<=0)continue;
       const elapsed=102-v.life,fade=clamp(Math.min(elapsed/10,v.life/23),0,1);
       ctx.globalAlpha=fade;
-      ctx.font='600 11px "Noto Sans KR", sans-serif';
+      ctx.font='750 12.5px "Noto Sans KR",system-ui,sans-serif';
       ctx.textAlign='center';
-      const x=clamp(p.x,62,canvas.width-62),y=clamp(p.y-p.radius-52,27,canvas.height-25);
-      const width=clamp(ctx.measureText(v.label).width+24,48,160);
+      const x=clamp(p.x,70,Math.max(70,canvas.width-70)),y=clamp(p.y-p.radius-52,31,canvas.height-25);
+      const width=clamp(ctx.measureText(v.label).width+24,50,180);
       ctx.fillStyle='rgba(20,20,20,.9)';ctx.strokeStyle='rgba(235,235,235,.66)';ctx.lineWidth=1;
       ctx.beginPath();if(typeof ctx.roundRect==='function')ctx.roundRect(x-width/2,y-14,width,23,7);else ctx.rect(x-width/2,y-14,width,23);ctx.fill();ctx.stroke();
       ctx.fillStyle='#f2f7f7';ctx.fillText(v.label,x,y+2);
