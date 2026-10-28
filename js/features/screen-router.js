@@ -171,6 +171,7 @@ function install(){
       b.setAttribute('aria-pressed',String(b.dataset.rankingTab===rankingTab));
   }
   function towerTab(id){
+    const old=subtab;
     subtab=id==='free'?'free':'tower';
     const challenge=doc.getElementById('tower-mode-slot');
     challenge.hidden=subtab!=='tower';
@@ -186,6 +187,8 @@ function install(){
       // Never switch the same live battle engine into free mode mid-run.
       towerTab('tower');return;
     }
+    if(old!=='free'&&subtab==='free'&&global.ArenaTower?.stage!=='fighting'&&
+      typeof reRollMatch==='function')reRollMatch();
   }
   function characterTab(id){
     charTab=id==='cosmetics'?'cosmetics':'design';
