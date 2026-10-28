@@ -184,3 +184,21 @@ body.has-power-ranking{display:block!important;max-width:none!important;margin:0
 @media(prefers-reduced-motion:reduce){
   .arena-screen,.lobby-card,.lobby-featured-button{animation:none!important;transition:none!important}
 }
+
+.lobby-settings{position:relative;max-width:100%}
+.lobby-settings>summary{list-style:none;display:flex;align-items:center;
+  justify-content:center;min-height:45px;cursor:pointer;border:1px solid #56677b;
+  padding:11px 14px;border-radius:9px;background:#283746;color:#d9e9f4;
+  font-size:12px;font-weight:800}
+.lobby-settings>summary::-webkit-details-marker{display:none}
+.lobby-settings-body{position:absolute;z-index:50;top:calc(100% + 7px);right:0;
+  padding:13px;width:min(88vw,330px);max-height:65dvh;overflow:auto;
+  border:1px solid #647d91;border-radius:12px;background:#1c2b38;
+  box-shadow:0 18px 44px #090d15a6}
+.lobby-settings-body .bf-music{display:grid;gap:8px;min-width:0}
+.lobby-settings-body .bf-music :is(button,input){max-width:100%}
+.lobby-settings-body .bgm-quick-start{margin:0 0 8px;min-height:40px}
+@media(max-width:700px){
+ .lobby-settings{flex:1 1 auto}
+ .lobby-settings-body{left:auto;right:0;max-width:calc(100vw - 25px)}
+}
