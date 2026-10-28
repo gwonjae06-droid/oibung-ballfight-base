@@ -100,7 +100,13 @@ const FIST=global.ActionRegistry?.FAMILIES.fist||new Set(['uppercut','aircombo']
 const PROJECTILE=global.ActionRegistry?new Set(global.ActionRegistry.entries().filter(d=>d.physics==='projectile'||d.id==='beam'||d.id==='chain').map(d=>d.id)):new Set(['shot','homing','pierce','boomerang','arcshot','splitshot','dung','meteor','starfall','bolt','chain','beam']);
 const DEFENSE=global.ActionRegistry?new Set([...global.ActionRegistry.byGroup('defense'),'timestop','timeburst','grow','shrink','wall']):new Set(['heal','shield','cleanse','haste','regen','fortify','lifebloom','resurrect','rewind','grow','shrink','timeburst','timestop','wall']);
 const EXPLOSION=global.ActionRegistry?.FAMILIES.explosion||new Set(['nova','meteor','mine','erupt','dive']);
-const duration=a=>PROJECTILE.has(a.type)?1050:MOVE.has(a.type)?850:EXPLOSION.has(a.type)?1120:950;
+const R=global.ActionRegistry;
+const belongs=(type,family)=>R?.get(type)?R.get(type).family===family:
+    ({movement:MOVE,fist:FIST,projectile:PROJECTILE,explosion:EXPLOSION}[family]?.has(type)||false);
+const isMoving=type=>R?.get(type)?R.get(type).category==='mobility'||['flight','burrow','dive','burrowdash'].includes(type):MOVE.has(type);
+const isRanged=type=>R?.get(type)?R.get(type).physics==='projectile'||R.get(type).id==='beam'||R.get(type).id==='chain':PROJECTILE.has(type);
+const isDefense=type=>R?.get(type)?R.get(type).category==='defense'||DEFENSE.has(type):DEFENSE.has(type);
+const duration=a=>R?.duration(a.type)||(PROJECTILE.has(a.type)?1050:MOVE.has(a.type)?850:EXPLOSION.has(a.type)?1120:950);
 const label=t=>global.SkillForge.TYPE[t]||t||'동작';
 let focus=0,profile=null,sequence=null,elapsed=0,raf=0,stamp=null,playing=true,shown=true;
 let lastText='',lastPicker='',pickedIndex=-1;
@@ -131,10 +137,10 @@ function fighter(x,y,r,color,initial,custom=false){
   circle(x,y,r,null,'#edf5fc');
 }
 function arm(x,y,action,t,color){
-  if(!FIST.has(action.type)&&!PROJECTILE.has(action.type))return;
+  if(!belongs(action.type,'fist')&&!isRanged(action.type))return;
   const fraction=Math.sin(Math.PI*clamp(t*1.15,0,1));
   const angle=action.type==='uppercut'?-.85*fraction:0;
-  const reach=14+fraction*(FIST.has(action.type)?33:22);
+  const reach=14+fraction*(belongs(action.type,'fist')?33:22);
   const handX=x+Math.cos(angle)*reach,handY=y+Math.sin(angle)*reach;
   line(x+8,y,handX,handY,'#263743',9);
   line(x+8,y,handX,handY,color,5);
@@ -152,7 +158,7 @@ function render(time){
   ctx.fillStyle='#16232e';ctx.fillRect(0,0,WIDTH,HEIGHT);
   for(let i=20;i<WIDTH;i+=40)line(i,0,i,HEIGHT,'rgba(170,200,221,.08)',1);
   line(0,149,WIDTH,149,'#3a5261',1);
-  const moving=events.filter(e=>MOVE.has(e.action.type)&&time>=e.start).at(-1);
+  const moving=events.filter(e=>isMoving(e.action.type)&&time>=e.start).at(-1);
   const isMoving=moving&&time<moving.end;
   const move=moving?clamp((time-moving.start)/moving.length,0,1):0;
   // Retain the destination after a mobility action, so follow-up punches
@@ -177,8 +183,8 @@ function render(time){
     const t=clamp((time-e.start)/e.length,0,1),kind=t<.23?'prepare':t<.7?'cast':'impact';
     const q=kind==='prepare'?t/.23:kind==='cast'?(t-.23)/.47:(t-.7)/.3;
     const skillType=e.action.type;
-    const targetSide=EXPLOSION.has(skillType)||['blackhole','starfall','mine','zone'].includes(skillType);
-    const casterSide=DEFENSE.has(skillType)||['wave','nova','pull','orbit','timestop','rewind','timeburst'].includes(skillType);
+    const targetSide=R?.get(skillType)?R.get(skillType).preview.anchor==='target':EXPLOSION.has(skillType)||['blackhole','starfall','mine','zone'].includes(skillType);
+    const casterSide=isDefense(skillType)||['wave','nova','pull','orbit','timestop','rewind','timeburst'].includes(skillType);
     const x=targetSide?tx:casterSide?hx:hx+35,y=targetSide?ty:casterSide?hy:hy-4;
     if(kind==='prepare'){
       circle(x,y,22+7*q,null,color);
@@ -188,11 +194,11 @@ function render(time){
       global.SkillVisuals?.previewFrame?.(ctx,{type:skillType,phase:kind,progress:q,x,y,
         angle:0,radius:clamp(Number(e.action.radius)||95,35,125),color});
     }
-    if(kind==='cast'&&PROJECTILE.has(skillType)&&!['bolt','meteor','starfall','chain','beam'].includes(skillType)){
+    if(kind==='cast'&&isRanged(skillType)&&!['bolt','meteor','starfall','chain','beam'].includes(skillType)){
       const px=hx+(tx-hx)*q,py=hy+(ty-hy)*q-(skillType==='arcshot'?34:5)*Math.sin(Math.PI*q);
       line(px-18,py+2,px-7,py,'#aacada',2);circle(px,py,6,color);
     }
-    if(kind==='impact'&&!PURE.has(skillType)&&!DEFENSE.has(skillType))
+    if(kind==='impact'&&!R?.isMovement(skillType)&&!PURE.has(skillType)&&!isDefense(skillType))
       circle(tx,ty,5+12*(1-q),'rgba(235,164,100,.35)');
   }
   fighter(hx,hy,21,profile.color||'#8ba4ed',(profile.name||'나')[0],true);
