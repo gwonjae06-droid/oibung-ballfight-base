@@ -147,20 +147,30 @@ function handleCombat(pA,pB) {
   if(distance>=minDistance)return;
   const nx=distance>0.0001?dx/distance:(pA.playerNum<=pB.playerNum?1:-1);
   const ny=distance>0.0001?dy/distance:0;
-  // Positional separation avoids repeated wall/collision acceleration.
-  const separation=(minDistance-distance+0.01)/2;
-  pA.x=Math.max(pA.radius,Math.min(canvas.width-pA.radius,pA.x-nx*separation));
-  pA.y=Math.max(pA.radius,Math.min(canvas.height-pA.radius,pA.y-ny*separation));
-  pB.x=Math.max(pB.radius,Math.min(canvas.width-pB.radius,pB.x+nx*separation));
-  pB.y=Math.max(pB.radius,Math.min(canvas.height-pB.radius,pB.y+ny*separation));
+  const movingA=(pA.forgeDash||0)>0||(pA.movementOnlyFrames||0)>0;
+  const movingB=(pB.forgeDash||0)>0||(pB.movementOnlyFrames||0)>0;
+  const clampX=p=>Math.max(p.radius,Math.min(canvas.width-p.radius,p.x));
+  const clampY=p=>Math.max(p.radius,Math.min(canvas.height-p.radius,p.y));
+  const overlap=minDistance-distance+.01;
+  // During pure movement, separate overlapping bodies without imparting
+  // any velocity to the target. This lets a dash reach melee distance.
+  if(movingA!==movingB){
+    const mover=movingA?pA:pB,sign=movingA?-1:1;
+    mover.x=clampX({...mover,x:mover.x+nx*overlap*sign});
+    mover.y=clampY({...mover,y:mover.y+ny*overlap*sign});
+  }else{
+    pA.x=clampX({...pA,x:pA.x-nx*overlap*.5});
+    pA.y=clampY({...pA,y:pA.y-ny*overlap*.5});
+    pB.x=clampX({...pB,x:pB.x+nx*overlap*.5});
+    pB.y=clampY({...pB,y:pB.y+ny*overlap*.5});
+  }
+  if(movingA||movingB)return;
   const approach=((pB.vx||0)+(pB.impactVX||0)*.4-(pA.vx||0)-(pA.impactVX||0)*.4)*nx+
     ((pB.vy||0)+(pB.impactVY||0)*.4-(pA.vy||0)-(pA.impactVY||0)*.4)*ny;
   if(approach<0){
-    const impulse=Math.min(5,Math.max(1.8,-approach*0.58));
+    const impulse=Math.min(5,Math.max(1.8,-approach*.58));
     pA.vx-=nx*impulse;pA.vy-=ny*impulse;
     pB.vx+=nx*impulse;pB.vy+=ny*impulse;
-    // Kick tangentially on the first genuine contact; equal/opposite
-    // impulses keep the pair's total momentum unchanged.
     const pair=[pA.playerNum,pB.playerNum].sort((a,b)=>a-b).join(':');
     if(!openingCollisionPairs.has(pair)&&approach<-.2){
       openingCollisionPairs.add(pair);
@@ -171,21 +181,22 @@ function handleCombat(pA,pB) {
       pB.vx-=tx;pB.vy-=ty;
     }
   }
-  // A fighter thrown by an earlier hit is not performing an intentional
-  // contact attack. Keep body separation, but never turn the new launch
-  // velocity into accidental extra damage from legacy contact handlers.
+  // Collisions caused by another successful hit are not bonus attacks.
   if((pA.impactSpeed||0)>4||(pB.impactSpeed||0)>4)return;
   [[pA,pB],[pB,pA]]
     .filter(([a])=>!globalThis.ForgeExpansion?.blocked(a)&&BEHAVIORS[a.id]&&BEHAVIORS[a.id].onContact)
     .sort((x,y)=>(BEHAVIORS[x[0].id].order||99)-(BEHAVIORS[y[0].id].order||99))
     .forEach(([a,b])=>{
+      const hp=b.hp;
       if(globalThis.ForgeExpansion&&!a.forge)globalThis.ForgeExpansion.legacy(a,()=>BEHAVIORS[a.id].onContact(a,b));
       else BEHAVIORS[a.id].onContact(a,b);
+      if(b.hp<hp)globalThis.SkillVisuals?.contact?.(a,b);
     });
 }
 function update() {
   if(!isPlaying||isGameOver)return;
   players.forEach(p=>{
+    if(p.movementOnlyFrames>0)p.movementOnlyFrames--;
     globalThis.ForgeExpansion?.tick(p);
     if(p.invincible>0)p.invincible--;
     if(p.slowTimer>0){p.slowTimer--;if(p.slowTimer<=0)p.slowMultiplier=1;}
