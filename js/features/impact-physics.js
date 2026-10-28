@@ -4,7 +4,7 @@
 (function(global){
 'use strict';
 const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
-const pulses=[];
+const pulses=[],trails=[];
 let frame=0,lastSound=-8,reduced=false;
 function hit(attacker,defender,damage,options={}){
   if(!attacker||!defender||attacker===defender||!(Number(damage)>0))return false;
@@ -18,18 +18,24 @@ function hit(attacker,defender,damage,options={}){
   if(d<.001){dx=(defender.playerNum||0)>=(attacker.playerNum||0)?1:-1;dy=0;d=1;}
   const nx=dx/d,ny=dy/d,amount=clamp(Number(damage),1,200);
   const heavy=options.heavy===true||amount>=22;
-  // Powerful but bounded to avoid tunneling, runaway speed or 10-player piles.
-  const impulse=clamp(7.5+Math.sqrt(amount)*1.15+(heavy?2.5:0)+
-    clamp(Number(options.knockback)||0,0,9)*.4,9,18);
-  const tangent=clamp((defender.vx||0)*-ny+(defender.vy||0)*nx,-4,4);
-  defender.impactFrames=Math.max(defender.impactFrames||0,heavy?9:7);
-  defender.impactSpeed=impulse;
-  defender.impactDirX=nx;defender.impactDirY=ny;
-  defender.impactTangent=tangent*.25;
-  defender.vx=nx*impulse-ny*tangent*.25;
-  defender.vy=ny*impulse+nx*tangent*.25;
-  // Immediate visible separation, then the fixed-step engine carries momentum.
-  const nudge=clamp(impulse*.43,4,8);
+  // Sudden 35-70px/tick burst on a separate impulse channel. Normal
+  // 12px/tick locomotion must NEVER clamp a landed blow's physical response.
+  const impulse=clamp(26+Math.sqrt(amount)*3.2+(heavy?4:0)+
+    clamp(Number(options.knockback)||0,0,9)*.95,32,70);
+  // A subsequent hit refreshes the burst without unboundedly adding forces.
+  // Mostly follow the newest attacking direction, keeping a hint of momentum.
+  let ix=nx*impulse+clamp(Number(defender.impactVX)||0,-72,72)*.16;
+  let iy=ny*impulse+clamp(Number(defender.impactVY)||0,-72,72)*.16;
+  const resultant=Math.hypot(ix,iy);
+  if(resultant>74){ix*=74/resultant;iy*=74/resultant;}
+  defender.impactVX=ix;defender.impactVY=iy;
+  defender.impactFrames=30;
+  defender.impactSpeed=Math.hypot(ix,iy);
+  defender.impactColor=options.color||attacker.forge?.effectColor||attacker.themeColor||
+    attacker.borderColor||'#45586a';
+  // The initial flash reacts immediately; real travel then eases to normal
+  // motion over a series of fixed simulation ticks.
+  const nudge=clamp(impulse*.17,7,12);
   const arena=typeof canvas!=='undefined'?canvas:global.canvas;
   if(arena?.width&&arena?.height){
     defender.x=clamp(defender.x+nx*nudge,defender.radius||0,arena.width-(defender.radius||0));
@@ -37,8 +43,8 @@ function hit(attacker,defender,damage,options={}){
   }
   // Small attacker recoil makes the blow read as a two-body interaction.
   if(options.recoil!==false){
-    attacker.vx=(attacker.vx||0)-nx*(heavy?2.7:1.8);
-    attacker.vy=(attacker.vy||0)-ny*(heavy?2.7:1.8);
+    attacker.vx=(attacker.vx||0)-nx*(heavy?3.5:2.4);
+    attacker.vy=(attacker.vy||0)-ny*(heavy?3.5:2.4);
   }
   const color=options.color||attacker.forge?.effectColor||attacker.themeColor||
     attacker.borderColor||'#45586a';
@@ -56,19 +62,63 @@ function hit(attacker,defender,damage,options={}){
 }
 function integrate(p){
   if(!(p?.impactFrames>0))return;
-  const speed=p.impactSpeed||0,nx=p.impactDirX||0,ny=p.impactDirY||0;
-  const tangent=p.impactTangent||0;
-  // Preserve knockback despite the fighter AI updating its own movement.
-  const blend=clamp(p.impactFrames/9,.25,.88);
-  p.vx=(p.vx||0)*(1-blend)+(nx*speed-ny*tangent)*blend;
-  p.vy=(p.vy||0)*(1-blend)+(ny*speed+nx*tangent)*blend;
-  p.impactSpeed=speed*.86;
+  let vx=Number(p.impactVX)||0,vy=Number(p.impactVY)||0;
+  const speed=Math.hypot(vx,vy);
+  if(!Number.isFinite(speed)||speed<.45){p.impactFrames=0;p.impactSpeed=0;p.impactVX=0;p.impactVY=0;return;}
+  const arena=typeof canvas!=='undefined'?canvas:global.canvas;
+  if(!arena||!Number.isFinite(p.x)||!Number.isFinite(p.y))return;
+  const r=Math.max(0,Number(p.radius)||0);
+  const left=r,right=Math.max(r,arena.width-r);
+  const top=r,bottom=Math.max(r,arena.height-r);
+  const oldX=p.x,oldY=p.y;
+  // Substeps keep high-speed bodies inside the arena; bounce off walls
+  // rather than accelerating forever or teleporting outside the map.
+  const steps=Math.max(1,Math.ceil(speed/11));
+  let wallX=false,wallY=false;
+  for(let i=0;i<steps;i++){
+    const nextX=p.x+vx/steps,nextY=p.y+vy/steps;
+    const boundedX=clamp(nextX,left,right),boundedY=clamp(nextY,top,bottom);
+    wallX=wallX||boundedX!==nextX;wallY=wallY||boundedY!==nextY;
+    p.x=boundedX;p.y=boundedY;
+  }
+  if(!reduced&&frame%2===0&&speed>9){
+    trails.push({x:oldX,y:oldY,toX:p.x,toY:p.y,
+      color:p.impactColor||'#45586a',age:0,life:10});
+    if(trails.length>72)trails.splice(0,trails.length-72);
+  }
+  // A powerful first frame followed by exponential friction: ~82% of the
+  // previous forced displacement each tick, then seamless normal AI motion.
+  // The original AI's p.vx/p.vy remain untouched by this extra force.
+  if(wallX)vx=-vx*.23;
+  if(wallY)vy=-vy*.23;
+  p.impactVX=vx*.82;p.impactVY=vy*.82;
+  p.impactSpeed=Math.hypot(p.impactVX,p.impactVY);
   p.impactFrames--;
+  if(p.impactSpeed<.45||p.impactFrames<=0){
+    p.impactFrames=0;p.impactSpeed=0;p.impactVX=0;p.impactVY=0;
+  }
 }
-function tick(){frame++;for(let i=pulses.length-1;i>=0;i--)if(++pulses[i].age>=pulses[i].life)pulses.splice(i,1);}
+function tick(){
+  frame++;
+  for(let i=pulses.length-1;i>=0;i--)if(++pulses[i].age>=pulses[i].life)pulses.splice(i,1);
+  for(let i=trails.length-1;i>=0;i--)if(++trails[i].age>=trails[i].life)trails.splice(i,1);
+}
 function draw(ctx){
   if(!pulses.length)return;
   ctx.save();ctx.globalCompositeOperation='source-over';
+  // Travel streaks make the initial throw look fast, then naturally vanish.
+  // They're visual only and disabled with reduced effects.
+  if(!reduced)for(const t of trails){
+    const fade=1-t.age/t.life,dx=t.toX-t.x,dy=t.toY-t.y;
+    ctx.save();ctx.globalAlpha=fade*.68;ctx.lineCap='round';
+    for(let i=-1;i<=1;i++){
+      const size=Math.max(1,Math.hypot(dx,dy)),ox=-dy/size*i*7,oy=dx/size*i*7;
+      ctx.strokeStyle=i===0?'#64748b':t.color;ctx.lineWidth=i===0?2.5:1.5;
+      ctx.beginPath();ctx.moveTo(t.x+ox-dx*.4,t.y+oy-dy*.4);
+      ctx.lineTo(t.toX+ox-dx*.7,t.toY+oy-dy*.7);ctx.stroke();
+    }
+    ctx.restore();
+  }
   for(const p of pulses){
     const t=p.age/p.life,fade=1-t,r=8+p.impulse*(.6+1.45*t);
     ctx.save();ctx.globalAlpha=fade*(reduced?.45:.85);
@@ -94,7 +144,7 @@ function draw(ctx){
   }
   ctx.restore();
 }
-function reset(){pulses.length=0;frame=0;lastSound=-8;}
+function reset(){pulses.length=0;trails.length=0;frame=0;lastSound=-8;}
 global.ImpactPhysics={hit,integrate,tick,draw,reset,setReduced(value){reduced=!!value;},
   get pulseCount(){return pulses.length;}};
 })(window);
