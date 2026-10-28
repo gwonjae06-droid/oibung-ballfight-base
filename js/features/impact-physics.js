@@ -11,7 +11,8 @@ const PROJECTILES=new Set(['projectile','shot','homing','pierce','boomerang',
 let frame=0,lastSound=-8,reduced=false;
 function hit(attacker,defender,damage,options={}){
   if(!attacker||!defender||attacker===defender||!(Number(damage)>0))return false;
-  if(global.ActionRegistry?.isMovement(options.type)||MOVEMENT_ONLY.has(String(options.type||'')))return false;
+  if(global.ActionRegistry?.isMovement(options.type)||MOVEMENT_ONLY.has(String(options.type||''))||
+    global.ActionRegistry?.get(options.type)?.physics==='none')return false;
   const x=defender.x,y=defender.y;
   const sourceX=Number.isFinite(options.x)?options.x:attacker.x;
   const sourceY=Number.isFinite(options.y)?options.y:attacker.y;
