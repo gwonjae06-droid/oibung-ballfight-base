@@ -186,3 +186,208 @@
   #container .arena-purpose, #container .arena-nav-more,
   .arena-purpose-steps li,.arena-nav-more-list{animation:none!important;transition:none!important}
 }
+
+
+/* V2 studio workspace: two independent columns on desktop, with preview
+   permanently visible top-left and editing blocks on the right. */
+.character-studio-dialog{
+  width:min(96vw,1560px)!important;max-width:none!important;
+  height:min(94dvh,980px)!important;max-height:94dvh!important;
+}
+.character-studio-dialog .character-studio-shell{
+  display:grid!important;
+  grid-template-columns:minmax(355px,.91fr) minmax(0,1.5fr);
+  grid-template-rows:auto minmax(0,1fr);
+  align-items:stretch;column-gap:0;min-width:0;min-height:0;
+}
+.character-studio-dialog .character-studio-head{
+  grid-column:1/-1;grid-row:1;min-width:0;
+  padding:14px 22px;
+}
+.character-studio-dialog .studio-motion-preview{
+  grid-column:1;grid-row:2;align-self:stretch;position:relative;
+  display:flex;flex-direction:column;gap:13px;
+  min-width:0;min-height:0;max-height:100%;
+  overflow-x:hidden;overflow-y:auto;
+  padding:22px 19px 18px;border-right:1px solid #405563;
+  border-bottom:0;background:#1b2b36;
+  overscroll-behavior:contain;
+}
+.character-studio-dialog .studio-motion-header{
+  align-items:flex-start;gap:4px;flex-direction:column;margin:0;
+}
+.character-studio-dialog .studio-motion-header strong{
+  font-size:clamp(17px,1.6vw,21px);line-height:1.3;
+}
+.character-studio-dialog .studio-motion-header small{
+  color:#bdcfda;font-size:11px;line-height:1.5;
+}
+.character-studio-dialog .studio-motion-body{
+  display:grid;grid-template-columns:minmax(0,1fr);
+  gap:12px;align-items:start;
+}
+.character-studio-dialog .studio-motion-stage{
+  width:100%;max-width:none;aspect-ratio:8/3;
+  border:1px solid #7690a0;border-radius:12px;
+  box-shadow:0 7px 22px #09131c52;overflow:hidden;
+}
+.character-studio-dialog #studio-motion-canvas{
+  display:block;width:100%;height:auto;aspect-ratio:8/3;
+}
+.character-studio-dialog .studio-motion-info{
+  display:grid;grid-template-columns:minmax(0,1fr);
+  gap:7px;align-items:start;
+}
+.character-studio-dialog .studio-motion-info label{
+  color:#edf4f9;font-size:12px;
+}
+.character-studio-dialog #studio-motion-select{
+  min-height:44px;font-size:13px;
+}
+.character-studio-dialog #studio-motion-caption{
+  color:#e8f2f7;font-size:12px;min-height:20px;
+}
+.character-studio-dialog #studio-motion-cooldown{
+  color:#b9cbd6;font-size:11px;
+}
+.character-studio-dialog .studio-motion-footer{
+  display:grid;grid-template-columns:minmax(0,1fr);gap:13px;margin:0;
+}
+.character-studio-dialog .studio-motion-buttons{
+  display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
+  align-items:stretch;gap:8px;
+}
+.character-studio-dialog .studio-motion-buttons button,
+.character-studio-dialog .studio-motion-buttons label{
+  display:flex;justify-content:center;align-items:center;min-width:0;
+  min-height:44px;font-size:12px;
+}
+.character-studio-dialog .studio-motion-buttons label select{
+  min-width:0;max-width:85px;min-height:40px;
+}
+.character-studio-dialog .studio-motion-progress{width:100%;min-height:7px}
+.character-studio-dialog .character-studio-content{
+  grid-column:2;grid-row:2;min-height:0;min-width:0;
+  overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;
+  padding:21px 24px 28px;background:#121a22;
+}
+.character-studio-dialog .character-studio-original>.bf-details-body{
+  max-width:none!important;margin-inline:0!important;width:100%;
+}
+.character-studio-dialog .forge-studio{gap:12px!important}
+.character-studio-dialog .block-forge{
+  padding:15px!important;border-color:#657f90;
+  box-shadow:0 7px 20px #050e1736;
+}
+.character-studio-dialog .studio-category-tabs{
+  top:-21px;z-index:8;
+}
+.character-studio-dialog .studio-roster-manager{margin-top:5px}
+.character-studio-dialog .studio-roster-guide{
+  display:block;font-size:11px;color:#acbfca;line-height:1.4;
+}
+.character-studio-dialog .studio-save-purpose{margin-top:10px}
+.character-studio-dialog .forge-primary-actions #bf-create{
+  min-height:56px;font-size:14px!important;
+}
+/* Exactly one existing match-control group; use the right setup column as
+   the action hub. Move its DOM node, do not clone its buttons. */
+#container .arena-match-setup .arena-setup-controls{
+  display:grid!important;
+  grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;
+  gap:9px;margin:13px 0 0;align-items:stretch;
+  padding:12px 0 0;border-top:1px solid #465460;
+}
+#container .arena-match-setup .arena-setup-controls #btn-start{
+  grid-column:1/-1;min-height:58px;
+  font-size:16px;font-weight:900;
+}
+#container .arena-match-setup .arena-setup-controls #btn-reset{grid-column:1}
+#container .arena-match-setup .arena-setup-controls .match-count-label{
+  grid-column:2;min-width:0;gap:4px;flex-wrap:wrap;
+}
+#container .arena-match-setup .arena-setup-controls .match-count-label select{
+  min-width:0;max-width:100%;flex:1 1 75px;
+}
+#container .arena-match-creator-shortcut{
+  margin-top:11px;padding-top:11px;
+}
+#container .arena-match-creator-shortcut .open-character-studio{min-height:47px}
+/* Clear up the two now-unnecessary visual repeats. */
+#container .arena-match-setup .arena-match-hint{display:none!important}
+#container .arena-match-setup .arena-setup-proceed{display:none!important}
+@media(max-width:1100px), (max-height:640px){
+  .character-studio-dialog{
+    width:min(100vw,880px)!important;max-width:100vw!important;
+    height:min(98dvh,920px)!important;max-height:98dvh!important;
+  }
+  .character-studio-dialog .character-studio-shell{
+    display:flex!important;flex-direction:column;
+    min-height:0;height:100%;
+  }
+  .character-studio-dialog .studio-motion-preview{
+    flex:0 0 auto;position:relative;min-height:0;max-height:min(41dvh,355px);
+    padding:12px 16px;overflow-y:auto;border:0;border-bottom:1px solid #405563;
+  }
+  .character-studio-dialog .studio-motion-body{
+    grid-template-columns:minmax(0,1.45fr) minmax(160px,1fr);
+    align-items:center;gap:12px;
+  }
+  .character-studio-dialog .studio-motion-footer{
+    display:flex;justify-content:space-between;align-items:center;gap:8px;
+  }
+  .character-studio-dialog .studio-motion-buttons{
+    flex:1 1 auto;grid-template-columns:repeat(3,minmax(0,1fr));
+  }
+  .character-studio-dialog .studio-motion-progress{width:auto;flex:1 1 90px}
+  .character-studio-dialog .character-studio-content{
+    flex:1 1 auto;min-height:0;overflow-y:auto;padding:16px 16px 28px;
+  }
+  .character-studio-dialog .studio-category-tabs{top:-16px}
+}
+@media(max-width:700px){
+  .character-studio-dialog{
+    width:100vw!important;max-width:100vw!important;
+    height:100dvh!important;max-height:100dvh!important;
+    margin:0;border-radius:0;border:0;
+  }
+  .character-studio-dialog .character-studio-head{
+    padding:10px 13px;gap:8px;
+  }
+  .character-studio-dialog .character-studio-head h2{font-size:17px}
+  .character-studio-dialog .character-studio-head p{font-size:10px}
+  .character-studio-dialog .studio-motion-preview{
+    max-height:min(40dvh,310px);padding:10px 12px;gap:7px;
+  }
+  .character-studio-dialog .studio-motion-header strong{font-size:15px}
+  .character-studio-dialog .studio-motion-body{grid-template-columns:1fr;gap:6px}
+  .character-studio-dialog .studio-motion-stage{aspect-ratio:8/3}
+  .character-studio-dialog .studio-motion-info{
+    grid-template-columns:minmax(120px,.9fr) minmax(0,1fr);gap:3px 9px;
+  }
+  .character-studio-dialog .studio-motion-info label{grid-column:1}
+  .character-studio-dialog #studio-motion-select{grid-column:1;min-height:39px}
+  .character-studio-dialog #studio-motion-caption{
+    grid-column:2;grid-row:2;align-self:center;font-size:11px;
+  }
+  .character-studio-dialog #studio-motion-cooldown{grid-column:1/-1;font-size:10px}
+  .character-studio-dialog .studio-motion-footer{display:flex;gap:8px;flex-wrap:wrap}
+  .character-studio-dialog .studio-motion-buttons{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .character-studio-dialog .studio-motion-buttons button,
+  .character-studio-dialog .studio-motion-buttons label{
+    min-height:37px;padding:5px;font-size:10px;
+  }
+  .character-studio-dialog .studio-motion-progress{flex-basis:100%}
+  .character-studio-dialog .character-studio-content{padding:10px 12px 24px}
+  .character-studio-dialog .studio-category-tabs{top:-10px}
+  #container .arena-match-setup .arena-setup-controls #btn-start{min-height:54px}
+}
+@media(max-width:380px){
+  .character-studio-dialog .studio-motion-preview{max-height:min(38dvh,280px)}
+  .character-studio-dialog .studio-motion-header small{display:none}
+  .character-studio-dialog .studio-motion-buttons{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+@media(prefers-reduced-motion:reduce){
+  .character-studio-dialog .studio-motion-progress,
+  #container .arena-match-setup .arena-setup-controls button{transition:none!important}
+}

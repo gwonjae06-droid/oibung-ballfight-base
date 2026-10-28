@@ -4,7 +4,7 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs'),vm=require('node:vm'),path=require('node:path');
 const read=p=>fs.readFileSync(path.join(__dirname,'..',p),'utf8');
 
-test('custom fighter deletion is in an always-visible manager above both tabs',()=>{
+test('custom fighter deletion remains in an always-visible manager after the Save action',()=>{
   const ui=read('js/features/studio-workspace.js');
   const category=read('js/features/ui-categories.js');
   const css=read('css/style.css');
@@ -12,8 +12,8 @@ test('custom fighter deletion is in an always-visible manager above both tabs',(
   assert.ok(ui.includes("feedback=pick('#bf-result')"));
   assert.ok(ui.includes('manager.append(owned)'));
   assert.ok(ui.includes('manager.append(feedback)'));
-  assert.ok(ui.includes('studio.replaceChildren(...[name,manager,tabs,skills,looks,create,saved]'),
-    'roster must appear above tab panels, not inside a hidden tab');
+  assert.ok(ui.includes('studio.replaceChildren(...[name,tabs,skills,looks,create,manager,saved]'),
+    'roster must stay outside both hidden tab panels and after the main Save action');
   assert.ok(ui.includes('global.SkillForge.refreshList?.()'));
   assert.ok(category.includes("summary.textContent='JSON 가져오기 · 내보내기'"));
   assert.ok(css.includes('.studio-roster-manager #bf-custom-list'));

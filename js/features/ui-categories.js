@@ -22,11 +22,9 @@ openButton.type='button';openButton.id='open-character-studio';
 openButton.className='open-character-studio';
 openButton.textContent='+ 커스텀 캐릭터 만들기';
 openButton.setAttribute('aria-haspopup','dialog');
-const hint=document.createElement('p');hint.className='arena-match-hint';
-hint.textContent='랜덤 생성과 계열 선택 생성은 커스텀 캐릭터 제작 화면에서 사용할 수 있습니다.';
 const openArea=document.createElement('div');
 openArea.className='arena-match-creator-shortcut';
-openArea.append(openButton,hint);
+openArea.append(openButton);
 main.append(openArea);
 
 const dialog=document.createElement('dialog');

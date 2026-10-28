@@ -37,6 +37,15 @@ function install(){
   if(!root||!next||!cta||!start||!arena||!panel||!nav)return null;
 
   const steps=Array.from(root.querySelectorAll('[data-ui-step]'));
+  // Move the ONE existing controls node; all inline handlers and engine
+  // references survive because buttons are not cloned or rebuilt.
+  const controls=arena.querySelector('.control-panel');
+  const picks=panel.querySelector('#bf-picks');
+  if(controls&&picks){
+    controls.classList.add('arena-setup-controls');
+    controls.setAttribute('aria-label','경기 시작 · 재매칭 · 참가 인원');
+    picks.after(controls);
+  }
   const heading=panel.querySelector('.panel-heading');
   if(heading&&!panel.querySelector('.arena-setup-tip')){
     const eyebrow=heading.querySelector('.eyebrow');
@@ -47,17 +56,6 @@ function install(){
     info.className='arena-setup-tip';
     info.textContent='P1부터 원하는 캐릭터를 고르세요. 선택하면 대진에 바로 반영됩니다.';
     heading.append(info);
-    const go=doc.createElement('a');
-    go.className='arena-setup-proceed';
-    go.href='#arena-stage';
-    go.textContent='선택 완료 · 전투 화면으로 이동';
-    go.addEventListener('click',e=>{
-      e.preventDefault();
-      arena.scrollIntoView?.({block:'start',behavior:'smooth'});
-      start.focus?.({preventScroll:true});
-    });
-    const picks=panel.querySelector('#bf-picks');
-    if(picks)picks.after(go);
   }
   const fold=doc.querySelector('.bf-fold');
   if(fold){
