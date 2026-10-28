@@ -15,8 +15,8 @@ const ACTION_PARAMETERS=Object.freeze({
   shot:'pattern target damage radius count speed status knockback',
   beam:'pattern target damage radius count status knockback',
   bolt:'pattern target damage radius count status knockback',
-  dash:'target damage speed duration status knockback',
-  blink:'target damage radius status knockback',
+  dash:'target speed duration',
+  blink:'target',
   heal:'damage',shield:'duration',pull:'damage radius status knockback',
   orbit:'damage radius count duration status knockback',
   zone:'pattern target damage radius count duration status knockback',
@@ -55,6 +55,9 @@ const ACTION_PARAMETERS=Object.freeze({
   burrowdash:'target damage radius duration status knockback',
   erupt:'damage radius status knockback'
 });
+// Motion is not an attack. These actions may reposition a fighter but
+// never produce damage, statuses or knockback, even from old saved JSON.
+const MOVEMENT_ONLY=new Set(['dash','blink','leap','hover','glide','swap','retreat','portal']);
 const supportedParameter=(type,key)=>key==='delay'||(' '+(ACTION_PARAMETERS[type]||'')+' ').includes(' '+key+' ');
 const number=(x,a,b,d=a)=>Number.isFinite(Number(x))?Math.max(a,Math.min(b,Number(x))):d;
 const clean=(v,n)=>String(v==null?'':v).replace(/[<>]/g,'').slice(0,n).trim();
@@ -85,7 +88,7 @@ function normalize(value){
           status:STATUS[a.status]?a.status:'none',
           knockback:number(a.knockback,0,9,2),delay:number(a.delay,0,2,0),
           link:['and','after','with'].includes(a.link)?a.link:'and'
-        }))};
+        })).map(a=>MOVEMENT_ONLY.has(a.type)?{...a,damage:0,status:'none',knockback:0}:a)};
     })
   };
 }
@@ -102,7 +105,7 @@ const allTypes=()=>Object.keys(TYPE);
 const randInt=(rng,min,max)=>min+Math.floor(Math.max(0,Math.min(.999999999,rng()))*(max-min+1));
 const pickRandom=(rng,values)=>values[randInt(rng,0,values.length-1)];
 const randomColor=rng=>'#'+[0,1,2].map(()=>randInt(rng,48,218).toString(16).padStart(2,'0')).join('');
-const offense=new Set(['wave','shot','beam','bolt','dash','blink','pull','zone','homing','pierce','boomerang','chain','nova','meteor','mine','drain','blackhole','starfall','dung','uppercut','slash','spinslash','thrust','aircombo','arcshot','splitshot','dive','erupt','burrowdash','trap','turret','summon']);
+const offense=new Set(['wave','shot','beam','bolt','pull','zone','homing','pierce','boomerang','chain','nova','meteor','mine','drain','blackhole','starfall','dung','uppercut','slash','spinslash','thrust','aircombo','arcshot','splitshot','dive','erupt','burrowdash','trap','turret','summon']);
 const settings=(type,i=0)=>({
   type,pattern:'direct',target:'nearest',
   damage:18+i%5*3,radius:115+(i%4)*22,
@@ -186,6 +189,7 @@ function randomProfile(theme='any',rng=Math.random){
 let sequence=0;
 const enemies=p=>players.filter(e=>e!==p&&e.hp>0);
 function hit(p,e,action,multiplier=1,attackZ) {
+  if(MOVEMENT_ONLY.has(action?.type))return false;
   if(!e||e===p||e.hp<=0||e.invincible>0)return false;
   if(global.AdvancedCombat&&!AdvancedCombat.canHit(p,e,attackZ))return false;
   if(!global.AdvancedCombat&&e.jumpState&&e.jumpState!=='ground')return false;
@@ -304,7 +308,7 @@ function execute(p,a,target) {
     visual('blink');const dx=near.x-p.x,dy=near.y-p.y,d=Math.hypot(dx,dy)||1;
     p.x=Math.max(p.radius,Math.min(canvas.width-p.radius,near.x-dx/d*68));
     p.y=Math.max(p.radius,Math.min(canvas.height-p.radius,near.y-dy/d*68));
-    visual('blink');within(p.x,p.y,a.radius*.6).forEach(e=>hit(p,e,a));
+    visual('blink'); // Reposition only: a separate attack block owns damage.
   } else if(a.type==='heal'){
     if(global.ForgeExpansion)global.ForgeExpansion.heal(p,a.damage);else p.hp=Math.min(p.maxHp,p.hp+a.damage);visual('heal');addFloatingText('+'+a.damage,p.x,p.y-26,'#8bf2af',17);
   } else if(a.type==='shield'){
@@ -405,12 +409,10 @@ function advanceWorld(p,target){
 }
 function contact(p,e){
   if(global.ForgeExpansion?.blocked(p))return;
-  if(p.forgeDash>0&&p.forgeDashAction)hit(p,e,p.forgeDashAction);
   p.forge.skills.forEach((s,i)=>{
     if(global.ForgeExpansion?.blocked(p))return;
     if(s.trigger==='contact'&&p.forgeTicks[i]>=cooldownFrames(p,s)){p.forgeTicks[i]=0;cast(p,s,e,i);}
   });
-  if(e&&e.invincible===0)hit(p,e,{damage:7,status:'none',knockback:1});
 }
 function drawFighter(p){
   if(!p.forge||p.hp<=0)return;
@@ -534,6 +536,7 @@ function render(){
       +box('발동 지연',field('delay',a.delay,'type="number" min="0" max="2" step=".1" '+aj),'delay')
       +'</div>'
       +'<p class="forge-parameter-note">동작에 실제 적용되는 설정만 표시됩니다 · 발동 지연은 모든 동작에 적용</p>'
+      +(MOVEMENT_ONLY.has(a.type)?'<p class="forge-physics-note">이동 전용 · 피해·상태이상·넉백 없음. 공격은 별도 공격 블록을 연결하세요.</p>':'')
       +(global.AdvancedCombat?.DESCRIPTIONS?.[a.type]
         ?'<p class="forge-physics-note">'+escape(global.AdvancedCombat.DESCRIPTIONS[a.type])+'</p>':'')
       +'</section>';
@@ -683,6 +686,6 @@ function initialize(){
   const oldDraw=drawCharacter;
   drawCharacter=function(p){if(p.forge)drawFighter(p);oldDraw(p);};
 }
-global.SkillForge={THEMES,randomProfile,normalize,register,remove,list,setDraft,refreshList:()=>refreshList(),persist,TYPE,TRIGGER,STATUS,ACTION_PARAMETERS,supportedParameter,cooldownFrames,advanceTimers:tickSkills,advanceWorld,hit,allProfile,allSkillset,getDraft:()=>normalize(draft)};
+global.SkillForge={THEMES,randomProfile,normalize,register,remove,list,setDraft,refreshList:()=>refreshList(),persist,TYPE,TRIGGER,STATUS,ACTION_PARAMETERS,MOVEMENT_ONLY,supportedParameter,cooldownFrames,advanceTimers:tickSkills,advanceWorld,hit,allProfile,allSkillset,getDraft:()=>normalize(draft)};
 if(typeof document!=='undefined'&&document.querySelector('.bf-tools'))initialize();
 })(window);
