@@ -42,6 +42,12 @@ function placeFighters(defs){
     const distanceY=Math.min(canvas.height*.34,canvas.height/2-45);
     const p=def.createInstance(i+1);
     globalThis.CosmeticArcade?.applyToFighter?.(p);
+    // Only two-player matches: smaller silhouettes AND precise collision bodies.
+    // Keep a separate base radius so temporary grow/shrink restores correctly.
+    if(count===2){
+      p.radius=Math.max(12,Math.round((p.radius||34)*.85*10)/10);
+      p.baseRadius=p.radius;
+    }
     p.x=centerX+Math.cos(angle)*distanceX;
     p.y=centerY+Math.sin(angle)*distanceY;
     const towards=Math.atan2(centerY-p.y,centerX-p.x);
