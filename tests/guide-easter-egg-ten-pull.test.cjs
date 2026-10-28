@@ -93,9 +93,9 @@ test('10-draw batch preserves exact ten single-draw odds, pity counters, refunds
   assert.equal(multi.world.coins,single.world.coins);
   assert.deepEqual(JSON.parse(multi.saved.get('oibung-cosmetics-v1')),
     JSON.parse(single.saved.get('oibung-cosmetics-v1')));
-  assert.deepEqual(actual.map(e=>e.kind),entries.map(e=>e.kind));
-  assert.deepEqual(actual.map(e=>e.text),entries.map(e=>e.text));
-  assert.deepEqual(b.lastTenResults().map(e=>e.kind),entries.map(e=>e.kind));
+  assert.deepEqual([...actual.map(e=>e.kind)],entries.map(e=>e.kind));
+  assert.deepEqual([...actual.map(e=>e.text)],entries.map(e=>e.text));
+  assert.deepEqual([...b.lastTenResults().map(e=>e.kind)],entries.map(e=>e.kind));
 });
 test('10-draw checks upfront cost, allows refunds, and cannot be spammed during animation',()=>{
   const insufficient=gachaHarness(new Map(),2999);
