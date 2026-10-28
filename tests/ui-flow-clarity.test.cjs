@@ -30,10 +30,11 @@ function runDom(){
   const root=node(),steps=Object.fromEntries(['setup','battle','result'].map(x=>[x,node()]));
   Object.entries(steps).forEach(([id,n])=>n.dataset.uiStep=id);
   root.querySelectorAll=()=>Object.values(steps);
-  const label=node(),cta=node(),start=node(),arena=node(),panel=node(),nav=node();
+  const label=node(),cta=node(),start=node(),arena=node(),panel=node(),nav=node(),controls=node();
   const heading=node(),eyebrow=node(),title=node(),picks=node(),fold=node(),summary=node(),more=node();
   heading.querySelector=x=>x==='.eyebrow'?eyebrow:x==='h2'?title:null;
   panel.querySelector=x=>x==='.panel-heading'?heading:x==='#bf-picks'?picks:null;
+  arena.querySelector=x=>x==='.control-panel'?controls:null;
   fold.querySelector=()=>summary;
   nav.querySelector=()=>more;
   panel.querySelectorAll=()=>[];
@@ -59,7 +60,7 @@ function runDom(){
     observe(target,options){this.target=target;this.options=options;}
   }};
   w.window=w;vm.createContext(w);vm.runInContext(src,w);
-  return {w,root,steps,label,cta,start,arena,panel,nav,heading,eyebrow,title,
+  return {w,root,steps,label,cta,start,arena,panel,nav,controls,heading,eyebrow,title,
     picks,fold,summary,more,studio,save,create,ranking,rankList,created,obs};
 }
 test('ready / playing / paused / finished have clear, consistent instructions',()=>{
@@ -94,7 +95,10 @@ test('match setup uses original fighter controls and creator explains final save
   const x=runDom();
   assert.equal(x.title.textContent,'출전 파이터 선택');
   assert.ok(x.heading.children.some(e=>e.className==='arena-setup-tip'));
-  assert.equal(x.picks.insertedAfter?.className,'arena-setup-proceed');
+  assert.equal(x.picks.insertedAfter,x.controls,'the exact original match controls are moved after fighter selection');
+  assert.ok(x.controls.classList.contains('arena-setup-controls'));
+  assert.equal(x.controls.getAttribute('aria-label'),'경기 시작 · 재매칭 · 참가 인원');
+  assert.ok(!x.created.some(el=>el.className==='arena-setup-proceed'),'do not create a second navigation action');
   assert.match(x.summary.textContent,/선택 활동/);
   assert.ok(x.studio.children.some(c=>c.id==='studio-clarity-steps'));
   assert.match(x.create.textContent,/대진에 적용/);
