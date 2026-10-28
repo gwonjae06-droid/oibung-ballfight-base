@@ -134,7 +134,7 @@ function phrase(skill){
 }
 function options(values,selected){return Object.entries(values).map(([key,value])=>
   '<option value="'+escape(key)+'"'+(key===selected?' selected':'')+'>'+escape(value)+'</option>').join('');}
-let selectedSkill=0,selectedAction=0,filter='attacks',root=null,status=null,workspace=null,movePicker=null;
+let selectedSkill=0,selectedAction=0,inspectorOpen=false,filter='attacks',root=null,status=null,workspace=null,movePicker=null;
 function readDraft(){
   const d=forge.getDraft();
   const map={name:'bf-name',blurb:'bf-text',color:'forge-color',
@@ -190,7 +190,9 @@ function inspector(skill,i){
   }).join('');
   const typelist=Object.fromEntries(Object.entries(GROUPS).flatMap(([_,g])=>
     g.types.filter(id=>TYPES[id]).map(id=>[id,TYPES[id]])));
-  return '<div class="block-action-inspector" aria-label="선택한 동작 직접 설정">'
+  return '<details class="block-action-inspector" aria-label="선택한 동작 직접 설정"'+(inspectorOpen?' open':'')+'>'
+    +'<summary class="block-inspector-toggle"><span>⚙ 선택 동작 세부 조정</span><small>'+escape(TYPES[action.type]||'동작')+' · 펼쳐서 수정</small></summary>'
+    +'<div class="block-inspector-body">'
     +'<div class="block-inspector-heading"><div><span class="eyebrow">ACTION INSPECTOR · '+(j+1)+' / '+skill.actions.length+'</span>'
     +'<strong>'+(CATEGORY_ICON[entry?.category]||'✧')+' '+escape(TYPES[action.type])+' 세부 설정</strong></div>'
     +'<button type="button" data-op="preview" data-skill="'+i+'" data-index="'+j+'">▶ 이 동작 시연</button></div>'
@@ -199,7 +201,7 @@ function inspector(skill,i){
     +controls+'</div>'
     +'<p class="block-inspector-hint">'+(entry?.movementOnly?'순수 이동은 피해·상태이상·밀치기를 발생시키지 않습니다.'
       :'수치는 실제 전투에 반영됩니다. 공격 판정과 피해량은 기존 엔진의 설정을 따릅니다.')
-    +' · 변경 후 아래에서 캐릭터를 저장하세요.</p></div>';
+    +' · 변경 후 아래에서 캐릭터를 저장하세요.</p></div></details>';
 }
 function actionRow(a,i,j,count){
   const type=TYPES[a.type]||'동작',definition=global.ActionRegistry?.get(a.type);
@@ -270,6 +272,10 @@ function mount(){
   refreshTypes();draw();
   root.querySelector('.block-quick-group').addEventListener('change',e=>{filter=e.target.value;refreshTypes();});
   root.addEventListener('click',e=>{
+    if(e.target.closest('.block-inspector-toggle')){
+      inspectorOpen=!inspectorOpen;
+      return;
+    }
     const b=e.target.closest('button[data-op]');if(!b||!root.contains(b))return;
     const op=b.dataset.op,si=Number(b.dataset.skill),ai=Number(b.dataset.index);
     if(op==='select'){selectedSkill=si;selectedAction=0;draw();global.CharacterStudioWorkspace?.previewSkill?.(si,-1);return;}
