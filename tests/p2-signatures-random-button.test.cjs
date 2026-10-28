@@ -88,7 +88,7 @@ test('primary random button creates and deploys a fully random fighter directly'
   const forge=read('js/features/skill-forge.js');
   const html=read('index.html'),css=read('css/style.css'),battle=read('js/features/battle-effects.js');
   assert.ok(natural.includes("randomNow.id='forge-random-create'"));
-  assert.ok(natural.includes("SkillForge.randomProfile(selected.length?selected:'any')"));
+  assert.ok(natural.includes("SkillForge.randomProfile(themes.length?themes:'any')"));
   assert.ok(natural.includes('SkillForge.setDraft(profile)'));
   assert.ok(natural.includes('saveBtn.click()'));
   assert.ok(natural.includes('actions.replaceChildren(saveBtn)'));
