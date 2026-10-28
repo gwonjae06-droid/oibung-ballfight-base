@@ -47,7 +47,7 @@ let motion=null;
 function selectTab(tab,focus=false){
   const showLooks=tab==='appearance';
   looks.hidden=!showLooks;skills.hidden=showLooks;
-  motion?.visible?.(!showLooks);
+  motion?.setVisible?.(!showLooks);
   tabs.querySelectorAll('[role="tab"]').forEach((button,index)=>{
     const active=showLooks?index===1:index===0;
     button.setAttribute('aria-selected',String(active));
