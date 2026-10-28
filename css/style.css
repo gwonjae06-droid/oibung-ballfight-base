@@ -2062,3 +2062,47 @@ body.arena-welcome-open{overflow:hidden}
 .community-power-ranking .power-ranking-gallery .community-item-head{flex-wrap:wrap}
 .community-power-ranking .power-ranking-gallery .community-item strong{overflow-wrap:anywhere}
 .community-power-ranking .power-ranking-gallery .community-item a{min-width:0}
+
+/* Ten-pull: compact outcomes beneath the wheel, not another large modal. */
+.arcade-pull .arcade-pull-controls{
+ display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:8px;
+}
+#cosmetic-draw-ten{background:#61517c;border-color:#b39bdc;color:#fff}
+#cosmetic-draw-ten:hover:not(:disabled){background:#776294}
+.arcade-pull button:disabled{opacity:.48;cursor:not-allowed}
+.arcade-pull-note{margin:8px 2px 0;color:#aabcc7;font-size:11px;line-height:1.5}
+.cosmetic-ten-results{
+ display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:7px;
+ list-style:none;margin:10px 0 0;padding:0;
+}
+.cosmetic-ten-results[hidden],.arena-welcome-secret[hidden]{display:none!important}
+.cosmetic-ten-card{
+ min-width:0;display:grid;grid-template-columns:18px minmax(0,1fr);gap:4px 7px;
+ align-items:center;padding:9px 7px;border-radius:8px;border:1px solid #425767;
+ background:#213341;color:#e1eaf0;animation:roulette-arrive .35s ease-out both;
+}
+.cosmetic-ten-card:nth-child(2n){animation-delay:.05s}
+.cosmetic-ten-card:nth-child(3n){animation-delay:.1s}
+.cosmetic-ten-card small{font-size:10px;color:#9fb6c6;font-variant-numeric:tabular-nums}
+.cosmetic-ten-card>span:nth-child(2){font-size:16px;color:#bed5e9}
+.cosmetic-ten-card>span:last-child{grid-column:1/-1;font-size:10px;font-weight:750;
+ line-height:1.4;overflow-wrap:anywhere}
+.cosmetic-ten-card[data-reward="item"]{border-color:#d6ac64;background:#413827}
+.cosmetic-ten-card[data-reward="item"]>span:nth-child(2){color:#f0c875}
+.cosmetic-ten-card[data-reward="duplicate"]{border-color:#8067a7}
+.cosmetic-ten-card[data-reward="coins"]>span:nth-child(2){color:#a4dbb4}
+.arena-welcome-secret{
+ margin:0;padding:10px 16px;border-top:1px solid #805e33;
+ background:#47331d;color:#ffe6af;font-size:14px;font-weight:850;text-align:center;
+}
+@media(max-width:700px){
+ .cosmetic-ten-results{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .arcade-pull .arcade-pull-controls{width:100%;display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+ .arcade-pull-controls button{width:100%;padding:9px 6px}
+}
+@media(max-width:370px){
+ .arcade-pull .arcade-pull-controls{grid-template-columns:1fr}
+}
+@media(prefers-reduced-motion:reduce){
+ .cosmetic-ten-card{animation:none!important}
+}
