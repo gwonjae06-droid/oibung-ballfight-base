@@ -145,3 +145,21 @@ test('engine applies hit momentum outside normal 12px speed cap and then settles
   assert.equal(b.impactSpeed,0);
   assert.equal(b.hp,300,'no extra HP loss from the impact itself');
 });
+
+test('being hurled into another fighter does not cause additional contact damage',()=>{
+  const {world}=harness(),a=actor(1,100,100),b=actor(2,150,100);
+  world.updateCharacter=()=>{};
+  world.BEHAVIORS.attacker={order:1,onContact(self,other){other.hp-=9;}};
+  world.BEHAVIORS.target={order:1,onContact(self,other){other.hp-=9;}};
+  a.id='attacker';b.id='target';
+  vm.runInContext(read('js/core/engine.js'),world);
+  world.players=[a,b];
+  b.impactSpeed=55;b.impactVX=-30;b.impactVY=0;
+  world.handleCombat(a,b);
+  assert.equal(a.hp,300);assert.equal(b.hp,300,
+    'forced collisions are positional only, not accidental bonus attacks');
+  a.x=100;b.x=145;b.impactSpeed=0;b.impactVX=0;
+  world.handleCombat(a,b);
+  assert.equal(a.hp,291);assert.equal(b.hp,291,
+    'ordinary contact attacks remain available after the knockback ends');
+});
