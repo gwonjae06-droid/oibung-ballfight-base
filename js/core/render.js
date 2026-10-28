@@ -34,10 +34,31 @@ if(p.id==='choi'&&p.suneungState==='success'&&!dead){ctx.save();ctx.beginPath();
 ctx.save();ctx.translate(p.x,p.y+offset);ctx.scale(scale*pose.sx,scale*pose.sy);ctx.rotate(pose.tilt);if(dead)ctx.globalAlpha=0.3;if(z<0)ctx.globalAlpha*=.32;
 ctx.save();ctx.beginPath();ctx.arc(0,0,radius,0,Math.PI*2);ctx.clip();
 if(img&&img.complete&&img.naturalWidth!==0)ctx.drawImage(img,-radius,-radius,radius*2,radius*2);
-else{ctx.fillStyle=p.themeColor||p.borderColor||'#999';ctx.fill();ctx.fillStyle='#fff';ctx.font='bold 16px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(p.name[0],0,0);}
+else{
+  const base=p.themeColor||p.borderColor||'#546777';
+  const surface=ctx.createRadialGradient(-radius*.34,-radius*.4,radius*.05,0,0,radius*1.15);
+  surface.addColorStop(0,'#f6f9fa');surface.addColorStop(.07,base);
+  surface.addColorStop(1,'#263440');
+  ctx.fillStyle=surface;ctx.fill();
+  ctx.save();ctx.fillStyle='rgba(255,255,255,.12)';
+  ctx.beginPath();ctx.ellipse(-radius*.23,-radius*.33,radius*.55,radius*.18,-.45,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#fff';ctx.strokeStyle='rgba(12,24,32,.65)';ctx.lineWidth=2;
+  ctx.font='800 '+Math.round(radius*.67)+'px "Noto Sans KR",system-ui,sans-serif';
+  ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.strokeText(p.name[0],0,1);ctx.fillText(p.name[0],0,1);ctx.restore();
+}
 ctx.restore();ctx.save();ctx.beginPath();ctx.arc(0,0,radius,0,Math.PI*2);ctx.lineWidth=globalThis.CosmeticArcade?.borderColor?.(p)?5:4;ctx.strokeStyle=globalThis.CosmeticArcade?.borderColor?.(p)||'#000';ctx.shadowColor=ctx.strokeStyle;ctx.shadowBlur=globalThis.CosmeticArcade?.borderGlow?.(p)||0;ctx.globalAlpha=1;ctx.shadowBlur=0;ctx.setLineDash([]);ctx.stroke();ctx.restore();globalThis.CosmeticArcade?.drawBorder?.(ctx,p,radius);ctx.restore();
 if(p.id==='lee'&&p.pokeAnim>0&&!dead){ctx.save();const a=Math.atan2(p.pokeTargetY-p.y,p.pokeTargetX-p.x),dist=Math.hypot(p.pokeTargetX-p.x,p.pokeTargetY-p.y),max=Math.min(p.pokeRange,Math.max(p.radius+40,dist)),reach=p.radius+(max-p.radius)*Math.sin(p.pokeAnim*Math.PI),x=p.x+Math.cos(a)*reach,y=p.y+Math.sin(a)*reach;ctx.beginPath();ctx.moveTo(p.x+Math.cos(a)*p.radius,p.y+Math.sin(a)*p.radius);ctx.lineTo(x,y);ctx.strokeStyle='#9a6500';ctx.lineWidth=5;ctx.lineCap='round';ctx.stroke();ctx.font='bold 24px -apple-system, sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('👉',x,y);ctx.restore();}
-ctx.save();const labelY=p.y+offset-radius*scale-10;ctx.font='600 13px "Noto Sans KR", sans-serif';const display=getArenaFighterName(p),name=dead?`${display} · 탈락`:display,width=ctx.measureText(name).width,rolling=p.id==='lee'&&p.isRolling&&!dead;ctx.fillStyle=dead?'rgba(70,70,70,0.68)':'rgba(15,15,15,.85)';drawRoundedRect(ctx,p.x-width/2-6,labelY-14,width+12,18,4);ctx.fillStyle='#fff';ctx.textAlign='center';ctx.fillText(name,p.x,labelY);ctx.restore();
+ctx.save();const labelY=p.y+offset-radius*scale-12;
+ctx.font='700 14px "Noto Sans KR",system-ui,sans-serif';
+const display=getArenaFighterName(p),name=dead?`${display} · 탈락`:display;
+const width=ctx.measureText(name).width,tagWidth=width+16;
+const labelX=Math.min(Math.max(tagWidth/2+3,p.x),Math.max(tagWidth/2+3,canvas.width-tagWidth/2-3));
+ctx.fillStyle=dead?'rgba(55,62,69,.82)':'rgba(22,31,39,.92)';
+drawRoundedRect(ctx,labelX-tagWidth/2,labelY-16,tagWidth,23,6);
+ctx.strokeStyle='rgba(250,252,253,.38)';ctx.lineWidth=.8;ctx.stroke();
+ctx.fillStyle='#fff';ctx.textAlign='center';ctx.textBaseline='middle';
+ctx.fillText(name,labelX,labelY-4);ctx.restore();
 }
 function draw(){
 ctx.save();ctx.clearRect(0,0,canvas.width,canvas.height);ctx.fillStyle='#fff';ctx.fillRect(0,0,canvas.width,canvas.height);if(screenShake>0.5){const x=(Math.random()-0.5)*screenShake,y=(Math.random()-0.5)*screenShake;ctx.translate(x,y);}
@@ -54,7 +75,12 @@ players.forEach(drawCharacter);
 globalThis.CosmeticArcade?.drawOver?.(ctx,players);
 globalThis.ImpactPhysics?.draw?.(ctx);
 particles.forEach(p=>{ctx.beginPath();ctx.arc(p.x,p.y,p.radius,0,Math.PI*2);ctx.fillStyle=arenaEffectColor(p.color);ctx.globalAlpha=p.alpha;ctx.fill();ctx.globalAlpha=1;});
-floatingTexts.forEach(f=>{ctx.save();ctx.font=`800 ${f.size}px -apple-system, sans-serif`;ctx.fillStyle=arenaEffectColor(f.color);ctx.globalAlpha=f.alpha;ctx.textAlign='center';ctx.fillText(f.text,f.x,f.y);ctx.restore();});
+floatingTexts.forEach(f=>{ctx.save();
+  ctx.font=`900 ${Math.min(22,Math.max(15,f.size))}px "Noto Sans KR",system-ui,sans-serif`;
+  ctx.fillStyle=arenaEffectColor(f.color);ctx.globalAlpha=f.alpha;
+  ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.strokeStyle='rgba(255,255,255,.92)';ctx.lineWidth=2.8;ctx.lineJoin='round';
+  ctx.strokeText(f.text,f.x,f.y);ctx.fillText(f.text,f.x,f.y);ctx.restore();});
 if(!isPlaying&&!isGameOver){ctx.fillStyle='rgba(255,255,255,.45)';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.font='700 23px "Noto Sans KR", sans-serif';ctx.fillStyle='#252525';ctx.textAlign='center';ctx.fillText(roundStarted?'일시정지':'대기 중',canvas.width/2,canvas.height/2);}
 if(isGameOver){ctx.fillStyle='rgba(255,255,255,.88)';ctx.fillRect(0,0,canvas.width,canvas.height);const alive=players.filter(p=>p.hp>0);ctx.font='750 28px "Noto Sans KR", sans-serif';ctx.fillStyle='#202020';ctx.textAlign='center';ctx.fillText(roundStopped?'경기 중단 · 무승부':alive.length===1?`${getArenaFighterName(alive[0])} 승리`:'무승부',canvas.width/2,canvas.height/2-10);}
 ctx.restore();
