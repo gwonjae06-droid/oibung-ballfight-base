@@ -27,7 +27,7 @@ function boot(){
     }};
   const tick=(count=1)=>{for(let i=0;i<count;i++){
     h.players.forEach(x=>{if(x.invincible>0)x.invincible--;});
-    for(const p of h.players.filter(x=>x.forge?.skills))h.ForgeExpansion.update(p,api);
+    for(const p of h.players.filter(x=>x.forge))h.ForgeExpansion.update(p,api);
     h.AdvancedCombat.tick(api);
   }};
   return {h,api,ctx,draws,tick};
