@@ -48,7 +48,7 @@ function load(){
 }
 const state=load();
 const effects=[];
-let lastDraw=null,spinning=false;
+let lastDraw=null,spinning=false,lastWheelAngle=0;
 const WISDOM=['오늘의 한 걸음이 내일의 거리를 바꾼다.','길이 막히면 속도보다 방향을 먼저 보라.','쉬어 가는 시간도 앞으로 나아가는 과정이다.','넘어진 횟수보다 다시 시작한 횟수를 세자.','작은 성취를 반복하면 큰 변화가 된다.','결과가 전부는 아니지만 경험은 항상 남는다.'];
 function save(){
   try{localStorage.setItem(KEY,JSON.stringify(state));return true;}
@@ -557,7 +557,7 @@ function beginRoulette(){
       result.kind==='duplicate'?'수집품이 돌아왔습니다':result.kind==='coins'?'포인트 반환':'오늘의 한마디';
     if(detail)detail.textContent=result.text;
     feedback(result.text);
-    drawWheel(0,0);
+    drawWheel(lastWheelAngle,.55);
     const panel=document.querySelector('.roulette-theatre');
     if(panel){panel.classList.remove('roulette-spinning');panel.classList.add('roulette-revealed');
       panel.dataset.reward=result.kind;}
@@ -578,7 +578,8 @@ function beginRoulette(){
     const t=Math.min(1,(now-started)/duration);
     // Smooth quintic deceleration; no sudden snap at the stop frame.
     const ease=1-(1-t)**5;
-    drawWheel(finale*ease,t>.78?(t-.78)/.22:0);
+    lastWheelAngle=finale*ease;
+    drawWheel(lastWheelAngle,t>.78?(t-.78)/.22:0);
     if(t<1)global.requestAnimationFrame(frame);
     else reveal();
   };
