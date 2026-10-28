@@ -251,6 +251,125 @@ function drawOver(ctx,list){
     ctx.restore();
   }
 }
+
+/* Cinematic roulette uses an abstract kinetic wheel. Segments are decorative,
+ * never an odds diagram; the prize is resolved and saved BEFORE animation.
+ * It uses one requestAnimationFrame loop for a bounded 3.3-second spin. */
+const wheel=document.getElementById('cosmetic-roulette');
+const wheelCtx=wheel?.getContext?.('2d');
+const TAU=Math.PI*2;
+function drawWheel(rotation=0,reveal=0){
+  if(!wheelCtx||!wheel)return;
+  const c=wheelCtx,W=wheel.width,H=wheel.height,cx=W/2,cy=H/2,rad=120;
+  c.clearRect(0,0,W,H);
+  c.save();
+  const aura=c.createRadialGradient(cx,cy,28,cx,cy,147);
+  aura.addColorStop(0,'rgba(113,132,190,.20)');aura.addColorStop(.7,'rgba(92,133,169,.18)');
+  aura.addColorStop(1,'rgba(26,42,59,0)');
+  c.fillStyle=aura;c.beginPath();c.arc(cx,cy,148,0,TAU);c.fill();
+  for(let i=0;i<20;i++){
+    const angle=i*TAU/20+rotation*.09;
+    const r=136+Math.sin(i*3.3+rotation)*5;
+    c.fillStyle=['#7e9bb9','#b6c9e2','#d5b48d'][i%3];
+    c.globalAlpha=.5+.3*Math.sin(rotation+i*.7)**2;
+    c.beginPath();c.arc(cx+Math.cos(angle)*r,cy+Math.sin(angle)*r,(i%3)+1.2,0,TAU);c.fill();
+  }
+  c.globalAlpha=1;c.translate(cx,cy);
+  c.rotate(rotation);
+  c.save();
+  c.shadowColor=reveal?'#f0c46c':'#92cced';c.shadowBlur=reveal?28:12;
+  c.strokeStyle=reveal?'#f2d9a2':'#abcce6';c.lineWidth=5;
+  c.beginPath();c.arc(0,0,rad,0,TAU);c.stroke();c.restore();
+  const segments=24;
+  for(let i=0;i<segments;i++){
+    const a=i*TAU/segments-Math.PI/2,b=(i+1)*TAU/segments-Math.PI/2;
+    c.beginPath();c.moveTo(0,0);c.arc(0,0,rad-7,a,b);c.closePath();
+    c.fillStyle=i%4===0?'#324d68':i%4===1?'#314153':i%4===2?'#584e68':'#385565';c.fill();
+    c.strokeStyle='rgba(220,238,255,.22)';c.lineWidth=1.5;c.stroke();
+    c.save();c.rotate((a+b)/2);
+    c.font='17px system-ui';c.textAlign='center';
+    c.fillStyle=i%3===0?'#f0d79f':'#a9daef';
+    c.fillText(['✦','◇','✧','◆'][i%4],93,5);
+    c.restore();
+  }
+  c.save();c.rotate(-rotation*1.65);
+  for(let i=0;i<10;i++){
+    const a=i*TAU/10;
+    c.strokeStyle=i%2?'rgba(176,222,247,.65)':'rgba(239,208,151,.76)';
+    c.lineWidth=i%2?2:3;
+    c.beginPath();c.arc(0,0,66,a+.1,a+.42);c.stroke();
+  }
+  c.restore();
+  const center=c.createRadialGradient(-10,-12,4,0,0,57);
+  center.addColorStop(0,reveal?'#f6d895':'#d8ecf8');
+  center.addColorStop(.3,reveal?'#bd9260':'#7ea7bd');
+  center.addColorStop(.93,'#172d40');center.addColorStop(1,'#0d1d2a');
+  c.fillStyle=center;c.beginPath();c.arc(0,0,55,0,TAU);c.fill();
+  c.strokeStyle='#cbdfe5';c.lineWidth=2;c.stroke();
+  c.rotate(-rotation);
+  c.font='900 38px system-ui';c.textAlign='center';c.textBaseline='middle';
+  c.fillStyle=reveal?'#ffe0a3':'#e0f2ff';
+  c.fillText(reveal?'✦':'◇',0,-2);
+  c.restore();
+  c.fillStyle='#f6d28d';c.shadowColor='#f7bc69';c.shadowBlur=12;
+  c.beginPath();c.moveTo(cx,9);c.lineTo(cx-12,32);c.lineTo(cx+12,32);c.closePath();c.fill();
+  c.shadowBlur=0;
+  if(reveal>0){
+    c.save();c.globalCompositeOperation='lighter';
+    for(let i=0;i<40;i++){
+      const a=i*2.39996+reveal*2.7,dist=145+(1-reveal)*60+(i%5)*8;
+      const x=cx+Math.cos(a)*dist,y=cy+Math.sin(a)*dist;
+      c.globalAlpha=Math.max(0,Math.min(1,1-reveal))*(i%3?.6:.9);
+      c.fillStyle=i%3?'#93cbed':'#fff0b4';c.beginPath();c.arc(x,y,i%4===0?3:1.5,0,TAU);c.fill();
+    }
+    c.restore();
+  }
+}
+function beginRoulette(){
+  if(spinning)return false;
+  const before=state.draws;
+  drawReward();
+  if(state.draws===before)return false;
+  const result=lastResult();
+  const reduced=!!global.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
+  const headline=document.getElementById('roulette-headline');
+  const detail=document.getElementById('roulette-detail');
+  const reveal=()=>{
+    spinning=false;refresh();
+    if(headline)headline.textContent=result.kind==='item'?'✦ 전설적인 등장!':
+      result.kind==='duplicate'?'수집품이 돌아왔습니다':result.kind==='coins'?'포인트 반환':'오늘의 한마디';
+    if(detail)detail.textContent=result.text;
+    feedback(result.text);
+    drawWheel(0,0);
+    const panel=document.querySelector('.roulette-theatre');
+    if(panel){panel.classList.remove('roulette-spinning');panel.classList.add('roulette-revealed');
+      panel.dataset.reward=result.kind;}
+  };
+  if(reduced||typeof global.requestAnimationFrame!=='function'){reveal();return true;}
+  spinning=true;refresh();
+  if(headline)headline.textContent='룰렛 회전 중';
+  if(detail)detail.textContent='찬란한 빛 속에서 운명이 결정되고 있습니다';
+  feedback('룰렛이 회전하고 있습니다…');
+  const panel=document.querySelector('.roulette-theatre');
+  if(panel){panel.classList.remove('roulette-revealed');panel.classList.add('roulette-spinning');
+    delete panel.dataset.reward;}
+  let started=null;
+  const duration=3300;
+  const finale=6*TAU+(Math.random()*TAU);
+  const frame=now=>{
+    if(started===null)started=now;
+    const t=Math.min(1,(now-started)/duration);
+    // Smooth quintic deceleration; no sudden snap at the stop frame.
+    const ease=1-(1-t)**5;
+    drawWheel(finale*ease,t>.78?(t-.78)/.22:0);
+    if(t<1)global.requestAnimationFrame(frame);
+    else reveal();
+  };
+  global.requestAnimationFrame(frame);
+  return true;
+}
+drawWheel();
+
 document.getElementById('cosmetic-draw')?.addEventListener('click',()=>beginRoulette());
 refresh();
 global.CosmeticArcade={drawReward,beginRoulette,lastResult,equip,refresh,applyToFighter,borderColor,borderGlow,startRound,onCast,tick,drawUnder,drawOver,
