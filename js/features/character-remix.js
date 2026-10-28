@@ -81,6 +81,7 @@
         const near=players.filter(e=>e!==p&&e.hp>0&&e.invincible===0&&Math.hypot(e.x-p.x,e.y-p.y)<105+e.radius);
         near.forEach(e=>{
           e.hp=Math.max(0,e.hp-10);e.invincible=14;
+          globalThis.ImpactPhysics?.hit?.(p,e,10,{color:'#8aefc2'});
           createHitParticles(e.x,e.y,'#8aefc2',11);
           addFloatingText('-10',e.x,e.y-30,'#8aefc2',16);
         });
