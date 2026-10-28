@@ -2,6 +2,11 @@
 const test=require('node:test'),assert=require('node:assert/strict');
 const vm=require('node:vm'),fs=require('node:fs'),path=require('node:path');
 const src=fs.readFileSync(path.join(__dirname,'../js/features/tower-challenge.js'),'utf8');
+function conclude(x,winner){
+  // Production engine sets these flags *before* notifying ArenaTower.
+  x.world.isGameOver=true;x.world.isPlaying=false;
+  return x.tower.onBattleEnd(winner);
+}
 function harness(){
   const nodes=new Map();
   class Element{
@@ -77,7 +82,7 @@ test('the real tower controller starts fresh two-fighter rounds, awards wins and
   assert.equal(x.world.players[1].playerNum,2);
   assert.equal(x.world.CUSTOM_DEFS.length,0);
   assert.equal(x.tower.isTransientDef(x.tower.isTransientDef?null:null),false);
-  x.tower.onBattleEnd(x.world.players[0]);
+  conclude(x,x.world.players[0]);
   assert.equal(x.tower.stage,'reward');
   assert.equal(x.tower.state.cleared,1);
   assert.equal(x.tower.chooseReward('gold'),true);
@@ -85,7 +90,7 @@ test('the real tower controller starts fresh two-fighter rounds, awards wins and
   assert.equal(x.tower.state.level,2);
   assert.equal(x.tower.stage,'fighting');
   assert.equal(x.world.CUSTOM_DEFS.length,0);
-  x.tower.onBattleEnd(x.world.players[1]);
+  conclude(x,x.world.players[1]);
   assert.equal(x.tower.stage,'lost');
   assert.equal(x.tower.records()[0].best,1);
   assert.equal(x.tower.records()[0].attempts,1);
@@ -97,7 +102,7 @@ test('bonuses are applied only to fresh battle instances and 10th win records co
   for(let floor=1;floor<=10;floor++){
     assert.equal(x.tower.state.level,floor);
     assert.equal(x.world.CUSTOM_DEFS.length,0,'bosses are transient');
-    x.tower.onBattleEnd(x.world.players[0]);
+    conclude(x,x.world.players[0]);
     if(floor<10){
       assert.equal(x.tower.stage,'reward');
       assert.equal(x.tower.chooseReward('hp'),true);
