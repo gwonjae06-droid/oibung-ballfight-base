@@ -24,13 +24,14 @@
   const oldUpdate=update,oldDraw=draw,oldCharacter=drawCharacter;
   update=function(){
     if(!isPlaying||isGameOver){oldUpdate();return;}
-    if(roster!==players){roster=players;sparks=[];pulses=[];if(window.BattleFX)BattleFX.clear();}
+    if(roster!==players){roster=players;sparks=[];pulses=[];if(window.BattleFX)BattleFX.clear();window.SkillVisuals?.clear();}
     frame++;
     sparks.forEach(s=>{s.x+=s.vx;s.y+=s.vy;s.vx*=0.91;s.vy*=0.91;s.life--;});sparks=sparks.filter(s=>s.life>0);
     pulses.forEach(s=>s.life--);pulses=pulses.filter(s=>s.life>0);
     const before=players.map(p=>({p,hp:p.hp,x:p.x,y:p.y,inv:p.invincible,jump:p.jumpState,ticks:p.bfTicks&&p.bfTicks.slice(),marks:p.bfMarks&&p.bfMarks.slice()}));
     oldUpdate();
     if(window.BattleFX)BattleFX.tick();
+    window.SkillVisuals?.tick();
     const custom=players.some(p=>p.spec||p.forge);
     before.forEach(b=>{
       const p=b.p,c=color(p),loss=b.hp-p.hp;
@@ -86,6 +87,7 @@
   draw=function(){
     oldDraw();if(isGameOver)return;
     if(window.BattleFX)BattleFX.draw(ctx,players);
+    window.SkillVisuals?.draw(ctx);
     ctx.save();ctx.globalCompositeOperation='source-over';
     sparks.forEach(s=>{ctx.globalAlpha=s.life/s.max;ctx.strokeStyle=s.c;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(s.x,s.y);ctx.lineTo(s.x-s.vx*2,s.y-s.vy*2);ctx.stroke();});
     pulses.forEach(s=>{
@@ -110,6 +112,7 @@
       if(steps>=10)acc=0;
     }else acc=0;
     if(globalThis.AdvancedCombat){AdvancedCombat.setAlpha(isPlaying&&!isGameOver?Math.min(1,acc/(1000/60)):1);AdvancedCombat.setReduced(gentle.checked);}
+    window.SkillVisuals?.setReduced(gentle.checked);
     draw();
     requestAnimationFrame(gameLoop);
   };

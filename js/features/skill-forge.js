@@ -132,6 +132,7 @@ function hit(p,e,action,multiplier=1,attackZ) {
   }
   global.ForgeExpansion?.applyStatus(p,e,action);
   if(action.knockback>0){const dx=e.x-p.x,dy=e.y-p.y,dist=Math.hypot(dx,dy)||1;e.vx+=dx/dist*action.knockback;e.vy+=dy/dist*action.knockback;}
+  global.SkillVisuals?.impact(p,e,action); // Only after damage/status actually connects.
   return true;
 }
 /* Each skill owns its cooldown and its own cast sequence.
@@ -192,6 +193,7 @@ function tickQueue(p,target){
   }
 }
 function execute(p,a,target) {
+  global.SkillVisuals?.cast(p,a,target); // Actual action execution, not cooldown booking.
   // In-world actions must dispatch through the same combat implementation
   // used by physics and visuals; they are not merely text menu entries.
   if(global.AdvancedCombat?.execute(p,a,target,{hit,enemies}))return;

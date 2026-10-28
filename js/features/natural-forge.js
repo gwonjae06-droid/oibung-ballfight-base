@@ -435,7 +435,32 @@ function install(){
   actions.classList.add('forge-primary-actions');body.insertBefore(actions,box.nextSibling);
   const saveBtn=document.getElementById('bf-create');
   saveBtn.textContent='캐릭터 저장 · 출전';
-  actions.replaceChildren(saveBtn); // the primary row now has one unambiguous save action
+  const randomNow=document.createElement('button');
+  randomNow.type='button';randomNow.id='forge-random-create';
+  randomNow.className='forge-random-create';
+  randomNow.textContent='🎲 완전 랜덤 생성';
+  randomNow.setAttribute('aria-label','모든 능력 종류와 수치를 무작위로 정한 캐릭터를 생성하고 출전');
+  randomNow.addEventListener('click',()=>{
+    if(button.disabled)return;
+    if(roundStarted&&!isGameOver){
+      status.textContent='진행 중인 경기가 끝난 뒤 랜덤 캐릭터를 생성할 수 있습니다.';
+      return;
+    }
+    if(SkillForge.list().length>=6){
+      status.textContent='캐릭터는 최대 6명입니다. 기존 캐릭터를 삭제한 뒤 생성하세요.';
+      return;
+    }
+    const profile=SkillForge.randomProfile('any');
+    input.value='';approved='';choices={};choiceBox.replaceChildren();
+    SkillForge.setDraft(profile);
+    saveBtn.click(); // Reuse the validated save, persistence and P1 selection flow.
+    const result=document.getElementById('bf-result')?.textContent||'';
+    status.textContent=result.includes('생성 완료')
+      ?'랜덤 캐릭터 생성·출전 완료: '+profile.name+' · 스킬 '+profile.skills.length+'개\n'+
+        profile.skills.map(s=>s.name+' ('+s.actions.map(a=>SkillForge.TYPE[a.type]).join(' → ')+')').join('\n')
+      :result||'생성 결과를 확인해 주세요.';
+  });
+  actions.replaceChildren(saveBtn,randomNow);
   const randomDetail=document.createElement('details'),randomTitle=document.createElement('summary');
   randomTitle.textContent='랜덤 캐릭터 만들기';randomDetail.className='forge-optional';
   randomDetail.append(randomTitle,randomBox);
