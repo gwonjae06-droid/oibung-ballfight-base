@@ -1725,3 +1725,79 @@ html,body {background:#090a0c;color:var(--text);font-family:"Noto Sans KR", "Mal
 @media(prefers-reduced-motion:reduce){
   .roulette-theatre::before,.roulette-spinning #roulette-headline,.roulette-revealed[data-reward="item"] #roulette-headline{animation:none!important}
 }
+
+
+/* Appearance-only wardrobe. Every control targets one saved fighter artKey.
+ * Inventories stay in the gacha gallery; attaching is not a global setting. */
+.character-studio-dialog .skin-editor{
+  display:grid;gap:11px;min-width:0;margin:0 0 12px;padding:15px;
+  border:1px solid #607d87;border-radius:12px;
+  background:linear-gradient(130deg,#23353d,#182731);
+}
+.character-studio-dialog .skin-editor-head h3{
+  margin:0 0 4px;font-size:16px;color:#f0f7f9;letter-spacing:-.02em;
+}
+.character-studio-dialog .skin-editor-head p{
+  margin:0;color:#b9cbd3;line-height:1.5;font-size:11px;
+}
+.character-studio-dialog .skin-fighter-picker{
+  display:grid;gap:6px;font-size:12px;font-weight:800;color:#dce9f0;
+}
+.character-studio-dialog #skin-fighter-select{
+  width:100%;min-width:0;min-height:43px;padding:8px 11px;
+  border:1px solid #698698;border-radius:8px;background:#1a2a36;color:#f3f8fc;
+}
+.character-studio-dialog .skin-current-fighter{
+  padding:7px 10px;border-radius:7px;background:#304551;color:#d7edfa;
+  font-size:12px;font-weight:700;
+}
+.character-studio-dialog .skin-slots{
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;min-width:0;
+}
+.character-studio-dialog .skin-slot-row{
+  min-width:0;padding:10px;border:1px solid #425762;
+  background:#1b2c36;border-radius:9px;
+}
+.character-studio-dialog .skin-slot-heading{
+  display:flex;align-items:baseline;justify-content:space-between;gap:8px;
+  margin-bottom:8px;flex-wrap:wrap;
+}
+.character-studio-dialog .skin-slot-heading strong{color:#f2f6fc;font-size:12px}
+.character-studio-dialog .skin-slot-heading span{color:#b9d0e0;font-size:10px}
+.character-studio-dialog .skin-slot-options{display:flex;flex-wrap:wrap;gap:6px}
+.character-studio-dialog .skin-slot-option{
+  flex:1 1 auto;min-height:36px;min-width:0;padding:7px 9px;
+  border:1px solid #526b7a;border-radius:7px;
+  background:#263943;color:#dceaf0;font-size:11px;font-weight:750;
+  text-align:center;white-space:normal;overflow-wrap:anywhere;
+}
+.character-studio-dialog .skin-slot-option[aria-pressed="true"]{
+  border-color:var(--skin-accent,#bed8f0);color:#fff;background:#405764;
+  box-shadow:inset 0 0 0 1px var(--skin-accent,#bed8f0);
+}
+.character-studio-dialog .skin-slot-option:disabled{
+  opacity:.44;cursor:not-allowed;background:#1a252b;
+}
+.character-studio-dialog .skin-slot-option:not(:disabled):active{
+  transform:scale(.98);
+}
+.character-studio-dialog .skin-editor-status{
+  min-height:0;margin:0;color:#c9e6d2;font-size:11px;line-height:1.55;
+}
+.character-studio-dialog .skin-editor-status:empty{display:none}
+.cosmetic-collections .cosmetic-owned{
+  cursor:default;pointer-events:none;
+  border-color:var(--swatch,#455b6a);
+}
+.cosmetic-collections .cosmetic-owned[data-owned="false"]{
+  opacity:.42;border-color:#46525c;
+}
+@media(max-width:620px){
+  .character-studio-dialog .skin-editor{padding:11px;gap:9px}
+  .character-studio-dialog .skin-slots{grid-template-columns:1fr;gap:8px}
+  .character-studio-dialog .skin-slot-row{padding:9px}
+  .character-studio-dialog .skin-slot-option{min-height:39px}
+}
+@media(prefers-reduced-motion:reduce){
+  .character-studio-dialog .skin-slot-option:active{transform:none}
+}
