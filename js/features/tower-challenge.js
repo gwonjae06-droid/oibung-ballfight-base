@@ -85,6 +85,7 @@ function install(){
    +'<select id="tower-hero"></select></label>'
    +'<div class="tower-enemy"><strong id="tower-enemy">훈련의 문</strong><span id="tower-enemy-info">첫 도전을 준비하세요.</span></div></div>'
    +'<div class="tower-buttons"><button id="tower-start" type="button">1층 도전 시작</button>'
+   +'<button id="tower-pause" type="button" hidden>⏸ 일시정지</button>'
    +'<button id="tower-abandon" type="button" hidden>도전 포기</button></div>'
    +'<p class="tower-feedback" id="tower-feedback" role="status" aria-live="polite">나만의 파이터가 어디까지 도달할지 도전해 보세요.</p>'
    +'<div id="tower-rewards" class="tower-rewards" hidden aria-label="층 클리어 보상 선택">'
@@ -95,7 +96,7 @@ function install(){
    +'</div></div>';
   mount.append(panel);
   const el=id=>doc.getElementById(id),hero=el('tower-hero'),message=el('tower-feedback'),
-    start=el('tower-start'),abandon=el('tower-abandon'),rewards=el('tower-rewards');
+    start=el('tower-start'),pause=el('tower-pause'),abandon=el('tower-abandon'),rewards=el('tower-rewards');
   let active=false,stage='ready',level=1,cleared=0,selected=null,temporary=null;
   let bonus={hp:0,speed:0},lastWinner=null;
   const pool=()=>[...CHARACTER_DEFS,...CUSTOM_DEFS];
@@ -120,6 +121,8 @@ function install(){
     el('tower-best').textContent='최고 기록 '+best+'F (내 브라우저)';
     start.textContent=stage==='won'?'새로운 도전 시작':'1층 도전 시작';
     start.hidden=stage==='fighting'||stage==='reward';
+    pause.hidden=stage!=='fighting';
+    pause.textContent=isPlaying?'⏸ 일시정지':'▶ 전투 계속';
     abandon.hidden=!active;
     rewards.hidden=stage!=='reward';
     hero.disabled=active;
@@ -220,6 +223,9 @@ function install(){
     if(active&&stage==='fighting'&&isPlaying)togglePlay();
   }
   start.addEventListener('click',begin);
+  pause.addEventListener('click',()=>{
+    if(stage==='fighting'&&roundStarted&&!isGameOver){togglePlay();show();}
+  });
   abandon.addEventListener('click',forfeit);
   hero.addEventListener('change',show);
   rewards.addEventListener('click',event=>{
