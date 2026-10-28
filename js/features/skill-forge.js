@@ -194,7 +194,7 @@ function hit(p,e,action,multiplier=1,attackZ) {
   if(global.AdvancedCombat&&!AdvancedCombat.canHit(p,e,attackZ))return false;
   if(!global.AdvancedCombat&&e.jumpState&&e.jumpState!=='ground')return false;
   const d=Math.round((action.damage||0)*multiplier*(global.ForgeExpansion?.damageScale(p,e)||1));
-  if(d){const tint=p.forge?.effectColor||p.forge?.color||p.themeColor||'#58687a';e.hp=Math.max(0,e.hp-d);e.invincible=12;createHitParticles(e.x,e.y,tint,d>=25?22:14);addFloatingText('-'+d,e.x,e.y-30,tint,17);global.ImpactPhysics?.hit?.(p,e,d,{knockback:action.knockback||0,color:tint});}
+  if(d){const tint=p.forge?.effectColor||p.forge?.color||p.themeColor||'#58687a';e.hp=Math.max(0,e.hp-d);e.invincible=12;createHitParticles(e.x,e.y,tint,d>=25?22:14);addFloatingText('-'+d,e.x,e.y-30,tint,17);global.ImpactPhysics?.hit?.(p,e,d,{knockback:action.knockback||0,color:tint,type:action.type});}
   if(action.status==='ice'){e.slowTimer=Math.max(e.slowTimer||0,90);e.slowMultiplier=.5;}
   if(action.status==='fire'||action.status==='poison'){
     const seconds=Number.isFinite(action.duration)?action.duration:(action.status==='fire'?2:3);
