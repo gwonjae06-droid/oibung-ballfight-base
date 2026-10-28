@@ -87,11 +87,15 @@ function show(){
     if(typeof dialog.showModal==='function')dialog.showModal();
     else dialog.setAttribute('open','');
   }
+  if(typeof global.dispatchEvent==='function'&&typeof global.Event==='function')
+    global.dispatchEvent(new global.Event('studio:open'));
   close.focus();
 }
 function hide(){
   if(typeof dialog.close==='function')dialog.close();
   else dialog.removeAttribute('open');
+  if(typeof global.dispatchEvent==='function'&&typeof global.Event==='function')
+    global.dispatchEvent(new global.Event('studio:close'));
   if(lastFocus&&typeof lastFocus.focus==='function')lastFocus.focus();
 }
 openButton.addEventListener('click',show);
