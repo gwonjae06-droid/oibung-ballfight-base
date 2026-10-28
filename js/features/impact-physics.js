@@ -5,11 +5,13 @@
 'use strict';
 const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
 const pulses=[],trails=[];
+const MOVEMENT_ONLY=new Set(['dash','blink','leap','hover','glide','swap','retreat','portal']);
 const PROJECTILES=new Set(['projectile','shot','homing','pierce','boomerang',
   'arcshot','splitshot','bolt','dung','meteor','starfall','summon','turret']);
 let frame=0,lastSound=-8,reduced=false;
 function hit(attacker,defender,damage,options={}){
   if(!attacker||!defender||attacker===defender||!(Number(damage)>0))return false;
+  if(MOVEMENT_ONLY.has(String(options.type||'')))return false;
   const x=defender.x,y=defender.y;
   const sourceX=Number.isFinite(options.x)?options.x:attacker.x;
   const sourceY=Number.isFinite(options.y)?options.y:attacker.y;
@@ -26,23 +28,23 @@ function hit(attacker,defender,damage,options={}){
   const heavy=kind!=='projectile'&&(options.heavy===true||amount>=22);
   const raw=26+Math.sqrt(amount)*3.2+(heavy?4:0)+
     clamp(Number(options.knockback)||0,0,9)*.95;
-  const impulse=kind==='projectile'?clamp(raw*.23,7,17):
-    kind==='contact'?clamp(raw*.78,21,55):clamp(raw,32,70);
+  const impulse=kind==='projectile'?clamp(raw*.17,5,11):
+    kind==='contact'?clamp(raw*.48,13,32):clamp(raw*.62,19,44);
   // A subsequent hit refreshes the burst without unboundedly adding forces.
   // Mostly follow the newest attacking direction, keeping a hint of momentum.
   let ix=nx*impulse+clamp(Number(defender.impactVX)||0,-72,72)*.16;
   let iy=ny*impulse+clamp(Number(defender.impactVY)||0,-72,72)*.16;
   const resultant=Math.hypot(ix,iy);
-  if(resultant>74){ix*=74/resultant;iy*=74/resultant;}
+  if(resultant>48){ix*=48/resultant;iy*=48/resultant;}
   defender.impactVX=ix;defender.impactVY=iy;
-  defender.impactFrames=kind==='projectile'?19:30;
+  defender.impactFrames=kind==='projectile'?8:11;
   defender.impactSpeed=Math.hypot(ix,iy);
   defender.impactColor=options.color||attacker.forge?.effectColor||attacker.themeColor||
     attacker.borderColor||'#45586a';
   // The initial flash reacts immediately; real travel then eases to normal
   // motion over a series of fixed simulation ticks.
-  const nudge=kind==='projectile'?clamp(impulse*.17,1,3):
-    kind==='contact'?clamp(impulse*.17,4,9):clamp(impulse*.17,7,12);
+  const nudge=kind==='projectile'?clamp(impulse*.12,.5,1.5):
+    kind==='contact'?clamp(impulse*.12,1.5,3.5):clamp(impulse*.15,2.5,6);
   const arena=typeof canvas!=='undefined'?canvas:global.canvas;
   if(arena?.width&&arena?.height){
     defender.x=clamp(defender.x+nx*nudge,defender.radius||0,arena.width-(defender.radius||0));
@@ -50,13 +52,13 @@ function hit(attacker,defender,damage,options={}){
   }
   // Small attacker recoil makes the blow read as a two-body interaction.
   if(options.recoil!==false&&kind!=='projectile'){
-    const recoil=(heavy?3.5:2.4)*(kind==='contact'?.78:1);
+    const recoil=(heavy?2.2:1.5)*(kind==='contact'?.7:1);
     attacker.vx=(attacker.vx||0)-nx*recoil;
     attacker.vy=(attacker.vy||0)-ny*recoil;
   }
   const color=options.color||attacker.forge?.effectColor||attacker.themeColor||
     attacker.borderColor||'#45586a';
-  pulses.push({x,y,nx,ny,color,heavy,age:0,life:heavy?17:13,impulse});
+  pulses.push({x,y,nx,ny,color,heavy,age:0,life:heavy?15:11,impulse});
   if(pulses.length>80)pulses.splice(0,pulses.length-80);
   if(!reduced&&typeof screenShake==='number'){
     screenShake=Math.max(screenShake,
@@ -90,17 +92,17 @@ function integrate(p){
     wallX=wallX||boundedX!==nextX;wallY=wallY||boundedY!==nextY;
     p.x=boundedX;p.y=boundedY;
   }
-  if(!reduced&&frame%2===0&&speed>9){
+  if(!reduced&&frame%2===0&&speed>7){
     trails.push({x:oldX,y:oldY,toX:p.x,toY:p.y,
-      color:p.impactColor||'#45586a',age:0,life:10});
+      color:p.impactColor||'#45586a',age:0,life:7});
     if(trails.length>72)trails.splice(0,trails.length-72);
   }
-  // A powerful first frame followed by exponential friction: ~82% of the
-  // previous forced displacement each tick, then seamless normal AI motion.
+  // Short punchy response: ~60% of the previous impulse each tick,
+  // releasing back to normal AI movement within about 0.15s.
   // The original AI's p.vx/p.vy remain untouched by this extra force.
-  if(wallX)vx=-vx*.23;
-  if(wallY)vy=-vy*.23;
-  p.impactVX=vx*.82;p.impactVY=vy*.82;
+  if(wallX)vx=-vx*.1;
+  if(wallY)vy=-vy*.1;
+  p.impactVX=vx*.60;p.impactVY=vy*.60;
   p.impactSpeed=Math.hypot(p.impactVX,p.impactVY);
   p.impactFrames--;
   if(p.impactSpeed<.45||p.impactFrames<=0){

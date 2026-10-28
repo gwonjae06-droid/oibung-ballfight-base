@@ -35,20 +35,16 @@ ctx.save();ctx.translate(p.x,p.y+offset);ctx.scale(scale*pose.sx,scale*pose.sy);
 ctx.save();ctx.beginPath();ctx.arc(0,0,radius,0,Math.PI*2);ctx.clip();
 if(img&&img.complete&&img.naturalWidth!==0)ctx.drawImage(img,-radius,-radius,radius*2,radius*2);
 else{
-  const base=p.themeColor||p.borderColor||'#546777';
-  const surface=ctx.createRadialGradient(-radius*.34,-radius*.4,radius*.05,0,0,radius*1.15);
-  surface.addColorStop(0,'#f6f9fa');surface.addColorStop(.07,base);
-  surface.addColorStop(1,'#263440');
-  ctx.fillStyle=surface;ctx.fill();
-  ctx.save();ctx.fillStyle='rgba(255,255,255,.12)';
-  ctx.beginPath();ctx.ellipse(-radius*.23,-radius*.33,radius*.55,radius*.18,-.45,0,Math.PI*2);ctx.fill();
-  ctx.fillStyle='#fff';ctx.strokeStyle='rgba(12,24,32,.65)';ctx.lineWidth=2;
-  ctx.font='800 '+Math.round(radius*.67)+'px "Noto Sans KR",system-ui,sans-serif';
+  // Original clean, flat 2D silhouette (no spherical lighting).
+  ctx.fillStyle=p.themeColor||p.borderColor||'#546777';ctx.fill();
+  ctx.fillStyle='#fff';ctx.strokeStyle='rgba(14,22,29,.68)';ctx.lineWidth=1.9;
+  ctx.font='800 '+Math.round(radius*.65)+'px "Noto Sans KR",system-ui,sans-serif';
   ctx.textAlign='center';ctx.textBaseline='middle';
-  ctx.strokeText(p.name[0],0,1);ctx.fillText(p.name[0],0,1);ctx.restore();
+  ctx.strokeText(p.name[0],0,0);ctx.fillText(p.name[0],0,0);
 }
 ctx.restore();ctx.save();ctx.beginPath();ctx.arc(0,0,radius,0,Math.PI*2);ctx.lineWidth=globalThis.CosmeticArcade?.borderColor?.(p)?5:4;ctx.strokeStyle=globalThis.CosmeticArcade?.borderColor?.(p)||'#000';ctx.shadowColor=ctx.strokeStyle;ctx.shadowBlur=globalThis.CosmeticArcade?.borderGlow?.(p)||0;ctx.globalAlpha=1;ctx.shadowBlur=0;ctx.setLineDash([]);ctx.stroke();ctx.restore();globalThis.CosmeticArcade?.drawBorder?.(ctx,p,radius);ctx.restore();
 if(p.id==='lee'&&p.pokeAnim>0&&!dead){ctx.save();const a=Math.atan2(p.pokeTargetY-p.y,p.pokeTargetX-p.x),dist=Math.hypot(p.pokeTargetX-p.x,p.pokeTargetY-p.y),max=Math.min(p.pokeRange,Math.max(p.radius+40,dist)),reach=p.radius+(max-p.radius)*Math.sin(p.pokeAnim*Math.PI),x=p.x+Math.cos(a)*reach,y=p.y+Math.sin(a)*reach;ctx.beginPath();ctx.moveTo(p.x+Math.cos(a)*p.radius,p.y+Math.sin(a)*p.radius);ctx.lineTo(x,y);ctx.strokeStyle='#9a6500';ctx.lineWidth=5;ctx.lineCap='round';ctx.stroke();ctx.font='bold 24px -apple-system, sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('👉',x,y);ctx.restore();}
+globalThis.SkillVisuals?.drawAction?.(ctx,p,z);
 ctx.save();const labelY=p.y+offset-radius*scale-12;
 ctx.font='700 14px "Noto Sans KR",system-ui,sans-serif';
 const display=getArenaFighterName(p),name=dead?`${display} · 탈락`:display;

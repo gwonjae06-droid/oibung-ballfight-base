@@ -272,6 +272,13 @@ function execute(p,a,target) {
   // Keep target-selector semantics consistent across all three engines.
   const selected=global.AbilityAtlas?.choose?.(p,enemies(p),a.target)||target;
   target=selected;
+  // Pure movement is a positioning state, never a contact attack. Keep a
+  // small grace for instantaneous teleports, and full duration for dash.
+  if(MOVEMENT_ONLY.has(a.type)){
+    const grace=a.type==='dash'?Math.max(2,Math.round((a.duration||.15)*60)):
+      a.type==='blink'||a.type==='swap'||a.type==='portal'?4:10;
+    p.movementOnlyFrames=Math.max(p.movementOnlyFrames||0,Math.min(240,grace));
+  }
   global.SkillVisuals?.cast(p,a,target); // Actual action execution, not cooldown booking.
   // In-world actions must dispatch through the same combat implementation
   // used by physics and visuals; they are not merely text menu entries.

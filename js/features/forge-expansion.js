@@ -68,7 +68,7 @@ function execute(p,a,target,api){
     }else effect(p,a.type,a.duration*60,p,a.damage);
     show(p.x,p.y,p.radius+12);return true;
   }
-  if(a.type==='nova'){show(p.x,p.y,a.radius);around(p.x,p.y,a.radius).forEach(e=>api.hit(p,e,a));return true;}
+  if(a.type==='nova'){show(p.x,p.y,a.radius);global.SkillVisuals?.detonate?.(p,'nova',p.x,p.y,a.radius);around(p.x,p.y,a.radius).forEach(e=>api.hit(p,e,a));return true;}
   if(!near)return true;
   const angle=Math.atan2(near.y-p.y,near.x-p.x);
   if(a.type==='flight'||a.type==='burrow'){
@@ -146,6 +146,7 @@ function update(p,api){
       if(!b.hit&&b.age>=b.delay+b.flight){
         b.hit=true;
         const impact=Math.max(24,Math.min(58,b.a.radius*.31));
+        global.SkillVisuals?.detonate?.(p,'starfall',b.x,b.y,impact);
         global.AdvancedCombat?.mark?.('burst',b.x,b.y,impact,(p.forge.effectColor||p.forge.color),20);
         global.AdvancedCombat?.mark?.('ring',b.x,b.y,impact,(p.forge.effectColor||p.forge.color),24);
         global.BattleFX?.sound?.('heavy',.4);
@@ -159,7 +160,9 @@ function update(p,api){
     }else if(b.kind==='meteor'||b.kind==='mine'){
       const foes=api.enemies(p).filter(e=>Math.hypot(e.x-b.x,e.y-b.y)<b.a.radius+e.radius);
       if((b.kind==='meteor'&&b.life<=0)||(b.kind==='mine'&&b.age>=20&&foes.length)){
-        global.BattleFX?.mark?.('wave',b.x,b.y,(p.forge.effectColor||p.forge.color),b.a.radius);foes.forEach(e=>api.hit(p,e,b.a));b.life=0;
+        global.BattleFX?.mark?.('wave',b.x,b.y,(p.forge.effectColor||p.forge.color),b.a.radius);
+        global.SkillVisuals?.detonate?.(p,b.kind,b.x,b.y,b.a.radius);
+        foes.forEach(e=>api.hit(p,e,b.a));b.life=0;
       }
     }else{
       const target=b.kind==='boomerang'&&b.age>20?p:players.find(e=>e.playerNum===b.target&&e.hp>0);

@@ -114,6 +114,17 @@
     }else if(kind==='rune'){
       snap(.13,.055*v,720);
       tone(137*variation,83,.19,.105*v,'triangle');
+    }else if(kind==='clock'){
+      // Small mechanical tick plus an understated metallic knock.
+      snap(.045,.045*v,810);
+      tone(176*variation,95,.12,.07*v,'triangle');
+    }else if(kind==='blast'){
+      snap(.18,.125*v,450);
+      tone(132*variation,40,.25,.19*v,'triangle');
+      tone(69,38,.17,.095*v,'sine',.018);
+    }else if(kind==='cosmos'){
+      snap(.2,.06*v,430);
+      tone(103*variation,43,.34,.10*v,'sine');
     }else {
       snap(.08,.05*v,770);
       tone(134*variation,80,.13,.08*v,'triangle');
