@@ -118,7 +118,7 @@ test('full-random and family-selected generation are separate visible options',(
  assert.match(natural,/global\.NaturalForge\.generate=createGenerated/);
  assert.match(natural,/themeToggle\.textContent='계열 골라 생성'/);
  assert.match(natural,/modeButtons\.append\(randomNow,themeToggle\)/);
- assert.match(natural,/randomEntry\.append\(randomHead,modeButtons,themeOptions\)/);
+ assert.match(natural,/randomEntry\.append\(randomHead,modeButtons,themeOptions,status\)/);
  assert.match(natural,/themeOptions\.hidden=true/);
  assert.match(natural,/themeToggle\.setAttribute\('aria-expanded',String\(reveal\)\)/);
  assert.match(category,/content\.append\(creator\)/);
@@ -131,7 +131,7 @@ test('custom creator has no natural-language generation UI or save-blocking prom
  const source=read('js/features/natural-forge.js');
  const install=source.slice(source.indexOf('function install(){'));
  assert.doesNotMatch(install,/forge-natural-text|forge-natural-build|forge-natural-mode|forge-choices/);
- assert.doesNotMatch(install,/button\.disabled|approved=|choiceBox|input\.value/);
+ assert.doesNotMatch(install,/button\.disabled|approved=|choiceBox|forge-natural-text|forge-natural-build/);
  assert.match(install,/randomNow\.addEventListener\('click',\(\)=>createGenerated\(\[\]\)\)/);
  assert.match(install,/randomBox\.querySelector\('#forge-random'\)\.addEventListener/);
  assert.doesNotMatch(install,/document\.getElementById\('forge-random'\)/,

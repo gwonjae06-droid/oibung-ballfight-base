@@ -59,7 +59,8 @@ test('responsive HUD and input accessibility are preserved', () => {
   assert.ok(style.includes('@media (max-width: 560px)'));
   assert.ok(style.includes('background:#fff!important'), 'white arena theme missing');
   assert.ok(style.includes('color-scheme: dark'), 'black UI shell missing');
-  assert.ok(read('js/features/natural-forge.js').includes('forge-natural-text'));
+  assert.ok(read('js/features/natural-forge.js').includes("status.id='forge-generate-status'"));
+  assert.ok(!read('js/features/natural-forge.js').includes('forge-natural-text'));
   assert.ok(read('js/features/community-forge.js').includes('community-items'));
   assert.ok(read('js/features/skill-forge.js').includes('function remove(id)'));
   assert.ok(style.includes(':focus-visible'));

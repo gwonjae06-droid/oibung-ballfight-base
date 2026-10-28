@@ -65,14 +65,14 @@ test('participant selector and roster selectors apply without an extra button',(
   assert.ok(main.includes('length:matchCount'));
   assert.ok(read('js/features/skill-forge.js').includes('globalThis.applyFighterPicks?.()'));
 });
-test('natural language edits retain current name, visual colors and photo art key',()=>{
+test('random and themed creators retain the editable fighter fields and normal save flow',()=>{
   const natural=read('js/features/natural-forge.js'),forge=read('js/features/skill-forge.js');
-  assert.ok(natural.includes('const current=SkillForge.getDraft?.()'));
-  for(const id of ['bf-name','forge-color','forge-effect-color','forge-hp','forge-speed','bf-text'])
-    assert.ok(natural.includes("$id('"+id+"')"),id+' must survive parser');
-  assert.ok(natural.includes('artKey:current.artKey'));
-  assert.ok(natural.includes('SkillForge.setDraft({...out.profile,...appearance})'));
+  assert.ok(natural.includes('SkillForge.setDraft(profile)'));
+  assert.ok(natural.includes('saveBtn.click()'));
   assert.ok(forge.includes('getDraft:()=>normalize(draft)'));
+  for(const id of ['bf-name','forge-color','forge-effect-color','forge-hp','forge-speed','bf-text'])
+    assert.ok(forge.includes('id="'+id+'"'),id+' should remain editable');
+  assert.ok(forge.includes('global.CharacterStudioArt?.commit?.(id)'));
 });
 test('every chosen random family contributes an action to the mixed character',()=>{
   const global={window:null,players:[],CUSTOM_DEFS:[],CHARACTER_PHOTOS:{},BEHAVIORS:{}};
