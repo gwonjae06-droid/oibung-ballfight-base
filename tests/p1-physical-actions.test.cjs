@@ -100,10 +100,14 @@ test('wall intercepts advanced turret shot and takes collision damage',()=>{
   t.h.AdvancedCombat.objects.push({
     kind:'wall',owner:1,x:211,y:100,r:24,hp:90,maxHp:90,life:200,age:0});
   const wall=t.h.AdvancedCombat.objects.find(o=>o.kind==='wall');
-  t.tick(45);
+  let collisionVisual=false;
+  for(let frame=0;frame<45;frame++){
+    t.tick(1);
+    collisionVisual ||=t.h.AdvancedCombat.effects.some(x=>x.kind==='burst');
+  }
   assert.equal(e.hp,300,'wall shields against ground-level turret shells');
   assert.ok(wall.hp<90,'physical wall absorbs projectile damage');
-  assert.ok(t.h.AdvancedCombat.effects.some(x=>x.kind==='burst'));
+  assert.ok(collisionVisual,'blocking a projectile produces an impact flash');
 });
 test('wall intercepts ordinary player shots and returning extended projectiles',()=>{
   const t=boot(),p=t.player(1),e=t.enemy(2,260,100);
