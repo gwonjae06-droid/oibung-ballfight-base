@@ -1538,3 +1538,67 @@ html,body {background:#090a0c;color:var(--text);font-family:"Noto Sans KR", "Mal
 @media(prefers-reduced-motion:reduce){
   .studio-motion-preview canvas{scroll-behavior:auto}
 }
+
+
+/* Saved custom fighters must have visible deletion controls; never hide
+ * them inside the JSON/share accordion. This layout stays compact on phones. */
+.character-studio-dialog .studio-roster-manager{
+  display:grid;gap:6px;min-width:0;padding:12px 14px;
+  border:1px solid #506573;border-radius:10px;background:#1d2a33;
+}
+.character-studio-dialog .studio-roster-heading{
+  display:flex;align-items:center;justify-content:space-between;gap:8px;
+}
+.character-studio-dialog .studio-roster-heading strong{
+  color:#f1f7fb;font-size:13px;font-weight:800;
+}
+.character-studio-dialog #forge-custom-count{
+  color:#bcd1df;font-size:11px;font-variant-numeric:tabular-nums;
+}
+.character-studio-dialog .studio-roster-guide{
+  margin:0;color:#afc1ce;font-size:10px;line-height:1.45;
+}
+.character-studio-dialog .studio-roster-manager #bf-custom-list{
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:6px;max-height:170px;overflow-y:auto;overscroll-behavior:contain;
+  scrollbar-width:thin;
+}
+.character-studio-dialog .studio-roster-manager .forge-saved-row{
+  display:flex;align-items:center;gap:6px;min-width:0;
+  margin:0;padding:5px 7px;border:1px solid #435562;
+  border-radius:7px;background:#25353f;
+}
+.character-studio-dialog .studio-roster-manager .forge-saved-row span{
+  min-width:0;flex:1;overflow:hidden;text-overflow:ellipsis;
+  white-space:nowrap;color:#e8f0f5;font-size:12px;
+}
+.character-studio-dialog .studio-roster-manager .forge-saved-row button{
+  flex:0 0 auto;margin:0;padding:5px 9px;min-height:32px;
+  background:#57383b;border-color:#995f65;color:#ffe9e9;
+  font-size:11px;font-weight:750;
+}
+.character-studio-dialog .studio-roster-manager .forge-saved-row button:hover{
+  background:#74454c;border-color:#ca8387;
+}
+.character-studio-dialog .studio-roster-manager .forge-saved-row button:focus-visible{
+  outline:2px solid #f8c4c4;outline-offset:2px;
+}
+.character-studio-dialog .forge-roster-empty{
+  grid-column:1/-1;margin:1px 0;padding:8px 9px;
+  color:#b8cbd5;font-size:11px;
+}
+.character-studio-dialog .studio-roster-manager #bf-result:not(:empty){
+  margin:0;padding:7px 9px;border-radius:6px;
+  background:#263c46;color:#e7f3f8;font-size:11px;
+}
+@media(max-width:700px){
+  .character-studio-dialog .studio-roster-manager{padding:9px 10px;gap:5px}
+  .character-studio-dialog .studio-roster-manager #bf-custom-list{max-height:140px}
+  .character-studio-dialog .studio-roster-manager .forge-saved-row{padding:4px 6px}
+  .character-studio-dialog .studio-roster-manager .forge-saved-row button{min-height:33px;padding:5px 8px}
+}
+@media(max-width:420px){
+  .character-studio-dialog .studio-roster-manager #bf-custom-list{
+    grid-template-columns:1fr;max-height:144px;
+  }
+}
