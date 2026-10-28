@@ -1928,3 +1928,74 @@ html,body {background:#090a0c;color:var(--text);font-family:"Noto Sans KR", "Mal
   #studio-motion-fill{transition:none}
   .studio-motion-buttons button{transition:none!important}
 }
+
+/* Read-only public fighter power board; desktop-left, never overlays arena. */
+.community-power-ranking{
+  min-width:0;padding:16px 13px;border:1px solid #3f4d5b;border-radius:12px;
+  background:#18222c;color:#e7f0f6;box-shadow:0 9px 22px rgba(5,11,19,.2);
+}
+.power-ranking-title,.power-ranking-row,.power-ranking-tools{
+  display:flex;align-items:center;gap:9px;justify-content:space-between;
+}
+.power-ranking-title{align-items:start}
+.power-ranking-title span{display:block;font-size:9px;font-weight:800;letter-spacing:.13em;color:#93a9bd}
+.power-ranking-title h2{margin:4px 0 5px;font-size:18px;letter-spacing:-.03em;color:#f7fafc}
+#power-ranking-reload{
+  display:grid;place-items:center;width:33px;height:33px;flex:0 0 33px;
+  border:1px solid #586b79;border-radius:7px;background:#263948;color:#e9f4fc;font-size:19px;
+}
+.power-ranking-intro,.power-ranking-method,.power-ranking-status{
+  display:block;color:#adbeca;font-size:10px;line-height:1.55;
+}
+.power-ranking-intro{margin:3px 0 12px}
+.power-ranking-intro strong{color:#e0eaf0}
+.power-ranking-list{display:grid;gap:7px;padding:0;margin:0;list-style:none;min-width:0}
+.power-ranking-card{
+  min-width:0;padding:10px;border:1px solid #384957;border-radius:8px;background:#202e39;
+}
+.power-ranking-row{align-items:center;justify-content:flex-start;gap:8px}
+.power-ranking-number{font-size:18px;font-weight:900;color:#a3b5c3;min-width:27px;font-variant-numeric:tabular-nums}
+.power-ranking-card:nth-child(1) .power-ranking-number{color:#f4cc78}
+.power-ranking-card:nth-child(2) .power-ranking-number{color:#d3dee8}
+.power-ranking-card:nth-child(3) .power-ranking-number{color:#d5a58e}
+.power-ranking-fighter{display:grid;gap:3px;min-width:0;flex:1}
+.power-ranking-fighter strong{
+  display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  font-size:12px;color:#f0f6fa;
+}
+.power-ranking-fighter small{font-size:10px;color:#9db0c0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.power-ranking-score{font-size:13px;font-weight:900;font-variant-numeric:tabular-nums;color:#c6ef98;flex:0 0 auto}
+.power-ranking-tools{margin-top:8px;justify-content:flex-start;gap:5px}
+.power-ranking-tools button,.power-ranking-tools a{
+  min-height:29px;display:inline-flex;align-items:center;justify-content:center;
+  border:1px solid #4c6575;border-radius:6px;background:#2a4251;color:#ecf5fa;
+  padding:5px 7px;font-size:10px;font-weight:750;text-decoration:none;
+}
+.power-ranking-tools button{flex:1}
+.power-ranking-tools a{flex:0 0 auto}
+.power-ranking-tools :is(a,button):hover{background:#3c596a}
+.power-ranking-status{margin:12px 0 9px}
+.power-ranking-issues{display:block;color:#d8e9f5;font-weight:700;font-size:11px;text-decoration:underline}
+.power-ranking-method{margin-top:9px}
+@media(min-width:1200px){
+  body.has-power-ranking{
+    display:grid;grid-template-columns:minmax(205px,238px) minmax(0,1fr);
+    gap:17px;align-items:start;max-width:1920px;margin:0 auto;padding:0 17px;
+  }
+  body.has-power-ranking > #container{
+    grid-column:2;grid-row:1;
+    width:min(100%,var(--arena-layout-width))!important;margin:0 auto;
+  }
+  body.has-power-ranking > .community-power-ranking{
+    grid-column:1;grid-row:1;position:sticky;top:20px;margin-top:29px;
+    max-height:calc(100vh - 39px);overflow-y:auto;overscroll-behavior:contain;
+  }
+}
+@media(max-width:1199px){
+  body.has-power-ranking{display:flex;flex-direction:column}
+  body.has-power-ranking > #container{order:1}
+  body.has-power-ranking > .community-power-ranking{
+    order:2;width:min(calc(100% - 22px),680px);margin:10px auto 22px;
+  }
+}
+@media(prefers-reduced-motion:reduce){#power-ranking-reload{transition:none}}
