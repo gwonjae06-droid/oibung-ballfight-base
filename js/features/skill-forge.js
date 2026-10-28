@@ -604,7 +604,7 @@ function initializeUI(){
       const name=document.createElement('span');name.textContent=def.name;
       const remove=document.createElement('button');remove.type='button';remove.textContent='삭제';
       remove.dataset.forgeId=def.id;remove.className='forge-delete';
-      remove.setAttribute('aria-label',def.name+' 캐릭터 삭제');
+      remove.setAttribute('aria-label',def.name+' 삭제');
       row.append(name,remove);target.appendChild(row);
     }
   }
