@@ -35,7 +35,7 @@ function register(d){
   if(!EXECUTORS.includes(d.executor||'custom'))throw Error('알 수 없는 실행 엔진입니다.');
   if(!PHYSICS.includes(d.physics||'strike'))throw Error('잘못된 물리력 설정입니다.');
   if(d.execute!==undefined&&typeof d.execute!=='function')throw Error('실행 함수는 신뢰할 수 있는 게임 코드로만 등록합니다.');
-  if((d.executor||'custom')==='custom'&&typeof d.execute!=='function')throw Error('새 동작은 실행 함수를 등록해야 합니다.');
+  if(d.legacy!==true&&typeof d.execute!=='function')throw Error('새 동작은 실제 전투 실행 함수를 등록해야 합니다.');
   if(!Array.isArray(d.parameters)||d.parameters.some(p=>!PARAMS.has(p)))throw Error('알 수 없는 동작 설정입니다.');
   const v=d.visual||{},col=v.color||'#75839d';
   if(typeof v.motif!=='string'||!/^#[0-9a-f]{6}$/i.test(col))throw Error('이펙트 표시를 설정하세요.');
@@ -61,6 +61,7 @@ function register(d){
   if(definition.offense)offensive.add(d.id);
   // Hot registration is optional. The built-ins load before the UI is mounted.
   if(typeof document!=='undefined'){
+    global.SkillForge?.refreshEditor?.();
     global.BlockForge?.refresh?.();
     global.CharacterStudioWorkspace?.refresh?.();
   }
