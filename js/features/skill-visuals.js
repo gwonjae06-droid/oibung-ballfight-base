@@ -383,8 +383,24 @@ function draw(ctx){
   }
   ctx.restore();
 }
+/* Stateless preview interface: uses the exact 7 family visual drawings, but
+ * deliberately does not touch the battle VFX pool, HP, audio or cooldowns. */
+function previewFrame(ctx,options={}){
+  const type=String(options.type||'wave');
+  if(!catalog[type]||!ctx)return false;
+  const family=familyOf(type),kind=options.phase==='impact'?'impact':'cast';
+  const t=clamp(Number(options.progress)||0,0,1);
+  const e={type,family,kind,age:t*100,life:100,
+    angle:Number(options.angle)||0,radius:clamp(Number(options.radius)||75,25,160),
+    color:options.color||catalog[type][1],scale:1};
+  ctx.save();ctx.translate(Number(options.x)||0,Number(options.y)||0);
+  ctx.rotate(e.angle);ctx.strokeStyle=e.color;ctx.fillStyle=e.color;
+  ctx.globalAlpha=.8;ctx.lineWidth=2.8;ctx.lineJoin='round';ctx.lineCap='round';
+  if(!renderFamily(ctx,e))drawMotif(ctx,e.type,e.age,e.life);
+  ctx.restore();return true;
+}
 function clear(){effects.length=0;ghosts=[];poses=new WeakMap();frame=0;}
 function setReduced(v){low=!!v;}
-global.SkillVisuals={catalog,TYPES,FAMILIES,cast,impact,contact,detonate,drawAction,tick,draw,clear,setReduced,
+global.SkillVisuals={catalog,TYPES,FAMILIES,cast,impact,contact,detonate,previewFrame,drawAction,tick,draw,clear,setReduced,
   get active(){return effects.length;}};
 })(window);
