@@ -282,12 +282,12 @@
       if(!panel||panel.querySelector('.bf-audio'))return;
       const bar=document.createElement('div');
       bar.className='bf-audio';
-      bar.innerHTML='<button type="button" id="bf-sound" aria-pressed="true">🔊 사운드 ON</button><span>이어폰 사용 권장 · 음원 자동 생성</span>';
+      bar.innerHTML='<button type="button" id="bf-sound" aria-pressed="true">🔊 효과음 ON</button><span>전투 효과음 · 음악은 별도 조절</span>';
       panel.append(bar);
       bar.querySelector('button').addEventListener('click',()=>{
         unlock();BattleFX.setMuted(!BattleFX.muted);
         const b=bar.querySelector('button');
-        b.textContent=BattleFX.muted?'🔇 사운드 OFF':'🔊 사운드 ON';
+        b.textContent=BattleFX.muted?'🔇 효과음 OFF':'🔊 효과음 ON';
         b.setAttribute('aria-pressed',String(!BattleFX.muted));
       });
       const gentle=document.querySelector('.bf-preference input');
