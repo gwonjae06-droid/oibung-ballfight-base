@@ -1318,12 +1318,35 @@ html,body {background:#090a0c;color:var(--text);font-family:"Noto Sans KR", "Mal
   #container,#container .canvas-wrapper{transition:none}
 }
 
-/* Prominent, compact shortcuts for both generator modes. */
-.arena-quick-generate{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
-.arena-quick-generate button{min-width:0;min-height:49px;padding:10px 8px;border:1px solid #697986;border-radius:8px;background:#27313c;color:#f1f5f7;font:750 12px/1.4 "Noto Sans KR",system-ui,sans-serif;cursor:pointer}
-.arena-quick-generate #quick-random-create{background:#394d5e;border-color:#8498aa}
-.arena-quick-generate button:hover{background:#435160}
-.arena-quick-generate button:focus-visible{outline:2px solid #f3f6f8;outline-offset:2px}
-.forge-studio .forge-random #forge-random{cursor:pointer;min-height:46px;font-size:13px;background:#40576a;border-color:#8fa4b6}
+/* Generator choices are first-class controls inside the custom studio only. */
+.forge-studio .forge-generate-modes{
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;width:100%;
+}
+.forge-studio .forge-generate-modes button{
+  min-width:0!important;width:100%!important;min-height:48px;padding:10px 8px;
+  border:1px solid #738292;border-radius:8px;
+  background:#334553;color:#f3f5f7;
+  font:750 12px/1.45 "Noto Sans KR",system-ui,sans-serif;
+  cursor:pointer;white-space:normal;
+}
+.forge-studio .forge-generate-modes #forge-random-create{
+  min-width:0!important;background:#40566a;border-color:#94a7b9;
+}
+.forge-studio .forge-generate-modes button:hover{background:#526577}
+.forge-studio .forge-generate-modes button:focus-visible{
+  outline:2px solid #f3f6f8;outline-offset:2px;
+}
+.forge-studio .forge-generate-modes #forge-theme-toggle[aria-expanded="true"]{
+  background:#465866;border-color:#abbac7;
+}
+.forge-studio .forge-theme-options{width:100%;min-width:0}
+.forge-studio .forge-theme-options[hidden]{display:none!important}
+.forge-studio .forge-random #forge-random{
+  cursor:pointer;min-height:46px;font-size:13px;
+  background:#40576a;border-color:#8fa4b6;
+}
 .forge-studio .forge-random #forge-random:hover{background:#52697b}
-@media(max-width:370px){.arena-quick-generate{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:370px){
+  .forge-studio .forge-generate-modes{gap:6px}
+  .forge-studio .forge-generate-modes button{font-size:11px;padding:9px 5px}
+}

@@ -116,8 +116,13 @@ test('full-random and family-selected generation are separate visible options',(
  assert.match(natural,/createGenerated\(selected\)/);
  assert.match(natural,/SkillForge\.randomProfile\(themes\.length\?themes:'any'\)/);
  assert.match(natural,/global\.NaturalForge\.generate=createGenerated/);
- assert.match(category,/quickRandom\.textContent='🎲 완전 랜덤 생성'/);
- assert.match(category,/themeOpen\.textContent='계열 골라 생성'/);
- assert.match(category,/global\.NaturalForge\.generate\(\[\]\)/);
- assert.match(read('css/style.css'),/\.arena-quick-generate/);
+ assert.match(natural,/themeToggle\.textContent='계열 골라 생성'/);
+ assert.match(natural,/modeButtons\.append\(randomNow,themeToggle\)/);
+ assert.match(natural,/randomEntry\.append\(randomHead,modeButtons,themeOptions\)/);
+ assert.match(natural,/themeOptions\.hidden=true/);
+ assert.match(natural,/themeToggle\.setAttribute\('aria-expanded',String\(reveal\)\)/);
+ assert.match(category,/content\.append\(creator\)/);
+ assert.ok(!category.includes('arena-quick-generate'));
+ assert.match(read('css/style.css'),/\.forge-generate-modes/);
+ assert.match(read('css/style.css'),/\.forge-theme-options\[hidden\]\{display:none!important\}/);
 });

@@ -515,8 +515,8 @@ function install(){
   body.prepend(heading,nameLabel);
   const randomEntry=document.createElement('section');randomEntry.className='forge-random-entry';
   const randomHead=document.createElement('div');randomHead.className='forge-random-entry-copy';
-  const randomTitle=document.createElement('strong');randomTitle.textContent='랜덤 · 계열 선택 생성';
-  const randomHelp=document.createElement('small');randomHelp.textContent='완전 랜덤으로 만들거나, 아래에서 원하는 능력 계열을 선택하세요.';
+  const randomTitle=document.createElement('strong');randomTitle.textContent='빠른 캐릭터 생성';
+  const randomHelp=document.createElement('small');randomHelp.textContent='완전 랜덤과 계열 선택 중 원하는 방식으로 생성하세요.';
   randomHead.append(randomTitle,randomHelp);
   nameLabel.classList.add('forge-name');body.insertBefore(box,nameLabel.nextSibling);
   const basics=document.createElement('details'),basicTitle=document.createElement('summary');basicTitle.textContent='외형 · 체력 · 이동 속도';basics.append(basicTitle,basicGrid,document.getElementById('bf-text').parentElement);
@@ -528,8 +528,24 @@ function install(){
   const randomNow=document.createElement('button');
   randomNow.type='button';randomNow.id='forge-random-create';
   randomNow.className='forge-random-create';
-  randomNow.textContent='🎲 완전 랜덤 생성 · 출전';
+  randomNow.textContent='🎲 완전 랜덤 생성';
   randomNow.setAttribute('aria-label','모든 능력 종류와 수치를 무작위로 정한 캐릭터를 생성하고 출전');
+  const themeToggle=document.createElement('button');
+  themeToggle.type='button';themeToggle.id='forge-theme-toggle';
+  themeToggle.textContent='계열 골라 생성';
+  themeToggle.setAttribute('aria-controls','forge-theme-options');
+  themeToggle.setAttribute('aria-expanded','false');
+  const modeButtons=document.createElement('div');modeButtons.className='forge-generate-modes';
+  modeButtons.append(randomNow,themeToggle);
+  const themeOptions=document.createElement('div');
+  themeOptions.id='forge-theme-options';themeOptions.className='forge-theme-options';themeOptions.hidden=true;
+  themeOptions.append(randomBox);
+  themeToggle.addEventListener('click',()=>{
+    const reveal=themeOptions.hidden;
+    themeOptions.hidden=!reveal;
+    themeToggle.setAttribute('aria-expanded',String(reveal));
+    if(reveal)themeOptions.querySelector('input[name="forge-theme"]')?.focus();
+  });
   function createGenerated(themes=[]){
     if(button.disabled)return false;
     if(roundStarted&&!isGameOver){
@@ -561,7 +577,7 @@ function install(){
   actions.replaceChildren(saveBtn);
   // Do not reference the random button until it exists; otherwise the entire
   // studio installer aborts before its controls become usable.
-  randomEntry.append(randomHead,randomBox,randomNow);
+  randomEntry.append(randomHead,modeButtons,themeOptions);
   body.insertBefore(randomEntry,nameLabel);
   // One shared theme picker serves both preview and immediate save: no duplicate UI.
   advanced.append(inspect,document.getElementById('bf-result'));
