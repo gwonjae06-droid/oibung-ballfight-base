@@ -42,18 +42,22 @@ test('open investments remain persisted and block a second open',()=>{
   code('js/features/point-market.js').runInContext(reloaded.s);
   assert.equal(reloaded.s.PointMarket.getState().position.margin,250);
 });
-test('gacha draws only visual items and persists collection and equipment',()=>{
+test('gacha collects cosmetics but only explicit per-character equip activates them',()=>{
   const {s,saved}=sandbox();
+  s.SkillForge={list:()=>[{id:'forge_1',profile:{name:'단독 파이터',artKey:'art-unit1'}}]};
   code('js/features/cosmetic-arcade.js').runInContext(s);
   const first=s.CosmeticArcade.drawReward(()=>0);
   assert.equal(first.id,'border-steel');
   assert.equal(s.coins,700);
   assert.deepEqual(Array.from(s.CosmeticArcade.getOwned()),['border-steel']);
-  assert.equal(s.CosmeticArcade.getEquipped().border,'border-steel');
+  assert.equal(s.CosmeticArcade.getLoadout('art-unit1').border,null,'drawing never auto-equips');
   s.CosmeticArcade.drawReward(()=>0);
   assert.equal(s.coins,500,'duplicate refunds exactly 100 G');
-  assert.equal(s.CosmeticArcade.equip('border','border-gold'),false,'cannot equip locked item');
-  const player={forge:{effectColor:'#112233',skills:[]}};
+  assert.equal(s.CosmeticArcade.equip('art-unit1','border','border-gold'),false,'cannot equip locked item');
+  const player={forge:{artKey:'art-unit1',effectColor:'#112233',skills:[]}};
+  s.CosmeticArcade.applyToFighter(player);
+  assert.equal(s.CosmeticArcade.borderColor(player),null);
+  assert.equal(s.CosmeticArcade.equip('art-unit1','border','border-steel'),true);
   s.CosmeticArcade.applyToFighter(player);
   assert.equal(s.CosmeticArcade.borderColor(player),'#b9ddfb');
   assert.equal(player.forge.effectColor,'#112233','visual border does not modify combat');
