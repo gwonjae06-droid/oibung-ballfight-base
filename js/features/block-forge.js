@@ -134,7 +134,7 @@ function phrase(skill){
 }
 function options(values,selected){return Object.entries(values).map(([key,value])=>
   '<option value="'+escape(key)+'"'+(key===selected?' selected':'')+'>'+escape(value)+'</option>').join('');}
-let selectedSkill=0,filter='all',query='',root=null,status=null,palette=null,workspace=null;
+let selectedSkill=0,filter='attacks',root=null,status=null,workspace=null,movePicker=null;
 function readDraft(){
   const d=forge.getDraft();
   const map={name:'bf-name',blurb:'bf-text',color:'forge-color',
@@ -148,151 +148,98 @@ function readDraft(){
 function announce(msg){if(status)status.textContent=msg;}
 function apply(op){
   try{
-    const before=readDraft(),after=modify(before,op);
+    const after=modify(readDraft(),op);
     if(op.kind==='new-skill')selectedSkill=after.skills.length-1;
     else if(op.kind==='split')selectedSkill=Math.min(after.skills.length-1,Number(op.skill)+1);
     else if(op.kind==='merge')selectedSkill=Math.max(0,Number(op.skill)-1);
-    else if(op.kind==='move-skill')selectedSkill=Number(op.skill)+Number(op.direction);
-    else if(op.kind==='add'||op.kind==='move')selectedSkill=Math.min(after.skills.length-1,Number(op.skill));
+    else if(op.kind==='add')selectedSkill=Math.min(after.skills.length-1,Number(op.skill));
     else selectedSkill=Math.min(selectedSkill,after.skills.length-1);
-    forge.setDraft(after); // Uses the existing storage/save validation and updates the fine-tuning editor.
-    announce('블록 구성이 반영되었습니다. 저장 · 출전 버튼으로 등록하세요.');
+    forge.setDraft(after);
+    announce('스킬 초안에 반영했습니다. 캐릭터를 추가하려면 아래 저장 버튼을 누르세요.');
     return true;
   }catch(e){announce(e.message);return false;}
 }
-function makePalette(){
-  if(!palette)return;
-  const entries=Object.entries(TYPES).filter(([id,name])=>{
-    if(filter!=='all' && !(GROUPS[filter]?.types||THEMES[filter]?.types||[]).includes(id))return false;
-    return !query||name.toLowerCase().includes(query)||id.includes(query);
-  });
-  palette.innerHTML=entries.length?entries.map(([id,name])=>
-    '<button type="button" class="block-chip" draggable="true" data-pick-type="'+escape(id)+'" data-drag-kind="palette" data-drag-type="'+escape(id)+'" title="누르거나 스킬에 드래그해 추가">'+escape(name)+' <span>＋</span></button>').join(''):
-    '<p class="block-empty">찾는 동작이 없습니다.</p>';
-}
-function blockAction(a,si,ai,total){
-  const required=ai>0;
-  const link=required?
-    '<div class="block-join"><span class="block-join-label">연결</span><select aria-label="앞 동작과의 연결 방식" data-edit="link" data-skill="'+si+'" data-index="'+ai+'">'+options(LINKS,a.link||'and')+'</select></div>':'';
-  const can=key=>forge.supportedParameter(a.type,key);
-  const fields=(can('target')?'<label>대상<select data-edit="param" data-key="target" data-skill="'+si+'" data-index="'+ai+'">'+options(TARGETS,a.target||'nearest')+'</select></label>':'')+
-    (can('damage')?'<label>위력<input aria-label="동작 위력" type="number" min="0" max="120" step="1" data-edit="param" data-key="damage" data-skill="'+si+'" data-index="'+ai+'" value="'+escape(a.damage)+'"></label>':'')+
-    (can('status')?'<label>효과<select data-edit="param" data-key="status" data-skill="'+si+'" data-index="'+ai+'">'+options(STATUS,a.status||'none')+'</select></label>':'');
-  return link+'<div class="block-drop" data-drop-skill="'+si+'" data-drop-index="'+ai+'" tabindex="0" aria-label="여기에 블록 놓기"></div>'+
-    '<article class="block-action" draggable="true" data-drag-kind="action" data-drag-skill="'+si+'" data-drag-index="'+ai+'">'+
-      '<div class="block-action-head"><span class="block-action-grip" aria-hidden="true">⠿</span><strong>'+escape(TYPES[a.type])+'</strong>'+
-      '<div class="block-action-tools"><button type="button" data-op="move" data-direction="-1" data-skill="'+si+'" data-index="'+ai+'" title="앞으로 이동" aria-label="블록 앞으로 이동" '+(!ai?'disabled':'')+'>↑</button>'+
-      '<button type="button" data-op="move" data-direction="1" data-skill="'+si+'" data-index="'+ai+'" title="뒤로 이동" aria-label="블록 뒤로 이동" '+(ai===total-1?'disabled':'')+'>↓</button>'+
-      '<button type="button" data-op="split" data-skill="'+si+'" data-index="'+ai+'" '+(!ai?'disabled':'')+' title="여기서부터 별도 스킬">분리</button>'+
-      '<button type="button" data-op="remove" data-skill="'+si+'" data-index="'+ai+'" title="블록 제거">×</button></div></div>'+
-      '<div class="block-params">'+fields+'</div></article>';
+function actionRow(a,i,j,count){
+  const type=TYPES[a.type]||'동작';
+  return (j?'<div class="block-quick-link"><select data-edit="link" data-skill="'+i+'" data-index="'+j+'" aria-label="앞 동작과 연결 방식">'+options(LINKS,a.link||'and')+'</select></div>':'')
+    +'<div class="block-quick-action">'
+    +'<span class="block-quick-chip">'+escape(type)+'</span>'
+    +'<div class="block-quick-tools">'
+    +'<button type="button" data-op="move" data-direction="-1" data-skill="'+i+'" data-index="'+j+'" aria-label="'+escape(type)+' 앞쪽으로 이동" '+(!j?'disabled':'')+'>↑</button>'
+    +'<button type="button" data-op="move" data-direction="1" data-skill="'+i+'" data-index="'+j+'" aria-label="'+escape(type)+' 뒤쪽으로 이동" '+(j===count-1?'disabled':'')+'>↓</button>'
+    +'<button type="button" data-op="remove" data-skill="'+i+'" data-index="'+j+'" aria-label="'+escape(type)+' 삭제" '+(count===1?'disabled':'')+'>×</button>'
+    +'</div></div>';
 }
 function draw(){
   if(!workspace)return;
   const d=forge.getDraft(),skills=d.skills||[];
   if(!skills.length)return;
   selectedSkill=Math.max(0,Math.min(selectedSkill,skills.length-1));
-  const allNotice=d.allAbilities?'<div class="block-all-warning">모든 능력 모드입니다. 블록으로 편집하려면 <button type="button" data-op="enable">일반 스킬 편집으로 전환</button>을 누르세요.</div>':'';
-  const cards=skills.map((s,i)=>
-    '<section class="block-skill '+(i===selectedSkill?'is-active':'')+'" data-card-skill="'+i+'">'+
-    '<div class="block-skill-head"><button type="button" class="block-select" data-op="select" data-skill="'+i+'" aria-pressed="'+String(i===selectedSkill)+'">스킬 '+(i+1)+' '+(i===selectedSkill?'●':'○')+'</button>'+
-    '<div class="block-skill-tools"><button type="button" data-op="move-skill" data-direction="-1" data-skill="'+i+'" '+(!i?'disabled':'')+' title="스킬 순서 올리기">↑</button>'+
-    '<button type="button" data-op="move-skill" data-direction="1" data-skill="'+i+'" '+(i===skills.length-1?'disabled':'')+' title="스킬 순서 내리기">↓</button>'+
-    '<button type="button" data-op="merge" data-skill="'+i+'" '+(!i||skills[i-1].actions.length+s.actions.length>3?'disabled':'')+'>이전 스킬과 합치기</button>'+
-    '<button type="button" data-op="remove-skill" data-skill="'+i+'" '+(skills.length===1?'disabled':'')+'>삭제</button></div></div>'+
-    '<div class="block-meta"><label>스킬 이름<input type="text" maxlength="18" data-edit="meta" data-key="name" data-skill="'+i+'" value="'+escape(s.name)+'"></label>'+
-    '<label>발동 조건<select data-edit="meta" data-key="trigger" data-skill="'+i+'">'+options(TRIGGER,s.trigger)+'</select></label>'+
-    '<label>쿨타임(초)<input type="number" min=".2" max="30" step=".1" data-edit="meta" data-key="cooldown" data-skill="'+i+'" value="'+escape(s.cooldown)+'"></label>'+
-    (s.trigger==='lowhp'?'<label>HP 조건(%)<input type="number" min="5" max="95" data-edit="meta" data-key="threshold" data-skill="'+i+'" value="'+escape(s.threshold)+'"></label>':'')+
-    '</div>'+
-    '<div class="block-action-stack">'+s.actions.map((a,j)=>blockAction(a,i,j,s.actions.length)).join('')+
-      '<div class="block-drop block-drop-last" data-drop-skill="'+i+'" data-drop-index="'+s.actions.length+'" tabindex="0">＋ 여기에 블록 끼우기</div></div>'+
-    '<p class="block-grammar" aria-label="동작 조합 미리보기">'+escape(phrase(s))+'</p>'+
-    '<div class="block-skill-bottom"><button type="button" data-op="select" data-skill="'+i+'">이 스킬에 추가할 블록 선택</button>'+
-      '<span>'+s.actions.length+' / 3개 블록</span></div>'+
-    '</section>').join('');
-  workspace.innerHTML=allNotice+cards+
-    '<button type="button" class="block-new-skill" data-op="new-skill" '+(skills.length>=4?'disabled':'')+'>＋ 독립 스킬 추가 ('+skills.length+'/4)</button>';
+  const allNotice=d.allAbilities?'<p class="block-quick-note">전체 능력 모드입니다. <button type="button" data-op="enable">일반 스킬 조합으로 전환</button></p>':'';
+  workspace.innerHTML=allNotice+skills.map((s,i)=>
+    '<section class="block-quick-skill '+(i===selectedSkill?'is-selected':'')+'">'
+    +'<div class="block-quick-skill-head">'
+    +'<button type="button" class="block-quick-select" data-op="select" data-skill="'+i+'" aria-pressed="'+String(i===selectedSkill)+'">'+(i===selectedSkill?'● ':'○ ')+'스킬 '+(i+1)+'</button>'
+    +'<input type="text" maxlength="18" data-edit="meta" data-key="name" data-skill="'+i+'" aria-label="스킬 이름" value="'+escape(s.name)+'">'
+    +'<button type="button" data-op="remove-skill" data-skill="'+i+'" aria-label="스킬 삭제" '+(skills.length===1?'disabled':'')+'>삭제</button></div>'
+    +'<div class="block-quick-stack">'+s.actions.map((a,j)=>actionRow(a,i,j,s.actions.length)).join('')+'</div>'
+    +'<p class="block-quick-description">'+escape(phrase(s))+'</p>'
+    +'<details class="block-quick-settings"><summary>발동 조건 · 쿨타임</summary><div class="block-quick-settings-grid">'
+    +'<label>발동<select data-edit="meta" data-key="trigger" data-skill="'+i+'">'+options(TRIGGER,s.trigger)+'</select></label>'
+    +'<label>쿨타임(초)<input type="number" min=".2" max="30" step=".1" data-edit="meta" data-key="cooldown" data-skill="'+i+'" value="'+escape(s.cooldown)+'"></label>'
+    +(s.trigger==='lowhp'?'<label>HP 조건(%)<input type="number" min="5" max="95" step="5" data-edit="meta" data-key="threshold" data-skill="'+i+'" value="'+escape(s.threshold)+'"></label>':'')
+    +'</div></details>'
+    +(i>0?'<button type="button" class="block-quick-merge" data-op="merge" data-skill="'+i+'" '+(skills[i-1].actions.length+s.actions.length>3?'disabled':'')+'>↑ 이전 스킬과 합치기</button>':'')
+    +'</section>').join('')
+    +'<button type="button" class="block-quick-new" data-op="new-skill" '+(skills.length>=4?'disabled':'')+'>+ 별도 스킬 만들기 ('+skills.length+'/4)</button>';
+}
+function refreshTypes(){
+  if(!movePicker)return;
+  const values=GROUPS[filter]?.types||Object.keys(TYPES);
+  movePicker.innerHTML=options(Object.fromEntries(values.filter(type=>TYPES[type]).map(type=>[type,TYPES[type]])),movePicker.value);
 }
 function mount(){
   const studio=document.querySelector('.forge-studio');
   if(!studio||!document.getElementById('forge-skills'))return;
-  root=document.createElement('section');root.className='block-forge';root.id='block-forge';
-  root.setAttribute('aria-label','블록 스킬 제작기');
-  root.innerHTML='<div class="block-editor-head"><div><span class="eyebrow">ABILITY BLOCK EDITOR</span><h3>블록으로 스킬 조합하기</h3><p>행동을 누르거나 드래그해서 붙이고, <strong>하고 · 한 뒤 · 동시에 · 별도로</strong>를 선택하세요.</p></div></div>'+
-    '<div class="block-chooser"><div class="block-chooser-head"><strong>① 행동 블록 고르기</strong><label>검색 <input type="search" class="block-search" placeholder="낙뢰, 회복, 포탈…"></label></div>'+
-    '<div class="block-filters" aria-label="행동 계열 필터"></div><div class="block-palette" aria-label="사용 가능한 행동 블록"></div>'+
-    '<small>터치: 블록을 눌러 현재 스킬에 추가 · PC: 끌어다 놓기로 이동 및 연결</small></div>'+
-    '<div class="block-composer-head"><strong>② 스킬 연결하기</strong><small>최대 4개 독립 스킬 · 스킬당 최대 3개 행동</small></div>'+
-    '<div class="block-workspace" aria-label="스킬 조합 영역"></div>'+
-    '<div class="block-status" role="status" aria-live="polite"></div>';
+  root=document.createElement('section');root.className='block-forge block-forge-simple';root.id='block-forge';
+  root.setAttribute('aria-label','간단 스킬 조합기');
+  root.innerHTML='<div class="block-editor-head"><h3>스킬 간단 조합</h3><p>동작을 골라 붙여 보세요. 복잡한 수치 설정 없이 스킬을 만들 수 있습니다.</p></div>'
+    +'<div class="block-quick-picker"><label>종류<select class="block-quick-group" aria-label="스킬 계열">'+options(Object.fromEntries(Object.entries(GROUPS).map(([id,g])=>[id,g.name])),filter)+'</select></label>'
+    +'<label>동작<select class="block-quick-type" aria-label="추가할 동작"></select></label>'
+    +'<button type="button" class="block-quick-add" data-op="add">+ 동작 붙이기</button></div>'
+    +'<p class="block-quick-help">먼저 아래 스킬을 선택한 다음 동작을 추가하세요. 연결 방식은 동작 사이에서 고를 수 있습니다.</p>'
+    +'<div class="block-workspace" aria-label="스킬 조합 영역"></div>'
+    +'<p class="block-status" role="status" aria-live="polite"></p>';
   const target=studio.querySelector('.forge-primary-actions');
   if(target)studio.insertBefore(root,target);else studio.append(root);
-  palette=root.querySelector('.block-palette');
-  workspace=root.querySelector('.block-workspace');
-  status=root.querySelector('.block-status');
-  const filters=root.querySelector('.block-filters');
-  const items=[['all','전체'],...Object.entries(GROUPS).map(([id,g])=>[id,g.name]),...Object.entries(THEMES).map(([id,g])=>[id,g.name])];
-  filters.innerHTML=items.map(([id,label])=>'<button type="button" data-filter="'+escape(id)+'" aria-pressed="'+String(id===filter)+'">'+escape(label)+'</button>').join('');
-  makePalette();draw();
-  root.querySelector('.block-search').addEventListener('input',e=>{query=e.target.value.trim().toLowerCase();makePalette();});
-  filters.addEventListener('click',e=>{
-    const b=e.target.closest('button[data-filter]');if(!b)return;
-    filter=b.dataset.filter;
-    filters.querySelectorAll('button[data-filter]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));
-    makePalette();
-  });
+  workspace=root.querySelector('.block-workspace');status=root.querySelector('.block-status');
+  movePicker=root.querySelector('.block-quick-type');
+  refreshTypes();draw();
+  root.querySelector('.block-quick-group').addEventListener('change',e=>{filter=e.target.value;refreshTypes();});
   root.addEventListener('click',e=>{
-    const chip=e.target.closest('button[data-pick-type]');
-    if(chip){apply({kind:'add',skill:selectedSkill,type:chip.dataset.pickType});return;}
     const b=e.target.closest('button[data-op]');if(!b||!root.contains(b))return;
-    const si=Number(b.dataset.skill),ai=Number(b.dataset.index),op=b.dataset.op;
+    const op=b.dataset.op,si=Number(b.dataset.skill),ai=Number(b.dataset.index);
     if(op==='select'){selectedSkill=si;draw();return;}
+    if(op==='add'){apply({kind:'add',skill:selectedSkill,type:movePicker.value});return;}
+    if(op==='enable'){apply({kind:'enable'});return;}
+    if(op==='new-skill'){apply({kind:'new-skill',type:movePicker.value});return;}
+    if(op==='remove-skill'){apply({kind:'remove-skill',skill:si});return;}
+    if(op==='remove'){apply({kind:'remove',skill:si,index:ai});return;}
+    if(op==='merge'){apply({kind:'merge',skill:si});return;}
+    if(op==='split'){apply({kind:'split',skill:si,index:ai});return;}
     if(op==='move'){
       const dir=Number(b.dataset.direction);
-      if(apply({kind:'move',fromSkill:si,fromIndex:ai,skill:si,at:ai+(dir<0?-1:2)}))selectedSkill=si;
-    }else if(op==='new-skill')apply({kind:'new-skill'});
-    else if(op==='enable')apply({kind:'enable'});
-    else if(op==='remove-skill')apply({kind:'remove-skill',skill:si});
-    else if(op==='move-skill')apply({kind:'move-skill',skill:si,direction:b.dataset.direction});
-    else if(op==='split')apply({kind:'split',skill:si,index:ai});
-    else if(op==='merge')apply({kind:'merge',skill:si});
-    else if(op==='remove')apply({kind:'remove',skill:si,index:ai});
+      apply({kind:'move',fromSkill:si,fromIndex:ai,skill:si,at:ai+(dir<0?-1:2)});
+    }
   });
   root.addEventListener('change',e=>{
     const el=e.target;if(!el.dataset.edit)return;
     const skill=Number(el.dataset.skill),index=Number(el.dataset.index);
-    if(el.dataset.edit==='link')apply({kind:'link',skill,index,value:el.value});
-    else if(el.dataset.edit==='meta')apply({kind:'meta',skill,key:el.dataset.key,value:el.value});
-    else if(el.dataset.edit==='param')apply({kind:'param',skill,index,key:el.dataset.key,value:el.value});
+    if(el.dataset.edit==='link'){
+      // '별도 스킬로 분리' remains an option in the compact connector menu.
+      apply({kind:'link',skill,index,value:el.value});
+    }else if(el.dataset.edit==='meta')apply({kind:'meta',skill,key:el.dataset.key,value:el.value});
   });
-  root.addEventListener('dragstart',e=>{
-    const b=e.target.closest('[data-drag-kind]');if(!b||!e.dataTransfer)return;
-    const payload=b.dataset.dragKind==='palette'?{kind:'palette',type:b.dataset.dragType}:
-      {kind:'action',skill:Number(b.dataset.dragSkill),index:Number(b.dataset.dragIndex)};
-    e.dataTransfer.effectAllowed=b.dataset.dragKind==='palette'?'copy':'move';
-    e.dataTransfer.setData('text/plain',JSON.stringify(payload));
-  });
-  root.addEventListener('dragover',e=>{
-    if(e.target.closest('.block-drop,.block-skill'))e.preventDefault();
-  });
-  root.addEventListener('drop',e=>{
-    const slot=e.target.closest('.block-drop'),card=e.target.closest('.block-skill');
-    if(!slot&&!card)return;
-    e.preventDefault();
-    try{
-      const raw=e.dataTransfer?.getData('text/plain')||'';
-      if(raw.length>250)return;
-      const payload=JSON.parse(raw);
-      const skill=slot?Number(slot.dataset.dropSkill):Number(card.dataset.cardSkill);
-      const at=slot?Number(slot.dataset.dropIndex):card.querySelectorAll('.block-action').length;
-      if(payload.kind==='palette')apply({kind:'add',type:payload.type,skill,at});
-      if(payload.kind==='action')apply({kind:'move',fromSkill:payload.skill,fromIndex:payload.index,skill,at});
-    }catch(_){announce('이동할 수 없는 블록입니다.');}
-  });
-  const details=document.getElementById('forge-skills');
-  details?.addEventListener('change',()=>draw());
-  details?.addEventListener('click',()=>draw());
 }
 global.BlockForge={modify,action,josa,phrase,refresh:draw};
 if(typeof document!=='undefined'&&document.querySelector('.forge-studio'))mount();

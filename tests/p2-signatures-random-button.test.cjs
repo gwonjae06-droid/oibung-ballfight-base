@@ -83,20 +83,25 @@ test('effects stay bounded when a full catalog character uses many skills',()=>{
   h.SkillVisuals.draw(ctx);
   h.SkillVisuals.clear();assert.equal(h.SkillVisuals.active,0);
 });
-test('primary random button creates and deploys a fully random fighter directly',()=>{
+test('primary random button only prepares unsaved skill combinations',()=>{
   const natural=read('js/features/natural-forge.js');
   const forge=read('js/features/skill-forge.js');
   const html=read('index.html'),css=read('css/style.css'),battle=read('js/features/battle-effects.js');
   assert.ok(natural.includes("randomNow.id='forge-random-create'"));
   assert.ok(natural.includes("SkillForge.randomProfile(themes.length?themes:'any')"));
-  assert.ok(natural.includes('SkillForge.setDraft(profile)'));
-  assert.ok(natural.includes('saveBtn.click()'));
+  assert.ok(natural.includes('SkillForge.setDraft(draft)'));
+  assert.ok(natural.includes('skills:rolled.skills'));
+  assert.ok(natural.includes('showGenerated(draft)'));
+  assert.ok(natural.includes('아직 캐릭터는 추가되지 않았습니다'));
+  assert.ok(natural.includes("name:get('bf-name')||prior.name"));
+  assert.ok(!natural.includes('saveBtn.click()'));
+  assert.ok(!natural.includes('reRollMatch()'));
+  assert.ok(!natural.includes('register(profile)'));
   assert.ok(natural.includes('actions.replaceChildren(saveBtn)'));
   assert.ok(natural.includes('body.insertBefore(randomEntry,nameLabel)'));
   assert.ok(natural.includes("randomEntry.className='forge-random-entry'"));
   assert.ok(natural.includes("forge-theme"));
-  assert.ok(natural.includes('roundStarted&&!isGameOver'));
-  assert.ok(natural.includes('SkillForge.list().length>=6'));
+  assert.ok(natural.includes("generated.id='forge-generated-skills'"));
   assert.ok(forge.includes('function randomProfile('));
   assert.ok(css.includes('.forge-studio .forge-primary-actions #forge-random-create'));
   const scripts=[...html.matchAll(/<script src="([^"]+)"/g)].map(x=>x[1]);
@@ -118,7 +123,7 @@ test('full-random and family-selected generation are separate visible options',(
  assert.match(natural,/global\.NaturalForge\.generate=createGenerated/);
  assert.match(natural,/themeToggle\.textContent='계열 골라 생성'/);
  assert.match(natural,/modeButtons\.append\(randomNow,themeToggle\)/);
- assert.match(natural,/randomEntry\.append\(randomHead,modeButtons,themeOptions,status\)/);
+ assert.match(natural,/randomEntry\.append\(randomHead,modeButtons,themeOptions,status,generated\)/);
  assert.match(natural,/themeOptions\.hidden=true/);
  assert.match(natural,/themeToggle\.setAttribute\('aria-expanded',String\(reveal\)\)/);
  assert.match(category,/content\.append\(creator\)/);

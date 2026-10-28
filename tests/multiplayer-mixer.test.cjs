@@ -67,8 +67,10 @@ test('participant selector and roster selectors apply without an extra button',(
 });
 test('random and themed creators retain the editable fighter fields and normal save flow',()=>{
   const natural=read('js/features/natural-forge.js'),forge=read('js/features/skill-forge.js');
-  assert.ok(natural.includes('SkillForge.setDraft(profile)'));
-  assert.ok(natural.includes('saveBtn.click()'));
+  assert.ok(natural.includes('SkillForge.setDraft(draft)'));
+  assert.ok(natural.includes('skills:rolled.skills'));
+  assert.ok(!natural.includes('saveBtn.click()'));
+  assert.ok(natural.includes('showGenerated(draft)'));
   assert.ok(forge.includes('getDraft:()=>normalize(draft)'));
   for(const id of ['bf-name','forge-color','forge-effect-color','forge-hp','forge-speed','bf-text'])
     assert.ok(forge.includes('id="'+id+'"'),id+' should remain editable');

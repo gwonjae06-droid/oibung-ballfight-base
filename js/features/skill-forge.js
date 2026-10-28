@@ -486,7 +486,7 @@ function list(){
   return CUSTOM_DEFS.filter(d=>d.forgeData).map(d=>({id:d.id,profile:normalize(d.forgeData)}));
 }
 function setDraft(value){
-  draft=normalize(value);refreshForm();global.BlockForge?.refresh?.();return draft;
+  draft=normalize(value);refreshForm();global.BlockForge?.refresh?.();global.NaturalForge?.refreshGenerated?.(draft);return draft;
 }
 function saved(){
   try{const v=JSON.parse(localStorage.getItem(STORE)||'[]');return Array.isArray(v)?v.slice(0,6):[];}catch(_){return [];}
@@ -613,6 +613,7 @@ function initializeUI(){
     const i=Number(e.target.dataset.skill),j=e.target.dataset.stage;
     const obj=j===undefined?draft.skills[i]:draft.skills[i]?.actions[Number(j)];
     if(obj)obj[key]=e.target.type==='number'?Number(e.target.value):e.target.value;
+    global.NaturalForge?.refreshGenerated?.(draft);
   });
   $('forge-skills').addEventListener('change',e=>{
     if(['type','trigger'].includes(e.target.dataset.field))render();
@@ -626,10 +627,10 @@ function initializeUI(){
     if(action==='remove-skill'&&draft.skills.length>1)draft.skills.splice(i,1);
     if(action==='add-action'&&draft.skills[i].actions.length<3)draft.skills[i].actions.push(stage());
     if(action==='remove-action'&&draft.skills[i].actions.length>1)draft.skills[i].actions.splice(j,1);
-    render();
+    render();global.NaturalForge?.refreshGenerated?.(draft);
   });
   $('forge-add-skill').addEventListener('click',()=>{
-    sync();if(!draft.allAbilities&&draft.skills.length<4){draft.skills.push(skill());render();}
+    sync();if(!draft.allAbilities&&draft.skills.length<4){draft.skills.push(skill());render();global.NaturalForge?.refreshGenerated?.(draft);}
   });
   $('bf-analyze').addEventListener('click',()=>{
     try{

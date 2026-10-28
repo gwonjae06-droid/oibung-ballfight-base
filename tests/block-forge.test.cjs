@@ -78,9 +78,12 @@ test('studio uses block UI above save with touch fallback; no prose input',()=>{
  assert.ok(html.indexOf('js/features/natural-forge.js')<html.indexOf('js/features/block-forge.js'));
  assert.match(ui,/const ordered=\[intro,random,name,basics,blocks,create/);
  assert.match(code,/studio\.insertBefore\(root,target\)/);
- assert.match(code,/dataTransfer\.setData\('text\/plain'/);
- assert.match(code,/data-pick-type/);
- assert.match(code,/data-op="split"/);
+ assert.match(code,/block-quick-picker/);
+ assert.match(code,/data-op="add"/);
+ assert.match(code,/data-op="new-skill"/);
+ assert.match(code,/data-edit="link"/);
+ assert.match(code,/block-quick-settings/);
+ assert.doesNotMatch(code,/dataTransfer\.setData\('text\/plain'/);
  const natural=read('js/features/natural-forge.js'),install=natural.slice(natural.indexOf('function install(){'));
  assert.doesNotMatch(install,/forge-natural-text|forge-natural-build|forge-natural-mode/);
 });
