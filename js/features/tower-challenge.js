@@ -81,6 +81,11 @@ function install(){
    +'<h2>도전의 탑 <span id="tower-floor">1 / 10F</span></h2>'
    +'<p id="tower-rule">층을 선택해 도전을 시작하세요.</p></div>'
    +'<strong id="tower-best">최고 기록 0F</strong></div>'
+   +'<div class="tower-floor-track" aria-label="도전의 탑 10개 층 진행도">'
+   +Array.from({length:FINISH},(_,i)=>'<div class="tower-floor-chip" id="tower-chip-'+(i+1)+'"'
+   +' aria-label="'+(i+1)+'층'+((i+1)%5===0?' 보스':'')+'"><strong>'
+   +(i+1)+'F</strong>'+((i+1)%5===0?'<small>보스</small>':'<small>층</small>')+'</div>').join('')
+   +'</div>'
    +'<div class="tower-fighter-pick"><label for="tower-hero">출전 캐릭터'
    +'<select id="tower-hero"></select></label>'
    +'<div class="tower-enemy"><strong id="tower-enemy">훈련의 문</strong><span id="tower-enemy-info">첫 도전을 준비하세요.</span></div></div>'
@@ -119,6 +124,14 @@ function install(){
     el('tower-enemy').textContent=(f.boss?'👑 ':'')+f.name;
     el('tower-enemy-info').textContent=f.hp+' HP · 이동 '+f.speed.toFixed(1)+' · '+f.damage+' 기본 공격력';
     el('tower-best').textContent='최고 기록 '+best+'F (내 브라우저)';
+    for(let i=1;i<=FINISH;i++){
+      const chip=el('tower-chip-'+i);
+      if(!chip)continue;
+      chip.className='tower-floor-chip'+(i<=cleared?' is-cleared':'')+
+        (i===level?' is-current':'');
+      chip.setAttribute('aria-current',String(i===level));
+      chip.setAttribute('data-boss',String(i%5===0));
+    }
     start.textContent=stage==='won'?'새로운 도전 시작':'1층 도전 시작';
     start.hidden=stage==='fighting'||stage==='reward';
     pause.hidden=stage!=='fighting';
