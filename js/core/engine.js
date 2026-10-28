@@ -144,7 +144,8 @@ function handleCombat(pA,pB) {
   pA.y=Math.max(pA.radius,Math.min(canvas.height-pA.radius,pA.y-ny*separation));
   pB.x=Math.max(pB.radius,Math.min(canvas.width-pB.radius,pB.x+nx*separation));
   pB.y=Math.max(pB.radius,Math.min(canvas.height-pB.radius,pB.y+ny*separation));
-  const approach=(pB.vx-pA.vx)*nx+(pB.vy-pA.vy)*ny;
+  const approach=((pB.vx||0)+(pB.impactVX||0)*.4-(pA.vx||0)-(pA.impactVX||0)*.4)*nx+
+    ((pB.vy||0)+(pB.impactVY||0)*.4-(pA.vy||0)-(pA.impactVY||0)*.4)*ny;
   if(approach<0){
     const impulse=Math.min(5,Math.max(1.8,-approach*0.58));
     pA.vx-=nx*impulse;pA.vy-=ny*impulse;
@@ -179,7 +180,6 @@ function update() {
   if(screenShake>0.5)screenShake*=0.88;
   globalThis.ImpactPhysics?.tick?.();
   players.forEach(updateCharacter);
-  players.forEach(p=>globalThis.ImpactPhysics?.integrate?.(p));
   players.forEach(p=>{
     if(p.hp>0&&(!p.jumpState||p.jumpState==='ground')){
       const m=(p.slowTimer>0?p.slowMultiplier:1)*(globalThis.ForgeExpansion?.movement(p)??1);
@@ -187,6 +187,9 @@ function update() {
       if(!Number.isFinite(velocity)){p.vx=p.playerNum%2?1.4:-1.4;p.vy=0.9;}
       else if(velocity>12){p.vx=p.vx/velocity*12;p.vy=p.vy/velocity*12;}
       p.x+=p.vx*m;p.y+=p.vy*m;
+      // Hit force is separate from AI locomotion: normal movement retains
+      // its 12px cap, but a confirmed blow can burst >40px on its first tick.
+      globalThis.ImpactPhysics?.integrate?.(p);
       let bounceX=false,bounceY=false;
       if(p.x-p.radius<0){p.x=p.radius;p.vx=Math.abs(p.vx);bounceX=true;}
       if(p.x+p.radius>canvas.width){p.x=canvas.width-p.radius;p.vx=-Math.abs(p.vx);bounceX=true;}
@@ -202,6 +205,9 @@ function update() {
         const newSpeed=Math.min(12,Math.max(after,Math.min(12,before*1.035+.03)));
         if(after>0){p.vx=p.vx/after*newSpeed;p.vy=p.vy/after*newSpeed;}
       }
+    }else if(p.hp>0){
+      // Airborne targets can still be hurled by an actual grounded hit.
+      globalThis.ImpactPhysics?.integrate?.(p);
     }
   });
   if(globalThis.AdvancedCombat)AdvancedCombat.tick({
