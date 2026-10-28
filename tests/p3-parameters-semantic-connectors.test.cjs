@@ -5,7 +5,7 @@ const root=path.join(__dirname,'..'),read=p=>fs.readFileSync(path.join(root,p),'
 function env(){
   const h={window:null,players:[],CUSTOM_DEFS:[],BEHAVIORS:{},CHARACTER_PHOTOS:{},
     canvas:{width:500,height:500},createHitParticles(){},addFloatingText(){},
-    document:{querySelector(){return null;}},
+    document:{querySelector(){return null;},getElementById(){return null;}},
     getClosestAliveEnemy(p){return h.players.find(e=>e!==p&&e.hp>0)||null;}};
   h.window=h;vm.createContext(h);
   for(const p of ['ability-atlas','forge-expansion','advanced-combat','skill-forge','natural-forge'])

@@ -80,7 +80,8 @@ test('split projectile produces multiple independently travelling shards',()=>{
   const h=boot(),a=fighter(1,100,100),b=fighter(2,230,100);
   h.sim.players.push(a,b);
   h.world.execute(a,action('splitshot',{count:1}),b,h.api);
-  tick(h,17);assert.ok(h.world.projectiles.some(p=>p.kind==='fragment'));
+  const split=h.world.projectiles.find(p=>p.kind==='splitshot');
+  tick(h,Math.ceil(split.travel*.56));assert.ok(h.world.projectiles.some(p=>p.kind==='fragment'));
   assert.ok(h.world.effects.some(e=>e.kind==='burst'));
 });
 test('walls are solid and destructible, changing physical position',()=>{
