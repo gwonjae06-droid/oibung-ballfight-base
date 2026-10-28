@@ -162,6 +162,10 @@ function handleCombat(pA,pB) {
       pB.vx-=tx;pB.vy-=ty;
     }
   }
+  // A fighter thrown by an earlier hit is not performing an intentional
+  // contact attack. Keep body separation, but never turn the new launch
+  // velocity into accidental extra damage from legacy contact handlers.
+  if((pA.impactSpeed||0)>4||(pB.impactSpeed||0)>4)return;
   [[pA,pB],[pB,pA]]
     .filter(([a])=>!globalThis.ForgeExpansion?.blocked(a)&&BEHAVIORS[a.id]&&BEHAVIORS[a.id].onContact)
     .sort((x,y)=>(BEHAVIORS[x[0].id].order||99)-(BEHAVIORS[y[0].id].order||99))
