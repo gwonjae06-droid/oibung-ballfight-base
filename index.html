@@ -150,8 +150,13 @@
       </div>
       <div class="arcade-pull">
         <div><strong>✨ 연출 캡슐</strong><span>테두리 · 스킬 색상 · 공격 궤적 · 등장 연출 · 스킬 모션</span></div>
-        <button type="button" id="cosmetic-draw">300 G · 1회 뽑기</button>
+        <div class="arcade-pull-controls" role="group" aria-label="가챠 뽑기 횟수">
+          <button type="button" id="cosmetic-draw">300 G · 1회 뽑기</button>
+          <button type="button" id="cosmetic-draw-ten">3,000 G · 10연차</button>
+        </div>
       </div>
+      <ol id="cosmetic-ten-results" class="cosmetic-ten-results" aria-label="10연차 뽑기 결과" hidden></ol>
+      <p class="arcade-pull-note">10연차는 1회 뽑기를 10번 진행합니다. 중복 환급·보상 보장 횟수가 그대로 이어집니다.</p>
       <p id="cosmetic-result" class="game-extra-status" role="status" aria-live="polite">미당첨 시 소액 G 또는 짧은 인생 명언이 등장합니다. 오래 못 뽑으면 보상이 보장됩니다.</p>
       <div class="cosmetic-collections" id="cosmetic-collections" aria-label="보유한 가챠 아이템 도감"></div>
     </section>
