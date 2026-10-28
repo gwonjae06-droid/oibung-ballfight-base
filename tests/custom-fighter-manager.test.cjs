@@ -36,7 +36,7 @@ test('roster renders name, accessible deletion control, saved count and empty st
   }
   elements['bf-custom-list']=createElement('div');
   elements['forge-custom-count']=createElement('span');
-  const h={document:{createElement},ids:elements,
+  const h={document:{createElement},ids:elements,global:{},
     CUSTOM_DEFS:[{id:'forge_1',name:'테스트 캐릭터',forgeData:{skills:[{}]}},
       {id:'classic',name:'기본 캐릭터'}]};
   vm.createContext(h);
