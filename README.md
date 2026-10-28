@@ -1,5 +1,9 @@
 # 오이붕 맞짱뜨기 시뮬레이터 · 분해판 (기본틀)
 
+## 🎮 [게임 바로 플레이하기](https://gwonjae06-droid.github.io/oibung-ballfight-base/)
+
+브라우저에서 설치 없이 플레이할 수 있습니다. [▶ 바로 플레이](https://gwonjae06-droid.github.io/oibung-ballfight-base/)
+
 ## 7개 테마 확장 · 랜덤 캐릭터 · 제작 화면 정리
 
 실제 전투 동작은 **35종**, 상태 효과는 **15종**입니다. 새 테마도 API 없이
