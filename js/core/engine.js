@@ -149,20 +149,20 @@ function handleCombat(pA,pB) {
   const ny=distance>0.0001?dy/distance:0;
   const movingA=(pA.forgeDash||0)>0||(pA.movementOnlyFrames||0)>0;
   const movingB=(pB.forgeDash||0)>0||(pB.movementOnlyFrames||0)>0;
-  const clampX=p=>Math.max(p.radius,Math.min(canvas.width-p.radius,p.x));
-  const clampY=p=>Math.max(p.radius,Math.min(canvas.height-p.radius,p.y));
+  const clampX=(value,r)=>Math.max(r,Math.min(canvas.width-r,value));
+  const clampY=(value,r)=>Math.max(r,Math.min(canvas.height-r,value));
   const overlap=minDistance-distance+.01;
   // During pure movement, separate overlapping bodies without imparting
   // any velocity to the target. This lets a dash reach melee distance.
   if(movingA!==movingB){
     const mover=movingA?pA:pB,sign=movingA?-1:1;
-    mover.x=clampX({...mover,x:mover.x+nx*overlap*sign});
-    mover.y=clampY({...mover,y:mover.y+ny*overlap*sign});
+    mover.x=clampX(mover.x+nx*overlap*sign,mover.radius);
+    mover.y=clampY(mover.y+ny*overlap*sign,mover.radius);
   }else{
-    pA.x=clampX({...pA,x:pA.x-nx*overlap*.5});
-    pA.y=clampY({...pA,y:pA.y-ny*overlap*.5});
-    pB.x=clampX({...pB,x:pB.x+nx*overlap*.5});
-    pB.y=clampY({...pB,y:pB.y+ny*overlap*.5});
+    pA.x=clampX(pA.x-nx*overlap*.5,pA.radius);
+    pA.y=clampY(pA.y-ny*overlap*.5,pA.radius);
+    pB.x=clampX(pB.x+nx*overlap*.5,pB.radius);
+    pB.y=clampY(pB.y+ny*overlap*.5,pB.radius);
   }
   if(movingA||movingB)return;
   const approach=((pB.vx||0)+(pB.impactVX||0)*.4-(pA.vx||0)-(pA.impactVX||0)*.4)*nx+
