@@ -3,6 +3,7 @@
 (function(global){
 'use strict';
 const KEY='oibung-first-visit-guide-v1';
+function storage(){try{return global.localStorage;}catch(_){return null;}}
 function seen(storage){
   try{return storage?.getItem(KEY)==='seen';}catch(_){return false;}
 }
@@ -41,7 +42,7 @@ function install(){
   }
   function close(){
     // Persist only after dismissing the tutorial, not merely while loading it.
-    markSeen(global.localStorage);
+    markSeen(storage());
     if(typeof dialog.close==='function')dialog.close();
     else dialog.removeAttribute('open');
     doc.body.classList.remove('arena-welcome-open');
@@ -49,10 +50,11 @@ function install(){
   }
   dialog.querySelector('#arena-welcome-confirm').addEventListener('click',close);
   dialog.addEventListener('cancel',e=>{e.preventDefault();close();});
+  dialog.addEventListener('close',()=>doc.body.classList.remove('arena-welcome-open'));
   // Native <dialog> focus/inert background is retained; no close-on-backdrop
   // because a first-time visitor should confirm the short tutorial.
   trigger.addEventListener('click',open);
-  if(!seen(global.localStorage))open();
+  if(!seen(storage()))open();
   global.ArenaWelcome={open,close,KEY};
   return dialog;
 }
