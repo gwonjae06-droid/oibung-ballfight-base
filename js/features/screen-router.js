@@ -260,7 +260,7 @@ function install(){
     if(ROUTES.includes(next))go(next);
   });
   const api={go,refresh,showArena,towerTab,characterTab,setRankingTab,get enabled(){return true;},
-    get active(){return active;},get towerTab(){return subtab;}};
+    get active(){return active;},get activeTowerTab(){return subtab;}};
   global.ArenaScreenRouter=api;
   return api;
 }
