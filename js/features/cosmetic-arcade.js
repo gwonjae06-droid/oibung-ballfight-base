@@ -589,6 +589,8 @@ function beginRoulette(){
 drawWheel();
 
 document.getElementById('cosmetic-draw')?.addEventListener('click',()=>beginRoulette());
+// Restore saved cosmetics for the first match, built before this module loaded.
+if(typeof players!=='undefined'&&Array.isArray(players))players.forEach(applyToFighter);
 refresh();
 global.CosmeticArcade={drawReward,beginRoulette,lastResult,equip,refresh,applyToFighter,borderColor,borderGlow,startRound,onCast,tick,drawUnder,drawOver,
   getOwned:()=>state.owned.slice(),getEquipped:()=>({...state.equipped}),price:PRICE,drawBorder,};
