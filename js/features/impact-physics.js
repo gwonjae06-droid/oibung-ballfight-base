@@ -11,7 +11,8 @@ const PROJECTILES=new Set(['projectile','shot','homing','pierce','boomerang',
 let frame=0,lastSound=-8,reduced=false;
 function hit(attacker,defender,damage,options={}){
   if(!attacker||!defender||attacker===defender||!(Number(damage)>0))return false;
-  if(MOVEMENT_ONLY.has(String(options.type||'')))return false;
+  if(global.ActionRegistry?.isMovement(options.type)||MOVEMENT_ONLY.has(String(options.type||''))||
+    global.ActionRegistry?.get(options.type)?.physics==='none')return false;
   const x=defender.x,y=defender.y;
   const sourceX=Number.isFinite(options.x)?options.x:attacker.x;
   const sourceY=Number.isFinite(options.y)?options.y:attacker.y;
@@ -22,7 +23,7 @@ function hit(attacker,defender,damage,options={}){
   if(d<.001){dx=(defender.playerNum||0)>=(attacker.playerNum||0)?1:-1;dy=0;d=1;}
   const nx=dx/d,ny=dy/d,amount=clamp(Number(damage),1,200);
   const type=String(options.type||'');
-  const kind=type==='contact'?'contact':PROJECTILES.has(type)?'projectile':'strike';
+  const kind=type==='contact'?'contact':global.ActionRegistry?.get(type)?.physics==='projectile'||PROJECTILES.has(type)?'projectile':'strike';
   // Strong hand-to-hand strikes remain explosive; body-to-body collisions
   // are slightly softer and ranged missiles carry a FRACTION of the force.
   const heavy=kind!=='projectile'&&(options.heavy===true||amount>=22);

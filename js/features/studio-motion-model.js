@@ -5,7 +5,7 @@ const clamp=(n,lo,hi)=>Math.min(hi,Math.max(lo,n));
 const RANGED=new Set(['shot','homing','pierce','boomerang','arcshot','splitshot','dung','meteor','starfall','bolt','chain','beam']);
 const MOVE=new Set(['dash','blink','swap','retreat','flight','burrow','leap','hover','glide','dive','burrowdash','portal']);
 const EXPLOSION=new Set(['nova','meteor','mine','erupt','dive']);
-const duration=a=>RANGED.has(a.type)?1050:MOVE.has(a.type)?850:EXPLOSION.has(a.type)?1120:950;
+const duration=a=>global.ActionRegistry?.duration(a.type)||(RANGED.has(a.type)?1050:MOVE.has(a.type)?850:EXPLOSION.has(a.type)?1120:950);
 function plan(profile={},scope=0){
   const list=profile.allAbilities?global.SkillForge?.allSkillset?.()||[]:profile.skills||[];
   const events=[];

@@ -8,7 +8,7 @@ if(!forge)return;
 const TYPES=forge.TYPE,THEMES=forge.THEMES,TRIGGER=forge.TRIGGER,STATUS=forge.STATUS;
 const LINKS={and:'하고 · 이어서',after:'한 뒤 · 순차',with:'와/과 동시에',separate:'별도 스킬로 분리'};
 const TARGETS=global.AbilityAtlas?.TARGETS||{nearest:'가장 가까운 적',farthest:'가장 먼 적',lowest:'체력이 낮은 적',highest:'체력이 높은 적',random:'무작위 적'};
-const GROUPS={
+const GROUPS=global.ActionRegistry?.GROUPS||{
   attacks:{name:'공격',types:['wave','shot','beam','bolt','slash','spinslash','thrust','aircombo','arcshot','splitshot','uppercut','nova','chain','meteor','starfall','dung','dive','flight','burrow','burrowdash','erupt']},
   mobility:{name:'이동 · 피해 없음',types:['dash','blink','leap','hover','glide','swap','retreat','portal']},
   defense:{name:'보호 · 회복',types:['heal','shield','cleanse','regen','fortify','lifebloom','resurrect','haste','rewind']},
@@ -244,6 +244,6 @@ function mount(){
     }else if(el.dataset.edit==='meta')apply({kind:'meta',skill,key:el.dataset.key,value:el.value});
   });
 }
-global.BlockForge={modify,action,josa,phrase,refresh:draw};
+global.BlockForge={modify,action,josa,phrase,refresh:()=>{refreshTypes();draw();}};
 if(typeof document!=='undefined'&&document.querySelector('.forge-studio'))mount();
 })(window);

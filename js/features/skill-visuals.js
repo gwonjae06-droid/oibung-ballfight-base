@@ -4,7 +4,7 @@
  * cast and successful contact. Fixed-step time; no DOM or external assets. */
 (function(global){
 'use strict';
-const catalog=Object.freeze({
+const catalog=global.ActionRegistry?.visualCatalog||Object.freeze({
   wave:['ripples','#536d86'],shot:['arrow','#466b8b'],beam:['laser','#466f9d'],
   bolt:['lightning','#a47532'],dash:['speed','#3e7890'],blink:['fold','#6d5c9a'],
   heal:['cross','#36865f'],shield:['hex','#416e9d'],pull:['vortex','#396f78'],
@@ -30,7 +30,7 @@ const catalog=Object.freeze({
   grow:['expand','#488b72'],shrink:['compress','#758c8f'],
   burrowdash:['tunnel','#947749'],erupt:['fissure','#a56e3c']
 });
-const TYPES=Object.freeze(Object.keys(catalog));
+const TYPES=global.ActionRegistry?.ids()||Object.freeze(Object.keys(catalog));
 const MAX=68;
 let effects=[],low=false,frame=0;
 const clamp=(v,l,h)=>Math.max(l,Math.min(h,v));
@@ -71,6 +71,11 @@ function spir(c,turn=1,phase=0){
 }
 function drawMotif(c,type,age,life){
   const t=clamp(age/Math.max(1,life),0,1),turn=t*Math.PI*2;
+  // For a newly registered move without a bespoke legacy motif, provide a
+  // legible default symbol instead of an invisible empty effect.
+  if(global.ActionRegistry?.get(type)?.legacy===false){
+    polygon(c,6,18,-Math.PI/2);arc(c,0,0,7+5*t,0,Math.PI*2);return;
+  }
   switch(type){
   case 'wave':for(const n of [6,12,19])arc(c,0,0,n+t*4,0,Math.PI*2);break;
   case 'shot':arrow(c,0);line(c,-23,-5,-14,-5);break;
@@ -131,7 +136,7 @@ function drawMotif(c,type,age,life){
 }
 
 /* Screen-space action language. Presentation only: NEVER deals damage. */
-const FAMILIES=Object.freeze({
+const FAMILIES=global.ActionRegistry?.FAMILIES||Object.freeze({
   fist:new Set(['uppercut','aircombo']),
   projectile:new Set(['shot','homing','pierce','boomerang','arcshot','splitshot','bolt','dung','turret','summon']),
   wave:new Set(['wave','beam','chain','pull','zone','orbit']),
@@ -327,7 +332,9 @@ function cast(p,action,target){
     if(FAMILIES.fist.has(action.type)||FAMILIES.projectile.has(action.type)){
       actor(p,action.type,target?Math.atan2(target.y-p.y,target.x-p.x):Math.atan2(p.vy||0,p.vx||1));
     }
-    if(FAMILIES.time.has(action.type))global.BattleFX?.sound?.('clock',.44);
+    const registration=global.ActionRegistry?.get(action.type);
+    if(registration&&!registration.legacy)global.BattleFX?.sound?.(registration.audio.cast,.48);
+    if(FAMILIES.time.has(action.type)&&(!registration||registration.legacy))global.BattleFX?.sound?.('clock',.44);
     if(FAMILIES.cosmos.has(action.type))global.BattleFX?.sound?.('cosmos',.48);
     global.CosmeticArcade?.onCast?.(p,action,target);
   }
@@ -336,7 +343,10 @@ function cast(p,action,target){
 function impact(p,e,action){
   if(!action?.type||!catalog[action.type]||!e)return false;
   const height=global.AdvancedCombat?.height?.(e)||0;
-  return add('impact',p,action.type,action,e,{x:e.x,y:e.y-height});
+  const success=add('impact',p,action.type,action,e,{x:e.x,y:e.y-height});
+  const registration=global.ActionRegistry?.get(action.type);
+  if(success&&registration&&!registration.legacy)global.BattleFX?.sound?.(registration.audio.impact,.42);
+  return success;
 }
 function tick(){
   frame++;
@@ -413,6 +423,6 @@ function previewFrame(ctx,options={}){
 }
 function clear(){effects.length=0;ghosts=[];poses=new WeakMap();activePoses.clear();frame=0;}
 function setReduced(v){low=!!v;}
-global.SkillVisuals={catalog,TYPES,FAMILIES,ARM_IDLE_FRAMES,cast,impact,contact,detonate,previewFrame,drawAction,tick,draw,clear,setReduced,
+global.SkillVisuals={catalog,get TYPES(){return global.ActionRegistry?.ids()||TYPES;},FAMILIES,ARM_IDLE_FRAMES,cast,impact,contact,detonate,previewFrame,drawAction,tick,draw,clear,setReduced,
   get active(){return effects.length;}};
 })(window);
