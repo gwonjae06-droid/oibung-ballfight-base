@@ -1813,3 +1813,67 @@ html,body {background:#090a0c;color:var(--text);font-family:"Noto Sans KR", "Mal
 .bgm-quick-start:hover{background:#384a56}
 .bgm-quick-start[hidden]{display:none!important}
 @media(max-width:450px){.bgm-quick-start{font-size:11px;padding:5px 8px}}
+
+/* Motion language: opacity + transform only for economical, smooth 60fps UI.
+   Avoid layout reflow / animating width or height inside battle views. */
+@keyframes arena-panel-appear {
+  from { opacity:0; transform:translateY(9px) scale(.991); }
+  to   { opacity:1; transform:translateY(0) scale(1); }
+}
+@keyframes arena-modal-appear {
+  from { opacity:0; transform:translateY(13px) scale(.975); }
+  to   { opacity:1; transform:translateY(0) scale(1); }
+}
+@keyframes arena-soft-appear {
+  from { opacity:.25; transform:translateY(6px); }
+  to   { opacity:1; transform:translateY(0); }
+}
+.page-header, .arena-category-nav, .battle-screen, .bf-tools, .roster-card,
+.bf-fold, .economy-card, #cosmetic-arcade, #point-finance {
+  animation:arena-panel-appear .4s cubic-bezier(.2,.75,.28,1) both;
+}
+.arena-category-nav{animation-delay:.045s}
+.battle-screen{animation-delay:.075s}
+.bf-tools,.roster-card{animation-delay:.11s}
+:is(button, .arena-category-nav a, .studio-category-tabs button, summary, .cosmetic-choice, .bf-picks select) {
+  transition:background-color .22s ease, border-color .22s ease,
+    color .22s ease, box-shadow .24s ease, opacity .24s ease,
+    transform .2s cubic-bezier(.2,.75,.28,1);
+}
+:is(button, .arena-category-nav a, .studio-category-tabs button, .cosmetic-choice):not(:disabled):hover {
+  transform:translateY(-1px);
+}
+:is(button, .arena-category-nav a, .studio-category-tabs button, .cosmetic-choice):not(:disabled):active {
+  transform:scale(.975);
+}
+:is(.bf-details, .bf-fold, .roster-card, .character-studio-original)[open] > :not(summary),
+:is(.studio-category-panel, .categorized-tools > section):not([hidden]) {
+  animation:arena-soft-appear .27s cubic-bezier(.16,.7,.3,1) both;
+}
+.character-studio-dialog[open]{
+  animation:arena-modal-appear .3s cubic-bezier(.2,.8,.3,1) both;
+}
+.character-studio-dialog::backdrop{
+  animation:arena-backdrop-appear .22s ease-out both;
+}
+@keyframes arena-backdrop-appear { from{opacity:0} to{opacity:1} }
+.ui-container .player-section,.bf-notice,#bgm-status,.bf-custom-list > *{
+  transition:opacity .22s ease, transform .22s ease, background-color .22s ease;
+}
+@media (prefers-reduced-motion:reduce) {
+  .page-header,.arena-category-nav,.battle-screen,.bf-tools,.roster-card,.bf-fold,
+  .economy-card,#cosmetic-arcade,#point-finance,
+  .character-studio-dialog[open],.character-studio-dialog::backdrop,
+  :is(.bf-details,.bf-fold,.roster-card,.character-studio-original)[open] > :not(summary),
+  :is(.studio-category-panel,.categorized-tools > section):not([hidden]) {
+    animation:none!important;
+  }
+  :is(button, .arena-category-nav a, .studio-category-tabs button, summary,
+      .cosmetic-choice, .bf-picks select) {
+    transition:none!important;
+  }
+  :is(button, .arena-category-nav a, .studio-category-tabs button, .cosmetic-choice):not(:disabled):hover,
+  :is(button, .arena-category-nav a, .studio-category-tabs button, .cosmetic-choice):not(:disabled):active {
+    transform:none!important;
+  }
+}
