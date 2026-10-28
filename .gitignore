@@ -1,5 +1,9 @@
 # 얼굴 사진 등 개인 이미지는 커밋하지 않습니다 (js/photos.js 참고)
-assets/
+assets/*
+!assets/music/
+assets/music/*
+!assets/music/*.mp3
+!assets/music/verification.json
 .DS_Store
 .env
 .env.*

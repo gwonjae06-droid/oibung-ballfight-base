@@ -1801,3 +1801,9 @@ html,body {background:#090a0c;color:var(--text);font-family:"Noto Sans KR", "Mal
 @media(prefers-reduced-motion:reduce){
   .character-studio-dialog .skin-slot-option:active{transform:none}
 }
+/* Music controls wrap on narrow screens without changing the battle canvas. */
+.bf-music{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:10px;font-size:13px}
+.bf-music label{display:flex;align-items:center;gap:6px;white-space:nowrap}
+.bf-music input{width:110px;min-width:0}
+.bf-music button{min-height:39px;padding:7px 13px;border-radius:8px;border:1px solid #56575a;background:#2d2e31;color:#eee;font-size:12px;font-weight:800;cursor:pointer}
+#bgm-status{flex-basis:100%;overflow-wrap:anywhere;color:var(--muted)}

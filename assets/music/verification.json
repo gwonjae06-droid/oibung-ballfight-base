@@ -1,0 +1,50 @@
+{
+  "method": "Microsoft Edge decodeAudioData; 44100 Hz float PCM, channel-major SHA-256. Distinct encoded and decoded content; alternate versions retained.",
+  "tracks": [
+    {
+      "src": "assets/music/main.mp3",
+      "title": "MAIN",
+      "duration": 53.394285714285715,
+      "sampleRate": 44100,
+      "channels": 2,
+      "pcmSHA256": "aaba9565eb3a520c3340fc4f80743426dd2325ef1c432cacdab85a56deca0b86",
+      "fileSHA256": "2eb8cb2944ef499fec148cdeb4982479f398722051a33a886d25a03449332573"
+    },
+    {
+      "src": "assets/music/iron-sunlight.mp3",
+      "title": "Iron Sunlight",
+      "duration": 60.013492063492066,
+      "sampleRate": 44100,
+      "channels": 2,
+      "pcmSHA256": "d1b1036ee9d074a546bd4f5db47329a9fa24db5fac771df50211c4026c697cac",
+      "fileSHA256": "b644f6fb2e7421f29f0bef81e9ddd71ac873f8d48f72f74d8aa66faa606f60f2"
+    },
+    {
+      "src": "assets/music/iron-sunlight-alt.mp3",
+      "title": "Iron Sunlight (1)",
+      "duration": 43.333492063492066,
+      "sampleRate": 44100,
+      "channels": 2,
+      "pcmSHA256": "dc01cfbe37c3f8d14557cf0ce968d66a5060c088d0dcc753d7e5c7302cc8dcf6",
+      "fileSHA256": "73b9f06faf423bcafa215b95e66d0ec820bb00d4dc1cb8c43196e532a35bf2f1"
+    },
+    {
+      "src": "assets/music/snowflower-night.mp3",
+      "title": "참깨도끼 눈꽃밤",
+      "duration": 56.453492063492064,
+      "sampleRate": 44100,
+      "channels": 2,
+      "pcmSHA256": "cf88946a943e772588ccce6922567c6193799c0d6c07d2abb94400d1cdd24113",
+      "fileSHA256": "9e5466d43767230f363bac205b5941a2c3885d93b2c83a3f7dcec6c276825c5a"
+    },
+    {
+      "src": "assets/music/snowflower-night-alt.mp3",
+      "title": "참깨도끼 눈꽃밤 (1)",
+      "duration": 60.013492063492066,
+      "sampleRate": 44100,
+      "channels": 2,
+      "pcmSHA256": "352a4eb8b4798eeca63f8886d07f7480f9652d059652bc5c9fd27a044276e528",
+      "fileSHA256": "8cd7b5cbebb7d9d59f79011e6550ec3e83afa5ca312bdaf5531458756f34906c"
+    }
+  ]
+}
