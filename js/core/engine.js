@@ -223,7 +223,7 @@ function updateUI() {
   // HUD cards are generated for the exact active roster, including up to
   // ten independently tracked cooldown panels.
   const hudContainer=document.getElementById('ui-container');
-  if(hudContainer&&hudContainer.children.length!==players.length){
+  if(hudContainer&&typeof hudContainer.replaceChildren==='function'&&hudContainer.children?.length!==players.length){
     hudContainer.replaceChildren();
     players.forEach((_,index)=>{
       const n=index+1,section=document.createElement('div');

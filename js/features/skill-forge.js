@@ -131,7 +131,8 @@ function randomProfile(theme='any',rng=Math.random){
   const selected=selectedThemes.length?selectedThemes[0]:pickRandom(rng,Object.values(THEMES));
   const pool=selectedThemes.length?
     [...new Set(selectedThemes.flatMap(t=>t.types).filter(type=>TYPE[type]))]:allTypes();
-  const amount=selectedThemes.length?Math.max(2,Math.min(4,selectedKeys.length)):randInt(rng,1,4);
+  const amount=Array.isArray(theme)?Math.max(2,Math.min(4,selectedKeys.length)):
+    theme==='any'?randInt(rng,1,4):randInt(rng,3,4);
   const required=selectedKeys.slice();
   // Shuffle required families so their actions get mixed among skill slots.
   for(let i=required.length-1;i>0;i--){
@@ -157,8 +158,18 @@ function randomProfile(theme='any',rng=Math.random){
         status:pickRandom(rng,statuses),knockback:randInt(rng,0,9),
         delay:j===0?0:randInt(rng,0,20)/10});
     }
-    if(i===amount-1&&!skills.some(v=>v.actions.some(x=>offense.has(x.type)))&&!actions.some(x=>offense.has(x.type)))
-      actions[0].type=pickRandom(rng,pool.filter(type=>offense.has(type)).length?pool.filter(type=>offense.has(type)):[...offense]);
+    if(i===amount-1&&!skills.some(v=>v.actions.some(x=>offense.has(x.type)))&&!actions.some(x=>offense.has(x.type))){
+      // Do not overwrite a mandatory theme's single representative action.
+      const attack=pickRandom(rng,pool.filter(type=>offense.has(type)).length?
+        pool.filter(type=>offense.has(type)):[...offense]);
+      const add={...actions[0],type:attack,delay:.4};
+      if(actions.length<3)actions.push(add);
+      else{
+        const extra=skills.find(skill=>skill.actions.length<3);
+        if(extra)extra.actions.push(add);
+        else actions[actions.length-1].type=attack;
+      }
+    }
     skills.push({name:TYPE[actions[0].type]+' '+pickRandom(rng,['연계','각성','변주','비기','파동']),
       trigger:pickRandom(rng,triggers),cooldown:randInt(rng,5,200)/10,
       threshold:randInt(rng,12,90),actions});

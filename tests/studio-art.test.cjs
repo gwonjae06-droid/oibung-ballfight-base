@@ -45,7 +45,7 @@ test('original studio remains in a modal, not duplicated in the match panel',()=
  assert.ok(s.includes("dialog.showModal()"));
  assert.ok(s.includes("dialog.close()"));
  assert.ok(main.includes('id=\\\"bf-picks\\\"'));
- assert.ok(main.includes('id=\\\"bf-apply\\\"'));
+ assert.ok(!main.includes('bf-apply'),'the redundant apply button must be gone');
  assert.ok(!main.includes('id=\\\"bf-photo\\\"'));
  assert.ok(!html.includes('파이터 가이드'));
  assert.ok(!html.includes('data-category="photo"'));
