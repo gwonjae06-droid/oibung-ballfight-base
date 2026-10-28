@@ -116,7 +116,7 @@
     window.SkillVisuals?.setReduced(gentle.checked);
     window.ImpactPhysics?.setReduced?.(gentle.checked);
     window.ArenaResolution?.sync?.();
-    draw();
+    if(!globalThis.ArenaScreenRouter?.enabled||globalThis.ArenaScreenRouter.active==='tower')draw();
     requestAnimationFrame(gameLoop);
   };
   speed.onchange=()=>{acc=0;last=null;};
