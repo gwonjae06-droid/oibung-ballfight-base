@@ -420,7 +420,8 @@ function install(){
   status.id='forge-generate-status';
   status.setAttribute('role','status');
   status.setAttribute('aria-live','polite');
-  document.getElementById('forge-random').addEventListener('click',()=>{
+  // The picker is not mounted until the studio layout is assembled.
+  randomBox.querySelector('#forge-random').addEventListener('click',()=>{
     const selected=pickedThemes();
     if(!selected.length){
       status.textContent='먼저 원하는 능력 계열을 하나 이상 선택해 주세요.';
