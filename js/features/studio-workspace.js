@@ -14,6 +14,18 @@ const blocks=pick('.block-forge'),tuning=pick('.forge-tuning'),library=pick('.fo
 const appearance=pick('.character-art-editor');
 const basics=Array.from(studio.children).find(n=>n.tagName==='DETAILS'&&n.querySelector('summary')?.textContent.includes('외형'));
 const create=pick('.forge-primary-actions'),saved=pick('.forge-saved');
+// The existing roster lived inside a collapsed JSON/share drawer, so even
+// saved fighters had no visible delete control. Move the original, already
+// event-bound list into a compact always-visible section near the top.
+const owned=pick('#bf-custom-list'),feedback=pick('#bf-result');
+const manager=document.createElement('section');
+manager.className='studio-roster-manager';
+manager.setAttribute('aria-label','커스텀 캐릭터 삭제 및 관리');
+manager.innerHTML='<div class="studio-roster-heading"><strong>내 커스텀 캐릭터</strong>'
+  +'<span id="forge-custom-count" aria-label="저장한 캐릭터 수"></span></div>'
+  +'<p class="studio-roster-guide">삭제하려면 캐릭터 이름 옆의 삭제 버튼을 누르세요.</p>';
+if(owned)manager.append(owned);
+if(feedback)manager.append(feedback);
 const rest=Array.from(studio.children).filter(n=>![random,name,blocks,tuning,library,appearance,basics,create,saved].includes(n));
 const tabs=document.createElement('div');
 tabs.className='studio-category-tabs';tabs.setAttribute('role','tablist');tabs.setAttribute('aria-label','캐릭터 제작 카테고리');
@@ -28,7 +40,7 @@ looks.setAttribute('aria-labelledby','studio-tab-appearance');
 looks.hidden=true;
 [random,blocks,tuning,library,...rest].filter(Boolean).forEach(node=>skills.append(node));
 [basics,appearance].filter(Boolean).forEach(node=>looks.append(node));
-studio.replaceChildren(...[name,tabs,skills,looks,create,saved].filter(Boolean));
+studio.replaceChildren(...[name,manager,tabs,skills,looks,create,saved].filter(Boolean));
 function selectTab(tab,focus=false){
   const showLooks=tab==='appearance';
   looks.hidden=!showLooks;skills.hidden=showLooks;
