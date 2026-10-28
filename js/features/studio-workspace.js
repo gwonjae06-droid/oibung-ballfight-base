@@ -159,7 +159,7 @@ function render(time){
   for(let i=20;i<WIDTH;i+=40)line(i,0,i,HEIGHT,'rgba(170,200,221,.08)',1);
   line(0,149,WIDTH,149,'#3a5261',1);
   const moving=events.filter(e=>isMoving(e.action.type)&&time>=e.start).at(-1);
-  const isMoving=moving&&time<moving.end;
+  const isMovingNow=Boolean(moving&&time<moving.end);
   const move=moving?clamp((time-moving.start)/moving.length,0,1):0;
   // Retain the destination after a mobility action, so follow-up punches
   // visibly occur next to their target rather than from the old position.
@@ -167,14 +167,14 @@ function render(time){
   const distance=direction*(moving?.action.type==='glide'||moving?.action.type==='hover'?105:206);
   const fraction=clamp(move*1.65,0,1);
   const slide=moving?distance*Math.sin(fraction*Math.PI*.5):0;
-  const flight=isMoving&&['leap','hover','glide','flight','dive'].includes(moving.action.type)?43*Math.sin(Math.PI*move):0;
+  const flight=isMovingNow&&['leap','hover','glide','flight','dive'].includes(moving.action.type)?43*Math.sin(Math.PI*move):0;
   const hx=113+slide,hy=126-flight,tx=366,ty=126;
   circle(tx,151,24,'rgba(0,0,0,.19)');
   circle(hx,151,24,'rgba(0,0,0,.18)');
   fighter(tx,ty,21,'#546e80','적');
   ctx.font='700 11px sans-serif';ctx.textAlign='center';ctx.fillStyle='#bdd5e0';
   ctx.fillText('훈련 더미',tx,87);
-  if(isMoving&&!reduced()){
+  if(isMovingNow&&!reduced()){
     for(let i=3;i>=1;i--){ctx.globalAlpha=.12*i/3;
       circle(hx-distance*.1*i,hy+4*i,21,color);
     }ctx.globalAlpha=1;
