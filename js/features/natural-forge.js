@@ -359,17 +359,7 @@ function install(){
   const holder=document.getElementById('forge-skills');
   if(!holder)return;
   const body=holder.parentElement;
-  const box=document.createElement('section');box.className='forge-prompt';
-  box.innerHTML='<label for="forge-natural-text">원하는 캐릭터 능력을 문장으로 적어주세요</label>'
-    +'<textarea id="forge-natural-text" rows="6" maxlength="1400" placeholder="슬픔을 작은 별로 접어 적에게 뿌린다. 상처받으면 별들이 주변을 돌며 나를 지켜 준다."></textarea>'
-    +'<label for="forge-natural-mode">해석 방식</label><select id="forge-natural-mode"><option value="offline">휴대폰 기본 · API 없이 분석</option><option value="auto">기기 내 AI (지원 기기)</option><option value="creative">창작 AI · 문장 전체 해석 (서버 필요)</option></select>'
-    +'<p class="bf-helper">기본 분석은 API 없이 작동합니다. 모르는 표현은 효과를 직접 선택하세요. 선택형 창작 AI는 설명을 서버로 전송합니다.</p>'
-    +'<button type="button" id="forge-natural-build">문장 분석 · 자동 생성</button>'
-    +'<div id="forge-natural-status" role="status" aria-live="polite"></div>'
-    +'<div id="forge-choices"></div>';
-  body.insertBefore(box,holder);
-  const mode=document.getElementById('forge-natural-mode'),modeLabel=mode.previousElementSibling;
-  const modeDetails=document.createElement('details'),modeSummary=document.createElement('summary');modeSummary.textContent='분석 방식 변경';modeDetails.append(modeSummary,modeLabel,mode);box.append(modeDetails);
+  // The studio provides visual random and family-based creation, with no text prompt.
   const randomBox=document.createElement('div');randomBox.className='forge-random';
   randomBox.innerHTML='<fieldset class="forge-theme-picker"><legend>혼합할 능력 계열 선택 (복수 선택 가능)</legend><div class="forge-theme-grid">'+Object.entries(SkillForge.THEMES).map(([key,t])=>'<label class="forge-theme-choice"><input type="checkbox" name="forge-theme" value="'+key+'"><span>'+t.name+'</span></label>').join('')+'</div></fieldset><button type="button" id="forge-random">선택한 계열로 생성 · 출전</button><p class="bf-helper">계열을 하나 이상 체크하면 해당 계열의 능력을 포함한 캐릭터를 만들고 출전시킵니다.</p>';
   const pickedThemes=()=>Array.from(randomBox.querySelectorAll('input[name="forge-theme"]:checked'),input=>input.value);
@@ -413,7 +403,7 @@ function install(){
           }]
         }]});
         p.setDraft(current);
-        document.getElementById('forge-natural-status').textContent='도감 동작 적용 완료: '+item.name;
+        status.textContent='도감 동작 적용 완료: '+item.name;
         catalogDetail.open=false;
       };
       atlasList.append(row);
@@ -426,66 +416,10 @@ function install(){
   const sum=document.createElement('summary');sum.textContent='스킬 세부 설정 (선택)';
   body.insertBefore(advanced,holder);advanced.append(sum,holder);
   const add=document.getElementById('forge-add-skill');if(add)advanced.append(add);
-  const button=document.getElementById('forge-natural-build'),input=document.getElementById('forge-natural-text'),status=document.getElementById('forge-natural-status');
-  let approved='',choices={};
-  const choiceBox=document.getElementById('forge-choices');
-  function offer(out,text){
-    choiceBox.replaceChildren();
-    if(!out.questions?.length)return false;
-    status.textContent='문맥상 연결 방식이 모호한 부분이 있습니다. 스킬 구분 또는 효과를 선택해 주세요.';
-    for(const q of out.questions){
-      const group=document.createElement('section'),label=document.createElement('p');label.textContent=q.text;group.append(label);
-      const select=document.createElement('select');select.setAttribute('aria-label',q.text+' 효과 선택');
-      const initial=document.createElement('option');initial.value='';initial.textContent='효과를 선택하세요';select.append(initial);
-      const keys=q.kind==='grouping'?['combo','separate']:[...new Set([...q.options,...Object.keys(SkillForge.TYPE)])];
-      for(const key of (q.kind==='grouping'?keys:[...keys,'skip'])){
-        const option=document.createElement('option');option.value=key;
-        option.textContent=q.kind==='grouping'
-          ?(key==='combo'?'한 스킬의 연계 동작':'서로 다른 독립 스킬')
-          :key==='skip'?'이 표현은 구현하지 않음':SkillForge.TYPE[key];
-        select.append(option);
-      }
-      select.addEventListener('change',()=>{choices[q.text]=select.value;});group.append(select);choiceBox.append(group);
-    }
-    const retry=document.createElement('button');retry.type='button';retry.textContent='선택한 효과로 다시 만들기';
-    retry.onclick=()=>{if(out.questions.some(q=>!choices[q.text])){status.textContent='각 표현의 효과를 선택해 주세요.';return;}button.click();};choiceBox.append(retry);return true;
-  }
-
-  button.addEventListener('click',async()=>{
-    button.disabled=true;status.textContent='분석 중';
-    try{
-      const text=input.value.trim();
-      const name=document.getElementById('bf-name').value.trim(),mode=document.getElementById('forge-natural-mode').value;
-      const out=mode==='offline'?parse(text,name,choices):await analyze(text,name,mode);
-      if(input.value.trim()!==text || document.getElementById('bf-name').value.trim()!==name || document.getElementById('forge-natural-mode').value!==mode){
-        approved='';status.textContent='분석 중 입력이 변경되었습니다. 다시 생성해 주세요.';return;
-      }
-      approved='';if(offer(out,text))return;
-      if(!out.profile){status.textContent='구현할 효과가 없습니다. 문장을 추가하거나 선택을 바꿔 주세요.';choices={};return;}
-      // Natural-language interpretation changes SKILLS, not the portrait,
-      // uploaded picture, handwritten drawing or user-customized appearance.
-      const current=SkillForge.getDraft?.()||{};
-      const $id=id=>document.getElementById(id);
-      const appearance={
-        name:$id('bf-name')?.value.trim()||out.profile.name,
-        color:$id('forge-color')?.value||current.color,
-        effectColor:$id('forge-effect-color')?.value||current.effectColor,
-        artKey:current.artKey,
-        hp:Number($id('forge-hp')?.value||current.hp||250),
-        speed:Number($id('forge-speed')?.value||current.speed||1.8),
-        blurb:$id('bf-text')?.value.trim()||out.profile.blurb
-      };
-      SkillForge.setDraft({...out.profile,...appearance});approved=text;
-      status.textContent=(out.mode==='server-ai'?'창작 AI':out.mode==='on-device-ai'?'기기 내 AI':'의미 분석')+' 완료 · 스킬 '+(out.profile.allAbilities?SkillForge.allSkillset().length:out.profile.skills.length)+'개'
-        +'\n'+out.profile.skills.map(s=>SkillForge.TRIGGER[s.trigger]+' / '+s.cooldown+'초: '+s.actions.map(a=>SkillForge.TYPE[a.type]+(a.status!=='none'?' + '+SkillForge.STATUS[a.status]:'')).join(' → ')).join('\n')
-        +(out.interpretation?'\n구현: '+out.interpretation:'')
-        +(out.adaptations?.length?'\n각색한 부분:\n'+out.adaptations.map(x=>'• '+x).join('\n'):'')
-        +(out.aliases?.length?'\n유사 표현 인식: '+out.aliases.join(' / '):'')
-        +(out.unmapped.length?'\n구현 확인이 필요한 표현: '+out.unmapped.slice(0,3).join(' / '):'')
-        +'\n아래 캐릭터 생성 버튼으로 등록하거나 세부 설정을 수정할 수 있습니다.';
-    }catch(e){approved='';status.textContent='분석 실패: '+e.message;}
-    finally{button.disabled=false;}
-  });
+  const status=document.createElement('div');
+  status.id='forge-generate-status';
+  status.setAttribute('role','status');
+  status.setAttribute('aria-live','polite');
   document.getElementById('forge-random').addEventListener('click',()=>{
     const selected=pickedThemes();
     if(!selected.length){
@@ -495,14 +429,6 @@ function install(){
     }
     createGenerated(selected);
   });
-  input.addEventListener('input',()=>{approved='';choices={};choiceBox.replaceChildren();});
-  document.getElementById('forge-natural-mode').addEventListener('change',()=>{approved='';});
-  const create=document.getElementById('bf-create');
-  create?.addEventListener('click',e=>{
-    if(button.disabled||(input.value.trim()!==approved&&input.value.trim())){
-      e.preventDefault();e.stopImmediatePropagation();status.textContent='변경된 문장을 먼저 분석해 주세요.';
-    }
-  },true);
   // Keep the primary flow together, with optional tuning and saved data below it.
   const firstHelp=body.querySelector(':scope > p.bf-helper');if(firstHelp)firstHelp.remove();
   // Remove duplicated preview in the primary call-to-action area. A compact
@@ -511,18 +437,18 @@ function install(){
   inspect.textContent='구성 요약 확인';
   inspect.classList.add('forge-inspect');
   const nameLabel=document.getElementById('bf-name').parentElement,basicGrid=nameLabel.parentElement;
-  const heading=document.createElement('div');heading.className='forge-heading';heading.innerHTML='<span class="eyebrow">CHARACTER STUDIO</span><h3>나만의 파이터</h3><p>문장으로 설계하거나, 랜덤으로 발견하세요.</p>';
+  const heading=document.createElement('div');heading.className='forge-heading';heading.innerHTML='<span class="eyebrow">CHARACTER STUDIO</span><h3>나만의 파이터</h3><p>랜덤 생성이나 계열 선택으로 만들고, 필요하면 세부 설정을 조정하세요.</p>';
   body.prepend(heading,nameLabel);
   const randomEntry=document.createElement('section');randomEntry.className='forge-random-entry';
   const randomHead=document.createElement('div');randomHead.className='forge-random-entry-copy';
   const randomTitle=document.createElement('strong');randomTitle.textContent='빠른 캐릭터 생성';
   const randomHelp=document.createElement('small');randomHelp.textContent='완전 랜덤과 계열 선택 중 원하는 방식으로 생성하세요.';
   randomHead.append(randomTitle,randomHelp);
-  nameLabel.classList.add('forge-name');body.insertBefore(box,nameLabel.nextSibling);
+  nameLabel.classList.add('forge-name');
   const basics=document.createElement('details'),basicTitle=document.createElement('summary');basicTitle.textContent='외형 · 체력 · 이동 속도';basics.append(basicTitle,basicGrid,document.getElementById('bf-text').parentElement);
   body.insertBefore(basics,advanced);
   const actions=document.getElementById('bf-create').parentElement;
-  actions.classList.add('forge-primary-actions');body.insertBefore(actions,box.nextSibling);
+  actions.classList.add('forge-primary-actions');body.insertBefore(actions,advanced);
   const saveBtn=document.getElementById('bf-create');
   saveBtn.textContent='캐릭터 저장 · 출전';
   const randomNow=document.createElement('button');
@@ -547,7 +473,6 @@ function install(){
     if(reveal)themeOptions.querySelector('input[name="forge-theme"]')?.focus();
   });
   function createGenerated(themes=[]){
-    if(button.disabled)return false;
     if(roundStarted&&!isGameOver){
       status.textContent='진행 중인 경기가 끝난 뒤 캐릭터를 생성할 수 있습니다.';
     }else if(SkillForge.list().length>=6){
@@ -555,7 +480,6 @@ function install(){
     }else{
       const profile=SkillForge.randomProfile(themes.length?themes:'any');
       const before=SkillForge.list().length;
-      input.value='';approved='';choices={};choiceBox.replaceChildren();
       global.CharacterStudioArt?.reset?.();SkillForge.setDraft(profile);
       saveBtn.click(); // Reuse normal saving, persistence and P1 selection.
       const result=document.getElementById('bf-result')?.textContent||'';
@@ -577,7 +501,7 @@ function install(){
   actions.replaceChildren(saveBtn);
   // Do not reference the random button until it exists; otherwise the entire
   // studio installer aborts before its controls become usable.
-  randomEntry.append(randomHead,modeButtons,themeOptions);
+  randomEntry.append(randomHead,modeButtons,themeOptions,status);
   body.insertBefore(randomEntry,nameLabel);
   // One shared theme picker serves both preview and immediate save: no duplicate UI.
   advanced.append(inspect,document.getElementById('bf-result'));
@@ -587,8 +511,7 @@ function install(){
   libraryTitle.textContent='스킬 도감 · 동작 검색';library.append(libraryTitle,catalogDetail,guide);
   body.insertBefore(library,basics);
   body.insertBefore(advanced,basics);
-  // In collapsed form only the creator name, natural-language description,
-  // analyze action and one save button occupy the primary screen.
+  // The studio keeps skill tuning and saved fighter management optional.
   const saved=document.createElement('details'),savedTitle=document.createElement('summary');
   saved.className='forge-optional forge-saved';
   savedTitle.textContent='내 캐릭터 · 공유 · JSON';

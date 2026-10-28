@@ -126,3 +126,14 @@ test('full-random and family-selected generation are separate visible options',(
  assert.match(read('css/style.css'),/\.forge-generate-modes/);
  assert.match(read('css/style.css'),/\.forge-theme-options\[hidden\]\{display:none!important\}/);
 });
+
+test('custom creator has no natural-language generation UI or save-blocking prompt validation',()=>{
+ const source=read('js/features/natural-forge.js');
+ const install=source.slice(source.indexOf('function install(){'));
+ assert.doesNotMatch(install,/forge-natural-text|forge-natural-build|forge-natural-mode|forge-choices/);
+ assert.doesNotMatch(install,/button\.disabled|approved=|choiceBox|input\.value/);
+ assert.match(install,/randomNow\.addEventListener\('click',\(\)=>createGenerated\(\[\]\)\)/);
+ assert.match(install,/document\.getElementById\('forge-random'\)\.addEventListener/);
+ assert.match(install,/status\.id='forge-generate-status'/);
+ assert.match(read('js/features/skill-forge.js'),/랜덤으로 생성하거나 원하는 계열/);
+});

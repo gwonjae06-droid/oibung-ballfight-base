@@ -553,7 +553,7 @@ function initializeUI(){
   if(!detail)return;
   const body=detail.querySelector('.bf-details-body');
   body.innerHTML=''
-  +'<p class="bf-helper">문장으로 자동 생성하고 필요할 때만 세부 설정을 수정하세요. 공격 배치와 대상 선택까지 조합할 수 있습니다.</p>'
+  +'<p class="bf-helper">캐릭터를 랜덤으로 생성하거나 원하는 계열을 선택하세요. 직접 조정하려면 외형과 스킬 설정을 열어 주세요.</p>'
   +'<div class="forge-grid">'
   +'<label>캐릭터 이름<input id="bf-name" maxlength="14" placeholder="나만의 파이터"></label>'
   +'<label>캐릭터 색상<input id="forge-color" type="color" value="#a78bfa"></label>'

@@ -106,7 +106,7 @@ test('ambiguous 그리고 prompts for separate skill vs chained action',()=>{
   assert.equal(linked.profile.skills[0].actions.length,2);
   assert.equal(separate.profile.skills.length,2);
 });
-test('random button appears above name and prompt, never inside a collapsed details',()=>{
+test('random generators appear above fighter details without a sentence generator',()=>{
   const natural=read('js/features/natural-forge.js');
   const css=read('css/style.css');
   assert.match(natural,/randomEntry\.className='forge-random-entry'/);
@@ -115,5 +115,8 @@ test('random button appears above name and prompt, never inside a collapsed deta
   assert.match(natural,/randomEntry\.append\(randomHead,modeButtons,themeOptions\)/);
   assert.match(natural,/themeOptions\.hidden=true/);
   assert.match(css,/\.forge-studio \.forge-random-entry #forge-random-create/);
-  assert.match(natural,/q\.kind==='grouping'/);
+  const install=natural.slice(natural.indexOf('function install(){'));
+  assert.doesNotMatch(install,/forge-natural-text|forge-natural-build|forge-natural-mode|forge-choices/);
+  assert.doesNotMatch(install,/forge-prompt/);
+  assert.match(install,/status\.id='forge-generate-status'/);
 });
