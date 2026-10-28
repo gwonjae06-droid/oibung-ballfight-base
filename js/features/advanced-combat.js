@@ -307,6 +307,7 @@ function stepHeight(p,api){
         add('burst',p.x,p.y,{r:42,col:color(p),life:18,stage:'impact'});
         sfx('heavy',.7);
         const action=p.slam.a;
+        global.SkillVisuals?.detonate?.(p,action.type,p.x,p.y,action.radius*.65);
         for(const e of enemies(p))if(Math.hypot(e.x-p.x,e.y-p.y)<action.radius*.65+e.radius)
           strike(p,e,action,api,0);
         p.slam=null;
