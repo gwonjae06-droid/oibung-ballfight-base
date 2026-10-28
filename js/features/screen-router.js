@@ -21,7 +21,7 @@ function install(){
   const market=finance.querySelector('.finance-market'),mine=finance.querySelector('.finance-mine');
   const ranking=doc.getElementById('community-power-ranking');
   const studio=doc.getElementById('character-studio-dialog');
-  const screens={};let active='lobby',subtab='tower',charTab='design';
+  const screens={};let active='lobby',subtab='tower',charTab='design',rankingTab='power';
   const node=(tag,cls)=>{const e=doc.createElement(tag);if(cls)e.className=cls;return e;};
   const mount=doc.createElement('div');mount.id='arena-screen-stack';
   const lobby=node('section','arena-screen lobby-screen');
@@ -100,8 +100,23 @@ function install(){
   const score=node('section','tower-record-panel');score.id='tower-record-panel';
   score.innerHTML='<h3>내 브라우저 도전 기록</h3><p>온라인 기록이 아닙니다. 이 기기에 저장된 캐릭터별 최고 층입니다.</p>'
     +'<div id="tower-record-list" role="list">아직 도전 기록이 없습니다.</div>';
-  screens.ranking.append(score);
-  if(ranking)screens.ranking.append(ranking);
+  const rankingTabs=node('nav','screen-tabs ranking-route-tabs');
+  rankingTabs.setAttribute('aria-label','캐릭터 랭킹 분류');
+  rankingTabs.innerHTML='<button type="button" data-ranking-tab="power">파워랭킹</button>'
+    +'<button type="button" data-ranking-tab="tower">도전의 탑 기록</button>'
+    +'<button type="button" data-ranking-tab="shared">공유 캐릭터</button>'
+    +'<button type="button" data-ranking-tab="personal">내 캐릭터 기록</button>';
+  screens.ranking.append(rankingTabs);
+  const rankingPower=node('div','ranking-section');rankingPower.id='ranking-power';
+  const shared=node('div','ranking-section');shared.id='ranking-shared';
+  const gallery=ranking?.querySelector('.community-section');
+  if(gallery)shared.append(gallery);
+  if(ranking)rankingPower.append(ranking);
+  const personal=node('div','ranking-section');personal.id='ranking-personal';
+  personal.innerHTML='<div class="tower-record-panel"><h3>내 캐릭터 전적</h3>'
+    +'<p>이 기기의 도전 기록만 표시합니다. 전 세계 순위가 아닙니다.</p>'
+    +'<div id="tower-personal-list" role="list">아직 기록이 없습니다.</div></div>';
+  screens.ranking.append(rankingPower,score,shared,personal);
   const mineFrame=node('div','single-economy-slot');mineFrame.id='mine-screen-slot';
   if(mine)mineFrame.append(mine);screens.mine.append(mineFrame);
   const stockFrame=node('div','single-economy-slot');stockFrame.id='stock-screen-slot';
@@ -133,6 +148,27 @@ function install(){
       }
       if(!records.length)list.textContent='아직 도전 기록이 없습니다.';
     }
+    const personal=doc.getElementById('tower-personal-list');
+    if(personal){
+      personal.replaceChildren();
+      for(const record of records){
+        const e=node('div','tower-record-entry');e.setAttribute('role','listitem');
+        const name=node('strong');name.textContent=record.name;
+        const value=node('span');
+        value.textContent='최고 '+record.best+'층 · 성공 '+record.victories+'층 · 도전 종료 '+record.attempts+'회';
+        e.append(name,value);personal.append(e);
+      }
+      if(!records.length)personal.textContent='아직 기록이 없습니다.';
+    }
+  }
+  function setRankingTab(id){
+    rankingTab=['power','tower','shared','personal'].includes(id)?id:'power';
+    for(const name of ['power','tower','shared','personal']){
+      const section=doc.getElementById(name==='tower'?'tower-record-panel':'ranking-'+name);
+      if(section)section.hidden=name!==rankingTab;
+    }
+    for(const b of rankingTabs.querySelectorAll('button'))
+      b.setAttribute('aria-pressed',String(b.dataset.rankingTab===rankingTab));
   }
   function towerTab(id){
     subtab=id==='free'?'free':'tower';
@@ -185,18 +221,19 @@ function install(){
       characterTab(charTab);
     }else if(where==='tower'){
       global.ArenaTower?.refresh?.();towerTab(subtab);
-    }
+    }else if(where==='ranking')setRankingTab(rankingTab);
     refresh();
     global.scrollTo?.({top:0,behavior:'instant'});
     return where;
   }
   function showArena(){doc.querySelector('.battle-screen')?.scrollIntoView?.({block:'start',behavior:'smooth'});}
   mount.addEventListener('click',event=>{
-    const b=event.target.closest('[data-screen],[data-tower-tab],[data-character-tab]');
+    const b=event.target.closest('[data-screen],[data-tower-tab],[data-character-tab],[data-ranking-tab]');
     if(!b||!mount.contains(b))return;
     if(b.dataset.screen)go(b.dataset.screen);
     else if(b.dataset.towerTab)towerTab(b.dataset.towerTab);
     else if(b.dataset.characterTab)characterTab(b.dataset.characterTab);
+    else if(b.dataset.rankingTab)setRankingTab(b.dataset.rankingTab);
   });
   // Custom studio save/reopen retains its old events and the one DOM tree.
   const initial=global.location?.hash.replace('#','');
@@ -205,7 +242,7 @@ function install(){
     const next=global.location.hash.replace('#','');
     if(ROUTES.includes(next))go(next);
   });
-  const api={go,refresh,showArena,towerTab,characterTab,get enabled(){return true;},
+  const api={go,refresh,showArena,towerTab,characterTab,setRankingTab,get enabled(){return true;},
     get active(){return active;},get towerTab(){return subtab;}};
   global.ArenaScreenRouter=api;
   return api;
