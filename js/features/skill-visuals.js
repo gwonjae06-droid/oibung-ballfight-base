@@ -71,6 +71,11 @@ function spir(c,turn=1,phase=0){
 }
 function drawMotif(c,type,age,life){
   const t=clamp(age/Math.max(1,life),0,1),turn=t*Math.PI*2;
+  // For a newly registered move without a bespoke legacy motif, provide a
+  // legible default symbol instead of an invisible empty effect.
+  if(global.ActionRegistry?.get(type)?.legacy===false){
+    polygon(c,6,18,-Math.PI/2);arc(c,0,0,7+5*t,0,Math.PI*2);return;
+  }
   switch(type){
   case 'wave':for(const n of [6,12,19])arc(c,0,0,n+t*4,0,Math.PI*2);break;
   case 'shot':arrow(c,0);line(c,-23,-5,-14,-5);break;
@@ -327,7 +332,9 @@ function cast(p,action,target){
     if(FAMILIES.fist.has(action.type)||FAMILIES.projectile.has(action.type)){
       actor(p,action.type,target?Math.atan2(target.y-p.y,target.x-p.x):Math.atan2(p.vy||0,p.vx||1));
     }
-    if(FAMILIES.time.has(action.type))global.BattleFX?.sound?.('clock',.44);
+    const registration=global.ActionRegistry?.get(action.type);
+    if(registration&&!registration.legacy)global.BattleFX?.sound?.(registration.audio.cast,.48);
+    if(FAMILIES.time.has(action.type)&&(!registration||registration.legacy))global.BattleFX?.sound?.('clock',.44);
     if(FAMILIES.cosmos.has(action.type))global.BattleFX?.sound?.('cosmos',.48);
     global.CosmeticArcade?.onCast?.(p,action,target);
   }
@@ -336,7 +343,10 @@ function cast(p,action,target){
 function impact(p,e,action){
   if(!action?.type||!catalog[action.type]||!e)return false;
   const height=global.AdvancedCombat?.height?.(e)||0;
-  return add('impact',p,action.type,action,e,{x:e.x,y:e.y-height});
+  const success=add('impact',p,action.type,action,e,{x:e.x,y:e.y-height});
+  const registration=global.ActionRegistry?.get(action.type);
+  if(success&&registration&&!registration.legacy)global.BattleFX?.sound?.(registration.audio.impact,.42);
+  return success;
 }
 function tick(){
   frame++;
@@ -413,6 +423,6 @@ function previewFrame(ctx,options={}){
 }
 function clear(){effects.length=0;ghosts=[];poses=new WeakMap();activePoses.clear();frame=0;}
 function setReduced(v){low=!!v;}
-global.SkillVisuals={catalog,TYPES,FAMILIES,ARM_IDLE_FRAMES,cast,impact,contact,detonate,previewFrame,drawAction,tick,draw,clear,setReduced,
+global.SkillVisuals={catalog,get TYPES(){return global.ActionRegistry?.ids()||TYPES;},FAMILIES,ARM_IDLE_FRAMES,cast,impact,contact,detonate,previewFrame,drawAction,tick,draw,clear,setReduced,
   get active(){return effects.length;}};
 })(window);
