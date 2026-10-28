@@ -32,18 +32,18 @@ function particle(word,consonant,vowel,rRule=false){
 function phrase(a){
   const name=TYPES[a.type]||'동작';
   const target=SELF.has(a.type)?'자신':(TARGETS[a.target]||'가장 가까운 적');
-  return target+particle(target,'에게','에게')+' '+name+particle(name,'을','를')+' 사용';
+  return target+'에게 '+name+particle(name,'을','를')+' 사용';
 }
 function describe(s){
   if(!s.actions.length)return '동작을 추가하세요.';
-  const actions=s.actions,parts=[phrase(actions[0])];
+  const actions=s.actions;let sentence=phrase(actions[0]);
   for(let i=1;i<actions.length;i++){
     const link=s.links?.[i-1]||{mode:'after',delay:0};
-    if(link.mode==='together')parts.push('와/과 함께 '+phrase(actions[i]));
-    else if(link.mode==='delay')parts.push('하고 '+Number(link.delay||0).toFixed(1)+'초 뒤 '+phrase(actions[i]));
-    else parts.push('한 뒤 '+phrase(actions[i]));
+    if(link.mode==='together')sentence+='하면서 동시에 '+phrase(actions[i]);
+    else if(link.mode==='delay')sentence+='하고 '+Number(link.delay||0).toFixed(1)+'초 뒤 '+phrase(actions[i]);
+    else sentence+='한 뒤 '+phrase(actions[i]);
   }
-  return parts.join(' ')+'한다.';
+  return sentence+'한다.';
 }
 const createAction=type=>({
   type,pattern:'direct',target:'nearest',damage:18,radius:120,count:1,
@@ -100,8 +100,8 @@ function fields(a,j){
     return '<label>'+name+control+'</label>';
   };
   return [
-    fieldsForName('대상',a.target,'target',TARGETS,aKey),
-    fieldsForName('상태',a.status,'status',STATUSES,aKey),
+    forge.supportedParameter(a.type,'target')?fieldsForName('대상',a.target,'target',TARGETS,aKey):'',
+    forge.supportedParameter(a.type,'status')?fieldsForName('상태',a.status,'status',STATUSES,aKey):'',
     label('위력','damage',a.damage),label('배치','pattern',a.pattern,PATTERNS),
     label('범위','radius',a.radius),label('개수','count',a.count),
     label('속도','speed',a.speed),label('지속 초','duration',a.duration),
