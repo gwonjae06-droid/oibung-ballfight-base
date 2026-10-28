@@ -20,16 +20,17 @@ test('a landed hit gives large directional momentum, attacker recoil, shake and 
   const {world,fx,played}=harness(),a=actor(1,100,100),b=actor(2,180,100);
   assert.equal(fx.hit(a,b,35),true);
   assert.equal(b.hp,300,'physics must never alter combat damage');
-  assert.ok(b.vx>=14,'heavy hit must be several times stronger than the old 0.45px blade shove');
-  assert.equal(b.vy,0);assert.ok(a.vx<0,'attacker should recoil');
+  assert.ok(b.impactVX>=45,'heavy hits now use a separate explosive impulse far above capped running speed');
+  assert.equal(b.impactVY,0);assert.ok(a.vx<0,'attacker should recoil');
   assert.ok(b.x>180,'the target should react visually on the first frame');
   assert.ok(world.screenShake>=10);
   assert.equal(fx.pulseCount,1);
   assert.equal(played[0][0],'heavy');
   const initial=b.impactSpeed;
-  b.vx=-1;fx.integrate(b);
-  assert.ok(b.vx>6,'short stagger survives AI movement override');
-  assert.ok(b.impactSpeed<initial,'knockback must decay');
+  b.vx=-1;const before=b.x;fx.integrate(b);
+  assert.ok(b.x-before>40,'first knockback frame must travel explosively');
+  assert.equal(b.vx,-1,'forced velocity must not overwrite the fighter AI');
+  assert.ok(b.impactSpeed<initial,'knockback must decay smoothly');
   for(let i=0;i<30;i++)fx.tick();
   assert.equal(fx.pulseCount,0);
 });
@@ -37,7 +38,7 @@ test('every confirmed separate blow generates its own pulse; animation is bounde
   const {world,fx}=harness(),a=actor(1,100,100),b=actor(2,120,140);
   for(let i=0;i<100;i++)fx.hit(a,b,8,{knockback:9});
   assert.equal(fx.pulseCount,80);
-  assert.ok(Math.hypot(b.vx,b.vy)<=18.01);
+  assert.ok(Math.hypot(b.impactVX,b.impactVY)<=74.01,'stacking hits cannot create runaway momentum');
   assert.ok(world.screenShake<=15,'camera shake stays capped');
   assert.ok(Number.isFinite(b.x)&&Number.isFinite(b.y));
   assert.ok(b.x>=b.radius&&b.x<=world.canvas.width-b.radius);
@@ -47,7 +48,7 @@ test('reduced-motion preference suppresses camera shake but keeps gameplay physi
   const {world,fx}=harness(),a=actor(1,100,100),b=actor(2,200,100);
   fx.setReduced(true);fx.hit(a,b,50);
   assert.equal(world.screenShake,0);
-  assert.ok(b.vx>12);
+  assert.ok(b.impactVX>45);
   const noop=()=>{};
   const ctx=new Proxy({}, {get(o,k){return k in o?o[k]:noop;},set(o,k,v){o[k]=v;return true;}});
   assert.doesNotThrow(()=>fx.draw(ctx));
@@ -60,7 +61,7 @@ test('custom fighter hits use the physics pipeline only on actual attacks, never
   assert.equal(world.SkillForge.hit(a,b,{type:'wave',damage:26,status:'none',knockback:5}),true);
   assert.equal(b.hp,274);
   assert.equal(fx.pulseCount,1);
-  assert.ok(b.vx>10);
+  assert.ok(b.impactVX>40);
   b.invincible=0;
   assert.equal(world.SkillForge.hit(a,b,{type:'wave',damage:26,status:'none',knockback:5}),true);
   assert.equal(b.hp,248);assert.equal(fx.pulseCount,2);
@@ -83,4 +84,64 @@ test('all five classic fighters, high-level attacks, and aftershock wire to the 
   assert.ok(html.indexOf('js/features/impact-physics.js')<html.indexOf('js/characters/bae.js'),
     'physics must be loaded before the original character damage handlers');
   assert.ok(read('js/features/battle-effects.js').includes('ImpactPhysics?.setReduced?.'));
+});
+
+test('knockback starts explosively, decays smoothly and returns to ordinary movement',()=>{
+  const {world,fx}=harness(),a=actor(1,100,100),b=actor(2,250,100);
+  world.canvas.width=1800;
+  b.vx=2;b.vy=1;
+  fx.hit(a,b,32);
+  const distances=[];
+  for(let i=0;i<30;i++){
+    const x=b.x,y=b.y;
+    fx.integrate(b);
+    distances.push(Math.hypot(b.x-x,b.y-y));
+  }
+  assert.ok(distances[0]>40,'first frame must explosively launch the defender');
+  assert.ok(distances[1]<distances[0] && distances[1]>distances[0]*.75,
+    'second frame should retain most of the speed but be slower');
+  assert.ok(distances[8]<distances[0]*.3,'momentum dissipates rapidly without snapping to a stop');
+  assert.ok(distances[15]>0,'the tail of the hit has gradual motion');
+  assert.ok(distances[20]<3,'return toward normal locomotion by 1/3 second');
+  assert.equal(b.impactSpeed,0,'finite trailing momentum must settle completely');
+  assert.equal(b.vx,2,'normal forward movement resumes untouched');
+  assert.equal(b.vy,1);
+  assert.equal(b.hp,300,'more force must not change damage');
+});
+test('powerful knockback reflects off walls and never escapes the arena',()=>{
+  const {world,fx}=harness(),a=actor(1,380,200),b=actor(2,458,200);
+  fx.hit(a,b,100);
+  const path=[];
+  for(let i=0;i<30;i++){
+    fx.integrate(b);
+    path.push(b.x);
+    assert.ok(b.x<=world.canvas.width-b.radius && b.x>=b.radius);
+    assert.ok(b.y<=world.canvas.height-b.radius && b.y>=b.radius);
+  }
+  assert.ok(path.some((x,i)=>i>2&&x<path[0]-1),
+    'the fighter bounces back after impacting the wall');
+  assert.equal(b.hp,300);
+});
+test('engine applies hit momentum outside normal 12px speed cap and then settles',()=>{
+  const {world,fx}=harness(),a=actor(1,100,100),b=actor(2,230,100);
+  world.updateCharacter=()=>{};
+  world.isPlaying=true;world.isGameOver=false;world.screenShake=0;
+  world.particles=[];world.floatingTexts=[];world.shockwaves=[];
+  world.updateUI=()=>{};
+  vm.runInContext(read('js/core/engine.js'),world);
+  world.updateUI=()=>{};
+  world.players=[a,b];
+  b.vx=2;b.vy=0;
+  fx.hit(a,b,30);
+  const previous=b.x;
+  world.update();
+  assert.ok(b.x-previous>40,'force is applied separately from the engine movement cap');
+  assert.equal(b.vx,2,'base motion remains unchanged by knockback integration');
+  const firstStep=b.x-previous;
+  const next=b.x;
+  world.update();
+  assert.ok(b.x-next<firstStep,'knockback slows from the peak');
+  for(let i=0;i<35;i++)world.update();
+  assert.equal(b.impactSpeed,0);
+  assert.equal(b.hp,300,'no extra HP loss from the impact itself');
 });
