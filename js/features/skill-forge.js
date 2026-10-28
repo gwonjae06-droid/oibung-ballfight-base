@@ -655,7 +655,7 @@ function initializeUI(){
     try{sync();$('forge-json-text').value=JSON.stringify(normalize(draft),null,2);report('설정 JSON을 복사해 보관하세요.');}catch(e){report(e.message);}
   });
   $('forge-import').addEventListener('click',()=>{
-    try{draft=normalize(JSON.parse($('forge-json-text').value));refreshBasics();render();report('설정 불러오기 완료');}
+    try{draft=normalize(JSON.parse($('forge-json-text').value));refreshBasics();render();global.BlockForge?.refresh?.();report('설정 불러오기 완료');}
     catch(e){report('JSON 오류: '+e.message);}
   });
   refreshBasics();render();roster();
