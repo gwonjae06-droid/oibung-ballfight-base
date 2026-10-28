@@ -76,11 +76,12 @@ function harness(){
   getElementById:id=>id==='arena-category-nav'?nav:null,
   querySelector:sel=>({'.bf-tools':panel,'.battle-screen':battle,'.bf-fold':wager})[sel]||null
  };
- const win={};vm.runInNewContext(categories,{document:doc,window:win},{filename:'ui-categories.js'});
- return {win,nav,panel,creator,editor,root,links,wager};
+ const generated=[];const win={NaturalForge:{generate(themes){generated.push(themes);return true;}}};
+ vm.runInNewContext(categories,{document:doc,window:win},{filename:'ui-categories.js'});
+ return {win,nav,panel,creator,editor,root,links,wager,generated};
 }
 test('studio dialog reuses original editor, opens/closes, and navigates back to arena',()=>{
- const {win,nav,panel,creator,editor,root,links,wager}=harness();
+ const {win,nav,panel,creator,editor,root,links,wager,generated}=harness();
  assert.ok(win.ArenaCategories);
  const dialog=root.children.find(x=>x.tagName==='DIALOG');
  assert.ok(dialog);
@@ -98,6 +99,19 @@ test('studio dialog reuses original editor, opens/closes, and navigates back to 
  nav.handlers.click({target:links.economy,preventDefault(){}});
  assert.equal(wager.open,true);
  assert.equal(links.economy.getAttribute('aria-current'),'location');
+ const shortcuts=panel.children.find(n=>n.className==='arena-match-creator-shortcut');
+ assert.ok(shortcuts,'main match setup must expose generation');
+ const actionRow=shortcuts.children.find(n=>n.className==='arena-quick-generate');
+ assert.ok(actionRow);
+ const random=actionRow.children.find(n=>n.id==='quick-random-create');
+ const theme=actionRow.children.find(n=>n.id==='open-theme-generator');
+ assert.ok(random);assert.ok(theme);
+ random.handlers.click();
+ assert.equal(generated.length,1);
+ assert.equal(generated[0].length,0,'full random ignores selected themes');
+ win.ArenaCategories.hideStudio();
+ theme.handlers.click();
+ assert.equal(root.children.find(n=>n.tagName==='DIALOG').open,true);
 });
 test('same fighter is numbered consistently in HP HUD, canvas and win screen',()=>{
  const engine=read('js/core/engine.js'),render=read('js/core/render.js');

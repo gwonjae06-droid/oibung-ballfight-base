@@ -108,3 +108,16 @@ test('primary random button creates and deploys a fully random fighter directly'
   assert.ok(battle.includes('window.SkillVisuals?.draw(ctx)'));
   assert.ok(battle.includes('window.SkillVisuals?.clear()'));
 });
+
+test('full-random and family-selected generation are separate visible options',()=>{
+ const natural=read('js/features/natural-forge.js'),category=read('js/features/ui-categories.js');
+ assert.match(natural,/randomNow\.addEventListener\('click',\(\)=>createGenerated\(\[\]\)\)/);
+ assert.match(natural,/const selected=pickedThemes\(\);[\s\S]*?if\(!selected\.length\)/);
+ assert.match(natural,/createGenerated\(selected\)/);
+ assert.match(natural,/SkillForge\.randomProfile\(themes\.length\?themes:'any'\)/);
+ assert.match(natural,/global\.NaturalForge\.generate=createGenerated/);
+ assert.match(category,/quickRandom\.textContent='🎲 완전 랜덤 생성'/);
+ assert.match(category,/themeOpen\.textContent='계열 골라 생성'/);
+ assert.match(category,/global\.NaturalForge\.generate\(\[\]\)/);
+ assert.match(read('css/style.css'),/\.arena-quick-generate/);
+});

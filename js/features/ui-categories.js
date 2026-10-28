@@ -23,10 +23,16 @@ openButton.className='open-character-studio';
 openButton.textContent='+ 커스텀 캐릭터 만들기';
 openButton.setAttribute('aria-haspopup','dialog');
 const hint=document.createElement('p');hint.className='arena-match-hint';
-hint.textContent='만든 캐릭터는 저장된 후 위 출전 목록에서 선택할 수 있습니다.';
+hint.textContent='생성한 캐릭터는 위 출전 목록에 추가됩니다. 직접 만드는 것도 가능합니다.';
+const quickActions=document.createElement('div');quickActions.className='arena-quick-generate';
+const quickRandom=document.createElement('button');quickRandom.type='button';quickRandom.id='quick-random-create';
+quickRandom.textContent='🎲 완전 랜덤 생성';quickRandom.setAttribute('aria-label','모든 계열에서 무작위로 캐릭터를 생성하고 출전');
+const themeOpen=document.createElement('button');themeOpen.type='button';themeOpen.id='open-theme-generator';
+themeOpen.textContent='계열 골라 생성';themeOpen.setAttribute('aria-label','원하는 능력 계열을 선택해 캐릭터 생성');
+quickActions.append(quickRandom,themeOpen);
 const openArea=document.createElement('div');
 openArea.className='arena-match-creator-shortcut';
-openArea.append(openButton,hint);
+openArea.append(quickActions,openButton,hint);
 main.append(openArea);
 
 const dialog=document.createElement('dialog');
@@ -95,6 +101,16 @@ function hide(){
   if(lastFocus&&typeof lastFocus.focus==='function')lastFocus.focus();
 }
 openButton.addEventListener('click',show);
+quickRandom.addEventListener('click',()=>{
+  if(typeof global.NaturalForge?.generate==='function')global.NaturalForge.generate([]);
+  else show();
+});
+themeOpen.addEventListener('click',()=>{
+  show();
+  const picker=dialog.querySelector('.forge-theme-picker');
+  picker?.scrollIntoView?.({block:'start',behavior:'auto'});
+  picker?.querySelector('input[name="forge-theme"]')?.focus();
+});
 close.addEventListener('click',hide);
 dialog.addEventListener('click',event=>{
   if(event.target===dialog)hide();

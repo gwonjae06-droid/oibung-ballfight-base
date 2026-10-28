@@ -371,7 +371,7 @@ function install(){
   const mode=document.getElementById('forge-natural-mode'),modeLabel=mode.previousElementSibling;
   const modeDetails=document.createElement('details'),modeSummary=document.createElement('summary');modeSummary.textContent='분석 방식 변경';modeDetails.append(modeSummary,modeLabel,mode);box.append(modeDetails);
   const randomBox=document.createElement('div');randomBox.className='forge-random';
-  randomBox.innerHTML='<fieldset class="forge-theme-picker"><legend>혼합할 능력 계열 선택 (복수 선택 가능)</legend><div class="forge-theme-grid">'+Object.entries(SkillForge.THEMES).map(([key,t])=>'<label class="forge-theme-choice"><input type="checkbox" name="forge-theme" value="'+key+'"><span>'+t.name+'</span></label>').join('')+'</div></fieldset><button type="button" id="forge-random">선택한 계열로 랜덤 초안 만들기</button><p class="bf-helper">선택한 계열마다 최소 한 동작을 넣고 나머지는 무작위로 섞습니다. 전체 55종을 이용하려면 아무 계열도 선택하지 마세요.</p>';
+  randomBox.innerHTML='<fieldset class="forge-theme-picker"><legend>혼합할 능력 계열 선택 (복수 선택 가능)</legend><div class="forge-theme-grid">'+Object.entries(SkillForge.THEMES).map(([key,t])=>'<label class="forge-theme-choice"><input type="checkbox" name="forge-theme" value="'+key+'"><span>'+t.name+'</span></label>').join('')+'</div></fieldset><button type="button" id="forge-random">선택한 계열로 생성 · 출전</button><p class="bf-helper">계열을 하나 이상 체크하면 해당 계열의 능력을 포함한 캐릭터를 만들고 출전시킵니다.</p>';
   const pickedThemes=()=>Array.from(randomBox.querySelectorAll('input[name="forge-theme"]:checked'),input=>input.value);
   // The random option is offered as a compact secondary workflow below the main actions.
   const guide=document.createElement('details'),guideTitle=document.createElement('summary');
@@ -487,13 +487,13 @@ function install(){
     finally{button.disabled=false;}
   });
   document.getElementById('forge-random').addEventListener('click',()=>{
-    if(button.disabled)return;
     const selected=pickedThemes();
-    const profile=SkillForge.randomProfile(selected.length?selected:'any');
-    input.value='';approved='';choices={};choiceBox.replaceChildren();global.CharacterStudioArt?.reset?.();SkillForge.setDraft(profile);
-    status.textContent='혼합 계열: '+(selected.length?selected.map(key=>SkillForge.THEMES[key].name).join(' + '):'전체 55종')+
-      ' · 랜덤 초안: '+profile.name+' · 스킬 '+profile.skills.length+'개. 저장 버튼을 눌러 출전할 수 있습니다.';
-    const report=document.getElementById('bf-result');if(report)report.textContent='';
+    if(!selected.length){
+      status.textContent='먼저 원하는 능력 계열을 하나 이상 선택해 주세요.';
+      randomBox.querySelector('input[name="forge-theme"]')?.focus();
+      return;
+    }
+    createGenerated(selected);
   });
   input.addEventListener('input',()=>{approved='';choices={};choiceBox.replaceChildren();});
   document.getElementById('forge-natural-mode').addEventListener('change',()=>{approved='';});
@@ -515,8 +515,8 @@ function install(){
   body.prepend(heading,nameLabel);
   const randomEntry=document.createElement('section');randomEntry.className='forge-random-entry';
   const randomHead=document.createElement('div');randomHead.className='forge-random-entry-copy';
-  const randomTitle=document.createElement('strong');randomTitle.textContent='랜덤 캐릭터 바로 생성';
-  const randomHelp=document.createElement('small');randomHelp.textContent='버튼 한 번으로 능력·수치·외형을 무작위 생성하고 출전합니다.';
+  const randomTitle=document.createElement('strong');randomTitle.textContent='랜덤 · 계열 선택 생성';
+  const randomHelp=document.createElement('small');randomHelp.textContent='완전 랜덤으로 만들거나, 아래에서 원하는 능력 계열을 선택하세요.';
   randomHead.append(randomTitle,randomHelp);
   nameLabel.classList.add('forge-name');body.insertBefore(box,nameLabel.nextSibling);
   const basics=document.createElement('details'),basicTitle=document.createElement('summary');basicTitle.textContent='외형 · 체력 · 이동 속도';basics.append(basicTitle,basicGrid,document.getElementById('bf-text').parentElement);
@@ -528,29 +528,36 @@ function install(){
   const randomNow=document.createElement('button');
   randomNow.type='button';randomNow.id='forge-random-create';
   randomNow.className='forge-random-create';
-  randomNow.textContent='🎲 완전 랜덤 생성';
+  randomNow.textContent='🎲 완전 랜덤 생성 · 출전';
   randomNow.setAttribute('aria-label','모든 능력 종류와 수치를 무작위로 정한 캐릭터를 생성하고 출전');
-  randomNow.addEventListener('click',()=>{
-    if(button.disabled)return;
+  function createGenerated(themes=[]){
+    if(button.disabled)return false;
     if(roundStarted&&!isGameOver){
-      status.textContent='진행 중인 경기가 끝난 뒤 랜덤 캐릭터를 생성할 수 있습니다.';
-      return;
-    }
-    if(SkillForge.list().length>=6){
+      status.textContent='진행 중인 경기가 끝난 뒤 캐릭터를 생성할 수 있습니다.';
+    }else if(SkillForge.list().length>=6){
       status.textContent='캐릭터는 최대 6명입니다. 기존 캐릭터를 삭제한 뒤 생성하세요.';
-      return;
+    }else{
+      const profile=SkillForge.randomProfile(themes.length?themes:'any');
+      const before=SkillForge.list().length;
+      input.value='';approved='';choices={};choiceBox.replaceChildren();
+      global.CharacterStudioArt?.reset?.();SkillForge.setDraft(profile);
+      saveBtn.click(); // Reuse normal saving, persistence and P1 selection.
+      const result=document.getElementById('bf-result')?.textContent||'';
+      const created=SkillForge.list().length===before+1;
+      status.textContent=created
+        ?(themes.length?'계열 선택':'완전 랜덤')+' 생성·출전 완료: '+profile.name+' · 스킬 '+profile.skills.length+'개\n'+
+          profile.skills.map(s=>s.name+' ('+s.actions.map(a=>SkillForge.TYPE[a.type]).join(' → ')+')').join('\n')
+        :result||'생성 결과를 확인해 주세요.';
+      const matchStatus=document.getElementById('bf-status');
+      if(matchStatus)matchStatus.textContent=status.textContent.split('\n')[0];
+      return created;
     }
-    const selected=pickedThemes();
-    const profile=SkillForge.randomProfile(selected.length?selected:'any');
-    input.value='';approved='';choices={};choiceBox.replaceChildren();
-    global.CharacterStudioArt?.reset?.();SkillForge.setDraft(profile);
-    saveBtn.click(); // Reuse the validated save, persistence and P1 selection flow.
-    const result=document.getElementById('bf-result')?.textContent||'';
-    status.textContent=result.includes('생성 완료')
-      ?'랜덤 캐릭터 생성·출전 완료: '+profile.name+' · 스킬 '+profile.skills.length+'개\n'+
-        profile.skills.map(s=>s.name+' ('+s.actions.map(a=>SkillForge.TYPE[a.type]).join(' → ')+')').join('\n')
-      :result||'생성 결과를 확인해 주세요.';
-  });
+    const matchStatus=document.getElementById('bf-status');
+    if(matchStatus)matchStatus.textContent=status.textContent;
+    return false;
+  }
+  randomNow.addEventListener('click',()=>createGenerated([]));
+  global.NaturalForge.generate=createGenerated;
   actions.replaceChildren(saveBtn);
   // Do not reference the random button until it exists; otherwise the entire
   // studio installer aborts before its controls become usable.
