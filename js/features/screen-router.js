@@ -31,6 +31,9 @@ function install(){
   if(header)top.append(header);
   const wallet=node('div','lobby-wallet');wallet.innerHTML='<small>보유 포인트</small><strong id="lobby-wallet-amount">1,000 G</strong>';
   top.append(wallet);
+  const settings=node('details','lobby-settings');
+  settings.innerHTML='<summary>⚙ 설정 · 음악</summary><div class="lobby-settings-body"></div>';
+  top.append(settings);
   const guide=oldNav?.querySelector('.arena-guide-reopen');if(guide)top.append(guide);
   lobby.append(top);
   const hero=node('div','lobby-hero');
@@ -206,6 +209,7 @@ function install(){
     if(!ROUTES.includes(where))where='lobby';
     if(active==='tower'&&where!=='tower'){
       if(typeof isPlaying!=='undefined'&&isPlaying&&typeof togglePlay==='function')togglePlay();
+      global.BackgroundMusic?.setBattle?.(false);
     }
     if(active==='character'&&where!=='character'){
       const dialog=doc.getElementById('character-studio-dialog');
@@ -237,6 +241,16 @@ function install(){
     else if(b.dataset.towerTab)towerTab(b.dataset.towerTab);
     else if(b.dataset.characterTab)characterTab(b.dataset.characterTab);
     else if(b.dataset.rankingTab)setRankingTab(b.dataset.rankingTab);
+  });
+  // The BGM controls are created on DOMContentLoaded by BackgroundMusic.
+  // Relocate the original widgets to the lobby settings afterwards so saved
+  // volume/mute/next-track handlers remain live, with no duplicate controls.
+  global.addEventListener?.('DOMContentLoaded',()=>{
+    const area=settings.querySelector('.lobby-settings-body');
+    const bar=doc.querySelector('.bf-music');
+    const quick=doc.getElementById('bgm-quick-start');
+    if(area&&bar)area.append(bar);
+    if(area&&quick)area.prepend(quick);
   });
   // Custom studio save/reopen retains its old events and the one DOM tree.
   const initial=global.location?.hash.replace('#','');
