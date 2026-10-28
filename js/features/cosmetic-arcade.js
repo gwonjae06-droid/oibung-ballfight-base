@@ -251,30 +251,65 @@ function tick(list){
 }
 const ring=(ctx,x,y,r)=>{ctx.beginPath();ctx.arc(x,y,Math.max(1,r),0,Math.PI*2);ctx.stroke();};
 function drawUnder(ctx,list){
+  const reduced=!!global.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
+  const TAU=Math.PI*2;
   for(const p of list){
     if(!p?.cosmetic?.trail||!p.cosmeticTrail?.length)continue;
     const points=p.cosmeticTrail,c=byId(p.cosmetic.trail)?.color||'#9fc2e3';
-    ctx.save();ctx.strokeStyle=c;ctx.fillStyle=c;ctx.lineCap='round';
-    const type=p.cosmetic.trail;
+    const type=p.cosmetic.trail,phase=(p.cosmeticAge||0)*.15;
+    ctx.save();ctx.lineCap='round';ctx.lineJoin='round';
+    ctx.strokeStyle=c;ctx.fillStyle=c;ctx.shadowColor=c;ctx.shadowBlur=reduced?0:9;
     if(type==='trail-ribbon'){
-      ctx.lineWidth=5;ctx.globalAlpha=.48;ctx.beginPath();points.forEach((a,i)=>i?ctx.lineTo(a.x,a.y):ctx.moveTo(a.x,a.y));ctx.stroke();
+      // A layered smooth silk ribbon with an independently oscillating core.
+      if(points.length>1){
+        for(const [width,alpha] of [[10,.17],[5,.42],[1.7,.85]]){
+          ctx.globalAlpha=alpha;ctx.lineWidth=width;ctx.beginPath();
+          ctx.moveTo(points[0].x,points[0].y);
+          for(let i=1;i<points.length;i++){
+            const a=points[i],prev=points[i-1];
+            const drift=Math.sin(phase-i*.7)*Math.min(8,i*.75);
+            ctx.quadraticCurveTo(prev.x+drift,prev.y-drift,(prev.x+a.x)/2,(prev.y+a.y)/2);
+          }
+          ctx.stroke();
+        }
+      }
+      points.filter((_,i)=>i%3===0).forEach((a,i)=>{
+        const r=3+(Math.sin(phase+i)*.5+.5)*3;
+        ctx.globalAlpha=.3;
+        ctx.beginPath();ctx.ellipse(a.x,a.y,r,r*.4,phase,0,TAU);ctx.stroke();
+      });
+    }else if(type==='trail-lightning'){
+      for(let i=0;i<points.length-1;i++){
+        const a=points[i],b=points[i+1],offset=Math.sin(phase+i*13)*7;
+        ctx.globalAlpha=(1-i/points.length)*.95;
+        ctx.strokeStyle=i%2?'#b8e3f3':'#d8bb72';ctx.lineWidth=i%3===0?3:1.8;
+        ctx.beginPath();ctx.moveTo(a.x,a.y);
+        ctx.lineTo((a.x+b.x)/2+offset,(a.y+b.y)/2-offset);
+        ctx.lineTo(b.x,b.y);ctx.stroke();
+        if(!reduced&&i%3===0){
+          ctx.globalAlpha=.35;ctx.beginPath();ctx.moveTo(a.x,a.y);
+          ctx.lineTo(a.x+Math.cos(phase+i)*11,a.y+Math.sin(phase+i)*11);ctx.stroke();
+        }
+      }
     }else{
+      // Comet trail uses tapered luminous dust and four-point stars.
       points.forEach((a,i)=>{
-        const alpha=(1-i/points.length)*.55;
-        ctx.globalAlpha=alpha;
-        if(type==='trail-lightning'&&i<points.length-1){
-          const b=points[i+1],off=i%2?5:-5;
-          ctx.lineWidth=2.4;ctx.beginPath();ctx.moveTo(a.x,a.y);
-          ctx.lineTo((a.x+b.x)/2+off,(a.y+b.y)/2-off);ctx.lineTo(b.x,b.y);ctx.stroke();
-        }else{
-          ctx.beginPath();ctx.arc(a.x,a.y,Math.max(1,5-i*.32),0,Math.PI*2);ctx.fill();
+        const t=1-i/points.length,r=Math.max(.6,t*5.5);
+        ctx.globalAlpha=t*.65;ctx.fillStyle=i%3?'#a7daff':'#fff1c2';
+        ctx.beginPath();ctx.arc(a.x,a.y,r,0,TAU);ctx.fill();
+        if(!reduced&&i%3===0){
+          ctx.globalAlpha=t*.8;ctx.strokeStyle='#d4ebff';ctx.lineWidth=1.2;
+          ctx.beginPath();ctx.moveTo(a.x-r*2,a.y);ctx.lineTo(a.x+r*2,a.y);
+          ctx.moveTo(a.x,a.y-r*2);ctx.lineTo(a.x,a.y+r*2);ctx.stroke();
         }
       });
     }
-    for(const point of p.cosmeticShotTrails||[]){
-      ctx.globalAlpha=(1-point.age/13)*.55;
-      ctx.fillStyle=c;ctx.beginPath();
-      ctx.arc(point.x,point.y,Math.max(1,4-point.age*.22),0,Math.PI*2);ctx.fill();
+    // Actual projectile tracks: drifting particles linked to fired objects.
+    for(const a of p.cosmeticShotTrails||[]){
+      const t=Math.max(0,1-a.age/13),r=Math.max(1,t*3.9);
+      ctx.globalAlpha=t*.66;ctx.shadowBlur=reduced?0:6;
+      ctx.fillStyle=a.age%3?'#e1f2ff':c;
+      ctx.beginPath();ctx.arc(a.x,a.y,r,0,TAU);ctx.fill();
     }
     ctx.restore();
   }
