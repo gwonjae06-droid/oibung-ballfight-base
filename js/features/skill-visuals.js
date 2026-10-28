@@ -141,12 +141,14 @@ const FAMILIES=Object.freeze({
   cosmos:new Set(['blackhole','starfall'])
 });
 const familyOf=type=>Object.keys(FAMILIES).find(k=>FAMILIES[k].has(type))||'generic';
-let poses=new WeakMap(),ghosts=[];
+let poses=new WeakMap(),activePoses=new Set(),ghosts=[];
+const ARM_IDLE_FRAMES=180; // 3 seconds at the game simulation's 60Hz rate.
 const MOTION_LIMIT=50;
 function actor(p,type,angle){
   if(!p)return;
   poses.set(p,{type,angle,age:0,life:type==='uppercut'?19:20,
     color:p.forge?.effectColor||p.effectColor||p.borderColor||'#98683c'});
+  activePoses.add(p);
 }
 function contact(p,target){
   if(!p||!target)return;
@@ -154,20 +156,22 @@ function contact(p,target){
   actor(p,'punch',angle); // Legacy contact events are only called after real HP loss.
 }
 function drawAction(c,p,z=0){
-  const a=poses.get(p);if(!a||a.age>=a.life||!p||p.hp<=0)return;
+  const a=poses.get(p);if(!a||a.age>=ARM_IDLE_FRAMES||!p||p.hp<=0)return;
   const fist=a.type==='punch'||a.type==='uppercut'||a.type==='aircombo';
   const ranged=FAMILIES.projectile.has(a.type);
   if(!fist&&!ranged)return;
-  const t=a.age/a.life;
-  const extension=a.type==='uppercut'?
+  const attacking=a.age<a.life,t=Math.min(1,a.age/a.life);
+  const extension=!attacking?0:a.type==='uppercut'?
     clamp((t-.25)*5,0,1)*(1-clamp((t-.72)*4,0,1)):
     clamp(t*7,0,1)*(1-clamp((t-.55)*3,0,1));
   const radius=p.radius||28,arm=radius*(.35+1.25*extension);
-  const theta=a.type==='uppercut'?a.angle-(Math.PI*.52)*extension:a.angle;
+  // After the attack the arm rests at the side until 3 seconds of inactivity.
+  const theta=!attacking?Math.PI*.48:a.type==='uppercut'?a.angle-(Math.PI*.52)*extension:a.angle;
   const cx=p.x,cy=p.y-z,ux=Math.cos(theta),uy=Math.sin(theta);
   const shoulderX=cx+ux*radius*.42,shoulderY=cy+uy*radius*.42;
   const handX=shoulderX+ux*arm,handY=shoulderY+uy*arm;
   c.save();c.globalCompositeOperation='source-over';
+  if(!attacking&&a.age>ARM_IDLE_FRAMES-18)c.globalAlpha*=Math.max(0,(ARM_IDLE_FRAMES-a.age)/18);
   c.lineCap='round';c.lineJoin='round';
   c.strokeStyle='#202b34';c.lineWidth=Math.max(7,radius*.37);
   c.beginPath();c.moveTo(shoulderX,shoulderY);
@@ -175,12 +179,12 @@ function drawAction(c,p,z=0){
   c.strokeStyle=a.color;c.lineWidth=Math.max(4,radius*.25);c.stroke();
   c.fillStyle='#f3e2c5';c.strokeStyle='#23313b';c.lineWidth=2.3;
   c.beginPath();c.arc(handX,handY,Math.max(5,radius*.22),0,Math.PI*2);c.fill();c.stroke();
-  if(fist&&extension>.35&&!low){
+  if(attacking&&fist&&extension>.35&&!low){
     // The sweeping white arc follows the hand; it is not a hit indicator.
     c.strokeStyle='rgba(245,177,85,.85)';c.lineWidth=2.3;
     c.beginPath();c.arc(handX-ux*8,handY-uy*8,radius*.27,theta-1.2,theta+.45);c.stroke();
   }
-  if(ranged&&t<.34){
+  if(attacking&&ranged&&t<.34){
     const flash=(1-t/.34)*10;
     c.fillStyle='#fff9df';c.beginPath();c.arc(handX+ux*6,handY+uy*6,flash,0,Math.PI*2);c.fill();
   }
@@ -336,6 +340,14 @@ function impact(p,e,action){
 }
 function tick(){
   frame++;
+  // WeakMap cannot be traversed. Keep only the few live animated fighters
+  // in a Set; expire resting arms and release references after 3 seconds.
+  for(const p of activePoses){
+    const pose=poses.get(p);
+    if(!pose||!p||p.hp<=0||++pose.age>=ARM_IDLE_FRAMES){
+      poses.delete(p);activePoses.delete(p);
+    }
+  }
   for(let i=effects.length-1;i>=0;i--){
     const e=effects[i];
     if(e.family==='movement'&&e.source&&e.age<e.life&&!low){
@@ -399,8 +411,8 @@ function previewFrame(ctx,options={}){
   if(!renderFamily(ctx,e))drawMotif(ctx,e.type,e.age,e.life);
   ctx.restore();return true;
 }
-function clear(){effects.length=0;ghosts=[];poses=new WeakMap();frame=0;}
+function clear(){effects.length=0;ghosts=[];poses=new WeakMap();activePoses.clear();frame=0;}
 function setReduced(v){low=!!v;}
-global.SkillVisuals={catalog,TYPES,FAMILIES,cast,impact,contact,detonate,previewFrame,drawAction,tick,draw,clear,setReduced,
+global.SkillVisuals={catalog,TYPES,FAMILIES,ARM_IDLE_FRAMES,cast,impact,contact,detonate,previewFrame,drawAction,tick,draw,clear,setReduced,
   get active(){return effects.length;}};
 })(window);
