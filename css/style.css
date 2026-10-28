@@ -849,3 +849,6 @@ html,body {background:#090a0c;color:var(--text);font-family:"Noto Sans KR", "Mal
   border-left:2px solid #b0b3b7;border-radius:3px 7px 7px 3px;
   background:#25272a;color:#d0d3d6;font-size:11px;line-height:1.65;
 }
+
+/* Full-catalog fighter shows upcoming moves without 55 stacked HUD rows. */
+.forge-cooldown-list[data-full]:not([data-full=""])::before{content:attr(data-full);grid-column:1/-1;font-size:10px;font-weight:700;letter-spacing:.02em;color:#bec5cc;margin-bottom:2px}

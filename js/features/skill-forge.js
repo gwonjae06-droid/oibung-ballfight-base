@@ -19,6 +19,7 @@ function normalize(value){
     name:clean(value.name,14)||'커스텀 파이터',blurb:clean(value.blurb,90),
     color:color(value.color),hp:Math.round(number(value.hp,140,500,250)),
     speed:number(value.speed,.6,5,1.8),
+    allAbilities:value.allAbilities===true,
     skills:value.skills.slice(0,4).map((s,i)=>{
       if(!Array.isArray(s.actions)||!s.actions.length)throw Error((i+1)+'번 스킬에 동작이 없습니다.');
       return {name:clean(s.name,18)||'스킬 '+(i+1),
@@ -46,17 +47,73 @@ const THEMES={
   phoenix:{name:'부활',color:'#be123c',types:['resurrect','nova','homing'],status:'fire'},
   time:{name:'시간',color:'#4338ca',types:['timestop','rewind','timeburst'],status:'ice'}
 };
-function randomProfile(theme='any',rng=Math.random){
-  const pick=items=>items[Math.min(items.length-1,Math.floor(Math.max(0,rng())*items.length))];
-  const selected=THEMES[theme]||pick(Object.values(THEMES));
-  const supportive=new Set(['resurrect','rewind','timeburst','regen','fortify','shield','lifebloom','retreat']);
-  const types=selected.types.filter(t=>TYPE[t]);
-  const skills=types.map((type,i)=>({name:TYPE[type],trigger:'auto',cooldown:4+i*1.5+Math.round(rng()*15)/10,threshold:35,
-    actions:[{type,damage:20+Math.floor(rng()*16),radius:130+Math.floor(rng()*60),count:2+Math.floor(rng()*3),duration:1.5+Math.round(rng()*10)/10,speed:5+Math.floor(rng()*3),status:supportive.has(type)?'none':selected.status,knockback:2,delay:0}]}));
-  // Every roll has an offensive option, including time/support-heavy themes.
-  if(!types.some(t=>['homing','mine','blackhole','dung','drain','nova','starfall'].includes(t)))skills.push({name:'별빛 탄환',cooldown:3,trigger:'auto',actions:[{type:'shot',damage:22,count:3,radius:170,speed:6,status:selected.status}]});
-  return normalize({name:pick(['떠도는','불굴의','장난꾸러기','고요한','빛나는'])+' '+selected.name+' '+pick(['기사','술사','방랑자','수호자']),blurb:selected.name+' 계열 랜덤 캐릭터',color:selected.color,hp:230+Math.floor(rng()*91),speed:1.5+Math.round(rng()*15)/10,skills});
+const allTypes=()=>Object.keys(TYPE);
+const randInt=(rng,min,max)=>min+Math.floor(Math.max(0,Math.min(.999999999,rng()))*(max-min+1));
+const pickRandom=(rng,values)=>values[randInt(rng,0,values.length-1)];
+const randomColor=rng=>'#'+[0,1,2].map(()=>randInt(rng,48,218).toString(16).padStart(2,'0')).join('');
+const offense=new Set(['wave','shot','beam','bolt','dash','blink','pull','zone','homing','pierce','boomerang','chain','nova','meteor','mine','drain','blackhole','starfall','dung','uppercut','slash','spinslash','thrust','aircombo','arcshot','splitshot','dive','erupt','burrowdash','trap','turret','summon']);
+const settings=(type,i=0)=>({
+  type,pattern:'direct',target:'nearest',
+  damage:18+i%5*3,radius:115+(i%4)*22,
+  count:type==='starfall'?6:type==='splitshot'?4:type==='orbit'?3:1,
+  speed:5+(i%3),duration:type==='starfall'?2.5:1.8+(i%3)*.3,
+  status:'none',knockback:2,delay:0
+});
+// Full-catalog mode is not limited to four UI skill slots. Every supported
+// move has an actual independent cast/cooldown, not a random subset.
+function allSkillset(){
+  return Object.entries(TYPE).map(([type,name],i)=>({
+    name,trigger:'auto',cooldown:4+(i%8)*.85,threshold:40,
+    actions:[settings(type,i)]
+  }));
 }
+function allProfile(name='만능 파이터',description='모든 능력을 사용한다'){
+  return normalize({name,blurb:description.slice(0,90),color:'#6f77a1',
+    hp:360,speed:2.1,allAbilities:true,
+    skills:[{name:'전체 스킬 사용',trigger:'auto',cooldown:4,actions:[settings('wave')]}]});
+}
+function randomProfile(theme='any',rng=Math.random){
+  const selected=THEMES[theme]||pickRandom(rng,Object.values(THEMES));
+  const pool=allTypes(); // 'any' draws across every registered combat module.
+  const amount=theme==='any'?randInt(rng,1,4):randInt(rng,3,4);
+  const used=new Set(),skills=[];
+  const patterns=Object.keys(global.AbilityAtlas?.PATTERNS||{direct:1,fan:1,radial:1,line:1,cross:1,spiral:1,scatter:1});
+  const targets=Object.keys(global.AbilityAtlas?.TARGETS||{nearest:1,farthest:1,lowest:1,highest:1,random:1,cluster:1});
+  const statuses=Object.keys(STATUS);
+  const triggers=Object.keys(TRIGGER);
+  for(let i=0;i<amount;i++){
+    const actions=[];
+    const steps=randInt(rng,1,3);
+    for(let j=0;j<steps;j++){
+      // Theme narrows the first action only when a theme is explicitly chosen.
+      const themed=theme!=='any'&&j===0&&rng()<.65;
+      const candidates=themed?selected.types.filter(t=>TYPE[t]):pool;
+      let type=pickRandom(rng,candidates.length?candidates:pool);
+      for(let tries=0;tries<12&&used.has(type);tries++)type=pickRandom(rng,pool);
+      used.add(type);
+      actions.push({type,pattern:pickRandom(rng,patterns),target:pickRandom(rng,targets),
+        damage:randInt(rng,9,95),radius:randInt(rng,60,290),
+        count:randInt(rng,1,8),speed:randInt(rng,2,14),
+        duration:Math.round(randInt(rng,3,70))/10,
+        status:pickRandom(rng,statuses),knockback:randInt(rng,0,9),
+        delay:j===0?0:Math.round(randInt(rng,0,20))/10});
+    }
+    // Each roll includes at least one meaningful damaging ability.
+    if(i===amount-1&&!skills.some(v=>v.actions.some(x=>offense.has(x.type)))&&!actions.some(x=>offense.has(x.type)))
+      actions[0].type=pickRandom(rng,[...offense].filter(t=>TYPE[t]));
+    const trigger=pickRandom(rng,triggers);
+    skills.push({name:TYPE[actions[0].type]+' '+pickRandom(rng,['연계','각성','변주','비기','파동']),
+      trigger,cooldown:Math.round(randInt(rng,5,200))/10,
+      threshold:randInt(rng,12,90),actions});
+  }
+  // Name, numbers, status, action order, targeting and palette all vary.
+  const name=pickRandom(rng,['방랑하는','고요한','폭주하는','날렵한','사나운','빛나는','수상한','정교한'])+
+    ' '+selected.name+' '+pickRandom(rng,['검사','마도사','소환사','모험가','수호자','괴짜','정령']);
+  return normalize({name,blurb:'전체 동작 풀에서 무작위 조합 · '+selected.name,
+    color:randomColor(rng),hp:randInt(rng,140,500),
+    speed:Math.round(randInt(rng,6,50))/10,skills});
+}
+
 let sequence=0;
 const enemies=p=>players.filter(e=>e!==p&&e.hp>0);
 function hit(p,e,action,multiplier=1,attackZ) {
@@ -198,14 +255,29 @@ function update(p,target){
   }else if(v>.001&&Number.isFinite(v)){const next=v+(cruise-v)*(v>cruise?.075:.16);p.vx=p.vx/v*next;p.vy=p.vy/v*next;}
   else{p.vx=cruise;p.vy=0;}
   tickSkills(p);
-  p.forge.skills.forEach((s,i)=>{
-    if(global.ForgeExpansion?.blocked(p))return;
-    const ready=p.forgeTicks[i]>=cooldownFrames(p,s);
-    if(!ready)return;
-    const active=(s.trigger==='auto'&&target)||(s.trigger==='lowhp'&&p.hp/p.maxHp*100<=s.threshold)
-      ||(s.trigger==='damaged'&&loss>0);
-    if(active){p.forgeTicks[i]=0;cast(p,s,target,i);}
-  });
+  if(p.forge.allAbilities){
+    // Each move has a separate clock; round-robin selection prevents 50+
+    // casts on one tick from flooding the limited projectile/effect pools.
+    p.forgeClock++;
+    const skills=p.forge.skills,blocked=global.ForgeExpansion?.blocked(p);
+    if(!blocked&&target&&p.forgeClock%6===0){
+      for(let tries=0;tries<skills.length;tries++){
+        const i=(p.forgeCursor+tries)%skills.length,s=skills[i];
+        if(p.forgeTicks[i]<cooldownFrames(p,s))continue;
+        p.forgeTicks[i]=0;cast(p,s,target,i);
+        p.forgeCursor=(i+1)%skills.length;
+        break;
+      }
+    }
+  }else{
+    p.forge.skills.forEach((s,i)=>{
+      if(global.ForgeExpansion?.blocked(p))return;
+      if(p.forgeTicks[i]<cooldownFrames(p,s))return;
+      const active=(s.trigger==='auto'&&target)||(s.trigger==='lowhp'&&p.hp/p.maxHp*100<=s.threshold)
+        ||(s.trigger==='damaged'&&loss>0);
+      if(active){p.forgeTicks[i]=0;cast(p,s,target,i);}
+    });
+  }
   tickQueue(p,target);
   for(let i=p.forgeShots.length-1;i>=0;i--){
     const b=p.forgeShots[i];b.prevX=b.x;b.prevY=b.y;b.x+=b.vx;b.y+=b.vy;b.life--;
@@ -278,16 +350,21 @@ function drawFighter(p){
 function register(value){
   if(CUSTOM_DEFS.length>=6)throw Error('캐릭터는 최대 6명까지 만들 수 있습니다.');
   const profile=normalize(value),id='forge_'+(++sequence);
+  const runtime=profile.allAbilities?{...profile,skills:allSkillset()}:profile;
   const def={id,name:profile.name,forgeData:profile,createInstance(n){
     return {id,name:profile.name,playerNum:n,x:0,y:0,vx:1.1,vy:.9,radius:34,
       hp:profile.hp,maxHp:profile.hp,invincible:0,slowTimer:0,slowMultiplier:1,
       borderColor:profile.color,themeColor:profile.color,tagColor:profile.color,
-      jumpState:'ground',forge:profile,forgeLastHp:profile.hp,forgeDash:0,
-      forgeDashAction:null,forgeTicks:profile.skills.map((s,i)=>Math.min(Math.round(s.cooldown*60),Math.round(s.cooldown*15)+i*14)),forgeSerial:0,
+      jumpState:'ground',forge:runtime,forgeLastHp:profile.hp,forgeDash:0,
+      forgeDashAction:null,forgeTicks:runtime.skills.map((s,i)=>{
+        const cd=Math.round(s.cooldown*60);
+        return profile.allAbilities?Math.max(0,cd-((i*13+23)%Math.max(1,cd))):
+          Math.min(cd,Math.round(s.cooldown*15)+i*14);
+      }),forgeSerial:0,forgeClock:0,forgeCursor:0,
       forgeQueue:[],forgeShots:[],forgeZones:[],forgeOrbs:[],
       getImage:()=>CHARACTER_PHOTOS[id]||null,
       getDisplayName(){return this.name;},
-      getTag(){return {text:profile.skills.map(s=>s.name).join(' · ').slice(0,70)};}
+      getTag(){return {text:profile.allAbilities?'전체 '+runtime.skills.length+'개 능력':profile.skills.map(s=>s.name).join(' · ').slice(0,70)};}
     };
   }};
   CUSTOM_DEFS.push(def);
@@ -325,7 +402,13 @@ function choice(key,values,value,attrs){
 }
 function render(){
   const place=document.getElementById('forge-skills');if(!place)return;
-  place.innerHTML=draft.skills.map((s,i)=>{
+  place.innerHTML=draft.allAbilities?
+    '<section class="forge-skill"><div class="forge-top"><span>ALL ABILITIES</span></div>'+
+    '<p class="forge-physics-note">총 '+allSkillset().length+
+    '종류의 능력을 모두 보유합니다. 각 스킬은 별도 타이머로 충전되며 전투 중 순서대로 발동합니다.</p>'+
+    '<p class="bf-helper">'+escape(allSkillset().map(s=>s.name).join(' · '))+'</p>'+
+    '<button type="button" class="forge-delete" data-command="disable-all">일반 스킬 편집으로 돌아가기</button></section>'
+    :draft.skills.map((s,i)=>{
     const si='data-skill="'+i+'"';
     const parts=s.actions.map((a,j)=>{
       const aj=si+' data-stage="'+j+'"';
@@ -360,7 +443,7 @@ function render(){
       +'<button type="button" class="forge-add" data-command="add-action" '+si+' '+(s.actions.length>=3?'disabled':'')+'>+ 동작 연결</button>'
       +'</section>';
   }).join('');
-  document.getElementById('forge-add-skill').disabled=draft.skills.length>=4;
+  document.getElementById('forge-add-skill').disabled=draft.allAbilities||draft.skills.length>=4;
 }
 function initializeUI(){
   const panel=document.querySelector('.bf-tools');
@@ -433,13 +516,14 @@ function initializeUI(){
     if(!button)return;
     sync();const i=Number(button.dataset.skill),j=Number(button.dataset.stage);
     const action=button.dataset.command;
+    if(action==='disable-all'){draft.allAbilities=false;render();return;}
     if(action==='remove-skill'&&draft.skills.length>1)draft.skills.splice(i,1);
     if(action==='add-action'&&draft.skills[i].actions.length<3)draft.skills[i].actions.push(stage());
     if(action==='remove-action'&&draft.skills[i].actions.length>1)draft.skills[i].actions.splice(j,1);
     render();
   });
   $('forge-add-skill').addEventListener('click',()=>{
-    sync();if(draft.skills.length<4){draft.skills.push(skill());render();}
+    sync();if(!draft.allAbilities&&draft.skills.length<4){draft.skills.push(skill());render();}
   });
   $('bf-analyze').addEventListener('click',()=>{
     try{
@@ -478,6 +562,6 @@ function initialize(){
   const oldDraw=drawCharacter;
   drawCharacter=function(p){if(p.forge)drawFighter(p);oldDraw(p);};
 }
-global.SkillForge={THEMES,randomProfile,normalize,register,remove,list,setDraft,refreshList:()=>refreshList(),persist,TYPE,TRIGGER,STATUS,cooldownFrames,advanceTimers:tickSkills};
+global.SkillForge={THEMES,randomProfile,normalize,register,remove,list,setDraft,refreshList:()=>refreshList(),persist,TYPE,TRIGGER,STATUS,cooldownFrames,advanceTimers:tickSkills,allProfile,allSkillset};
 if(typeof document!=='undefined'&&document.querySelector('.bf-tools'))initialize();
 })(window);

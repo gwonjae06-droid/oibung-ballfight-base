@@ -192,25 +192,34 @@ function updateUI() {
         meters.setAttribute('aria-label','스킬별 독립 재사용 대기시간');
         hud.append(meters);
       }
-      if(meters.children.length!==p.forge.skills.length){
+      // The full-catalog fighter owns every cooldown, but only four
+      // upcoming actions are shown here so the HUD never becomes 50 rows.
+      const total=p.forge.skills.length;
+      const visibleIndices=p.forge.allAbilities?
+        Array.from({length:Math.min(4,total)},(_,j)=>((p.forgeCursor||0)+j)%total):
+        p.forge.skills.map((_,i)=>i);
+      meters.dataset.full=p.forge.allAbilities?'전체 '+total+'개 능력 · 다음 발동 순서':'';
+      if(meters.children.length!==visibleIndices.length){
         meters.replaceChildren();
-        p.forge.skills.forEach((s,i)=>{
+        visibleIndices.forEach(()=>{
           const item=document.createElement('div');item.className='forge-cooldown-item';
-          const name=document.createElement('span');name.className='forge-cooldown-name';name.textContent=s.name;
+          const name=document.createElement('span');name.className='forge-cooldown-name';
           const track=document.createElement('span');track.className='forge-cooldown-track';
           const fill=document.createElement('span');fill.className='forge-cooldown-fill';track.append(fill);
           const time=document.createElement('span');time.className='forge-cooldown-time';
           item.append(name,track,time);meters.append(item);
         });
       }
-      for(let i=0;i<p.forge.skills.length;i++){
-        const max=SkillForge.cooldownFrames(p,p.forge.skills[i]);
-        const ticks=Math.min(max,p.forgeTicks[i]||0),ready=ticks>=max;
-        const item=meters.children[i];
+      visibleIndices.forEach((index,j)=>{
+        const skill=p.forge.skills[index];
+        const max=SkillForge.cooldownFrames(p,skill);
+        const ticks=Math.min(max,p.forgeTicks[index]||0),ready=ticks>=max;
+        const item=meters.children[j];
+        item.children[0].textContent=skill.name;
         item.children[1].firstElementChild.style.width=(ticks/max*100).toFixed(1)+'%';
         item.children[2].textContent=ready?'준비':((max-ticks)/60).toFixed(1)+'s';
         item.dataset.ready=ready?'true':'false';
-      }
+      });
     }else{
       const meters=hud?.querySelector?.('.forge-cooldown-list');
       meters?.remove();

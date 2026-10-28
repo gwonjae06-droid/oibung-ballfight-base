@@ -17,7 +17,7 @@ const CAPABILITIES={
 };
 const EXTRA_LEX={
   flight:/공중|비행|날아올|날개|하늘로|강하/gi,burrow:/지하|땅속|잠복|굴을|땅굴/gi,
-  blackhole:/블랙홀|우주\s*중력|중력장/gi,starfall:/우주|은하|별비|별의\s*비|별들이\s*떨어|유성우/gi,
+  blackhole:/블랙홀|우주\s*중력|중력장/gi,starfall:/별비|별의\s*비|별들이\s*떨어|별들이\s*쏟아|별이\s*내리|별\s*소나기|유성우|별똥별\s*비/gi,
   dung:/똥|대변|배설|응가/gi,lifebloom:/생명|생명의\s*꽃|치유의\s*꽃/gi,
   resurrect:/부활|되살아|다시\s*살아|불사조/gi,timestop:/시간\s*(?:을\s*)?(?:정지|멈)|시공간\s*정지/gi,
   rewind:/시간\s*(?:을\s*)?되감|과거로\s*돌아|시간\s*역행/gi,timeburst:/시간\s*가속|시계를\s*빠르게/gi,
@@ -176,10 +176,21 @@ function suggestions(text){
   if(/수호|지켜|보호|사랑/.test(text))return ['shield','fortify','regen'];
   return ['shot','wave','zone'];
 }
+function isAllIntent(text){
+  const input=String(text||'').replace(/\s+/g,' ');
+  return /(?:모든|전체|전부|모조리)(?:의)?\s*(?:종류의\s*)?(?:스킬|능력|기술|마법|동작)(?:을|를|이|가|은|는|들)?\s*(?:가진|보유|사용|쓸\s*수|구사|익힌|장착|습득|지닌|쓰는|사용할|다\s*쓴|써)/i.test(input) ||
+    /(?:스킬|능력|기술|마법|동작)\s*(?:전부|전체|모두|다)\s*(?:가진|사용|쓸\s*수|보유|습득|익힌)/i.test(input) ||
+    /(?:모든\s*능력|모든\s*스킬|전능|만능\s*캐릭터)/i.test(input);
+}
 function parse(text,name='',choices={}){
   const original=String(text||'').trim();
   if(original.length<4)throw Error('능력을 구체적으로 적어 주세요.');
   if(original.length>1400)throw Error('능력 설명은 1,400자 이하로 작성하세요.');
+  if(isAllIntent(original)){
+    return {profile:SkillForge.allProfile(name||'만능 파이터',original),
+      unmapped:[],questions:[],aliases:['전체 능력 모드: 등록된 모든 스킬을 독립적으로 사용'],
+      mode:'grammar',interpretation:'전체 '+SkillForge.allSkillset().length+'종류의 스킬을 모두 보유합니다. 각 스킬은 개별 쿨타임을 갖습니다.'};
+  }
   const sentences=original.split(/\.(?!\d)|[\n!?。]+|(?:그리고|또한|추가로)(?=\s*\S)/).map(s=>s.trim()).filter(Boolean);
   const skills=[],unmapped=[],aliases=new Set(),questions=[];
   for(const [re,msg] of CONVENTIONS)if(test(re,original))aliases.add(msg);
@@ -248,6 +259,7 @@ async function analyze(text,name,mode='offline'){
   if(mode==='offline')return parse(text,name);
   text=String(text||'').trim();name=String(name||'');
   if(text.length<4||text.length>1400)throw Error('능력 설명은 4~1,400자로 작성하세요.');
+  if(isAllIntent(text))return parse(text,name);
   if(mode==='creative'){
     if(!global.location || !/^https?:$/.test(global.location.protocol))throw Error('창작 AI는 서버로 실행한 게임에서 사용할 수 있습니다. README의 AI 실행 안내를 확인하세요.');
     const response=await global.fetch('/api/forge',{
@@ -382,7 +394,7 @@ function install(){
       approved='';if(offer(out,text))return;
       if(!out.profile){status.textContent='구현할 효과가 없습니다. 문장을 추가하거나 선택을 바꿔 주세요.';choices={};return;}
       SkillForge.setDraft(out.profile);approved=text;
-      status.textContent=(out.mode==='server-ai'?'창작 AI':out.mode==='on-device-ai'?'기기 내 AI':'의미 분석')+' 완료 · 스킬 '+out.profile.skills.length+'개'
+      status.textContent=(out.mode==='server-ai'?'창작 AI':out.mode==='on-device-ai'?'기기 내 AI':'의미 분석')+' 완료 · 스킬 '+(out.profile.allAbilities?SkillForge.allSkillset().length:out.profile.skills.length)+'개'
         +'\n'+out.profile.skills.map(s=>SkillForge.TRIGGER[s.trigger]+' / '+s.cooldown+'초: '+s.actions.map(a=>SkillForge.TYPE[a.type]+(a.status!=='none'?' + '+SkillForge.STATUS[a.status]:'')).join(' → ')).join('\n')
         +(out.interpretation?'\n구현: '+out.interpretation:'')
         +(out.adaptations?.length?'\n각색한 부분:\n'+out.adaptations.map(x=>'• '+x).join('\n'):'')
@@ -445,6 +457,6 @@ function install(){
   body.classList.add('forge-studio');
 }
 
-global.NaturalForge={parse,analyze,suggestions};
+global.NaturalForge={parse,analyze,suggestions,isAllIntent};
 if(typeof document!=='undefined'&&document.getElementById('forge-skills'))install();
 })(window);

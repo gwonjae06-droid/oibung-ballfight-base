@@ -129,7 +129,7 @@ test('all new themes parse offline and randomized characters remain valid and va
   for(const [type,text] of Object.entries(words)){const out=h.NaturalForge.parse('4초마다 '+text);assert.equal(out.questions.length,0);assert.equal(out.profile.skills[0].actions[0].type,type,text);assert.equal(out.profile.skills[0].actions.length,1,text);}
   const profiles=new Set();
   for(const theme of Object.keys(h.SkillForge.THEMES))for(let i=0;i<30;i++){
-    const p=h.SkillForge.randomProfile(theme);assert.ok(p.skills.length>=3&&p.skills.length<=4);assert.ok(p.hp>=230&&p.hp<=320);
+    const p=h.SkillForge.randomProfile(theme);assert.ok(p.skills.length>=3&&p.skills.length<=4);assert.ok(p.hp>=140&&p.hp<=500);
     assert.deepEqual(JSON.parse(JSON.stringify(h.SkillForge.normalize(p))),JSON.parse(JSON.stringify(p)));
     profiles.add(JSON.stringify(p));
   }

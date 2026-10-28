@@ -212,9 +212,9 @@ function execute(p,a,target,api){
     mark('ring',one.x,one.y,34,col);mark('ring',two.x,two.y,34,col);
   }else if(['summon','turret','trap'].includes(a.type)){
     const x=cap(p.x+Math.cos(face)*45,25,canvas.width-25),y=cap(p.y+Math.sin(face)*45,25,canvas.height-25);
-    pushObject({kind:a.type,owner:p.playerNum,x,y,r:a.type==='trap'?19:16,
+    pushObject({kind:a.type,owner:p.playerNum,x,y,r:a.type==='trap'?19:18,
       hp:Math.max(25,a.damage*2),maxHp:Math.max(25,a.damage*2),life:duration,age:0,
-      next:25,a:{...a},target:enemy?.playerNum||null});
+      vx:0,vy:0,next:25,a:{...a},target:enemy?.playerNum||null});
     mark(a.type==='trap'?'target':'ring',x,y,35,col,16);
   }else if(a.type==='grow'||a.type==='shrink'){
     p.bodyScale=a.type==='grow'?cap(1.25+a.count*.08,1.2,2.2):cap(.6-a.count*.015,.37,.8);
@@ -444,23 +444,44 @@ function stepObjects(api){
         }
       }
     }else if(o.kind==='summon'||o.kind==='turret'){
-      const e=nearestTo(o,p);
+      // A summoned creature physically chases its target; a turret stays put
+      // and attacks from a distance. They must not share the same hit radius.
+      const locked=players.find(e=>e.playerNum===o.target&&e.hp>0);
+      const e=locked||nearestTo(o,p);
       if(e){
+        o.target=e.playerNum;
+        const dx=e.x-o.x,dy=e.y-o.y,d=Math.hypot(dx,dy)||1;
+        const dirX=dx/d,dirY=dy/d;
         if(o.kind==='summon'){
-          const d=Math.hypot(e.x-o.x,e.y-o.y)||1;o.x+=((e.x-o.x)/d)*1.95;o.y+=((e.y-o.y)/d)*1.95;
+          const chaseSpeed=cap(o.a.speed||5,2,9)*.76;
+          const desired=cap((d-e.radius-o.r)*.20,0,chaseSpeed);
+          o.vx=lerp(o.vx||0,dirX*desired,.24);
+          o.vy=lerp(o.vy||0,dirY*desired,.24);
+          // The pet physically occupies the position shown on screen.
+          o.x=cap(o.x+o.vx,o.r,canvas.width-o.r);
+          o.y=cap(o.y+o.vy,o.r,canvas.height-o.r);
         }
-        if(o.age>=o.next&&Math.hypot(e.x-o.x,e.y-o.y)<o.a.radius+e.radius){
-          const anchor={...p,x:o.x,y:o.y};
-          // The weapon visibly fires from its real world origin.
-          add('tether',o.x,o.y,{r:Math.hypot(e.x-o.x,e.y-o.y),
-            angle:Math.atan2(e.y-o.y,e.x-o.x),
-            col:color(p),life:13,stage:'impact'});
+        const touch=o.kind==='summon'&&Math.hypot(e.x-o.x,e.y-o.y)<=e.radius+o.r+3;
+        const inRange=o.kind==='turret'&&d<=o.a.radius+e.radius;
+        if(o.age>=o.next&&(touch||inRange)){
+          // Use the pet/turret's origin, so knockback and visual direction
+          // match the source of the real attack rather than its summoner.
+          const anchor={...p,x:o.x,y:o.y,z:0,vz:0};
           if(canHit(anchor,e,0)){
-            if(strike(p,e,o.a,api,0,o.kind==='turret'?.62:.5))
+            const hit=api.hit?.(anchor,e,o.a,o.kind==='turret'?.62:.68,0);
+            if(hit){
+              const face=Math.atan2(e.y-o.y,e.x-o.x);
+              if(o.kind==='turret')add('tether',o.x,o.y,{
+                r:Math.hypot(e.x-o.x,e.y-o.y),angle:face,col:color(p),life:13,stage:'impact'});
+              else{
+                mark('slash',e.x,e.y-groundHeight(e),26,color(p),14,face);
+                o.vx-=Math.cos(face)*2.5;o.vy-=Math.sin(face)*2.5;
+              }
               mark('stab',e.x,e.y-groundHeight(e),Math.min(28,e.radius||25),
-                color(p),14,Math.atan2(e.y-o.y,e.x-o.x));
+                color(p),14,face);
+            }
           }
-          o.next=o.age+(o.kind==='turret'?35:29);
+          o.next=o.age+(o.kind==='turret'?35:25);
         }
       }
     }
@@ -688,12 +709,27 @@ function draw(ctx){
     }else if(o.kind==='summon'||o.kind==='turret'){
       const bob=o.kind==='summon'?Math.sin((visualFrame+age)*.12)*3:0;
       ctx.translate(0,bob);
-      ctx.beginPath();
-      if(o.kind==='turret')ctx.rect(-13,-13,26,26);
-      else{ctx.moveTo(0,-14);ctx.lineTo(14,11);ctx.lineTo(-14,11);ctx.closePath();}
-      ctx.fill();ctx.stroke();
-      const angle=o.kind==='summon'?visualFrame*.075:Math.atan2(p.y-y,p.x-x);
-      ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(Math.cos(angle)*13,Math.sin(angle)*13);ctx.stroke();
+      if(o.kind==='summon'){
+        // An independent pet with head, ears, eyes and a trailing tail.
+        const heading=Math.atan2(o.vy||0,o.vx||1);
+        ctx.rotate(heading+Math.PI/2);
+        ctx.strokeStyle=col;ctx.lineWidth=2.8;ctx.lineCap='round';
+        ctx.beginPath();ctx.moveTo(0,13);ctx.quadraticCurveTo(12,23,13+Math.sin(visualFrame*.16)*3,11);ctx.stroke();
+        ctx.fillStyle='rgba(85,110,145,.28)';
+        ctx.beginPath();ctx.ellipse(0,0,15,17,0,0,Math.PI*2);ctx.fill();ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(-12,-9);ctx.lineTo(-9,-23);ctx.lineTo(-2,-15);
+        ctx.moveTo(12,-9);ctx.lineTo(9,-23);ctx.lineTo(2,-15);ctx.stroke();
+        ctx.fillStyle='#fff';
+        for(const ex of [-5,5]){ctx.beginPath();ctx.arc(ex,-4,3.6,0,Math.PI*2);ctx.fill();}
+        ctx.fillStyle='#162638';
+        for(const ex of [-5,5]){ctx.beginPath();ctx.arc(ex,-5,1.7,0,Math.PI*2);ctx.fill();}
+        ctx.fillStyle=col;ctx.beginPath();ctx.moveTo(-3,5);ctx.lineTo(3,5);ctx.lineTo(0,9);ctx.closePath();ctx.fill();
+      }else{
+        ctx.beginPath();ctx.rect(-13,-13,26,26);ctx.fill();ctx.stroke();
+        const angle=Math.atan2(p.y-y,p.x-x);
+        ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(Math.cos(angle)*13,Math.sin(angle)*13);ctx.stroke();
+      }
       ctx.fillStyle='#ddd';ctx.fillRect(-13,-23,26,3);
       ctx.fillStyle=col;ctx.fillRect(-13,-23,26*cap(o.hp/o.maxHp,0,1),3);
     }else if(o.kind==='trap'){
@@ -704,7 +740,7 @@ function draw(ctx){
     if(['wall','portal','summon','turret','trap'].includes(o.kind)){
       ctx.globalAlpha=Math.min(1,leave);ctx.fillStyle=col;
       ctx.font='600 10px "Noto Sans KR",system-ui';ctx.textAlign='center';
-      ctx.fillText(Math.ceil(o.life/60)+'s',0,o.r+18);
+      ctx.fillText(o.kind==='summon'?'추적수 · '+Math.ceil(o.life/60)+'s':Math.ceil(o.life/60)+'s',0,o.r+18);
     }
     ctx.restore();
   }
