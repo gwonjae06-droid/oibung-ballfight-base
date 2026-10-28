@@ -292,7 +292,10 @@ function renderFamily(c,e){
 }
 function detonate(p,type,x,y,radius=90){
   if(!Number.isFinite(x)||!Number.isFinite(y))return false;
-  return add('impact',p,type,{radius},null,{x,y});
+  const success=add('impact',p,type,{radius},null,{x,y});
+  if(success&&FAMILIES.explosion.has(type))global.BattleFX?.sound?.('blast',.62);
+  else if(success&&FAMILIES.cosmos.has(type))global.BattleFX?.sound?.('cosmos',.36);
+  return success;
 }
 
 function add(kind,p,type,action,target,location){
@@ -319,6 +322,8 @@ function cast(p,action,target){
     if(FAMILIES.fist.has(action.type)||FAMILIES.projectile.has(action.type)){
       actor(p,action.type,target?Math.atan2(target.y-p.y,target.x-p.x):Math.atan2(p.vy||0,p.vx||1));
     }
+    if(FAMILIES.time.has(action.type))global.BattleFX?.sound?.('clock',.44);
+    if(FAMILIES.cosmos.has(action.type))global.BattleFX?.sound?.('cosmos',.48);
     global.CosmeticArcade?.onCast?.(p,action,target);
   }
   return result;
