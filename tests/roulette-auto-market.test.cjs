@@ -91,3 +91,32 @@ test('roulette commits before animation and keeps odds out of displayed UI',()=>
     assert.ok(effects.includes(signature),'required visual layer: '+signature);
   }
 });
+
+test('all five equipped visual categories render on the original first lineup',()=>{
+  const owned=[
+    'border-neon','tint-rose','trail-ribbon','entrance-gate','motion-rune'
+  ],equipped={border:'border-neon',tint:'tint-rose',trail:'trail-ribbon',
+    entrance:'entrance-gate',motion:'motion-rune'};
+  const state={owned,equipped};
+  const {sandbox}=setup({'oibung-cosmetics-v1':JSON.stringify(state)});
+  const fighter={forge:{effectColor:'#112233',skills:[]},x:100,y:120,hp:300,
+    radius:32,forgeShots:[{x:135,y:150}],forgeExtras:[]};
+  sandbox.players=[fighter];run('js/features/cosmetic-arcade.js',sandbox);
+  assert.ok(fighter.cosmetic,'pre-existing initial round should receive saved cosmetics');
+  assert.equal(fighter.forge.effectColor,'#ef849c');
+  assert.equal(fighter.cosmetic.border,'border-neon');
+  const arcade=sandbox.CosmeticArcade;
+  arcade.startRound([fighter]);
+  for(let i=0;i<8;i++)arcade.tick([fighter]);
+  arcade.onCast(fighter,{type:'wave'},{x:170,y:150});
+  let calls=0;
+  const gradient={addColorStop(){}};
+  const ctx=new Proxy({createLinearGradient:()=>gradient,createRadialGradient:()=>gradient},{
+    get(obj,key){return key in obj?obj[key]:(...args)=>{calls++;};},
+    set(obj,key,value){obj[key]=value;return true;}
+  });
+  assert.equal(arcade.drawBorder(ctx,fighter,32),true);
+  arcade.drawUnder(ctx,[fighter]);
+  arcade.drawOver(ctx,[fighter]);
+  assert.ok(calls>100,'cinematic renderers should produce layered canvas geometry');
+});
