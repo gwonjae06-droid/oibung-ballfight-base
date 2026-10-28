@@ -478,6 +478,7 @@ function remove(id){
   const index=CUSTOM_DEFS.findIndex(d=>d.id===id&&d.forgeData);
   if(index<0)return false;
   global.CharacterStudioArt?.remove?.(CUSTOM_DEFS[index].forgeData.artKey);
+  global.CosmeticArcade?.forgetFighter?.(CUSTOM_DEFS[index].forgeData.artKey);
   CUSTOM_DEFS.splice(index,1);
   delete BEHAVIORS[id];if(typeof CHARACTER_PHOTOS!=='undefined')delete CHARACTER_PHOTOS[id];
   persist();refreshList();return true;
@@ -592,6 +593,7 @@ function initializeUI(){
     const owned=CUSTOM_DEFS.filter(d=>d.forgeData);
     const count=$('forge-custom-count');
     if(count)count.textContent=owned.length+' / 6';
+    global.CosmeticArcade?.refreshStudio?.();
     target.replaceChildren();
     if(!owned.length){
       const empty=document.createElement('p');empty.className='forge-roster-empty';
