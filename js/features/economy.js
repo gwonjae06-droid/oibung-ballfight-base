@@ -10,6 +10,7 @@ function saveEconomyState(){
       coins:Math.round(coins),
       items:Object.fromEntries(Object.keys(itemInventory).map(id=>[id,itemInventory[id]]))
     }));
+    globalThis.ArenaScreenRouter?.refresh?.(); // one shared wallet across every view
     return true;
   }catch(_){return false;}
 }
