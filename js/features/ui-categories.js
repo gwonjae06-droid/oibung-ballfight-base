@@ -113,11 +113,11 @@ nav.addEventListener('click',event=>{
   const link=event.target.closest('[data-category]');
   if(!link||!nav.contains(link))return;
   const category=link.dataset.category;
-  if(!['arena','match','creator','economy'].includes(category))return;
+  if(!['arena','match','creator','economy','cosmetics','finance'].includes(category))return;
   event.preventDefault();
   go(category);
   if(category==='creator'){show();return;}
-  const target=category==='arena'?arena:category==='match'?main:wager;
+  const target=category==='arena'?arena:category==='match'?main:category==='cosmetics'?document.getElementById('cosmetic-arcade'):category==='finance'?document.getElementById('point-finance'):wager;
   if(category==='economy'&&wager)wager.open=true;
   target?.scrollIntoView?.({block:'start',behavior:'auto'});
 });
