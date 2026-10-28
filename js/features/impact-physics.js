@@ -30,7 +30,7 @@ function hit(attacker,defender,damage,options={}){
   defender.vy=ny*impulse+nx*tangent*.25;
   // Immediate visible separation, then the fixed-step engine carries momentum.
   const nudge=clamp(impulse*.43,4,8);
-  const arena=global.canvas;
+  const arena=typeof canvas!=='undefined'?canvas:global.canvas;
   if(arena?.width&&arena?.height){
     defender.x=clamp(defender.x+nx*nudge,defender.radius||0,arena.width-(defender.radius||0));
     defender.y=clamp(defender.y+ny*nudge,defender.radius||0,arena.height-(defender.radius||0));
@@ -44,8 +44,8 @@ function hit(attacker,defender,damage,options={}){
     attacker.borderColor||'#45586a';
   pulses.push({x,y,nx,ny,color,heavy,age:0,life:heavy?17:13,impulse});
   if(pulses.length>80)pulses.splice(0,pulses.length-80);
-  if(!reduced&&typeof global.screenShake==='number'){
-    global.screenShake=Math.max(global.screenShake,
+  if(!reduced&&typeof screenShake==='number'){
+    screenShake=Math.max(screenShake,
       clamp((heavy?6:3)+Math.sqrt(amount)*1.0,4,15));
   }
   if(frame-lastSound>=2){
