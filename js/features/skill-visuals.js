@@ -337,7 +337,7 @@ function tick(){
   frame++;
   for(let i=effects.length-1;i>=0;i--){
     const e=effects[i];
-    if(e.family==='movement'&&e.source&&e.age<e.life){
+    if(e.family==='movement'&&e.source&&e.age<e.life&&!low){
       const p=e.source,dx=p.x-e.lastX,dy=p.y-e.lastY;
       if(Math.hypot(dx,dy)>5&&e.age%2===0){
         ghosts.push({x:e.lastX,y:e.lastY,r:p.radius||28,col:e.color,life:11,age:0});
