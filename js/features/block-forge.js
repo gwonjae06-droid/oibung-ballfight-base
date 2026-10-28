@@ -155,6 +155,7 @@ function apply(op){
     else if(op.kind==='add')selectedSkill=Math.min(after.skills.length-1,Number(op.skill));
     else selectedSkill=Math.min(selectedSkill,after.skills.length-1);
     forge.setDraft(after);
+    global.CharacterStudioWorkspace?.refresh?.();
     announce('스킬 초안에 반영했습니다. 캐릭터를 추가하려면 아래 저장 버튼을 누르세요.');
     return true;
   }catch(e){announce(e.message);return false;}
@@ -165,6 +166,7 @@ function actionRow(a,i,j,count){
     +'<div class="block-quick-action">'
     +'<span class="block-quick-chip">'+escape(type)+'</span>'
     +'<div class="block-quick-tools">'
+    +'<button type="button" class="block-quick-preview" data-op="preview" data-skill="'+i+'" data-index="'+j+'" aria-label="'+escape(type)+' 동작 미리보기">▶ 미리보기</button>'
     +'<button type="button" data-op="move" data-direction="-1" data-skill="'+i+'" data-index="'+j+'" aria-label="'+escape(type)+' 앞쪽으로 이동" '+(!j?'disabled':'')+'>↑</button>'
     +'<button type="button" data-op="move" data-direction="1" data-skill="'+i+'" data-index="'+j+'" aria-label="'+escape(type)+' 뒤쪽으로 이동" '+(j===count-1?'disabled':'')+'>↓</button>'
     +'<button type="button" data-op="remove" data-skill="'+i+'" data-index="'+j+'" aria-label="'+escape(type)+' 삭제" '+(count===1?'disabled':'')+'>×</button>'
@@ -219,7 +221,8 @@ function mount(){
   root.addEventListener('click',e=>{
     const b=e.target.closest('button[data-op]');if(!b||!root.contains(b))return;
     const op=b.dataset.op,si=Number(b.dataset.skill),ai=Number(b.dataset.index);
-    if(op==='select'){selectedSkill=si;draw();return;}
+    if(op==='select'){selectedSkill=si;draw();global.CharacterStudioWorkspace?.previewSkill?.(si,-1);return;}
+    if(op==='preview'){selectedSkill=si;draw();global.CharacterStudioWorkspace?.previewSkill?.(si,ai);return;}
     if(op==='add'){apply({kind:'add',skill:selectedSkill,type:movePicker.value});return;}
     if(op==='enable'){apply({kind:'enable'});return;}
     if(op==='new-skill'){apply({kind:'new-skill',type:movePicker.value});return;}
