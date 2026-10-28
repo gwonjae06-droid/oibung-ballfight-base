@@ -165,7 +165,9 @@ function install(){
   }
   function go(where){
     if(!ROUTES.includes(where))where='lobby';
-    if(active==='tower'&&where!=='tower')global.ArenaTower?.pauseAway?.();
+    if(active==='tower'&&where!=='tower'){
+      if(typeof isPlaying!=='undefined'&&isPlaying&&typeof togglePlay==='function')togglePlay();
+    }
     if(active==='character'&&where!=='character'){
       const dialog=doc.getElementById('character-studio-dialog');
       if(dialog?.open)dialog.removeAttribute('open');
