@@ -22,8 +22,9 @@ card.innerHTML='<div class="character-art-head"><div><h3>캐릭터 외형 · 직
   +'<button type="button" id="character-art-clear">전체 지우기</button></div>'
   +'<p id="character-art-status" class="bf-helper" role="status" aria-live="polite">사진 없이 저장하면 캐릭터 색 원으로 표시됩니다.</p>'
   +'</div></div>';
-const prompt=container.querySelector('.forge-prompt');
-if(prompt)container.insertBefore(card,prompt);
+// Place the portrait editor alongside appearance controls after quick generation.
+const appearanceAnchor=container.querySelector('.forge-name')||container.querySelector('.forge-primary-actions');
+if(appearanceAnchor)container.insertBefore(card,appearanceAnchor);
 else container.append(card);
 const $=id=>doc.getElementById(id);
 const canvas=$('character-art-canvas'),ctx=canvas.getContext('2d',{willReadFrequently:false});
