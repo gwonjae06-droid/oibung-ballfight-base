@@ -378,6 +378,7 @@ function updateProjectiles(api){
           age:0,travel:18,a:b.a,life:28,height:0});
       }
       mark('cleave',b.x,b.y,34,color(p),18,b.age*.24);
+      mark('burst',b.x,b.y,33,color(p),17);
       b.life=0;
     }
     // Shards now strike along the actual path swept between two frames:
