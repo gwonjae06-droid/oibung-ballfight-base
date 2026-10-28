@@ -22,7 +22,7 @@ function power(profile){
       const attack=OFFENSE.has(type);
       const protection=DEFENSE.has(type);
       const utility=protection?22:attack?0:10;
-      const impact=attack?damage*(type==='zone'||type==='mine'?.7:1):0;
+      const impact=attack?damage*((type==='zone'||type==='mine')?.7:1):0;
       return impact+utility+(attack?radius*.055:0)+
         (attack&&a.status&&a.status!=='none'?10:0)+
         (attack&&count>1?Math.min(12,(count-1)*2):0);
@@ -85,7 +85,7 @@ function install(){
     const add=document.createElement('button');add.type='button';add.textContent='+ 내 게임에 추가';
     add.setAttribute('aria-label',share.name+'을 내 게임에 추가');
     add.addEventListener('click',()=>{
-      if(global.roundStarted&&!global.isGameOver){
+      if(typeof roundStarted!=='undefined'&&roundStarted&&typeof isGameOver!=='undefined'&&!isGameOver){
         status.textContent='진행 중인 경기가 끝난 뒤 캐릭터를 추가할 수 있습니다.';return;
       }
       try{
