@@ -28,9 +28,22 @@ let screenShake = 0;
 let shockwaves = [];
 let players = [];
 
-// 재화·베팅·다중 대상 아이템 상태 (새로고침 시 초기화)
-let coins=1000, roundStarted=false, roundSettled=false, selectedBetPlayerNum=null, activeBet=null;
-const itemInventory={skillRush:0,vitality:0,speed:0};
+// Local-only game currency: persisted across refresh, including genuine debt.
+const ECONOMY_KEY='oibung-economy-v1';
+function readEconomySave(){
+  try{
+    const state=JSON.parse(localStorage.getItem(ECONOMY_KEY)||'null');
+    if(!state||typeof state!=='object')return {};
+    return state;
+  }catch(_){return {};}
+}
+const previousEconomy=readEconomySave();
+const savedGold=Number(previousEconomy.coins);
+let coins=Number.isFinite(savedGold)&&previousEconomy.coins!==undefined?
+  Math.max(-1e9,Math.min(1e9,Math.round(savedGold))):1000;
+let roundStarted=false,roundSettled=false,selectedBetPlayerNum=null,activeBet=null;
+const itemInventory=Object.fromEntries(['skillRush','vitality','speed'].map(id=>
+  [id,Math.max(0,Math.min(999,Math.floor(Number(previousEconomy.items?.[id])||0)))]));
 const reservedItems={skillRush:[],vitality:[],speed:[]};
 const SHOP_ITEMS={skillRush:{name:'능력 오버클럭',price:650,label:'⏱ 1초 능력'},vitality:{name:'강화 생명 코어',price:350,label:'❤️ HP +75'},speed:{name:'돌진 부츠',price:300,label:'🥾 속도 +35%'}};
 
