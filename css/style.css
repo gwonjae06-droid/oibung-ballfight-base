@@ -1681,3 +1681,47 @@ html,body {background:#090a0c;color:var(--text);font-family:"Noto Sans KR", "Mal
   .finance-buttons button{flex-basis:90px}
 }
 @media(prefers-reduced-motion:reduce){#mine-hit:active{transform:none}}
+
+
+/* Kinetic roulette: one GPU-friendly display layer around a short canvas loop.
+   Avoid indefinite flashing and respect reduced-motion preferences. */
+.roulette-theatre{
+  position:relative;isolation:isolate;overflow:hidden;margin:13px 0 14px;
+  padding:12px 14px 17px;border:1px solid #52647d;border-radius:15px;
+  background:radial-gradient(ellipse at 50% 23%,#354e65 0%,#1d2a3b 46%,#0e1722 100%);
+  box-shadow:inset 0 1px 0 #8298aa44,0 8px 26px #050a1340;
+}
+.roulette-theatre::before{
+  content:"";position:absolute;inset:-80%;pointer-events:none;z-index:-1;
+  background:conic-gradient(from 90deg,transparent,#8bb4ec18,transparent,#ffd18e18,transparent);
+  opacity:.6;transform:rotate(0);will-change:transform;
+}
+.roulette-theatre.roulette-spinning::before{animation:roulette-ambient 3.3s linear both;opacity:1}
+.roulette-theatre.roulette-revealed{
+  border-color:#b3b4ac;box-shadow:0 0 26px #d8ac6e35,inset 0 0 48px #d5bb7c1a;
+}
+.roulette-theatre[data-reward="item"]{
+  border-color:#ebcf86;box-shadow:0 0 40px #f3c87966,inset 0 0 50px #e2bb6833;
+}
+.roulette-orbit{position:relative;min-width:0;display:flex;justify-content:center;align-items:center}
+#cosmetic-roulette{display:block;width:min(100%,620px);height:auto;aspect-ratio:620/300;
+  filter:drop-shadow(0 5px 14px #0008)}
+.roulette-showcase{text-align:center;display:grid;gap:5px;justify-items:center;min-width:0}
+.roulette-eyebrow{font-size:9px;letter-spacing:.23em;color:#a4bbce;font-weight:800}
+#roulette-headline{font-size:clamp(16px,3vw,23px);letter-spacing:-.04em;color:#f1e6d1}
+#roulette-detail{font-size:12px;color:#c7d6e2;line-height:1.6;max-width:550px;overflow-wrap:anywhere}
+.roulette-spinning #roulette-headline{animation:roulette-shine 1s ease-in-out infinite alternate}
+.roulette-revealed[data-reward="item"] #roulette-headline{color:#ffdda1;
+  text-shadow:0 0 15px #fbc1777a;animation:roulette-arrive .58s cubic-bezier(.2,1.5,.55,1) both}
+.roulette-revealed[data-reward="wisdom"] #roulette-detail{color:#d8d1f6;font-style:italic}
+@keyframes roulette-ambient{to{transform:rotate(630deg)}}
+@keyframes roulette-shine{to{text-shadow:0 0 20px #b6ddff;color:#fff}}
+@keyframes roulette-arrive{from{opacity:.4;transform:translateY(10px) scale(.88)}to{opacity:1;transform:translateY(0) scale(1)}}
+@media(max-width:460px){
+  .roulette-theatre{padding:8px 5px 15px;margin:9px 0 12px}
+  #roulette-detail{padding:0 10px;font-size:11px}
+  .roulette-showcase{gap:3px;margin-top:-5px}
+}
+@media(prefers-reduced-motion:reduce){
+  .roulette-theatre::before,.roulette-spinning #roulette-headline,.roulette-revealed[data-reward="item"] #roulette-headline{animation:none!important}
+}

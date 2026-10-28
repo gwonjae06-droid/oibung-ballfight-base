@@ -4,9 +4,10 @@
  */
 (function(global){
 'use strict';
-const KEY='oibung-market-v1';
-const ASSETS={campus:'캠퍼스 테크',meteor:'메테오 에너지',arcana:'아르카나 바이오'};
-const START={campus:100,meteor:150,arcana:72};
+const KEY='oibung-market-v1',TICK_MS=3000;
+const ASSETS={campus:'이권재 컴퍼니',meteor:'배달의 서준',arcana:'아토믹 성원 박',
+  psychology:'오슬우 심리학',repeat:'삼수를각오한최규원'};
+const START={campus:100,meteor:150,arcana:72,psychology:85,repeat:125};
 const clamp=(v,min,max)=>Math.max(min,Math.min(max,v));
 function restore(){
   let input={};
@@ -26,7 +27,8 @@ function restore(){
     position={asset:p.asset,entry:p.entry,margin:p.margin,leverage:p.leverage};
   return {prices,history,position,
     mined:clamp(Math.floor(Number(input.mined)||0),0,1e10),
-    taps:clamp(Math.floor(Number(input.taps)||0),0,1e10)};
+    taps:clamp(Math.floor(Number(input.taps)||0),0,1e10),
+    lastTick:Number.isFinite(input.lastTick)?Math.max(0,input.lastTick):0};
 }
 const state=restore();
 let selected='campus',lastMineAt=-Infinity;
@@ -39,6 +41,7 @@ const message=(id,value)=>{const el=idEl(id);if(el)el.textContent=value;};
 const balance=()=>typeof coins==='number'?coins:0;
 function roundPrice(n){return Math.round(n*100)/100;}
 function tickMarket(rng=Math.random){
+  state.lastTick=Date.now();
   for(const id of Object.keys(ASSETS)){
     // Volatility is intentionally fictional. Occasional +/-20-30% shocks
     // make leverage lose MORE than its initial collateral after several ticks.
@@ -49,7 +52,7 @@ function tickMarket(rng=Math.random){
     state.history[id].push(newPrice);
     if(state.history[id].length>24)state.history[id].shift();
   }
-  save();refresh();message('market-status','가상 시세가 갱신되었습니다. 현재 포지션의 손익을 확인하세요.');
+  save();refresh();
   return state.prices[selected];
 }
 function openPosition(asset,amount,leverage){
@@ -141,9 +144,15 @@ idEl('market-asset')?.addEventListener('change',e=>{if(ASSETS[e.target.value])se
 idEl('market-open')?.addEventListener('click',()=>openPosition(idEl('market-asset')?.value,
   Number(idEl('market-margin')?.value),Number(idEl('market-leverage')?.value)));
 idEl('market-close')?.addEventListener('click',()=>closePosition());
-idEl('market-tick')?.addEventListener('click',()=>tickMarket());
+// One market clock for all five assets. Browser timers may be throttled in
+// background tabs; resume one fresh tick on visibility return, not hundreds.
+if(typeof global.setInterval==='function')
+  global.setInterval(()=>{if(!document.hidden)tickMarket();},TICK_MS);
+document.addEventListener?.('visibilitychange',()=>{
+  if(!document.hidden&&Date.now()-state.lastTick>=TICK_MS)tickMarket();
+});
 idEl('mine-hit')?.addEventListener('click',()=>mine());
 refresh();
-global.PointMarket={openPosition,closePosition,tickMarket,mine,refresh,unrealized,
+global.PointMarket={openPosition,closePosition,tickMarket,mine,refresh,unrealized,assets:ASSETS,tickMs:TICK_MS,
   getState:()=>JSON.parse(JSON.stringify(state))};
 })(window);
