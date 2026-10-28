@@ -15,7 +15,8 @@ test('ten playable floors have distinct skills, deterministic difficulty, and ex
   assert.equal(floors.length,10);
   assert.deepEqual(floors.filter(f=>f.boss).map(f=>f.number),[5,10]);
   assert.ok(floors.every((f,i)=>f.number===i+1&&f.hp>=180&&f.damage>=12));
-  assert.ok(floors.every((f,i)=>i===0||f.hp>=floors[i-1].hp));
+  assert.ok(floors.filter(f=>!f.boss).every((f,i,a)=>i===0||f.hp>a[i-1].hp),'normal floors scale upward');
+  assert.ok(floors[4].hp>floors[3].hp&&floors[9].hp>floors[8].hp,'boss floors have distinct HP spikes');
   assert.equal(new Set(floors.map(f=>f.main)).size,10,'floor skill types differ');
   const iron=m.makeEnemy(5),cosmos=m.makeEnemy(10);
   assert.ok(iron.skills.flatMap(s=>s.actions).some(a=>a.type==='uppercut'));
