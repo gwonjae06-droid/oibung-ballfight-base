@@ -1455,3 +1455,86 @@ html,body {background:#090a0c;color:var(--text);font-family:"Noto Sans KR", "Mal
   .block-quick-settings-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
   .block-quick-action{max-width:100%}
 }
+
+
+/* Studio categories and read-only live motion ribbon. */
+.character-studio-dialog .studio-motion-preview{
+  display:grid;grid-template-columns:minmax(165px,272px) minmax(0,1fr);
+  align-items:center;gap:12px;padding:9px 20px;
+  border-bottom:1px solid #344651;background:#192630;flex:0 0 auto;
+}
+.studio-motion-stage{width:100%;max-width:272px;overflow:hidden;border:1px solid #435e70;border-radius:9px;background:#15212b}
+#studio-motion-canvas{display:block;width:100%;height:76px}
+.studio-motion-label{display:grid;gap:5px;min-width:0}
+.studio-motion-label strong{font-size:12px;color:#eaf4fb}
+.studio-motion-label span{font-size:11px;line-height:1.45;color:#aebfcc;overflow-wrap:anywhere}
+.character-studio-dialog .studio-category-tabs{
+  position:sticky;top:0;z-index:5;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:6px;padding:5px;margin:0;background:#202b34;border:1px solid #3b505e;border-radius:10px;
+}
+.character-studio-dialog .studio-category-tabs button{
+  min-width:0;min-height:43px;border:1px solid transparent;border-radius:7px;
+  background:transparent;color:#bacbd7;font-weight:750;font-size:13px;
+}
+.character-studio-dialog .studio-category-tabs button[aria-selected="true"]{
+  background:#40596c;border-color:#6e94ad;color:#fff;
+}
+.character-studio-dialog .studio-category-tabs button:focus-visible{
+  outline:2px solid #d7f0ff;outline-offset:2px;
+}
+.character-studio-dialog .studio-category-panel{display:flex;flex-direction:column;gap:13px;min-width:0}
+.character-studio-dialog .studio-category-panel[hidden]{display:none!important}
+.character-studio-dialog .studio-category-panel >details{
+  margin:0!important;border:1px solid #3b4249;border-radius:10px;
+  background:#191c21!important;padding:13px 15px!important;
+}
+.character-studio-dialog .studio-category-panel >details[open]>summary{margin-bottom:10px}
+.character-studio-dialog .studio-category-panel .forge-tuning,
+.character-studio-dialog .studio-category-panel .forge-library{margin:0!important}
+@media(max-width:700px){
+  .character-studio-dialog .studio-motion-preview{
+    grid-template-columns:minmax(116px,42%) minmax(0,1fr);
+    gap:8px;padding:6px 11px;
+  }
+  #studio-motion-canvas{height:62px}
+  .studio-motion-label strong{font-size:11px}
+  .studio-motion-label span{font-size:10px}
+  .character-studio-dialog .studio-category-tabs button{min-height:38px;font-size:12px}
+  .character-studio-dialog .studio-category-panel{gap:9px}
+  .character-studio-dialog .studio-category-panel >details{padding:9px 10px!important}
+  .character-studio-dialog .forge-studio{gap:9px!important}
+  .character-studio-dialog .forge-random-entry{padding:10px!important}
+  .character-studio-dialog .forge-generate-modes button{min-height:39px!important;font-size:11px!important}
+  .character-studio-dialog .forge-theme-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:4px}
+  .character-studio-dialog .forge-theme-choice{padding:5px!important;min-height:32px;font-size:10px}
+  .character-studio-dialog .block-forge-simple{padding:9px!important;gap:8px}
+  .character-studio-dialog .block-quick-picker{padding:8px;gap:6px}
+  .character-studio-dialog .block-quick-skill{padding:8px}
+  .character-studio-dialog .block-quick-chip{font-size:11px}
+  .character-studio-dialog .block-quick-action{padding:3px 4px}
+  .character-studio-dialog .block-quick-tools button{min-width:26px;min-height:30px}
+  .character-studio-dialog .forge-name input,
+  .character-studio-dialog .block-quick-picker select,
+  .character-studio-dialog .block-quick-skill input,
+  .character-studio-dialog .block-quick-settings select,
+  .character-studio-dialog .block-quick-settings input{min-height:36px;font-size:12px}
+  .character-studio-dialog .forge-primary-actions #bf-create{min-height:43px;font-size:12px}
+  .character-studio-dialog .character-art-editor{padding:10px}
+  .character-studio-dialog .character-art-canvas-wrap{width:min(100%,185px)}
+  .character-studio-dialog .character-art-grid{gap:8px}
+  .character-studio-dialog .character-art-options{gap:7px}
+  .character-studio-dialog .character-art-buttons{gap:5px}
+  .character-studio-dialog .character-art-buttons button{min-height:35px;padding:5px;font-size:10px}
+  .character-studio-dialog .forge-grid{gap:6px}
+  .character-studio-dialog .forge-grid label{font-size:11px}
+  .arena-match-setup .bf-picks{gap:5px!important}
+  .arena-match-setup .bf-picks select{font-size:11px;min-height:35px;padding:5px}
+}
+@media(max-width:380px){
+  .character-studio-dialog .forge-theme-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .character-studio-dialog .studio-category-tabs button{font-size:11px}
+  .studio-motion-label span{font-size:9px}
+}
+@media(prefers-reduced-motion:reduce){
+  .studio-motion-preview canvas{scroll-behavior:auto}
+}
