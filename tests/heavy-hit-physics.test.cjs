@@ -20,7 +20,7 @@ test('a landed hit gives large directional momentum, attacker recoil, shake and 
   const {world,fx,played}=harness(),a=actor(1,100,100),b=actor(2,180,100);
   assert.equal(fx.hit(a,b,35),true);
   assert.equal(b.hp,300,'physics must never alter combat damage');
-  assert.ok(b.impactVX>=45,'heavy hits now use a separate explosive impulse far above capped running speed');
+  assert.ok(b.impactVX>=25,'heavy hits now use a separate explosive impulse far above capped running speed');
   assert.equal(b.impactVY,0);assert.ok(a.vx<0,'attacker should recoil');
   assert.ok(b.x>180,'the target should react visually on the first frame');
   assert.ok(world.screenShake>=10);
@@ -28,7 +28,7 @@ test('a landed hit gives large directional momentum, attacker recoil, shake and 
   assert.equal(played[0][0],'heavy');
   const initial=b.impactSpeed;
   b.vx=-1;const before=b.x;fx.integrate(b);
-  assert.ok(b.x-before>40,'first knockback frame must travel explosively');
+  assert.ok(b.x-before>18,'first knockback frame must travel explosively');
   assert.equal(b.vx,-1,'forced velocity must not overwrite the fighter AI');
   assert.ok(b.impactSpeed<initial,'knockback must decay smoothly');
   for(let i=0;i<30;i++)fx.tick();
@@ -38,7 +38,7 @@ test('every confirmed separate blow generates its own pulse; animation is bounde
   const {world,fx}=harness(),a=actor(1,100,100),b=actor(2,120,140);
   for(let i=0;i<100;i++)fx.hit(a,b,8,{knockback:9});
   assert.equal(fx.pulseCount,80);
-  assert.ok(Math.hypot(b.impactVX,b.impactVY)<=74.01,'stacking hits cannot create runaway momentum');
+  assert.ok(Math.hypot(b.impactVX,b.impactVY)<=48.01,'stacking hits cannot create runaway momentum');
   assert.ok(world.screenShake<=15,'camera shake stays capped');
   assert.ok(Number.isFinite(b.x)&&Number.isFinite(b.y));
   assert.ok(b.x>=b.radius&&b.x<=world.canvas.width-b.radius);
@@ -48,7 +48,7 @@ test('reduced-motion preference suppresses camera shake but keeps gameplay physi
   const {world,fx}=harness(),a=actor(1,100,100),b=actor(2,200,100);
   fx.setReduced(true);fx.hit(a,b,50);
   assert.equal(world.screenShake,0);
-  assert.ok(b.impactVX>45);
+  assert.ok(b.impactVX>26);
   const noop=()=>{};
   const ctx=new Proxy({}, {get(o,k){return k in o?o[k]:noop;},set(o,k,v){o[k]=v;return true;}});
   assert.doesNotThrow(()=>fx.draw(ctx));
@@ -61,7 +61,7 @@ test('custom fighter hits use the physics pipeline only on actual attacks, never
   assert.equal(world.SkillForge.hit(a,b,{type:'wave',damage:26,status:'none',knockback:5}),true);
   assert.equal(b.hp,274);
   assert.equal(fx.pulseCount,1);
-  assert.ok(b.impactVX>40);
+  assert.ok(b.impactVX>20);
   b.invincible=0;
   assert.equal(world.SkillForge.hit(a,b,{type:'wave',damage:26,status:'none',knockback:5}),true);
   assert.equal(b.hp,248);assert.equal(fx.pulseCount,2);
@@ -97,11 +97,12 @@ test('knockback starts explosively, decays smoothly and returns to ordinary move
     fx.integrate(b);
     distances.push(Math.hypot(b.x-x,b.y-y));
   }
-  assert.ok(distances[0]>40,'first frame must explosively launch the defender');
-  assert.ok(distances[1]<distances[0] && distances[1]>distances[0]*.75,
+  assert.ok(distances[0]>20,'first frame remains punchy but is intentionally shorter');
+  assert.ok(distances[1]<distances[0] && distances[1]>distances[0]*.5,
     'second frame should retain most of the speed but be slower');
   assert.ok(distances[8]<distances[0]*.3,'momentum dissipates rapidly without snapping to a stop');
-  assert.ok(distances[15]>0,'the tail of the hit has gradual motion');
+  assert.ok(distances[4]>0,'the hit decays for multiple frames');
+  assert.equal(distances[15],0,'knockback no longer persists after the short recovery window');
   assert.ok(distances[20]<3,'return toward normal locomotion by 1/3 second');
   assert.equal(b.impactSpeed,0,'finite trailing momentum must settle completely');
   assert.equal(b.vx,2,'normal forward movement resumes untouched');
@@ -135,12 +136,12 @@ test('engine applies hit momentum outside normal 12px speed cap and then settles
   fx.hit(a,b,30);
   const previous=b.x;
   world.update();
-  assert.ok(b.x-previous>40,'force is applied separately from the engine movement cap');
+  assert.ok(b.x-previous>20,'force is applied separately from the engine movement cap');
   assert.equal(b.vx,2,'base motion remains unchanged by knockback integration');
   const firstStep=b.x-previous;
   const next=b.x;
   world.update();
-  assert.ok(b.x-next<firstStep,'knockback slows from the peak');
+  assert.ok(b.x-next<firstStep,'knockback loses momentum quickly');
   for(let i=0;i<35;i++)world.update();
   assert.equal(b.impactSpeed,0);
   assert.equal(b.hp,300,'no extra HP loss from the impact itself');
