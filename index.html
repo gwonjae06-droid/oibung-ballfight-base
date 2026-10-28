@@ -140,11 +140,19 @@
         <strong id="arcade-wallet" class="game-wallet">1,000 G</strong>
       </div>
       <p class="game-extra-info">전투 능력치는 바뀌지 않습니다. 뽑은 외형 연출은 내 커스텀 캐릭터 전체에 적용됩니다.</p>
+      <div class="roulette-theatre" aria-label="가챠 룰렛 연출">
+        <div class="roulette-orbit" aria-hidden="true"><canvas id="cosmetic-roulette" width="620" height="300"></canvas></div>
+        <div class="roulette-showcase">
+          <span class="roulette-eyebrow">MYSTERY CAPSULE / OIBUNG</span>
+          <strong id="roulette-headline">운명의 룰렛</strong>
+          <span id="roulette-detail">뽑기 버튼을 눌러 결과를 확인하세요</span>
+        </div>
+      </div>
       <div class="arcade-pull">
         <div><strong>✨ 연출 캡슐</strong><span>테두리 · 스킬 색상 · 공격 궤적 · 등장 연출 · 스킬 모션</span></div>
         <button type="button" id="cosmetic-draw">300 G · 1회 뽑기</button>
       </div>
-      <p id="cosmetic-result" class="game-extra-status" role="status" aria-live="polite">모든 보상 확률 동일 · 중복 획득 시 100 G 반환</p>
+      <p id="cosmetic-result" class="game-extra-status" role="status" aria-live="polite">미당첨 시 소액 G 또는 짧은 인생 명언이 등장합니다. 오래 못 뽑으면 보상이 보장됩니다.</p>
       <div class="cosmetic-collections" id="cosmetic-collections" aria-label="보유한 가챠 아이템과 장착 상태"></div>
     </section>
     <section class="game-extra-panel" id="point-finance" aria-labelledby="finance-title">
