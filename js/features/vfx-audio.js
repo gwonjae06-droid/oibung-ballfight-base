@@ -8,6 +8,7 @@
   const fx=[], captions=new Map();
   let audio=null, master=null, noise=null, muted=false, intensity='full', lastSound=-500;
   let simulatedFrame=0, soundSequence=0;
+  let lastMixTime=-1000;const recentVoices=[];
   const maxFx=150;
   const colorOf=(p,fallback)=>palette[p?.id]||fallback||'#e7f3ff';
   const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
@@ -32,9 +33,9 @@
     try {
       audio=new C();
       const limiter=audio.createDynamicsCompressor();
-      limiter.threshold.value=-13;limiter.knee.value=16;limiter.ratio.value=8;
+      limiter.threshold.value=-20;limiter.knee.value=17;limiter.ratio.value=9;
       limiter.attack.value=.003;limiter.release.value=.19;
-      master=audio.createGain();master.gain.value=muted?0:.22;
+      master=audio.createGain();master.gain.value=muted?0:.18;
       master.connect(limiter);limiter.connect(audio.destination);
       const length=Math.floor(audio.sampleRate*.42), data=new Float32Array(length);
       for(let i=0;i<length;i++)data[i]=Math.random()*2-1;
@@ -53,28 +54,70 @@
   function snap(duration=.11,volume=.12,filterHz=2100) {
     if(!audio||muted||!noise)return;
     const t=audio.currentTime, src=audio.createBufferSource(),f=audio.createBiquadFilter(),g=audio.createGain();
-    src.buffer=noise;f.type='bandpass';f.frequency.value=filterHz;f.Q.value=.8;
+    src.buffer=noise;f.type='lowpass';f.frequency.value=filterHz;f.Q.value=.75;
     g.gain.setValueAtTime(volume,t);g.gain.exponentialRampToValueAtTime(.0001,t+duration);
     src.connect(f);f.connect(g);g.connect(master);src.start(t);src.stop(t+duration+.01);
   }
+  /* Tactile, dark-voiced percussion rather than high-pitched arcade beeps.
+   * We cap transient density before DSP and soft-compress the complete SFX bus.
+   * This is deliberately independent from MP3 background music volume. */
   function sound(kind,strength=1) {
     if(muted)return;
-    // No more than one impact voice per couple of simulated frames.
-    if(kind==='hit' && simulatedFrame-lastSound<3)return;
-    if(kind==='hit')lastSound=simulatedFrame;
+    const impact=kind==='hit'||kind==='heavy'||kind==='lightning';
+    // At 2x speed or in 10-fighter matches, don't stack a wall of noise.
+    const minFrames=impact?2:kind==='cast'?4:5;
+    if(simulatedFrame-lastSound<minFrames)return;
+    if(audio){
+      const current=audio.currentTime;
+      while(recentVoices.length&&current-recentVoices[0]>.25)recentVoices.shift();
+      if(recentVoices.length>=7||current-lastMixTime<(impact?.018:.045))return;
+      recentVoices.push(current);lastMixTime=current;
+    }
+    lastSound=simulatedFrame;
     soundSequence++;
     if(!audio)return;
-    const v=clamp(strength,.2,1.6);
-    if(kind==='hit'){snap(.09,.11*v,1400);tone(135,52,.12,.18*v,'triangle');}
-    else if(kind==='heavy'){snap(.23,.20*v,800);tone(120,35,.25,.30*v,'sawtooth');tone(65,41,.18,.20*v);}
-    else if(kind==='cast'){tone(360,820,.19,.09*v,'sine');tone(190,390,.15,.055*v,'triangle',.035);}
-    else if(kind==='energy'){tone(190,680,.27,.12*v,'sawtooth');snap(.08,.08*v,3400);}
-    else if(kind==='lightning'){snap(.23,.24*v,3500);tone(190,62,.28,.22*v,'sawtooth');}
-    else if(kind==='heal'){tone(420,700,.20,.11*v);tone(625,990,.25,.07*v,'sine',.09);}
-    else if(kind==='transform'){tone(110,240,.36,.17*v,'sawtooth');tone(225,620,.36,.08*v,'triangle',.08);}
-    else if(kind==='dash'){snap(.13,.13*v,700);tone(300,110,.20,.12*v,'triangle');}
-    else if(kind==='shield'){tone(480,960,.32,.075*v,'sine');tone(600,380,.20,.055*v);}
-    else if(kind==='rune'){tone(340,550,.10,.07*v);tone(520,880,.17,.07*v,'sine',.10);}
+    const v=clamp(Number(strength)||.6,.15,1.25);
+    const variation=.96+Math.random()*.08;
+    if(kind==='hit'){
+      snap(.075,.068*v,750);
+      tone(155*variation,76,.115,.16*v,'triangle');
+      tone(74,48,.10,.065*v,'sine',.012);
+    }else if(kind==='heavy'){
+      snap(.13,.12*v,520);
+      tone(165*variation,46,.22,.24*v,'triangle');
+      tone(85,39,.18,.14*v,'sine',.012);
+    }else if(kind==='cast'){
+      snap(.085,.052*v,870);
+      tone(165*variation,88,.15,.085*v,'triangle');
+    }else if(kind==='energy'){
+      snap(.16,.11*v,580);
+      tone(168*variation,58,.24,.16*v,'triangle');
+      tone(72,45,.18,.07*v,'sine',.025);
+    }else if(kind==='lightning'){
+      snap(.18,.14*v,950);
+      tone(183*variation,45,.21,.18*v,'triangle');
+      tone(95,42,.14,.10*v,'sine');
+    }else if(kind==='heal'){
+      snap(.09,.035*v,650);
+      tone(108*variation,145,.24,.065*v,'sine');
+      tone(92,119,.19,.03*v,'triangle',.05);
+    }else if(kind==='transform'){
+      snap(.19,.095*v,480);
+      tone(148*variation,51,.29,.18*v,'triangle');
+      tone(66,43,.25,.075*v,'sine',.035);
+    }else if(kind==='dash'){
+      snap(.12,.083*v,1050);
+      tone(142*variation,72,.125,.09*v,'triangle');
+    }else if(kind==='shield'){
+      snap(.16,.07*v,610);
+      tone(122*variation,65,.23,.11*v,'triangle');
+    }else if(kind==='rune'){
+      snap(.13,.055*v,720);
+      tone(137*variation,83,.19,.105*v,'triangle');
+    }else {
+      snap(.08,.05*v,770);
+      tone(134*variation,80,.13,.08*v,'triangle');
+    }
   }
   function caption(p,label,color){
     if(!p||!label)return;
@@ -270,7 +313,7 @@
   global.BattleFX={
     cast,hit,tick,draw,beam,mark,clear,caption,unlock,sound,
     get muted(){return muted;},
-    setMuted(value){muted=!!value;if(master)master.gain.setTargetAtTime(muted?0:.22,audio.currentTime,.025);},
+    setMuted(value){muted=!!value;if(master)master.gain.setTargetAtTime(muted?0:.18,audio.currentTime,.025);},
     setIntensity(v){intensity=v==='low'?'low':'full';},
     colorOf
   };
