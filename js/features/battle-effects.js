@@ -114,6 +114,7 @@
     }else acc=0;
     if(globalThis.AdvancedCombat){AdvancedCombat.setAlpha(isPlaying&&!isGameOver?Math.min(1,acc/(1000/60)):1);AdvancedCombat.setReduced(gentle.checked);}
     window.SkillVisuals?.setReduced(gentle.checked);
+    window.ImpactPhysics?.setReduced?.(gentle.checked);
     draw();
     requestAnimationFrame(gameLoop);
   };

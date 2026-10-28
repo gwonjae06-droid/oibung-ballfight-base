@@ -9,6 +9,6 @@ if(self.currentRune==='칼날비'){dmg=self.hailBladesHits>0?27:15;color='#dc262
 else if(self.currentRune==='정복자'){self.conquerorStacks=Math.min(6,self.conquerorStacks+1);dmg=15+self.conquerorStacks*3;self.hp=Math.min(self.maxHp,self.hp+5);color='#ea580c';text=`🩸 정복자 찌르기! -${dmg}`;addFloatingText('+5 HP',self.x,self.y-25,'#22c55e',15);}
 else if(self.currentRune==='빙결'){dmg=15;target.slowTimer=Math.max(target.slowTimer||0,60);target.slowMultiplier=0.55;color='#0284c7';text=`빙결 -${dmg}`;}
 else if(self.currentRune==='치명적속도'){dmg=14;color='#d97706';text=`⚡ 치속 찌르기! -${dmg}`;}
-target.hp=Math.max(0,target.hp-dmg);target.invincible=14;createHitParticles(target.x,target.y,color,14);addFloatingText(text,target.x,target.y-25,color,18);}}
+target.hp=Math.max(0,target.hp-dmg);target.invincible=14;globalThis.ImpactPhysics?.hit?.(self,target,dmg,{color});createHitParticles(target.x,target.y,color,14);addFloatingText(text,target.x,target.y-25,color,18);}}
 if(self.pokeAnim>0){self.pokeAnim-=0.07;if(self.pokeAnim<0)self.pokeAnim=0;}
 }};

@@ -194,7 +194,7 @@ function hit(p,e,action,multiplier=1,attackZ) {
   if(global.AdvancedCombat&&!AdvancedCombat.canHit(p,e,attackZ))return false;
   if(!global.AdvancedCombat&&e.jumpState&&e.jumpState!=='ground')return false;
   const d=Math.round((action.damage||0)*multiplier*(global.ForgeExpansion?.damageScale(p,e)||1));
-  if(d){const tint=p.forge?.effectColor||p.forge?.color||p.themeColor||'#58687a';e.hp=Math.max(0,e.hp-d);e.invincible=12;createHitParticles(e.x,e.y,tint,12);addFloatingText('-'+d,e.x,e.y-30,tint,17);}
+  if(d){const tint=p.forge?.effectColor||p.forge?.color||p.themeColor||'#58687a';e.hp=Math.max(0,e.hp-d);e.invincible=12;createHitParticles(e.x,e.y,tint,d>=25?22:14);addFloatingText('-'+d,e.x,e.y-30,tint,17);global.ImpactPhysics?.hit?.(p,e,d,{knockback:action.knockback||0,color:tint});}
   if(action.status==='ice'){e.slowTimer=Math.max(e.slowTimer||0,90);e.slowMultiplier=.5;}
   if(action.status==='fire'||action.status==='poison'){
     const seconds=Number.isFinite(action.duration)?action.duration:(action.status==='fire'?2:3);
@@ -204,7 +204,7 @@ function hit(p,e,action,multiplier=1,attackZ) {
     e.bfDotDamage=Math.max(e.bfDotDamage||2,Math.min(6,Math.max(1,Math.round(d*.12))));
   }
   global.ForgeExpansion?.applyStatus(p,e,action);
-  if(action.knockback>0){const dx=e.x-p.x,dy=e.y-p.y,dist=Math.hypot(dx,dy)||1;e.vx+=dx/dist*action.knockback;e.vy+=dy/dist*action.knockback;}
+  if(action.knockback>0&&!global.ImpactPhysics){const dx=e.x-p.x,dy=e.y-p.y,dist=Math.hypot(dx,dy)||1;e.vx+=dx/dist*action.knockback;e.vy+=dy/dist*action.knockback;}
   global.SkillVisuals?.impact(p,e,action); // Only after damage/status actually connects.
   return true;
 }
