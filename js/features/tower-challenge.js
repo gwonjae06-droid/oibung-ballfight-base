@@ -56,7 +56,7 @@ function makeEnemy(n){
     const attack=action(type,isMovement||isSupport?0:Math.round(f.damage*(i===0?1:.7)),{
       radius:type==='starfall'||type==='blackhole'?155:112,
       speed:type==='dash'?8:5,
-      duration:type==='dash'?.5:type==='starfall'?2.5:1.7,
+      duration:type==='dash'?0.5:type==='starfall'?2.5:1.7,
       count:type==='starfall'?5:1,
       status:(f.number===4&&['nova','zone','shot'].includes(type))?'fire':
         f.number===6&&['zone','trap','drain'].includes(type)?'poison':'none'
