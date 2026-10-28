@@ -230,7 +230,7 @@ function update() {
         defender.hp=Math.max(0,defender.hp-value);defender.invincible=12;
         addFloatingText('-'+value,defender.x,defender.y-28,attacker.forge?.color||'#4b5563',17);
         createHitParticles(defender.x,defender.y,attacker.forge?.color||'#58687a',12);
-        globalThis.ImpactPhysics?.hit?.(attacker,defender,value,{knockback:action.knockback||0});
+        globalThis.ImpactPhysics?.hit?.(attacker,defender,value,{knockback:action.knockback||0,type:action.type});
       }
       if(action.status==='ice'){defender.slowTimer=Math.max(defender.slowTimer||0,90);defender.slowMultiplier=.5;}
       if(action.status==='fire'||action.status==='poison')defender.bfDot=Math.max(defender.bfDot||0,Math.round((action.duration||2)*60));

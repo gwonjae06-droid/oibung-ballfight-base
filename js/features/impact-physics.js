@@ -5,6 +5,8 @@
 'use strict';
 const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
 const pulses=[],trails=[];
+const PROJECTILES=new Set(['projectile','shot','homing','pierce','boomerang',
+  'arcshot','splitshot','bolt','dung','meteor','starfall','summon','turret']);
 let frame=0,lastSound=-8,reduced=false;
 function hit(attacker,defender,damage,options={}){
   if(!attacker||!defender||attacker===defender||!(Number(damage)>0))return false;
@@ -17,11 +19,15 @@ function hit(attacker,defender,damage,options={}){
   }
   if(d<.001){dx=(defender.playerNum||0)>=(attacker.playerNum||0)?1:-1;dy=0;d=1;}
   const nx=dx/d,ny=dy/d,amount=clamp(Number(damage),1,200);
-  const heavy=options.heavy===true||amount>=22;
-  // Sudden 35-70px/tick burst on a separate impulse channel. Normal
-  // 12px/tick locomotion must NEVER clamp a landed blow's physical response.
-  const impulse=clamp(26+Math.sqrt(amount)*3.2+(heavy?4:0)+
-    clamp(Number(options.knockback)||0,0,9)*.95,32,70);
+  const type=String(options.type||'');
+  const kind=type==='contact'?'contact':PROJECTILES.has(type)?'projectile':'strike';
+  // Strong hand-to-hand strikes remain explosive; body-to-body collisions
+  // are slightly softer and ranged missiles carry a FRACTION of the force.
+  const heavy=kind!=='projectile'&&(options.heavy===true||amount>=22);
+  const raw=26+Math.sqrt(amount)*3.2+(heavy?4:0)+
+    clamp(Number(options.knockback)||0,0,9)*.95;
+  const impulse=kind==='projectile'?clamp(raw*.23,7,17):
+    kind==='contact'?clamp(raw*.78,21,55):clamp(raw,32,70);
   // A subsequent hit refreshes the burst without unboundedly adding forces.
   // Mostly follow the newest attacking direction, keeping a hint of momentum.
   let ix=nx*impulse+clamp(Number(defender.impactVX)||0,-72,72)*.16;
@@ -29,22 +35,24 @@ function hit(attacker,defender,damage,options={}){
   const resultant=Math.hypot(ix,iy);
   if(resultant>74){ix*=74/resultant;iy*=74/resultant;}
   defender.impactVX=ix;defender.impactVY=iy;
-  defender.impactFrames=30;
+  defender.impactFrames=kind==='projectile'?19:30;
   defender.impactSpeed=Math.hypot(ix,iy);
   defender.impactColor=options.color||attacker.forge?.effectColor||attacker.themeColor||
     attacker.borderColor||'#45586a';
   // The initial flash reacts immediately; real travel then eases to normal
   // motion over a series of fixed simulation ticks.
-  const nudge=clamp(impulse*.17,7,12);
+  const nudge=kind==='projectile'?clamp(impulse*.17,1,3):
+    kind==='contact'?clamp(impulse*.17,4,9):clamp(impulse*.17,7,12);
   const arena=typeof canvas!=='undefined'?canvas:global.canvas;
   if(arena?.width&&arena?.height){
     defender.x=clamp(defender.x+nx*nudge,defender.radius||0,arena.width-(defender.radius||0));
     defender.y=clamp(defender.y+ny*nudge,defender.radius||0,arena.height-(defender.radius||0));
   }
   // Small attacker recoil makes the blow read as a two-body interaction.
-  if(options.recoil!==false){
-    attacker.vx=(attacker.vx||0)-nx*(heavy?3.5:2.4);
-    attacker.vy=(attacker.vy||0)-ny*(heavy?3.5:2.4);
+  if(options.recoil!==false&&kind!=='projectile'){
+    const recoil=(heavy?3.5:2.4)*(kind==='contact'?.78:1);
+    attacker.vx=(attacker.vx||0)-nx*recoil;
+    attacker.vy=(attacker.vy||0)-ny*recoil;
   }
   const color=options.color||attacker.forge?.effectColor||attacker.themeColor||
     attacker.borderColor||'#45586a';
@@ -52,10 +60,11 @@ function hit(attacker,defender,damage,options={}){
   if(pulses.length>80)pulses.splice(0,pulses.length-80);
   if(!reduced&&typeof screenShake==='number'){
     screenShake=Math.max(screenShake,
-      clamp((heavy?6:3)+Math.sqrt(amount)*1.0,4,15));
+      clamp(((heavy?6:3)+Math.sqrt(amount))*(
+        kind==='projectile'?.28:kind==='contact'?.75:1),1,15));
   }
   if(frame-lastSound>=2){
-    global.BattleFX?.sound?.(heavy?'heavy':'hit',heavy?1.1:.95);
+    global.BattleFX?.sound?.(heavy?'heavy':'hit',kind==='projectile'?.5:heavy?1.1:.95);
     lastSound=frame;
   }
   return true;

@@ -1807,3 +1807,9 @@ html,body {background:#090a0c;color:var(--text);font-family:"Noto Sans KR", "Mal
 .bf-music input{width:110px;min-width:0}
 .bf-music button{min-height:39px;padding:7px 13px;border-radius:8px;border:1px solid #56575a;background:#2d2e31;color:#eee;font-size:12px;font-weight:800;cursor:pointer}
 #bgm-status{flex-basis:100%;overflow-wrap:anywhere;color:var(--muted)}
+
+/* A clear, optional audio-unlock button by the arena title. */
+.bgm-quick-start{flex:0 0 auto;min-height:34px;padding:6px 12px;border:1px solid #93a2ac;border-radius:9px;background:#2d3942;color:#f0f6f8;font-size:12px;font-weight:800;cursor:pointer}
+.bgm-quick-start:hover{background:#384a56}
+.bgm-quick-start[hidden]{display:none!important}
+@media(max-width:450px){.bgm-quick-start{font-size:11px;padding:5px 8px}}
