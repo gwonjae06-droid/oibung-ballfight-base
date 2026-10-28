@@ -78,7 +78,11 @@ function updateCharacter(self) {
   if(self.hp<=0)return;
   if(globalThis.ForgeExpansion?.blocked(self)){
     // Stun/silence suspends casting, not the independent skill clocks.
-    if(self.forge)globalThis.SkillForge?.advanceTimers(self);
+    if(self.forge){
+      // Stun blocks fresh actions and movement, not effects already created.
+      globalThis.SkillForge?.advanceTimers(self);
+      globalThis.SkillForge?.advanceWorld(self,getClosestAliveEnemy(self));
+    }
     return;
   }
   const b=BEHAVIORS[self.id];
@@ -142,6 +146,10 @@ function update() {
   });
   if(globalThis.AdvancedCombat)AdvancedCombat.tick({
     hit(attacker,defender,action,multiplier=1,attackZ){
+      // Custom fighters must use the exact same resistance, knockback and
+      // status rules for delayed high-level attacks as for direct actions.
+      if(attacker?.forge&&globalThis.SkillForge?.hit)
+        return globalThis.SkillForge.hit(attacker,defender,action,multiplier,attackZ);
       if(!AdvancedCombat.canHit(attacker,defender,attackZ))return false;
       if(defender.invincible>0||defender.hp<=0)return false;
       const value=Math.max(0,Math.round((action.damage||0)*multiplier));

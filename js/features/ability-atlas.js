@@ -140,7 +140,7 @@ function execute(caster,action,originalTarget,api){
       // could leave the zone before its first 30-frame tick.
       hitAt(point.x,point.y,radius,count>3?.66:1);
       caster.forgeZones.push({
-        type:'zone',x:point.x,y:point.y,timer:Math.round(action.duration*60),
+        type:'zone',x:point.x,y:point.y,r:radius,timer:Math.round(action.duration*60),
         a:action,ticks:0
       });
     }

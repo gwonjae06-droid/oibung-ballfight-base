@@ -227,7 +227,7 @@ function draw(p){
       ctx.closePath();ctx.fill();ctx.stroke();
       ctx.restore();
     }else if(b.kind==='blackhole'){
-      const t=b.age*.065,r=Math.min(90,b.a.radius);
+      const t=b.age*.065,r=b.a.radius;
       ctx.strokeStyle='#615693';ctx.lineWidth=2;
       for(let i=0;i<3;i++){
         ctx.beginPath();
@@ -240,7 +240,7 @@ function draw(p){
       }
       ctx.fillStyle='#302f54';ctx.beginPath();ctx.arc(b.x,b.y,13,0,Math.PI*2);ctx.fill();
     }else if(b.kind==='lifebloom'){
-      const r=Math.min(60,b.a.radius*.6),t=b.age*.03;
+      const r=b.a.radius,t=b.age*.03;
       ctx.strokeStyle='#238063';ctx.lineWidth=2;
       ctx.beginPath();ctx.arc(b.x,b.y,r,0,Math.PI*2);ctx.stroke();
       for(let i=0;i<6;i++){
@@ -251,11 +251,13 @@ function draw(p){
       ctx.fillStyle='#30956e';ctx.beginPath();ctx.arc(b.x,b.y,6,0,Math.PI*2);ctx.fill();
     }else if(b.kind==='mine'){
       ctx.strokeStyle='#9a603e';ctx.setLineDash([5,5]);
-      ctx.beginPath();ctx.arc(b.x,b.y,Math.min(45,b.a.radius*.3),0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);
+      // Danger ring is the actual proximity trigger and blast radius.
+      ctx.beginPath();ctx.arc(b.x,b.y,b.a.radius,0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);
       ctx.fillStyle='#9a603e';ctx.beginPath();ctx.arc(b.x,b.y,10,0,Math.PI*2);ctx.fill();
       ctx.strokeStyle='#fff';ctx.beginPath();ctx.moveTo(b.x-4,b.y);ctx.lineTo(b.x+4,b.y);ctx.stroke();
     }else if(area){
-      const r=b.kind==='meteor'?Math.max(18,Math.min(65,b.a.radius*.33)):b.a.radius;
+      // Meteor's entire damage region must be shown during its warning.
+      const r=b.a.radius;
       ctx.beginPath();ctx.arc(b.x,b.y,r,0,Math.PI*2);ctx.stroke();
 
     }else{

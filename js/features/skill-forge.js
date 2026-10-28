@@ -120,8 +120,8 @@ function hit(p,e,action,multiplier=1,attackZ) {
   if(!e||e===p||e.hp<=0||e.invincible>0)return false;
   if(global.AdvancedCombat&&!AdvancedCombat.canHit(p,e,attackZ))return false;
   if(!global.AdvancedCombat&&e.jumpState&&e.jumpState!=='ground')return false;
-  const d=Math.round(action.damage*multiplier*(global.ForgeExpansion?.damageScale(p,e)||1));
-  if(d){e.hp=Math.max(0,e.hp-d);e.invincible=12;createHitParticles(e.x,e.y,p.forge.color,12);addFloatingText('-'+d,e.x,e.y-30,p.forge.color,17);}
+  const d=Math.round((action.damage||0)*multiplier*(global.ForgeExpansion?.damageScale(p,e)||1));
+  if(d){const tint=p.forge?.color||p.themeColor||'#58687a';e.hp=Math.max(0,e.hp-d);e.invincible=12;createHitParticles(e.x,e.y,tint,12);addFloatingText('-'+d,e.x,e.y-30,tint,17);}
   if(action.status==='ice'){e.slowTimer=Math.max(e.slowTimer||0,90);e.slowMultiplier=.5;}
   if(action.status==='fire'||action.status==='poison'){
     const seconds=Number.isFinite(action.duration)?action.duration:(action.status==='fire'?2:3);
@@ -246,7 +246,6 @@ function execute(p,a,target) {
   }
 }
 function update(p,target){
-  global.ForgeExpansion?.update(p,{hit,enemies});
   const loss=p.forgeLastHp-p.hp;p.forgeLastHp=p.hp;
   const cruise=p.forge.speed*(p.speedMultiplier||1),v=Math.hypot(p.vx,p.vy);
   if(p.forgeDash>0){
@@ -278,6 +277,12 @@ function update(p,target){
       if(active){p.forgeTicks[i]=0;cast(p,s,target,i);}
     });
   }
+  advanceWorld(p,target);
+}
+// Existing projectiles, summons, cooldown-independent sequences and zones
+// must advance even when the owner is stunned, frozen or silenced.
+function advanceWorld(p,target){
+  global.ForgeExpansion?.update(p,{hit,enemies});
   tickQueue(p,target);
   for(let i=p.forgeShots.length-1;i>=0;i--){
     const b=p.forgeShots[i];b.prevX=b.x;b.prevY=b.y;b.x+=b.vx;b.y+=b.vy;b.life--;
@@ -292,15 +297,29 @@ function update(p,target){
       enemies(p).filter(e=>Math.hypot(e.x-z.x,e.y-z.y)<z.a.radius*.4+e.radius).forEach(e=>hit(p,e,z.a));
     }
     if(z.type==='zone'&&z.timer>0&&z.ticks%30===0){
-      enemies(p).filter(e=>Math.hypot(e.x-z.x,e.y-z.y)<z.a.radius+e.radius).forEach(e=>hit(p,e,z.a,.4));
+      const actualRadius=z.r??z.a.radius;
+      enemies(p).filter(e=>Math.hypot(e.x-z.x,e.y-z.y)<actualRadius+e.radius).forEach(e=>hit(p,e,z.a,.4));
     }
     if(z.timer<=0)p.forgeZones.splice(i,1);
   }
   for(let i=p.forgeOrbs.length-1;i>=0;i--){
     const o=p.forgeOrbs[i];o.life--;o.phase+=.09;o.ticks++;
-    if(o.ticks%28===0)enemies(p).filter(e=>Math.hypot(e.x-p.x,e.y-p.y)<o.a.radius+e.radius).forEach(e=>hit(p,e,o.a,.4));
+    if(o.ticks%28===0){
+      // An orbit hit occurs only where one of the drawn eight-pixel orbs
+      // actually touches an enemy; there is no invisible central AoE.
+      const count=Math.max(1,Math.min(8,Math.round(o.a.count||1)));
+      const orbitRadius=o.a.radius*.75;
+      enemies(p).forEach(e=>{
+        for(let j=0;j<count;j++){
+          const theta=o.phase+j*2*Math.PI/count;
+          const ox=p.x+Math.cos(theta)*orbitRadius,oy=p.y+Math.sin(theta)*orbitRadius;
+          if(Math.hypot(e.x-ox,e.y-oy)<(e.radius||0)+8){hit(p,e,o.a,.4);break;}
+        }
+      });
+    }
     if(o.life<=0)p.forgeOrbs.splice(i,1);
   }
+
 }
 function contact(p,e){
   if(global.ForgeExpansion?.blocked(p))return;
@@ -343,7 +362,7 @@ function drawFighter(p){
     ctx.moveTo(-4,-2);ctx.lineTo(8,0);ctx.stroke();
     ctx.restore();
   });
-  p.forgeZones.forEach(z=>{ctx.globalAlpha=z.type==='bolt'?.9:.65;ctx.lineWidth=2;ctx.setLineDash([6,5]);ctx.beginPath();ctx.arc(z.x,z.y,z.type==='bolt'?z.a.radius*.4:z.a.radius,0,2*Math.PI);ctx.stroke();ctx.setLineDash([]);});
+  p.forgeZones.forEach(z=>{ctx.globalAlpha=z.type==='bolt'?.9:.65;ctx.lineWidth=2;ctx.setLineDash([6,5]);ctx.beginPath();ctx.arc(z.x,z.y,z.type==='bolt'?z.a.radius*.4:(z.r??z.a.radius),0,2*Math.PI);ctx.stroke();ctx.setLineDash([]);});
   p.forgeOrbs.forEach(o=>{for(let i=0;i<o.a.count;i++){const t=o.phase+i*2*Math.PI/o.a.count,r=o.a.radius*.75;ctx.globalAlpha=.9;ctx.beginPath();ctx.arc(p.x+Math.cos(t)*r,p.y+Math.sin(t)*r,8,0,2*Math.PI);ctx.fill();}});
   ctx.restore();
 }
@@ -562,6 +581,6 @@ function initialize(){
   const oldDraw=drawCharacter;
   drawCharacter=function(p){if(p.forge)drawFighter(p);oldDraw(p);};
 }
-global.SkillForge={THEMES,randomProfile,normalize,register,remove,list,setDraft,refreshList:()=>refreshList(),persist,TYPE,TRIGGER,STATUS,cooldownFrames,advanceTimers:tickSkills,allProfile,allSkillset};
+global.SkillForge={THEMES,randomProfile,normalize,register,remove,list,setDraft,refreshList:()=>refreshList(),persist,TYPE,TRIGGER,STATUS,cooldownFrames,advanceTimers:tickSkills,advanceWorld,hit,allProfile,allSkillset};
 if(typeof document!=='undefined'&&document.querySelector('.bf-tools'))initialize();
 })(window);
