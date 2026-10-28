@@ -152,19 +152,25 @@ function render(time){
   ctx.fillStyle='#16232e';ctx.fillRect(0,0,WIDTH,HEIGHT);
   for(let i=20;i<WIDTH;i+=40)line(i,0,i,HEIGHT,'rgba(170,200,221,.08)',1);
   line(0,149,WIDTH,149,'#3a5261',1);
-  const moving=active.find(e=>MOVE.has(e.action.type));
+  const moving=events.filter(e=>MOVE.has(e.action.type)&&time>=e.start).at(-1);
+  const isMoving=moving&&time<moving.end;
   const move=moving?clamp((time-moving.start)/moving.length,0,1):0;
-  const slide=moving?(moving.action.type==='retreat'?-64:125)*Math.sin(Math.PI*move):0;
-  const flight=moving&&['leap','hover','glide','flight','dive'].includes(moving.action.type)?43*Math.sin(Math.PI*move):0;
+  // Retain the destination after a mobility action, so follow-up punches
+  // visibly occur next to their target rather than from the old position.
+  const direction=moving?.action.type==='retreat'?-1:1;
+  const distance=direction*(moving?.action.type==='glide'||moving?.action.type==='hover'?105:206);
+  const fraction=clamp(move*1.65,0,1);
+  const slide=moving?distance*Math.sin(fraction*Math.PI*.5):0;
+  const flight=isMoving&&['leap','hover','glide','flight','dive'].includes(moving.action.type)?43*Math.sin(Math.PI*move):0;
   const hx=113+slide,hy=126-flight,tx=366,ty=126;
   circle(tx,151,24,'rgba(0,0,0,.19)');
   circle(hx,151,24,'rgba(0,0,0,.18)');
   fighter(tx,ty,21,'#546e80','적');
   ctx.font='700 11px sans-serif';ctx.textAlign='center';ctx.fillStyle='#bdd5e0';
   ctx.fillText('훈련 더미',tx,87);
-  if(moving&&!reduced()){
+  if(isMoving&&!reduced()){
     for(let i=3;i>=1;i--){ctx.globalAlpha=.12*i/3;
-      circle(hx-slide*i*.15,hy+4*i,21,color);
+      circle(hx-distance*.1*i,hy+4*i,21,color);
     }ctx.globalAlpha=1;
   }
   for(const e of active){
@@ -281,6 +287,9 @@ if(typeof global.addEventListener==='function'){
   global.addEventListener('resize',()=>draw(elapsed));
 }
 document.addEventListener('visibilitychange',()=>{if(document.hidden)stop();else if(dialog.open)start();});
+// Also listen to the advanced editor, whose numeric inputs update the draft.
+studio.addEventListener('input',()=>refresh());
+studio.addEventListener('change',()=>refresh());
 playing=!reduced();updateToggle();
 refresh(true);
 if(dialog.open)start();
