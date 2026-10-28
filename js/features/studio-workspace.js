@@ -41,6 +41,8 @@ looks.hidden=true;
 [random,blocks,tuning,library,...rest].filter(Boolean).forEach(node=>skills.append(node));
 [basics,appearance].filter(Boolean).forEach(node=>looks.append(node));
 studio.replaceChildren(...[name,manager,tabs,skills,looks,create,saved].filter(Boolean));
+// Refresh the count and rows after moving their original DOM container.
+global.SkillForge.refreshList?.();
 function selectTab(tab,focus=false){
   const showLooks=tab==='appearance';
   looks.hidden=!showLooks;skills.hidden=showLooks;
