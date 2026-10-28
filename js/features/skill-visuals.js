@@ -4,7 +4,7 @@
  * cast and successful contact. Fixed-step time; no DOM or external assets. */
 (function(global){
 'use strict';
-const catalog=Object.freeze({
+const catalog=global.ActionRegistry?.visualCatalog||Object.freeze({
   wave:['ripples','#536d86'],shot:['arrow','#466b8b'],beam:['laser','#466f9d'],
   bolt:['lightning','#a47532'],dash:['speed','#3e7890'],blink:['fold','#6d5c9a'],
   heal:['cross','#36865f'],shield:['hex','#416e9d'],pull:['vortex','#396f78'],
@@ -30,7 +30,7 @@ const catalog=Object.freeze({
   grow:['expand','#488b72'],shrink:['compress','#758c8f'],
   burrowdash:['tunnel','#947749'],erupt:['fissure','#a56e3c']
 });
-const TYPES=Object.freeze(Object.keys(catalog));
+const TYPES=global.ActionRegistry?.ids()||Object.freeze(Object.keys(catalog));
 const MAX=68;
 let effects=[],low=false,frame=0;
 const clamp=(v,l,h)=>Math.max(l,Math.min(h,v));
@@ -131,7 +131,7 @@ function drawMotif(c,type,age,life){
 }
 
 /* Screen-space action language. Presentation only: NEVER deals damage. */
-const FAMILIES=Object.freeze({
+const FAMILIES=global.ActionRegistry?.FAMILIES||Object.freeze({
   fist:new Set(['uppercut','aircombo']),
   projectile:new Set(['shot','homing','pierce','boomerang','arcshot','splitshot','bolt','dung','turret','summon']),
   wave:new Set(['wave','beam','chain','pull','zone','orbit']),
