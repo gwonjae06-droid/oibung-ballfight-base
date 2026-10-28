@@ -80,6 +80,7 @@ if(studio){
 }
 let lastFocus=null;
 function show(){
+  if(global.ArenaScreenRouter?.enabled){global.ArenaScreenRouter.go('character');return;}
   lastFocus=document.activeElement;
   if(!dialog.open){
     if(typeof dialog.showModal==='function')dialog.showModal();
@@ -90,6 +91,7 @@ function show(){
   close.focus();
 }
 function hide(){
+  if(global.ArenaScreenRouter?.enabled){global.ArenaScreenRouter.go('lobby');return;}
   if(typeof dialog.close==='function')dialog.close();
   else dialog.removeAttribute('open');
   if(typeof global.dispatchEvent==='function'&&typeof global.Event==='function')

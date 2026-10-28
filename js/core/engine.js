@@ -62,7 +62,7 @@ function reRollMatch(forcedDef) {
   if(!pool.length){setEconomyMessage('캐릭터 모듈이 로드되지 않았습니다.','bad');return false;}
   let defs;
   if(Array.isArray(forcedDef)){
-    if(forcedDef.length!==count||forcedDef.some(d=>!pool.includes(d)))return false;
+    if(forcedDef.length!==count||forcedDef.some(d=>!pool.includes(d)&&!globalThis.ArenaTower?.isTransientDef?.(d)))return false;
     defs=forcedDef.slice(); // mirror matches allow repeated character definitions
   }else{
     const shuffled=pool.slice().sort(()=>Math.random()-.5);
@@ -116,6 +116,7 @@ function stopMatch(){
   start.innerText='다음 경기';
   start.dataset.state='finished';
   syncStopButton();
+  globalThis.ArenaTower?.onBattleEnd?.(null,'stopped');
   if(typeof draw==='function')draw();
   return true;
 }
@@ -268,7 +269,7 @@ function update() {
   }
   players.forEach(p=>globalThis.ForgeExpansion?.revive(p));
   const finalAlive=players.filter(p=>p.hp>0);
-  if(finalAlive.length<=1){isGameOver=true;isPlaying=false;globalThis.BackgroundMusic?.setBattle(false);settleRound(finalAlive.length===1?finalAlive[0]:null);document.getElementById('btn-start').innerText='다음 경기';document.getElementById('btn-start').dataset.state='finished';syncStopButton();}
+  if(finalAlive.length<=1){isGameOver=true;isPlaying=false;globalThis.BackgroundMusic?.setBattle(false);settleRound(finalAlive.length===1?finalAlive[0]:null);document.getElementById('btn-start').innerText='다음 경기';document.getElementById('btn-start').dataset.state='finished';syncStopButton();globalThis.ArenaTower?.onBattleEnd?.(finalAlive.length===1?finalAlive[0]:null);}
   updateUI();
 }
 // Identical fighters are distinguished by their match slot, not by
