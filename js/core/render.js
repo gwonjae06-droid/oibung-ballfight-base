@@ -35,7 +35,7 @@ ctx.save();ctx.translate(p.x,p.y+offset);ctx.scale(scale*pose.sx,scale*pose.sy);
 ctx.save();ctx.beginPath();ctx.arc(0,0,radius,0,Math.PI*2);ctx.clip();
 if(img&&img.complete&&img.naturalWidth!==0)ctx.drawImage(img,-radius,-radius,radius*2,radius*2);
 else{ctx.fillStyle=p.themeColor||p.borderColor||'#999';ctx.fill();ctx.fillStyle='#fff';ctx.font='bold 16px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(p.name[0],0,0);}
-ctx.restore();ctx.save();ctx.beginPath();ctx.arc(0,0,radius,0,Math.PI*2);ctx.lineWidth=4;ctx.strokeStyle='#000';ctx.globalAlpha=1;ctx.shadowBlur=0;ctx.setLineDash([]);ctx.stroke();ctx.restore();ctx.restore();
+ctx.restore();ctx.save();ctx.beginPath();ctx.arc(0,0,radius,0,Math.PI*2);ctx.lineWidth=globalThis.CosmeticArcade?.borderColor?.(p)?5:4;ctx.strokeStyle=globalThis.CosmeticArcade?.borderColor?.(p)||'#000';ctx.shadowColor=ctx.strokeStyle;ctx.shadowBlur=globalThis.CosmeticArcade?.borderGlow?.(p)||0;ctx.globalAlpha=1;ctx.shadowBlur=0;ctx.setLineDash([]);ctx.stroke();ctx.restore();ctx.restore();
 if(p.id==='lee'&&p.pokeAnim>0&&!dead){ctx.save();const a=Math.atan2(p.pokeTargetY-p.y,p.pokeTargetX-p.x),dist=Math.hypot(p.pokeTargetX-p.x,p.pokeTargetY-p.y),max=Math.min(p.pokeRange,Math.max(p.radius+40,dist)),reach=p.radius+(max-p.radius)*Math.sin(p.pokeAnim*Math.PI),x=p.x+Math.cos(a)*reach,y=p.y+Math.sin(a)*reach;ctx.beginPath();ctx.moveTo(p.x+Math.cos(a)*p.radius,p.y+Math.sin(a)*p.radius);ctx.lineTo(x,y);ctx.strokeStyle='#9a6500';ctx.lineWidth=5;ctx.lineCap='round';ctx.stroke();ctx.font='bold 24px -apple-system, sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('👉',x,y);ctx.restore();}
 ctx.save();const labelY=p.y+offset-radius*scale-10;ctx.font='600 13px "Noto Sans KR", sans-serif';const display=getArenaFighterName(p),name=dead?`${display} · 탈락`:display,width=ctx.measureText(name).width,rolling=p.id==='lee'&&p.isRolling&&!dead;ctx.fillStyle=dead?'rgba(70,70,70,0.68)':'rgba(15,15,15,.85)';drawRoundedRect(ctx,p.x-width/2-6,labelY-14,width+12,18,4);ctx.fillStyle='#fff';ctx.textAlign='center';ctx.fillText(name,p.x,labelY);ctx.restore();
 }
@@ -49,7 +49,9 @@ p.projectiles.forEach(b=>{ctx.save();ctx.beginPath();ctx.arc(b.x,b.y,b.radius,0,
 p.poisonTears.forEach(b=>{ctx.save();const g=ctx.createRadialGradient(b.x-2,b.y-2,1,b.x,b.y,b.radius);g.addColorStop(0,'#f3e8ff');g.addColorStop(0.45,'#c084fc');g.addColorStop(1,'#581c87');ctx.beginPath();ctx.arc(b.x,b.y,b.radius,0,Math.PI*2);ctx.fillStyle=g;ctx.shadowColor='#7e22ce';ctx.shadowBlur=12;ctx.fill();ctx.restore();});}
 });
 globalThis.AdvancedCombat?.draw(ctx);
+globalThis.CosmeticArcade?.drawUnder?.(ctx,players);
 players.forEach(drawCharacter);
+globalThis.CosmeticArcade?.drawOver?.(ctx,players);
 particles.forEach(p=>{ctx.beginPath();ctx.arc(p.x,p.y,p.radius,0,Math.PI*2);ctx.fillStyle=arenaEffectColor(p.color);ctx.globalAlpha=p.alpha;ctx.fill();ctx.globalAlpha=1;});
 floatingTexts.forEach(f=>{ctx.save();ctx.font=`800 ${f.size}px -apple-system, sans-serif`;ctx.fillStyle=arenaEffectColor(f.color);ctx.globalAlpha=f.alpha;ctx.textAlign='center';ctx.fillText(f.text,f.x,f.y);ctx.restore();});
 if(!isPlaying&&!isGameOver){ctx.fillStyle='rgba(255,255,255,.45)';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.font='700 23px "Noto Sans KR", sans-serif';ctx.fillStyle='#252525';ctx.textAlign='center';ctx.fillText(roundStarted?'일시정지':'대기 중',canvas.width/2,canvas.height/2);}
