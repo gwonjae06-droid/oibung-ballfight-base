@@ -314,43 +314,161 @@ function drawUnder(ctx,list){
     ctx.restore();
   }
 }
+/* Event-based effects: entrance, three signature skill motions, and three
+ * tinted casting accents. Runs on existing 60Hz physics; no extra tick loops. */
 function drawOver(ctx,list){
+  const TAU=Math.PI*2;
+  const reduced=!!global.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
+  const orb=(x,y,r)=>{ctx.beginPath();ctx.arc(x,y,Math.max(1,r),0,TAU);ctx.fill();};
+  const polygon=(x,y,r,n,rot=0)=>{
+    ctx.beginPath();
+    for(let i=0;i<=n;i++){
+      const a=rot+i*TAU/n,px=x+Math.cos(a)*r,py=y+Math.sin(a)*r;
+      if(i===0)ctx.moveTo(px,py);else ctx.lineTo(px,py);
+    }
+    ctx.stroke();
+  };
   for(const p of list){
-    const tick=p.cosmeticEntrance||0;if(tick<=0||p.hp<=0)continue;
-    const item=byId(p.cosmetic?.entrance);if(!item)continue;
-    const t=1-tick/84;
-    ctx.save();ctx.globalAlpha=Math.min(1,tick/16)*(.75-t*.25);
-    ctx.strokeStyle=item.color;ctx.lineWidth=2.5;
+    const remaining=p.cosmeticEntrance||0;
+    if(remaining<=0||p.hp<=0)continue;
+    const item=byId(p.cosmetic?.entrance);
+    if(!item)continue;
+    const t=1-remaining/84,unfold=Math.sin(Math.min(1,t)*Math.PI*.8);
+    const angle=t*TAU*1.7;
+    ctx.save();ctx.translate(p.x,p.y);ctx.globalAlpha=Math.min(1,remaining/14);
+    ctx.shadowColor=item.color;ctx.shadowBlur=reduced?0:17;
+    ctx.strokeStyle=item.color;ctx.fillStyle=item.color;ctx.lineWidth=2.5;
     if(item.id==='entrance-spark'){
-      for(let j=0;j<7;j++){const a=j*Math.PI*2/7+t*3,r=55*(1-t)+p.radius;
-        ctx.fillStyle=item.color;ctx.beginPath();ctx.arc(p.x+Math.cos(a)*r,p.y+Math.sin(a)*r,3,0,Math.PI*2);ctx.fill();}
+      // Stargate-like meteor shower converging to the character and then
+      // expanding into scattered glints with different parallax positions.
+      for(let i=0;i<14;i++){
+        const a=i*2.39996+angle*.55;
+        const radius=p.radius+14+(1-t)*100+Math.sin(i*2.4+t*5)*7;
+        const x=Math.cos(a)*radius,y=Math.sin(a)*radius;
+        ctx.globalAlpha=(.35+.55*unfold)*(i%3?.68:1);
+        ctx.lineWidth=i%3===0?2.5:1.1;
+        ctx.beginPath();ctx.moveTo(x-5,y);ctx.lineTo(x+5,y);
+        ctx.moveTo(x,y-5);ctx.lineTo(x,y+5);ctx.stroke();
+        orb(x,y,i%4===0?3.5:1.6);
+      }
+      ctx.globalAlpha=(1-t)*.75;
+      ring(ctx,0,0,p.radius+12+t*54);
     }else if(item.id==='entrance-gate'){
-      ctx.setLineDash([7,6]);ring(ctx,p.x,p.y,p.radius+18+t*27);
-      ctx.setLineDash([]);ring(ctx,p.x,p.y,p.radius+8+t*12);
-    }else{ring(ctx,p.x,p.y,p.radius+10+t*45);ring(ctx,p.x,p.y,p.radius+27+t*37);}
+      // Counter-rotating portal runes, tall ellipse and discrete seal points.
+      ctx.save();ctx.rotate(angle);
+      ctx.setLineDash([8,5,2,6]);ctx.lineDashOffset=-t*30;
+      ctx.beginPath();ctx.ellipse(0,0,p.radius+20,p.radius+30,0,0,TAU);ctx.stroke();
+      ctx.setLineDash([]);polygon(0,0,p.radius+37,8,-Math.PI/8);
+      ctx.restore();
+      ctx.save();ctx.rotate(-angle*.65);
+      ctx.lineWidth=1.4;ctx.strokeStyle='#e1c5ff';
+      polygon(0,0,p.radius+11,6,Math.PI/6);ring(ctx,0,0,p.radius+4);
+      ctx.restore();
+      for(let i=0;i<6;i++){
+        const a=i*TAU/6-angle,x=Math.cos(a)*(p.radius+38),y=Math.sin(a)*(p.radius+38);
+        ctx.globalAlpha=Math.max(.15,1-t);
+        orb(x,y,3);
+      }
+    }else{
+      // Expanding double shockwave with segmented circular tracer.
+      ctx.globalAlpha=.9*(1-t);ctx.lineWidth=5;
+      ring(ctx,0,0,p.radius+12+t*96);
+      ctx.globalAlpha=.5*(1-t);ctx.lineWidth=2;
+      ring(ctx,0,0,p.radius+30+t*116);
+      ctx.globalAlpha=.9;ctx.lineWidth=2.6;
+      for(let i=0;i<9;i++){
+        const a=i*TAU/9+angle;
+        ctx.beginPath();ctx.arc(0,0,p.radius+17,a,a+.31);ctx.stroke();
+      }
+      for(let i=0;i<12;i++){
+        const a=i*TAU/12,dist=(p.radius+4)+t*72;
+        const x=Math.cos(a)*dist,y=Math.sin(a)*dist;
+        ctx.globalAlpha=(1-t)*.65;
+        ctx.beginPath();ctx.moveTo(x,y);
+        ctx.lineTo(x+Math.cos(a)*12,y+Math.sin(a)*12);ctx.stroke();
+      }
+    }
     ctx.restore();
   }
   for(const e of effects){
-    const t=e.age/e.life,r=10+t*46;
-    ctx.save();ctx.globalAlpha=Math.min(1,(1-t)*1.5)*.75;
-    ctx.strokeStyle=e.color;ctx.fillStyle=e.color;ctx.lineWidth=3;
+    const t=e.age/e.life,fade=Math.min(1,t*9,(1-t)*3);
+    if(fade<=0)continue;
+    const radius=15+t*67,spin=e.age*.11;
+    ctx.save();ctx.translate(e.x,e.y);
+    ctx.strokeStyle=e.color;ctx.fillStyle=e.color;
+    ctx.globalAlpha=fade*.82;ctx.lineCap='round';ctx.lineJoin='round';
+    ctx.shadowColor=e.color;ctx.shadowBlur=reduced?0:13;ctx.lineWidth=2.5;
     if(e.id==='motion-rune'){
-      for(let j=0;j<6;j++){const a=j*Math.PI/3+t*4;
-        const x=e.x+Math.cos(a)*r,y=e.y+Math.sin(a)*r;
-        ctx.beginPath();ctx.moveTo(x,y-6);ctx.lineTo(x+5,y+4);ctx.lineTo(x-5,y+4);ctx.closePath();ctx.stroke();}
-      ring(ctx,e.x,e.y,r*.65);
+      // Multi-ring rotating spell seal + six rotating diamond sigils.
+      ctx.save();ctx.rotate(spin);
+      polygon(0,0,radius,6,Math.PI/6);
+      ring(ctx,0,0,radius*.73);
+      ctx.rotate(-spin*2.2);polygon(0,0,radius*.54,3,-Math.PI/2);
+      ctx.restore();
+      for(let i=0;i<6;i++){
+        const a=i*TAU/6-spin,r=radius*.85,x=Math.cos(a)*r,y=Math.sin(a)*r;
+        ctx.save();ctx.translate(x,y);ctx.rotate(a);
+        polygon(0,0,6,4,Math.PI/4);ctx.restore();
+      }
+      ctx.lineWidth=1.4;ring(ctx,0,0,radius*.34);
     }else if(e.id==='motion-echo'){
-      for(let j=0;j<3;j++){ctx.globalAlpha=(1-t)*(.47-j*.1);
-        ring(ctx,e.x-12-j*10,e.y+j*3,Math.max(4,r-j*8));}
-    }else{
-      for(let j=0;j<8;j++){const a=j*Math.PI/4;
-        ctx.beginPath();ctx.moveTo(e.x+Math.cos(a)*(r*.35),e.y+Math.sin(a)*(r*.35));
-        ctx.lineTo(e.x+Math.cos(a)*r,e.y+Math.sin(a)*r);ctx.stroke();}
+      // Three offsets follow the actual cast vector, with distinct phases.
+      const direction=Math.atan2(e.targetY-e.y,e.targetX-e.x),dx=Math.cos(direction),dy=Math.sin(direction);
+      for(let i=0;i<4;i++){
+        ctx.globalAlpha=fade*(.2+.15*i);
+        ctx.strokeStyle=i%2?'#fcceff':e.color;
+        ctx.lineWidth=2+i*.6;
+        ctx.beginPath();ctx.ellipse(dx*(i*14+t*32),dy*(i*14+t*32),radius*(.63-i*.08),
+          radius*(.72-i*.08),direction,0,TAU);ctx.stroke();
+      }
+      ctx.globalAlpha=fade*.8;
+      ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(dx*(radius+40),dy*(radius+40));ctx.stroke();
+    }else if(e.id==='motion-burst'){
+      ctx.globalAlpha=fade*(1-t*.3);
+      for(let i=0;i<16;i++){
+        const a=i*TAU/16+spin*.4;
+        const begin=radius*.38+Math.sin(i*7.1+t*9)*4,end=radius+(i%4)*8;
+        ctx.lineWidth=i%4===0?3.4:1.7;
+        ctx.beginPath();ctx.moveTo(Math.cos(a)*begin,Math.sin(a)*begin);
+        ctx.lineTo(Math.cos(a)*end,Math.sin(a)*end);ctx.stroke();
+        if(i%4===0)orb(Math.cos(a)*end,Math.sin(a)*end,3.3);
+      }
+      ctx.lineWidth=4.5;ring(ctx,0,0,radius*.52);
+    }else if(e.id==='tint-cyan'){
+      // Layered snow-crystals and six-point frost rays.
+      ctx.strokeStyle='#d0f4ff';ctx.lineWidth=1.5;
+      for(let i=0;i<8;i++){
+        const a=i*TAU/8+spin*.4,x=Math.cos(a)*radius*.85,y=Math.sin(a)*radius*.85;
+        ctx.save();ctx.translate(x,y);ctx.rotate(a);
+        polygon(0,0,4+t*5,6,0);ctx.beginPath();ctx.moveTo(-8,0);ctx.lineTo(8,0);
+        ctx.moveTo(0,-8);ctx.lineTo(0,8);ctx.stroke();ctx.restore();
+      }
+      ring(ctx,0,0,radius*.48);
+    }else if(e.id==='tint-rose'){
+      // Pink petals emerge independently on curved elliptical paths.
+      for(let i=0;i<11;i++){
+        const a=i*2.39996+spin*.4,x=Math.cos(a)*radius*.83,y=Math.sin(a)*radius*.83;
+        ctx.save();ctx.translate(x,y);ctx.rotate(a+Math.PI/4);
+        ctx.beginPath();ctx.ellipse(0,0,4+t*2,9+t*5,0,0,TAU);
+        ctx.globalAlpha=fade*(.35+.5*(i%3)/2);ctx.fill();ctx.restore();
+      }
+      ctx.lineWidth=1.5;ring(ctx,0,0,radius*.62);
+    }else if(e.id==='tint-violet'){
+      // Twin opposing arcane spirals and arcane stars.
+      for(let sign of [-1,1]){
+        ctx.beginPath();
+        for(let j=0;j<=30;j++){
+          const a=sign*(j*.22+spin*1.4),r=j/30*radius;
+          const x=Math.cos(a)*r,y=Math.sin(a)*r;
+          if(j===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);
+        }
+        ctx.stroke();
+      }
+      ctx.save();ctx.rotate(spin);polygon(0,0,radius*.72,5,-Math.PI/2);ctx.restore();
     }
     ctx.restore();
   }
 }
-
 /* Cinematic roulette uses an abstract kinetic wheel. Segments are decorative,
  * never an odds diagram; the prize is resolved and saved BEFORE animation.
  * It uses one requestAnimationFrame loop for a bounded 3.3-second spin. */
