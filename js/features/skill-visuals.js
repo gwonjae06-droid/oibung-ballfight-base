@@ -366,6 +366,12 @@ function draw(ctx){
       ctx.scale(zoom*e.scale,zoom*e.scale);
       drawMotif(ctx,e.type,e.age,e.life);
       if(e.kind==='impact')arc(ctx,0,0,5+16*t,0,Math.PI*2);
+    }else if(e.kind==='cast'){
+      // Each of the 55 distinct action silhouettes remains identifiable
+      // as a small badge next to the large family-specific animation.
+      ctx.save();ctx.translate(0,-38);ctx.scale(.56,.56);
+      ctx.globalAlpha*=.55;ctx.strokeStyle=e.color;ctx.lineWidth=2;
+      drawMotif(ctx,e.type,e.age,e.life);ctx.restore();
     }
     ctx.restore();
   }
