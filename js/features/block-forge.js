@@ -9,8 +9,8 @@ const TYPES=forge.TYPE,THEMES=forge.THEMES,TRIGGER=forge.TRIGGER,STATUS=forge.ST
 const LINKS={and:'하고 · 이어서',after:'한 뒤 · 순차',with:'와/과 동시에',separate:'별도 스킬로 분리'};
 const TARGETS=global.AbilityAtlas?.TARGETS||{nearest:'가장 가까운 적',farthest:'가장 먼 적',lowest:'체력이 낮은 적',highest:'체력이 높은 적',random:'무작위 적'};
 const GROUPS={
-  attacks:{name:'공격',types:['wave','shot','beam','bolt','slash','spinslash','thrust','aircombo','arcshot','splitshot','uppercut','nova','chain','meteor','starfall','dung']},
-  mobility:{name:'이동',types:['dash','blink','leap','hover','glide','dive','flight','burrow','burrowdash','erupt','swap','retreat','portal']},
+  attacks:{name:'공격',types:['wave','shot','beam','bolt','slash','spinslash','thrust','aircombo','arcshot','splitshot','uppercut','nova','chain','meteor','starfall','dung','dive','flight','burrow','burrowdash','erupt']},
+  mobility:{name:'이동 · 피해 없음',types:['dash','blink','leap','hover','glide','swap','retreat','portal']},
   defense:{name:'보호 · 회복',types:['heal','shield','cleanse','regen','fortify','lifebloom','resurrect','haste','rewind']},
   special:{name:'소환 · 제어',types:['orbit','zone','pull','homing','pierce','boomerang','mine','blackhole','drain','timestop','timeburst','summon','turret','trap','wall','grow','shrink']}
 };
