@@ -110,11 +110,12 @@ test('explosions run through three visual phases without three damage events',()
   for(const age of [2,10,20]){
     calls.length=0;
     fx.draw(ctx);
-    drawn.push(calls.filter(c=>c[0]==='arc').length);
+    drawn.push({arcs:calls.filter(c=>c[0]==='arc').length,
+      rays:calls.filter(c=>c[0]==='lineTo').length});
     for(let j=0;j<(age===2?8:age===10?10:0);j++)fx.tick();
   }
-  assert.ok(drawn.every(v=>v>0));
-  assert.notEqual(drawn[0],drawn[1],'ignition and burst use distinct geometry');
+  assert.ok(drawn.every(v=>v.arcs>0));
+  assert.ok(drawn[1].rays>drawn[0].rays,'main burst has directional fire rays absent from ignition');
   assert.equal(e.hp,200);
   const src=read('js/features/forge-expansion.js');
   assert.ok(src.includes("SkillVisuals?.detonate?.(p,b.kind"));
