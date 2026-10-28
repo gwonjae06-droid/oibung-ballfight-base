@@ -475,7 +475,7 @@ function install(){
   document.getElementById('forge-random').addEventListener('click',()=>{
     if(button.disabled)return;
     const profile=SkillForge.randomProfile(document.getElementById('forge-random-theme').value);
-    input.value='';approved='';choices={};choiceBox.replaceChildren();SkillForge.setDraft(profile);
+    input.value='';approved='';choices={};choiceBox.replaceChildren();global.CharacterStudioArt?.reset?.();SkillForge.setDraft(profile);
     status.textContent='랜덤 초안: '+profile.name+' · 스킬 '+profile.skills.length+'개. 마음에 들면 캐릭터 생성 버튼을 누르세요.';
     const report=document.getElementById('bf-result');if(report)report.textContent='';
   });
@@ -526,7 +526,7 @@ function install(){
     }
     const profile=SkillForge.randomProfile('any');
     input.value='';approved='';choices={};choiceBox.replaceChildren();
-    SkillForge.setDraft(profile);
+    global.CharacterStudioArt?.reset?.();SkillForge.setDraft(profile);
     saveBtn.click(); // Reuse the validated save, persistence and P1 selection flow.
     const result=document.getElementById('bf-result')?.textContent||'';
     status.textContent=result.includes('생성 완료')

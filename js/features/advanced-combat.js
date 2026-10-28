@@ -81,7 +81,7 @@ function pose(p){
   return {sx:1,sy:1,tilt:0};
 }
 const cap=(v,l,h)=>Math.max(l,Math.min(h,v));
-const color=p=>p?.forge?.color||p?.borderColor||'#394c62';
+const color=p=>p?.forge?.effectColor||p?.effectColor||p?.forge?.color||p?.borderColor||'#394c62';
 const groundHeight=p=>p?.id==='park'&&p.jumpState&&p.jumpState!=='ground'?
  Math.max(0,p.jumpHeight||0):(p?.z||0);
 function ensure(p){

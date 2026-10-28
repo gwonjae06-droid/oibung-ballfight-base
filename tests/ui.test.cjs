@@ -27,8 +27,7 @@ test('all required game and optional feature controls still exist', () => {
     'btn-start', 'btn-reset', 'btn-mode', 'btn-stop', 'coin-balance', 'economy-message',
     'wager-input', 'odds-text', 'bet-players', 'reserved-list', 'btn-max-bet',
     'targets-skillRush', 'targets-vitality', 'targets-speed',
-    'bf-picks', 'bf-speed', 'bf-apply', 'bf-photo', 'bf-face', 'bf-photo-target',
-    'bf-photo-apply', 'bf-photo-clear', 'bf-name', 'bf-text',
+    'bf-picks', 'bf-speed', 'bf-apply', 'bf-name', 'bf-text',
     'bf-analyze', 'bf-create', 'bf-result', 'bf-status', 'bf-custom-list'
   ];
   for(const id of required)assert.ok(all.includes(id), 'missing DOM id: ' + id);
@@ -39,11 +38,11 @@ test('only one random-match control exists and advanced tools are collapsed', ()
   assert.ok(html.includes('id="btn-reset"'));
   assert.ok(!main.includes('bf-random'), 'duplicate random button still exists');
   assert.ok(panelHtml().includes('<details class="bf-details">'));
-  assert.equal((panelHtml().match(/<details class="bf-details">/g) || []).length, 2);
+  assert.equal((panelHtml().match(/<details class="bf-details">/g) || []).length, 1);
   assert.ok(main.includes("document.querySelector('.battle-screen').after(panel)"));
   assert.ok(!main.includes('function parse('), 'old keyword parser remains');
   assert.ok(forge.includes('const TRIGGER='));
-  assert.ok(html.includes('<details class="roster-card">'));
+  assert.ok(!html.includes('<details class="roster-card">'));
   assert.ok(main.includes("fold.className = 'bf-fold'"));
 });
 
@@ -76,7 +75,9 @@ test('game scripts are loaded in dependency order', () => {
   assert.ok(scripts.indexOf('js/features/ability-atlas.js') < scripts.indexOf('js/features/skill-forge.js'));
   assert.ok(scripts.indexOf('js/features/skill-forge.js') < scripts.indexOf('js/features/natural-forge.js'));
   assert.ok(scripts.indexOf('js/features/natural-forge.js') < scripts.indexOf('js/features/community-forge.js'));
-  assert.ok(scripts.indexOf('js/features/community-forge.js') < scripts.indexOf('js/features/battle-effects.js'));
+  assert.ok(scripts.indexOf('js/features/community-forge.js') < scripts.indexOf('js/features/ui-categories.js'));
+  assert.ok(scripts.indexOf('js/features/ui-categories.js') < scripts.indexOf('js/features/studio-art.js'));
+  assert.ok(scripts.indexOf('js/features/studio-art.js') < scripts.indexOf('js/features/battle-effects.js'));
   assert.ok(scripts.indexOf('js/features/vfx-audio.js') < scripts.indexOf('js/features/character-remix.js'));
   assert.ok(scripts.indexOf('js/features/character-remix.js') < scripts.indexOf('js/main.js'));
 });

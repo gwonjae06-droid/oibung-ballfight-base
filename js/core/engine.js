@@ -180,11 +180,19 @@ function update() {
   if(finalAlive.length<=1){isGameOver=true;isPlaying=false;settleRound(finalAlive.length===1?finalAlive[0]:null);document.getElementById('btn-start').innerText='다음 경기';document.getElementById('btn-start').dataset.state='finished';syncStopButton();}
   updateUI();
 }
+// Identical fighters are distinguished by their match slot, not by
+// permanent renaming or ranking. Supports mirror fights in 1v1 and 3-player.
+function getArenaFighterName(p){
+  const group=players.filter(e=>e.name===p.name);
+  if(group.length<2)return p.name;
+  const ordinal=group.indexOf(p)+1;
+  return p.name+' '+ordinal;
+}
 function updateUI() {
   players.forEach((p,idx)=>{
     const n=idx+1,el=document.getElementById(`p${n}-name`);
     if(!el)return;
-    el.innerText=p.name;
+    el.innerText=getArenaFighterName(p);
     document.getElementById(`p${n}-hp-text`).innerText=Math.ceil(p.hp);
     document.getElementById(`p${n}-maxhp`).innerText=p.maxHp;
     document.getElementById(`p${n}-hp-bar`).style.width=(Math.max(0,p.hp)/p.maxHp*100)+'%';

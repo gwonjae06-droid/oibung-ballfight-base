@@ -53,7 +53,7 @@ const clampPosition=p=>{p.x=Math.max(p.radius,Math.min(canvas.width-p.radius,p.x
 function execute(p,a,target,api){
   if(!TYPES[a.type])return false;
   const foes=api.enemies(p),near=global.AbilityAtlas?.choose(p,foes,a.target)||target;
-  const show=(x,y,r)=>{if(global.BattleFX?.mark)global.BattleFX.mark('wave',x,y,p.forge.color,r);};
+  const show=(x,y,r)=>{if(global.BattleFX?.mark)global.BattleFX.mark('wave',x,y,(p.forge.effectColor||p.forge.color),r);};
   const around=(x,y,r)=>foes.filter(e=>Math.hypot(e.x-x,e.y-y)<=r+e.radius);
   p.forgeExtras ||= [];
   if(a.type==='resurrect')return true;
@@ -107,7 +107,7 @@ function execute(p,a,target,api){
     for(let i=0;i<a.count;i++){
       const next=foes.filter(e=>!visited.has(e)&&Math.hypot(e.x-origin.x,e.y-origin.y)<=a.radius).sort((x,y)=>Math.hypot(x.x-origin.x,x.y-origin.y)-Math.hypot(y.x-origin.x,y.y-origin.y))[0];
       if(!next)break;
-      global.BattleFX?.beam?.(origin.x,origin.y,next.x,next.y,p.forge.color);api.hit(p,next,a,Math.pow(.8,i));visited.add(next);origin=next;
+      global.BattleFX?.beam?.(origin.x,origin.y,next.x,next.y,(p.forge.effectColor||p.forge.color));api.hit(p,next,a,Math.pow(.8,i));visited.add(next);origin=next;
     }
   }else if(a.type==='meteor'||a.type==='mine'){
     const travel=Math.max(20,Math.min(75,Math.round(270/Math.max(2,a.speed||6))));
@@ -131,7 +131,7 @@ function update(p,api){
     const target=players.find(e=>e.playerNum===phase.target&&e.hp>0);
     if(phase.kind==='burrow'&&target){p.x=target.x;p.y=target.y;clampPosition(p);}
     api.enemies(p).filter(e=>Math.hypot(e.x-p.x,e.y-p.y)<phase.a.radius+e.radius).forEach(e=>api.hit(p,e,phase.a));
-    global.BattleFX?.mark?.('wave',p.x,p.y,p.forge.color,phase.a.radius);
+    global.BattleFX?.mark?.('wave',p.x,p.y,(p.forge.effectColor||p.forge.color),phase.a.radius);
   }
   const extras=p.forgeExtras||[];
   for(let i=extras.length-1;i>=0;i--){
@@ -146,8 +146,8 @@ function update(p,api){
       if(!b.hit&&b.age>=b.delay+b.flight){
         b.hit=true;
         const impact=Math.max(24,Math.min(58,b.a.radius*.31));
-        global.AdvancedCombat?.mark?.('burst',b.x,b.y,impact,p.forge.color,20);
-        global.AdvancedCombat?.mark?.('ring',b.x,b.y,impact,p.forge.color,24);
+        global.AdvancedCombat?.mark?.('burst',b.x,b.y,impact,(p.forge.effectColor||p.forge.color),20);
+        global.AdvancedCombat?.mark?.('ring',b.x,b.y,impact,(p.forge.effectColor||p.forge.color),24);
         global.BattleFX?.sound?.('heavy',.4);
         for(const e of api.enemies(p)){
           if(Math.hypot(e.x-b.x,e.y-b.y)<=impact+e.radius
@@ -159,7 +159,7 @@ function update(p,api){
     }else if(b.kind==='meteor'||b.kind==='mine'){
       const foes=api.enemies(p).filter(e=>Math.hypot(e.x-b.x,e.y-b.y)<b.a.radius+e.radius);
       if((b.kind==='meteor'&&b.life<=0)||(b.kind==='mine'&&b.age>=20&&foes.length)){
-        global.BattleFX?.mark?.('wave',b.x,b.y,p.forge.color,b.a.radius);foes.forEach(e=>api.hit(p,e,b.a));b.life=0;
+        global.BattleFX?.mark?.('wave',b.x,b.y,(p.forge.effectColor||p.forge.color),b.a.radius);foes.forEach(e=>api.hit(p,e,b.a));b.life=0;
       }
     }else{
       const target=b.kind==='boomerang'&&b.age>20?p:players.find(e=>e.playerNum===b.target&&e.hp>0);
@@ -175,7 +175,7 @@ function update(p,api){
       }
       for(const e of api.enemies(p))if(!b.hits.includes(e.playerNum)&&Math.hypot(e.x-b.x,e.y-b.y)<e.radius+8&&api.hit(p,e,b.a)){
         b.hits.push(e.playerNum);
-        global.AdvancedCombat?.mark?.('burst',e.x,e.y,20,p.forge.color,13);
+        global.AdvancedCombat?.mark?.('burst',e.x,e.y,20,(p.forge.effectColor||p.forge.color),13);
         if(b.kind==='dung'){e.slowTimer=Math.round(b.a.duration*60);e.slowMultiplier=.5;}
         if(b.kind==='homing'||b.kind==='dung'){b.life=0;break;}
       }

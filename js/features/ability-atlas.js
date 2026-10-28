@@ -99,7 +99,7 @@ function execute(caster,action,originalTarget,api){
   const formation=PATTERNS[action.pattern]?action.pattern:'direct';
   const count=Math.max(1,action.count||1);
   const points=layout(caster,target,formation,count,action.radius,seed++);
-  const colored=caster.forge.color;
+  const colored=caster.forge.effectColor||caster.forge.color;
   const isEnemy=e=>e!==caster&&e.hp>0;
   const hitAt=(x,y,r,multiplier=1)=>{
     for(const e of foes)if(isEnemy(e)&&Math.hypot(e.x-x,e.y-y)<r+e.radius)api.hit(caster,e,action,multiplier);

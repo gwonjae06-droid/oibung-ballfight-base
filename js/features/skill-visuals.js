@@ -136,7 +136,7 @@ function add(kind,p,type,action,target,location){
   const angle=target?Math.atan2(target.y-p.y,target.x-p.x):Math.atan2(p.vy||0,p.vx||1);
   const duration=kind==='impact'?19:kind==='cast'?23:30;
   const entry={type,kind,x,y,angle,age:0,life:duration,
-    color:global.arenaEffectColor?.(catalog[type][1])||catalog[type][1],
+    color:global.arenaEffectColor?.(p.forge?.effectColor||p.effectColor||catalog[type][1])||p.forge?.effectColor||p.effectColor||catalog[type][1],
     source:kind==='cast'?p:null,scale:clamp((action?.radius||130)/130,.78,1.2)};
   if(effects.length>=MAX)effects.shift();
   effects.push(entry);return true;

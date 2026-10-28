@@ -66,7 +66,8 @@ function normalize(value){
   if(!Array.isArray(value.skills)||value.skills.length<1)throw Error('스킬을 한 개 이상 추가하세요.');
   return {
     name:clean(value.name,14)||'커스텀 파이터',blurb:clean(value.blurb,90),
-    color:color(value.color),hp:Math.round(number(value.hp,140,500,250)),
+    artKey:clean(value.artKey||'',52).replace(/[^a-zA-Z0-9_-]/g,''),
+    color:color(value.color),effectColor:color(value.effectColor||value.color),hp:Math.round(number(value.hp,140,500,250)),
     speed:number(value.speed,.6,5,1.8),
     allAbilities:value.allAbilities===true,
     skills:value.skills.slice(0,4).map((s,i)=>{
@@ -159,7 +160,7 @@ function randomProfile(theme='any',rng=Math.random){
   const name=pickRandom(rng,['방랑하는','고요한','폭주하는','날렵한','사나운','빛나는','수상한','정교한'])+
     ' '+selected.name+' '+pickRandom(rng,['검사','마도사','소환사','모험가','수호자','괴짜','정령']);
   return normalize({name,blurb:'전체 동작 풀에서 무작위 조합 · '+selected.name,
-    color:randomColor(rng),hp:randInt(rng,140,500),
+    color:randomColor(rng),effectColor:randomColor(rng),hp:randInt(rng,140,500),
     speed:Math.round(randInt(rng,6,50))/10,skills});
 }
 
@@ -170,7 +171,7 @@ function hit(p,e,action,multiplier=1,attackZ) {
   if(global.AdvancedCombat&&!AdvancedCombat.canHit(p,e,attackZ))return false;
   if(!global.AdvancedCombat&&e.jumpState&&e.jumpState!=='ground')return false;
   const d=Math.round((action.damage||0)*multiplier*(global.ForgeExpansion?.damageScale(p,e)||1));
-  if(d){const tint=p.forge?.color||p.themeColor||'#58687a';e.hp=Math.max(0,e.hp-d);e.invincible=12;createHitParticles(e.x,e.y,tint,12);addFloatingText('-'+d,e.x,e.y-30,tint,17);}
+  if(d){const tint=p.forge?.effectColor||p.forge?.color||p.themeColor||'#58687a';e.hp=Math.max(0,e.hp-d);e.invincible=12;createHitParticles(e.x,e.y,tint,12);addFloatingText('-'+d,e.x,e.y-30,tint,17);}
   if(action.status==='ice'){e.slowTimer=Math.max(e.slowTimer||0,90);e.slowMultiplier=.5;}
   if(action.status==='fire'||action.status==='poison'){
     const seconds=Number.isFinite(action.duration)?action.duration:(action.status==='fire'?2:3);
@@ -205,7 +206,7 @@ function cast(p,s,target,index){
         ['dive','aircombo','slash','spinslash','thrust'].includes(a.type)});
   }
   if(p.forgeQueue.length>48)p.forgeQueue.splice(0,p.forgeQueue.length-48);
-  global.BattleFX?.caption?.(p,s.name,p.forge.color);
+  global.BattleFX?.caption?.(p,s.name,(p.forge.effectColor||p.forge.color));
 }
 function tickSkills(p,blocked=false){
   const speed=global.ForgeExpansion?.active(p,'timeburst')?2:1;
@@ -251,7 +252,7 @@ function execute(p,a,target) {
   if(global.AdvancedCombat?.execute(p,a,target,{hit,enemies}))return;
   if(global.ForgeExpansion?.execute(p,a,target,{hit,enemies}))return;
   if(global.AbilityAtlas && AbilityAtlas.execute(p,a,target,{hit,enemies}))return;
-  const c=p.forge.color,near=target&&target.hp>0?target:getClosestAliveEnemy(p);
+  const c=(p.forge.effectColor||p.forge.color),near=target&&target.hp>0?target:getClosestAliveEnemy(p);
   const within=(x,y,r)=>enemies(p).filter(e=>Math.hypot(e.x-x,e.y-y)<r+e.radius);
   const visual=(kind,opts={})=>{if(global.BattleFX)BattleFX.cast(p,kind,Object.assign({color:c},opts));};
   if(a.type==='wave'){visual('wave',{radius:a.radius});within(p.x,p.y,a.radius).forEach(e=>hit(p,e,a));}
@@ -352,7 +353,7 @@ function advanceWorld(p,target){
   for(let i=p.forgeZones.length-1;i>=0;i--){
     const z=p.forgeZones[i];z.timer--;z.ticks++;
     if(z.type==='bolt'&&z.timer<=0){
-      if(global.BattleFX)BattleFX.cast(p,'lightning',{x:z.x,y:z.y,color:p.forge.color});
+      if(global.BattleFX)BattleFX.cast(p,'lightning',{x:z.x,y:z.y,color:(p.forge.effectColor||p.forge.color)});
       enemies(p).filter(e=>Math.hypot(e.x-z.x,e.y-z.y)<z.a.radius*.4+e.radius).forEach(e=>hit(p,e,z.a));
     }
     if(z.type==='zone'&&z.timer>0&&z.ticks%30===0){
@@ -392,7 +393,7 @@ function contact(p,e){
 function drawFighter(p){
   if(!p.forge||p.hp<=0)return;
   global.ForgeExpansion?.draw(p);
-  const c=global.arenaEffectColor?.(p.forge.color)||p.forge.color;ctx.save();ctx.globalCompositeOperation='source-over';
+  const c=global.arenaEffectColor?.((p.forge.effectColor||p.forge.color))||(p.forge.effectColor||p.forge.color);ctx.save();ctx.globalCompositeOperation='source-over';
   ctx.shadowColor=c;ctx.shadowBlur=3;ctx.fillStyle=c;ctx.strokeStyle=c;
   p.forgeShots.forEach(b=>{
     const heading=Math.atan2(b.vy,b.vx),status=b.a?.status||'none';
@@ -428,11 +429,12 @@ function drawFighter(p){
 function register(value){
   if(CUSTOM_DEFS.length>=6)throw Error('캐릭터는 최대 6명까지 만들 수 있습니다.');
   const profile=normalize(value),id='forge_'+(++sequence);
+  if(!profile.artKey)profile.artKey='art'+Date.now().toString(36)+Math.random().toString(36).slice(2,9);
   const runtime=profile.allAbilities?{...profile,skills:allSkillset()}:profile;
   const def={id,name:profile.name,forgeData:profile,createInstance(n){
     return {id,name:profile.name,playerNum:n,x:0,y:0,vx:1.1,vy:.9,radius:34,
       hp:profile.hp,maxHp:profile.hp,invincible:0,slowTimer:0,slowMultiplier:1,
-      borderColor:profile.color,themeColor:profile.color,tagColor:profile.color,
+      borderColor:profile.color,themeColor:profile.color,tagColor:profile.color,effectColor:profile.effectColor,
       jumpState:'ground',forge:runtime,forgeLastHp:profile.hp,forgeDash:0,
       forgeDashAction:null,forgeTicks:runtime.skills.map((s,i)=>{
         const cd=Math.round(s.cooldown*60);
@@ -446,12 +448,14 @@ function register(value){
     };
   }};
   CUSTOM_DEFS.push(def);
+  global.CharacterStudioArt?.restore?.(id,profile.artKey);
   BEHAVIORS[id]={order:7,update,onContact:contact};
   return id;
 }
 function remove(id){
   const index=CUSTOM_DEFS.findIndex(d=>d.id===id&&d.forgeData);
   if(index<0)return false;
+  global.CharacterStudioArt?.remove?.(CUSTOM_DEFS[index].forgeData.artKey);
   CUSTOM_DEFS.splice(index,1);
   delete BEHAVIORS[id];if(typeof CHARACTER_PHOTOS!=='undefined')delete CHARACTER_PHOTOS[id];
   persist();refreshList();return true;
@@ -470,7 +474,7 @@ function persist(){
 }
 const escape=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const options=(values,selected)=>Object.entries(values).map(([k,v])=>'<option value="'+k+'"'+(k===selected?' selected':'')+'>'+v+'</option>').join('');
-let draft={name:'',blurb:'',color:'#a78bfa',hp:250,speed:1.8,skills:[skill()]};
+let draft={name:'',blurb:'',color:'#a78bfa',effectColor:'#a78bfa',hp:250,speed:1.8,skills:[skill()]};
 let refreshList=()=>{}, refreshForm=()=>{};
 function field(key,value,attrs){
   return '<input data-field="'+key+'" '+attrs+' value="'+escape(value)+'">';
@@ -534,7 +538,8 @@ function initializeUI(){
   +'<p class="bf-helper">문장으로 자동 생성하고 필요할 때만 세부 설정을 수정하세요. 공격 배치와 대상 선택까지 조합할 수 있습니다.</p>'
   +'<div class="forge-grid">'
   +'<label>캐릭터 이름<input id="bf-name" maxlength="14" placeholder="나만의 파이터"></label>'
-  +'<label>테마 색상<input id="forge-color" type="color" value="#a78bfa"></label>'
+  +'<label>캐릭터 색상<input id="forge-color" type="color" value="#a78bfa"></label>'
+  +'<label>이펙트 색상<input id="forge-effect-color" type="color" value="#a78bfa"></label>'
   +'<label>체력<input id="forge-hp" type="number" min="140" max="500" value="250"></label>'
   +'<label>기본 속도<input id="forge-speed" type="number" min=".6" max="5" step=".1" value="1.8"></label>'
   +'</div>'
@@ -551,12 +556,12 @@ function initializeUI(){
   const $=id=>document.getElementById(id);
   function sync(){
     draft.name=$('bf-name').value;draft.blurb=$('bf-text').value;
-    draft.color=$('forge-color').value;draft.hp=Number($('forge-hp').value);
+    draft.color=$('forge-color').value;draft.effectColor=$('forge-effect-color').value;draft.hp=Number($('forge-hp').value);
     draft.speed=Number($('forge-speed').value);
   }
   function refreshBasics(){
     $('bf-name').value=draft.name;$('bf-text').value=draft.blurb;
-    $('forge-color').value=draft.color;$('forge-hp').value=draft.hp;
+    $('forge-color').value=draft.color;$('forge-effect-color').value=draft.effectColor||draft.color;$('forge-hp').value=draft.hp;
     $('forge-speed').value=draft.speed;
   }
   function report(t){$('bf-result').textContent=t;}
@@ -616,12 +621,12 @@ function initializeUI(){
     try{
       sync();const config=normalize(draft),id=register(config);
       persist();
-      const preview=$('bf-face');
-      if(preview&&!preview.hidden&&preview.src)loadPhoto(id,preview.src);
+      global.CharacterStudioArt?.commit?.(id);
       reRollMatch();
       const first=$('bf-pick-0');
       if(first){first.value=id;$('bf-apply').click();}
       roster();report(config.name+' 생성 완료 · P1 적용');
+      global.ArenaCategories?.hideStudio?.();
     }catch(e){report(e.message);}
   });
   $('forge-export').addEventListener('click',()=>{
