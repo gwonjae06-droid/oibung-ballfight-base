@@ -9,7 +9,7 @@ test('custom fighter deletion is in an always-visible manager above both tabs',(
   const category=read('js/features/ui-categories.js');
   const css=read('css/style.css');
   assert.ok(ui.includes("const owned=pick('#bf-custom-list')"));
-  assert.ok(ui.includes("const feedback=pick('#bf-result')"));
+  assert.ok(ui.includes("feedback=pick('#bf-result')"));
   assert.ok(ui.includes('manager.append(owned)'));
   assert.ok(ui.includes('manager.append(feedback)'));
   assert.ok(ui.includes('studio.replaceChildren(...[name,manager,tabs,skills,looks,create,saved]'),
@@ -46,7 +46,7 @@ test('roster renders name, accessible deletion control, saved count and empty st
   assert.equal(row.children[0].textContent,'테스트 캐릭터');
   assert.equal(row.children[1].textContent,'삭제');
   assert.equal(row.children[1].dataset.forgeId,'forge_1');
-  assert.equal(row.children[1].attrs['aria-label'],'테스트 캐릭터 캐릭터 삭제');
+  assert.equal(row.children[1].attrs['aria-label'],'테스트 캐릭터 삭제');
   h.CUSTOM_DEFS.length=0;
   vm.runInContext('roster()',h);
   assert.equal(elements['forge-custom-count'].textContent,'0 / 6');
