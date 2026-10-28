@@ -38,13 +38,21 @@ function load(){
   try{
     const d=JSON.parse(localStorage.getItem(KEY)||'null')||{};
     const owned=Array.isArray(d.owned)?[...new Set(d.owned.filter(id=>lookup[id]))]:[];
-    const equipped={};
-    for(const [category,items] of Object.entries(OPTIONS)){
-      const id=d.equipped?.[category];
-      equipped[category]=owned.includes(id)&&items.some(v=>v.id===id)?id:null;
+    // An old global equipped record may exist. Never auto-assign it to every
+    // fighter: cosmetics now belong exclusively to explicitly selected profiles.
+    const loadouts={};
+    const entries=d.loadouts&&typeof d.loadouts==='object'?Object.entries(d.loadouts):[];
+    for(const [artKey,slots] of entries.slice(0,60)){
+      if(!/^[a-zA-Z0-9_-]{1,52}$/.test(artKey)||!slots||typeof slots!=='object')continue;
+      const clean={};
+      for(const [category,items] of Object.entries(OPTIONS)){
+        const id=slots[category];
+        if(owned.includes(id)&&items.some(item=>item.id===id))clean[category]=id;
+      }
+      if(Object.keys(clean).length)loadouts[artKey]=clean;
     }
-    return {owned,equipped,misses:Math.min(74,Math.max(0,Math.floor(Number(d.misses)||0))),draws:Math.max(0,Math.floor(Number(d.draws)||0))};
-  }catch(_){return {owned:[],equipped:{},misses:0,draws:0};}
+    return {owned,loadouts,misses:Math.min(74,Math.max(0,Math.floor(Number(d.misses)||0))),draws:Math.max(0,Math.floor(Number(d.draws)||0))};
+  }catch(_){return {owned:[],loadouts:{},misses:0,draws:0};}
 }
 const state=load();
 const effects=[];
@@ -55,7 +63,12 @@ function save(){
   catch(_){return false;}
 }
 const byId=id=>lookup[id]||null;
-function equipped(category){return byId(state.equipped[category]);}
+const validKey=value=>typeof value==='string'&&/^[a-zA-Z0-9_-]{1,52}$/.test(value);
+const fighterKey=p=>p?.forge?.artKey||null;
+function getLoadout(artKey){
+  const slots=validKey(artKey)?state.loadouts[artKey]:null;
+  return Object.fromEntries(Object.keys(OPTIONS).map(category=>[category,slots?.[category]||null]));
+}
 function wallet(){return typeof coins==='number'?coins:0;}
 function feedback(message){const el=document.getElementById('cosmetic-result');if(el)el.textContent=message;}
 function drawReward(rng=Math.random){
@@ -74,9 +87,8 @@ function drawReward(rng=Math.random){
       lastDraw={kind:'duplicate',item,text:'중복 · '+item.name+' · '+formatGold(REFUND)+' 반환'};
     }else{
       state.owned.push(item.id);
-      if(!state.equipped[item.id.split('-')[0]])state.equipped[item.id.split('-')[0]]=item.id;
       state.misses=0;
-      lastDraw={kind:'item',item,text:'신규 획득! '+item.name+' · 장착 완료 · 다음 경기부터 적용'};
+      lastDraw={kind:'item',item,text:'신규 획득! '+item.name+' · 외형 꾸미기에서 캐릭터별 장착 가능'};
     }
   }else{
     state.misses++;
@@ -93,12 +105,35 @@ function drawReward(rng=Math.random){
   feedback(lastDraw.text);refresh();return item;
 }
 function lastResult(){return lastDraw?{...lastDraw}:null;}
-function equip(category,id){
-  if(!OPTIONS[category])return false;
-  if(id!==null&&(!state.owned.includes(id)||!OPTIONS[category].some(x=>x.id===id)))return false;
-  state.equipped[category]=id;save();
-  feedback((id?lookup[id].name:'기본 '+NAMES[category])+' 선택 완료 · 다음 경기부터 적용');
-  refresh();return true;
+function equip(artKey,category,id){
+  if(!validKey(artKey)||!OPTIONS[category])return false;
+  // Only registered saved custom fighters can receive equipment.
+  const roster=global.SkillForge?.list?.()||[];
+  if(!roster.some(def=>def.profile.artKey===artKey))return false;
+  if(id!==null&&(!state.owned.includes(id)||!OPTIONS[category].some(item=>item.id===id)))return false;
+  if(!state.loadouts[artKey])state.loadouts[artKey]={};
+  if(id===null)delete state.loadouts[artKey][category];
+  else state.loadouts[artKey][category]=id;
+  if(!Object.keys(state.loadouts[artKey]).length)delete state.loadouts[artKey];
+  save();
+  const selected=roster.find(def=>def.profile.artKey===artKey);
+  // A running or paused round keeps its original effects until the next match.
+  // Outside a live round update preview fighters immediately.
+  if(typeof roundStarted==='undefined'||!roundStarted||typeof isGameOver!=='undefined'&&isGameOver){
+    if(typeof players!=='undefined'&&Array.isArray(players))
+      players.filter(p=>fighterKey(p)===artKey).forEach(applyToFighter);
+  }
+  const status=document.getElementById('skin-editor-status');
+  if(status)status.textContent=selected.profile.name+' · '+NAMES[category]+
+    (id?' '+lookup[id].name+' 장착':' 해제')+' 완료'+
+    (typeof roundStarted!=='undefined'&&roundStarted&&!isGameOver?' · 다음 경기부터 적용':'');
+  refreshStudio();
+  return true;
+}
+function forgetFighter(artKey){
+  if(!validKey(artKey))return false;
+  if(!state.loadouts[artKey])return false;
+  delete state.loadouts[artKey];save();refreshStudio();return true;
 }
 function refresh(){
   const walletEl=document.getElementById('arcade-wallet');
@@ -114,37 +149,110 @@ function refresh(){
     const count=document.createElement('small');
     count.textContent=items.filter(item=>state.owned.includes(item.id)).length+' / '+items.length+' 수집';
     title.append(label,count);row.append(title);
-    const choices=document.createElement('div');choices.className='cosmetic-options';
-    const basic=document.createElement('button');basic.type='button';
-    basic.textContent='기본';basic.className='cosmetic-choice';
-    basic.setAttribute('aria-pressed',String(!state.equipped[category]));
-    basic.addEventListener('click',()=>equip(category,null));choices.append(basic);
+    const choices=document.createElement('div');choices.className='cosmetic-options cosmetic-inventory';
     for(const item of items){
-      const owned=state.owned.includes(item.id);
-      const choice=document.createElement('button');choice.type='button';choice.className='cosmetic-choice';
-      choice.textContent=(owned?'◆ ':'◇ ')+item.name;
+      const has=state.owned.includes(item.id);
+      const choice=document.createElement('span');choice.className='cosmetic-choice cosmetic-owned';
+      choice.textContent=(has?'◆ ':'◇ ')+item.name;
       choice.style.setProperty('--swatch',item.color);
-      choice.disabled=!owned;choice.title=owned?'클릭하여 장착':'가챠에서 획득 가능';
-      choice.setAttribute('aria-pressed',String(state.equipped[category]===item.id));
-      choice.addEventListener('click',()=>equip(category,item.id));choices.append(choice);
+      choice.dataset.owned=String(has);
+      choices.append(choice);
     }
     row.append(choices);host.append(row);
   }
+  refreshStudio();
 }
+
+/* Outfit management lives only in the Appearance tab, never the gacha store. */
+let selectedSkinKey=null;
+const appearance=document.getElementById('studio-panel-appearance');
+let editor=null;
+if(appearance&&typeof document.createElement==='function'){
+  editor=document.createElement('section');
+  editor.id='skin-editor';editor.className='skin-editor';
+  editor.setAttribute('aria-label','캐릭터별 스킨 장착과 해제');
+  editor.innerHTML='<div class="skin-editor-head"><h3>캐릭터별 스킨 장착</h3>'
+    +'<p>선택한 캐릭터에게만 적용됩니다. 다른 캐릭터에는 자동 장착되지 않습니다.</p></div>'
+    +'<label class="skin-fighter-picker">꾸밀 캐릭터<select id="skin-fighter-select" aria-label="스킨을 장착할 캐릭터"></select></label>'
+    +'<div id="skin-current-fighter" class="skin-current-fighter"></div>'
+    +'<div id="skin-slots" class="skin-slots"></div>'
+    +'<p id="skin-editor-status" class="skin-editor-status" role="status" aria-live="polite"></p>';
+  appearance.insertBefore(editor,appearance.firstChild);
+  editor.querySelector('#skin-fighter-select').addEventListener('change',e=>{
+    selectedSkinKey=e.target.value;refreshStudio();
+  });
+}
+function refreshStudio(){
+  if(!editor)return;
+  const defs=(global.SkillForge?.list?.()||[]).filter(def=>validKey(def.profile?.artKey));
+  const select=editor.querySelector('#skin-fighter-select');
+  const host=editor.querySelector('#skin-slots');
+  const info=editor.querySelector('#skin-current-fighter');
+  if(!defs.some(d=>d.profile.artKey===selectedSkinKey))selectedSkinKey=defs[0]?.profile.artKey||null;
+  select.replaceChildren();
+  if(!defs.length){
+    const option=document.createElement('option');
+    option.value='';option.textContent='저장한 캐릭터 없음';
+    select.append(option);select.disabled=true;
+    info.textContent='커스텀 캐릭터를 먼저 생성해 주세요.';
+    host.replaceChildren();return;
+  }
+  select.disabled=false;
+  for(const def of defs){
+    const option=document.createElement('option');
+    option.value=def.profile.artKey;option.textContent=def.profile.name;
+    select.append(option);
+  }
+  select.value=selectedSkinKey;
+  const def=defs.find(d=>d.profile.artKey===selectedSkinKey);
+  const slots=getLoadout(selectedSkinKey);
+  info.textContent=def.profile.name+' 전용 · '+Object.values(slots).filter(Boolean).length+'개 장착 중';
+  host.replaceChildren();
+  for(const [category,items] of Object.entries(OPTIONS)){
+    const section=document.createElement('section');section.className='skin-slot-row';
+    const heading=document.createElement('div');heading.className='skin-slot-heading';
+    const title=document.createElement('strong');title.textContent=NAMES[category];
+    const active=document.createElement('span');
+    active.textContent=slots[category]?lookup[slots[category]].name:'기본';
+    heading.append(title,active);section.append(heading);
+    const choices=document.createElement('div');choices.className='skin-slot-options';
+    const detach=document.createElement('button');
+    detach.type='button';detach.className='skin-slot-option';
+    detach.textContent='해제 · 기본';detach.disabled=!slots[category];
+    detach.setAttribute('aria-pressed',String(!slots[category]));
+    detach.addEventListener('click',()=>equip(selectedSkinKey,category,null));
+    choices.append(detach);
+    for(const item of items){
+      const owned=state.owned.includes(item.id);
+      const button=document.createElement('button');
+      button.type='button';button.className='skin-slot-option';
+      button.textContent=(owned?'◆ ':'◇ ')+item.name;
+      button.style.setProperty('--skin-accent',item.color);
+      button.disabled=!owned;
+      button.title=owned?'선택한 캐릭터에게 장착':'가챠에서 먼저 획득하세요';
+      button.setAttribute('aria-label',def.profile.name+' · '+item.name+(owned?' 장착':' 미보유'));
+      button.setAttribute('aria-pressed',String(slots[category]===item.id));
+      button.addEventListener('click',()=>equip(selectedSkinKey,category,item.id));
+      choices.append(button);
+    }
+    section.append(choices);host.append(section);
+  }
+}
+
 function applyToFighter(p){
   if(!p?.forge)return;
-  p.cosmetic={
-    border:state.equipped.border||null,
-    trail:state.equipped.trail||null,
-    entrance:state.equipped.entrance||null,
-    motion:state.equipped.motion||null
-  };
-  const item=equipped('tint');
+  const artKey=fighterKey(p);
+  const slots=getLoadout(artKey);
+  // Keep the original Forge object so removing a skin restores its true
+  // custom color. Do not mutate the shared fighter definition or a sibling.
+  if(!p.cosmeticBaseForge)p.cosmeticBaseForge=p.forge;
+  p.forge=p.cosmeticBaseForge;
+  p.cosmetic={...slots};
+  const item=byId(slots.tint);
   if(item){
-    // Avoid mutating shared profiles, even if two fighters use the same definition.
-    p.forge={...p.forge,effectColor:item.color};
+    p.forge={...p.cosmeticBaseForge,effectColor:item.color};
     p.effectColor=item.color;
-  }
+  }else p.effectColor=p.cosmeticBaseForge.effectColor;
   p.cosmeticTrail=[];
   p.cosmeticShotTrails=[];
   p.cosmeticEntrance=0;
@@ -215,7 +323,7 @@ function startRound(list){
 }
 function onCast(p,action,target){
   if(!p?.forge)return;
-  const tint=byId(state.equipped.tint);
+  const tint=byId(p.cosmetic?.tint);
   const motion=byId(p.cosmetic?.motion);
   for(const item of [tint,motion]){
     if(!item)continue;
@@ -592,6 +700,7 @@ document.getElementById('cosmetic-draw')?.addEventListener('click',()=>beginRoul
 // Restore saved cosmetics for the first match, built before this module loaded.
 if(typeof players!=='undefined'&&Array.isArray(players))players.forEach(applyToFighter);
 refresh();
-global.CosmeticArcade={drawReward,beginRoulette,lastResult,equip,refresh,applyToFighter,borderColor,borderGlow,startRound,onCast,tick,drawUnder,drawOver,
-  getOwned:()=>state.owned.slice(),getEquipped:()=>({...state.equipped}),price:PRICE,drawBorder,};
+refreshStudio();
+global.CosmeticArcade={drawReward,beginRoulette,lastResult,equip,refresh,refreshStudio,forgetFighter,applyToFighter,borderColor,borderGlow,startRound,onCast,tick,drawUnder,drawOver,
+  getOwned:()=>state.owned.slice(),getLoadout,price:PRICE,drawBorder,};
 })(window);

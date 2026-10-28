@@ -97,9 +97,9 @@ test('all five equipped visual categories render on the original first lineup',(
     'border-neon','tint-rose','trail-ribbon','entrance-gate','motion-rune'
   ],equipped={border:'border-neon',tint:'tint-rose',trail:'trail-ribbon',
     entrance:'entrance-gate',motion:'motion-rune'};
-  const state={owned,equipped};
+  const state={owned,loadouts:{'art-test-fighter':equipped}};
   const {sandbox}=setup({'oibung-cosmetics-v1':JSON.stringify(state)});
-  const fighter={forge:{effectColor:'#112233',skills:[]},x:100,y:120,hp:300,
+  const fighter={forge:{artKey:'art-test-fighter',effectColor:'#112233',skills:[]},x:100,y:120,hp:300,
     radius:32,forgeShots:[{x:135,y:150}],forgeExtras:[]};
   sandbox.players=[fighter];run('js/features/cosmetic-arcade.js',sandbox);
   assert.ok(fighter.cosmetic,'pre-existing initial round should receive saved cosmetics');
