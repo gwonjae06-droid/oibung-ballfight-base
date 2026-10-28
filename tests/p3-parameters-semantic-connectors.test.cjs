@@ -112,7 +112,7 @@ test('random generators appear above fighter details without a sentence generato
   assert.match(natural,/randomEntry\.className='forge-random-entry'/);
   assert.match(natural,/body\.insertBefore\(randomEntry,nameLabel\)/);
   assert.match(natural,/modeButtons\.append\(randomNow,themeToggle\)/);
-  assert.match(natural,/randomEntry\.append\(randomHead,modeButtons,themeOptions,status\)/);
+  assert.match(natural,/randomEntry\.append\(randomHead,modeButtons,themeOptions,status,generated\)/);
   assert.match(natural,/themeOptions\.hidden=true/);
   assert.match(css,/\.forge-studio \.forge-random-entry #forge-random-create/);
   const install=natural.slice(natural.indexOf('function install(){'));
