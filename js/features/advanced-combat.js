@@ -16,17 +16,17 @@ const DESCRIPTIONS={
   spinslash:'몸을 중심으로 칼날을 360도 회전시켜 범위 안의 적을 가격합니다.',
   thrust:'바라보는 방향으로 칼끝을 뻗습니다. 좁고 긴 찌르기 궤도에 있는 적만 명중합니다.',
   aircombo:'공중에서 칼날을 세 번 연속 휘두릅니다. 각 타격은 따로 판정하며 첫 명중 시 적과 시전자를 띄웁니다.',
-  uppercut:'가까운 적을 즉시 위로 올려치는 공격입니다. 실제 명중 시에만 적이 공중에 뜹니다.',
+  uppercut:'준비 자세 뒤 가까운 상대에게 실제 접촉한 순간 위로 올려칩니다. 공중 연계가 있으면 시전자도 같은 순간 뛰어오릅니다.',
   arcshot:'포탄이 바닥 그림자를 남기고 포물선을 그립니다. 착탄 지점에서만 범위 피해가 발생합니다.',
   splitshot:'결정탄이 이동하다 파열되어 여러 개의 뾰족한 파편으로 갈라집니다. 파편이 실제로 통과한 적에게 피해를 줍니다.',
   leap:'바닥에 준비 동작을 취한 뒤 점프하고 정점에서 체공한 다음 착지합니다.',
   hover:'상승한 뒤 일정 시간 공중에 머물다가 착지합니다.',
   glide:'점프 뒤 천천히 내려오며 활공합니다.',
   dive:'높이 올라간 다음 바닥으로 급강하합니다. 착지하는 순간에만 충격파가 타격합니다.',
-  wall:'실제 충돌 판정이 있는 장벽을 설치해 이동 경로를 막습니다.',
+  wall:'캐릭터와 투사체를 물리적으로 가로막는 장벽을 설치합니다. 투사체가 맞을 때마다 벽 내구도가 감소합니다.',
   portal:'입구에 닿은 캐릭터를 짝이 되는 출구로 이동시킵니다.',
   summon:'소환수가 목표를 따라 이동하고 닿은 거리에서 공격합니다.',
-  turret:'고정 포탑이 사거리 안에 들어온 적을 주기적으로 공격합니다.',
+  turret:'고정 포탑이 적을 조준한 후 실제 탄환을 발사합니다. 탄환은 날아가서 명중하거나 벽에 부딪힙니다.',
   trap:'바닥에 덫을 설치하여 적이 들어올 때 작동시킵니다.',
   grow:'몸집과 실제 충돌 반경을 동시에 키웁니다.',
   shrink:'몸집과 실제 충돌 반경을 동시에 줄입니다.',
@@ -58,6 +58,11 @@ function visual(p){
 }
 function visibleHeight(p){return visual(p).z;}
 function pose(p){
+  if((p.uppercutWindup||0)>0){
+    const progress=1-(p.uppercutWindup/9);
+    const punch=cap(progress,0,1);
+    return {sx:1-.09*punch,sy:1+.17*punch,tilt:.12*punch};
+  }
   const state=p.id==='park'&&p.jumpState!=='ground'?p.jumpState:p.jumpMotion?.phase;
   const stageAge=p.jumpMotion?.age||0;
   if(state==='prepare'){
@@ -168,12 +173,16 @@ function execute(p,a,target,api){
     }
     p.slam={a,owner:p.playerNum};mark('target',p.x,p.y,radius*.58,col,30);
   }else if(a.type==='uppercut'){
-    if(!enemy||distance>radius+enemy.radius)return true;
-    // The mark appears where contact actually happens, not before it.
-    if(strike(p,enemy,a,api)){
-      launch(enemy,9);
-      mark('cleave',enemy.x,enemy.y-groundHeight(enemy),42,col,17,face);
-    }
+    if(!enemy)return true;
+    // Telegraph the physical fist reach, then strike on the eighth update.
+    // It can no longer damage an opponent 150px away instantly.
+    const reach=Math.min(radius,p.radius+45);
+    const preview=mark('line',p.x,p.y,reach,col,13,face);
+    preview.follow=p;
+    p.uppercutWindup=9;
+    pushObject({kind:'uppercut',owner:p.playerNum,x:p.x,y:p.y,
+      age:0,life:17,trigger:8,face,reach,
+      followUp:!!p.uppercutFollow,a:{...a}});
   }else if(['slash','spinslash','thrust','aircombo'].includes(a.type)){
     if(!enemy)return true;
     const x=p.x,y=p.y;
@@ -232,6 +241,7 @@ function execute(p,a,target,api){
 function stepHeight(p,api){
   ensure(p);
   if(p.sizeTimer>0&&--p.sizeTimer===0){p.bodyScale=1;p.radius=p.baseRadius;}
+  if(p.uppercutWindup>0)p.uppercutWindup--;
   if(p.tunnel?.time>0){
     p.tunnel.time--;
     const e=players.find(q=>q.playerNum===p.tunnel.target&&q.hp>0);
@@ -328,11 +338,11 @@ function stepMelee(o,p,api){
   for(const e of enemies(p)){
     if(!meleeContact(o,p,e))continue;
     const mult=o.a.type==='aircombo'?.42:1;
-    if(strike(p,e,o.a,api,o.z,mult)){
+    // Sample the height of the actual swing, not the height at cast time.
+    if(strike(p,e,o.a,api,groundHeight(p),mult)){
       o.hits++;
-      if(o.a.type==='aircombo'&&strikeIndex===0){
-        launch(e,5.5);
-        launch(p,5.5);
+      if(o.a.type==='aircombo'&&strikeIndex===0&&groundHeight(p)<12){
+        launch(e,5.5);launch(p,5.5);
       }
       const kind=o.shape==='line'?'stab':o.shape==='ring'?'cleave':'cut';
       // A hit mark is created only after a real hit and uses the target's
@@ -358,6 +368,38 @@ function segmentDistance(x1,y1,x2,y2,px,py){
   const t=cap(((px-x1)*dx+(py-y1)*dy)/(dx*dx+dy*dy||1),0,1);
   return Math.hypot(px-(x1+dx*t),py-(y1+dy*t));
 }
+// Swept segment against the circular physical footprints of constructed walls.
+// A successful intersection damages the wall and absorbs the entire shot.
+function blockSegment(x1,y1,x2,y2,power=10,z=0){
+  if(z>42)return null; // high arcing shells fly over a ground-height wall
+  const dx=x2-x1,dy=y2-y1,A=dx*dx+dy*dy;
+  let first=null;
+  for(const wall of objects){
+    if(wall.kind!=='wall'||wall.life<=0||wall.hp<=0)continue;
+    const r=wall.r+4,fx=x1-wall.x,fy=y1-wall.y;
+    const C=fx*fx+fy*fy-r*r;
+    let t=null;
+    if(C<=0)t=0;
+    else if(A>1e-9){
+      const B=2*(fx*dx+fy*dy),disc=B*B-4*A*C;
+      if(disc>=0){
+        const root=(-B-Math.sqrt(disc))/(2*A);
+        if(root>=0&&root<=1)t=root;
+      }
+    }
+    if(t!==null&&(!first||t<first.t))first={wall,t,
+      x:x1+dx*t,y:y1+dy*t};
+  }
+  if(!first)return null;
+  first.wall.hp=Math.max(0,first.wall.hp-Math.max(1,power));
+  mark('burst',first.x,first.y,21,'#53667c',15);
+  if(first.wall.hp===0){
+    first.wall.life=0;
+    mark('crack',first.wall.x,first.wall.y,first.wall.r,'#53667c',28);
+    sfx('heavy',.5);
+  }
+  return first;
+}
 function updateProjectiles(api){
   for(let i=projectiles.length-1;i>=0;i--){
     const b=projectiles[i],p=ownerOf(b);if(!p){projectiles.splice(i,1);continue;}
@@ -366,6 +408,24 @@ function updateProjectiles(api){
     const t=cap(b.age/b.travel,0,1);
     b.x=b.startX+(b.tx-b.startX)*t;b.y=b.startY+(b.ty-b.startY)*t;
     b.height=b.kind==='arcshot'?4*t*(1-t)*88:0;
+    const wallHit=blockSegment(b.prevX,b.prevY,b.x,b.y,b.a?.damage||10,b.height);
+    if(wallHit){
+      b.x=wallHit.x;b.y=wallHit.y;b.life=0;
+      projectiles.splice(i,1);continue;
+    }
+    if(b.kind==='turretshot'){
+      const shooter= {...p,x:b.startX,y:b.startY,z:0,vz:0};
+      let collided=false;
+      for(const e of enemies(p)){
+        if(segmentDistance(b.prevX,b.prevY,b.x,b.y,e.x,e.y)>(e.radius||0)+6)continue;
+        if(strike(shooter,e,b.a,api,0,.62)){
+          mark('stab',e.x,e.y-groundHeight(e),Math.min(28,e.radius||25),color(p),15,
+            Math.atan2(b.ty-b.startY,b.tx-b.startX));
+          collided=true;break;
+        }
+      }
+      if(collided||t>=1){projectiles.splice(i,1);continue;}
+    }
     b.trail.unshift({x:b.x,y:b.y-b.height});
     if(b.trail.length>(reduced?4:11))b.trail.pop();
     if(b.kind==='splitshot'&&!b.split&&t>=.56){
@@ -417,7 +477,27 @@ function stepObjects(api){
     o.prevX=o.x;o.prevY=o.y;
     o.age++;o.life--;
     if(o.kind==='melee')stepMelee(o,p,api);
-    else if(o.kind==='wall'){
+    else if(o.kind==='uppercut'){
+      o.x=p.x;o.y=p.y;
+      if(o.age===o.trigger){
+        for(const e of enemies(p)){
+          if(Math.hypot(e.x-p.x,e.y-p.y)>o.reach+(e.radius||0))continue;
+          const theta=Math.atan2(e.y-p.y,e.x-p.x);
+          if(Math.abs(Math.atan2(Math.sin(theta-o.face),Math.cos(theta-o.face)))>.72)continue;
+          if(strike(p,e,o.a,api,groundHeight(p))){
+            if(o.followUp){
+              launch(p,9);
+              // Aircombo can connect after its own windup rather than
+              // colliding with the entire uppercut immunity window.
+              e.invincible=Math.min(e.invincible||0,7);
+            }
+            launch(e,9);
+            mark('cleave',e.x,e.y-groundHeight(e),42,color(p),17,o.face);
+            add('ring',e.x,e.y,{r:34,col:color(p),life:15,stage:'impact'});
+          }
+        }
+      }
+    }else if(o.kind==='wall'){
       for(const e of players){
         if(e.hp<=0||Math.abs(groundHeight(e))>27)continue;
         const dx=e.x-o.x,dy=e.y-o.y,rawDistance=Math.hypot(dx,dy),dist=rawDistance||1,minimum=e.radius+o.r;
@@ -467,16 +547,21 @@ function stepObjects(api){
           // Use the pet/turret's origin, so knockback and visual direction
           // match the source of the real attack rather than its summoner.
           const anchor={...p,x:o.x,y:o.y,z:0,vz:0};
-          if(canHit(anchor,e,0)){
-            const hit=api.hit?.(anchor,e,o.a,o.kind==='turret'?.62:.68,0);
+          if(o.kind==='turret'){
+            // The turret fires a real traveling object, not instant line damage.
+            // Aim locks onto the target at the moment of firing.
+            const travel=Math.max(5,Math.min(36,Math.ceil(d/Math.max(5,o.a.speed||6))));
+            pushShot({kind:'turretshot',owner:p.playerNum,
+              x:o.x,y:o.y,startX:o.x,startY:o.y,tx:e.x,ty:e.y,
+              age:0,life:travel+5,travel,a:o.a,height:0});
+            o.aim=Math.atan2(e.y-o.y,e.x-o.x);
+            mark('ring',o.x,o.y,23,color(p),10);
+          }else if(canHit(anchor,e,0)){
+            const hit=api.hit?.(anchor,e,o.a,.68,0);
             if(hit){
               const face=Math.atan2(e.y-o.y,e.x-o.x);
-              if(o.kind==='turret')add('tether',o.x,o.y,{
-                r:Math.hypot(e.x-o.x,e.y-o.y),angle:face,col:color(p),life:13,stage:'impact'});
-              else{
-                mark('slash',e.x,e.y-groundHeight(e),26,color(p),14,face);
-                o.vx-=Math.cos(face)*2.5;o.vy-=Math.sin(face)*2.5;
-              }
+              mark('slash',e.x,e.y-groundHeight(e),26,color(p),14,face);
+              o.vx-=Math.cos(face)*2.5;o.vy-=Math.sin(face)*2.5;
               mark('stab',e.x,e.y-groundHeight(e),Math.min(28,e.radius||25),
                 color(p),14,face);
             }
@@ -645,7 +730,15 @@ function draw(ctx){
     ctx.globalAlpha=Math.min(1,leave);
     ctx.strokeStyle=col;ctx.fillStyle='rgba(63,74,88,.1)';
     ctx.lineWidth=2.4;ctx.lineJoin='round';
-    if(o.kind==='melee'){
+    if(o.kind==='uppercut'){
+      const t=cap(age/o.trigger,0,1),reach=o.reach*(.18+.82*easeOut(t));
+      ctx.strokeStyle='rgba(26,39,52,.88)';ctx.lineWidth=6;ctx.lineCap='round';
+      ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(Math.cos(o.face)*reach,Math.sin(o.face)*reach);
+      ctx.stroke();ctx.strokeStyle=col;ctx.lineWidth=3;ctx.stroke();
+      ctx.fillStyle=col;ctx.beginPath();ctx.arc(Math.cos(o.face)*reach,Math.sin(o.face)*reach,7,0,Math.PI*2);ctx.fill();
+      ctx.strokeStyle='#f8fafc';ctx.lineWidth=2;
+      ctx.beginPath();ctx.arc(Math.cos(o.face)*reach,Math.sin(o.face)*reach,4,0,Math.PI*2);ctx.stroke();
+    }else if(o.kind==='melee'){
       // The visible tip reaches exactly the same attack.radius on its hit frame.
       const ages=o.impactAges||[o.trigger];
       const cycle=ages.findIndex(n=>age<=n);
@@ -727,8 +820,13 @@ function draw(ctx){
         ctx.fillStyle=col;ctx.beginPath();ctx.moveTo(-3,5);ctx.lineTo(3,5);ctx.lineTo(0,9);ctx.closePath();ctx.fill();
       }else{
         ctx.beginPath();ctx.rect(-13,-13,26,26);ctx.fill();ctx.stroke();
-        const angle=Math.atan2(p.y-y,p.x-x);
-        ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(Math.cos(angle)*13,Math.sin(angle)*13);ctx.stroke();
+        const target=players.find(e=>e.playerNum===o.target&&e.hp>0);
+        const angle=target?Math.atan2(target.y-o.y,target.x-o.x):(o.aim||0);
+        const x1=Math.cos(angle)*11,y1=Math.sin(angle)*11;
+        ctx.strokeStyle='#273647';ctx.lineWidth=7;ctx.lineCap='round';
+        ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(x1*1.6,y1*1.6);ctx.stroke();
+        ctx.strokeStyle=col;ctx.lineWidth=3;
+        ctx.beginPath();ctx.moveTo(x1*.8,y1*.8);ctx.lineTo(x1*1.6,y1*1.6);ctx.stroke();
       }
       ctx.fillStyle='#ddd';ctx.fillRect(-13,-23,26,3);
       ctx.fillStyle=col;ctx.fillRect(-13,-23,26*cap(o.hp/o.maxHp,0,1),3);
@@ -770,7 +868,14 @@ function draw(ctx){
     ctx.globalAlpha=1;ctx.translate(x,dy);
     ctx.rotate(direction+(b.kind==='splitshot'?b.age*.13:0));
     ctx.strokeStyle='#273443';ctx.lineWidth=2;ctx.fillStyle=col;
-    if(b.kind==='arcshot'){
+    if(b.kind==='turretshot'){
+      // Short, pointed bullet visually moves from the aimed barrel to contact.
+      ctx.beginPath();ctx.moveTo(11,0);ctx.lineTo(-5,-5);
+      ctx.lineTo(-9,0);ctx.lineTo(-5,5);ctx.closePath();
+      ctx.fillStyle='#d4dde6';ctx.fill();ctx.stroke();
+      ctx.strokeStyle=col;ctx.lineWidth=2;
+      ctx.beginPath();ctx.moveTo(-17,0);ctx.lineTo(-7,0);ctx.stroke();
+    }else if(b.kind==='arcshot'){
       // Heavy round shell: seam + fuse. Never confused with a sharp shard.
       ctx.beginPath();ctx.arc(0,0,10,0,Math.PI*2);ctx.fill();ctx.stroke();
       ctx.fillStyle='rgba(255,255,255,.87)';
@@ -796,7 +901,7 @@ function draw(ctx){
       ctx.moveTo(-3,-2);ctx.lineTo(8,0);ctx.stroke();
     }
     ctx.restore();
-    if(b.age<14&&b.kind!=='fragment'&&!reduced){
+    if(b.age<14&&b.kind!=='fragment'&&b.kind!=='turretshot'&&!reduced){
       // A tiny typographic ID is shown only at launch; no permanent HUD clutter.
       ctx.save();ctx.fillStyle='rgba(24,30,38,.83)';
       const label=b.kind==='arcshot'?'곡사탄':'분열탄';
@@ -810,5 +915,5 @@ function draw(ctx){
 function activeLine(t){return Math.max(1,8*Math.sin(Math.PI*cap(t,0,1)));}
 global.AdvancedCombat={TYPES,TYPE_NAMES,DESCRIPTIONS,objects,projectiles,effects,
   height:groundHeight,visibleHeight,visual,pose,setAlpha,setReduced,blend,size,renderY,canHit,
-  launch,execute,tick,draw,reset,mark,ensure};
+  launch,execute,tick,draw,reset,mark,ensure,blockSegment};
 })(window);

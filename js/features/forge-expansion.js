@@ -3,7 +3,7 @@
 'use strict';
 const TYPES={homing:'유도탄',pierce:'관통탄',boomerang:'부메랑',chain:'연쇄 번개',nova:'주변 폭발',meteor:'운석',mine:'지뢰',drain:'흡혈',swap:'위치 교환',retreat:'후퇴',cleanse:'정화',haste:'가속',regen:'지속 재생',fortify:'피해 감소'};
 const STATUSES={freeze:'빙결',stun:'기절',root:'속박',silence:'침묵',bleed:'출혈',shock:'감전',vulnerable:'취약',weak:'공격 약화',fear:'공포',charm:'매혹',blind:'실명',curse:'회복 저주'};
-const DESCRIPTIONS={homing:'선택한 적을 따라가는 탄환',pierce:'적을 맞혀도 사라지지 않는 탄환 (적마다 1회)',boomerang:'발사 후 시전자에게 돌아오는 탄환 (적마다 1회)',chain:'범위 안의 다른 적에게 80% 위력으로 연쇄',nova:'자신 중심 범위 공격',meteor:'적 위치를 예고하고 0.75초 후 폭발',mine:'자신 위치에 설치, 0.33초 후 접근한 적에게 폭발',drain:'범위 안 적에게 준 피해의 50% 회복',swap:'선택한 적과 위치 교환',retreat:'적 반대 방향으로 범위만큼 후퇴',cleanse:'이 제작기의 상태이상·지속 피해·둔화 제거',haste:'지속 시간 동안 이동량 60% 증가',regen:'0.5초마다 위력의 25% 회복',fortify:'직접 공격으로 받는 피해 45% 감소'};
+const DESCRIPTIONS={homing:'선택한 적을 따라가는 탄환',pierce:'적을 맞혀도 사라지지 않는 탄환 (적마다 1회)',boomerang:'발사 후 시전자에게 돌아오는 탄환 (적마다 1회)',chain:'범위 안의 다른 적에게 80% 위력으로 연쇄',nova:'자신 중심 범위 공격',meteor:'커다란 암석이 그림자·불꽃 꼬리와 함께 지면으로 낙하합니다. 착지 시점에만 표시된 반경 안에 피해를 줍니다',mine:'자신 위치에 설치, 0.33초 후 접근한 적에게 폭발',drain:'범위 안 적에게 준 피해의 50% 회복',swap:'선택한 적과 위치 교환',retreat:'적 반대 방향으로 범위만큼 후퇴',cleanse:'이 제작기의 상태이상·지속 피해·둔화 제거',haste:'지속 시간 동안 이동량 60% 증가',regen:'0.5초마다 위력의 25% 회복',fortify:'직접 공격으로 받는 피해 45% 감소'};
 const STATUS_HELP={none:'추가 효과 없음',ice:'1.5초간 이동 50% 감소',fire:'지속 시간 동안 0.5초마다 지속 피해',poison:'지속 시간 동안 0.5초마다 지속 피해',freeze:'이동과 행동 정지',stun:'이동과 행동 정지',root:'이동 정지, 공격 가능',silence:'행동과 접촉 공격 정지, 이동 가능',bleed:'0.5초마다 체력 3 감소',shock:'이동 30% 감소, 0.5초마다 체력 2 감소',vulnerable:'직접 받는 피해 35% 증가',weak:'직접 주는 피해 40% 감소',fear:'시전자 반대 방향으로 이동',charm:'시전자 방향으로 이동',blind:'직접 주는 피해 35% 감소',curse:'회복량 60% 감소'};
 Object.assign(TYPES,{flight:'공중 강하',burrow:'지하 습격',blackhole:'블랙홀',starfall:'우주 별비',dung:'똥 폭탄',lifebloom:'생명의 꽃',resurrect:'부활',timestop:'시간 정지',rewind:'시간 되감기',timeburst:'시간 가속'});
 Object.assign(DESCRIPTIONS,{flight:'최대 3초간 공중에서 직접 공격 회피 후 주변에 착지 피해',burrow:'최대 3초간 지하에서 회피 후 적 위치로 솟아올라 공격',blackhole:'적 위치에 중력장을 만들어 끌어당기고 주기적 피해',starfall:'시전자 상공에서 별이 줄지어 낙하합니다. 각 별은 꼬리·지면 그림자를 표시하고, 실제 착지한 순간에만 주변 적에게 피해를 줍니다',dung:'갈색 똥 폭탄이 날아가 명중 시 중독과 둔화',lifebloom:'자신 위치에 꽃을 심어 머무르는 동안 회복',resurrect:'스킬에 포함하면 경기당 1회 자동 부활, 최대 체력의 35% 회복',timestop:'범위 안 적을 최대 2초간 이동·행동 정지 (지속 피해는 계속)',rewind:'자신의 체력과 위치를 최대 3초 전으로 복원, 사망 후에는 불가',timeburst:'지속 시간 동안 자신의 스킬 충전 속도 2배'});
@@ -110,7 +110,11 @@ function execute(p,a,target,api){
       global.BattleFX?.beam?.(origin.x,origin.y,next.x,next.y,p.forge.color);api.hit(p,next,a,Math.pow(.8,i));visited.add(next);origin=next;
     }
   }else if(a.type==='meteor'||a.type==='mine'){
-    p.forgeExtras.push({kind:a.type,x:a.type==='mine'?p.x:near.x,y:a.type==='mine'?p.y:near.y,life:a.type==='mine'?Math.round(a.duration*60):45,age:0,a});
+    const travel=45;
+    p.forgeExtras.push({kind:a.type,
+      x:a.type==='mine'?p.x:near.x,y:a.type==='mine'?p.y:near.y,
+      life:a.type==='mine'?Math.round(a.duration*60):travel,
+      age:0,flight:a.type==='meteor'?travel:0,a});
   }else if(a.type==='drain'){
     if(Math.hypot(near.x-p.x,near.y-p.y)<=a.radius){const hp=near.hp;if(api.hit(p,near,a))heal(p,(hp-near.hp)*.5);show(near.x,near.y,30);}
   }else if(a.type==='swap'){
@@ -162,7 +166,13 @@ function update(p,api){
       if(target&&(b.kind==='homing'||(b.kind==='boomerang'&&b.age>20))){
         const angle=Math.atan2(target.y-b.y,target.x-b.x);b.vx=Math.cos(angle)*b.a.speed;b.vy=Math.sin(angle)*b.a.speed;
       }
+      const fromX=b.x,fromY=b.y;
       b.x+=b.vx;b.y+=b.vy;
+      // Every ground-level moving projectile is intercepted by real walls.
+      if(global.AdvancedCombat?.blockSegment?.(
+        fromX,fromY,b.x,b.y,b.a?.damage||10,0)){
+        extras.splice(i,1);continue;
+      }
       for(const e of api.enemies(p))if(!b.hits.includes(e.playerNum)&&Math.hypot(e.x-b.x,e.y-b.y)<e.radius+8&&api.hit(p,e,b.a)){
         b.hits.push(e.playerNum);
         global.AdvancedCombat?.mark?.('burst',e.x,e.y,20,p.forge.color,13);
@@ -179,7 +189,34 @@ function draw(p){
   ctx.save();ctx.strokeStyle=global.arenaEffectColor?.(p.forge?.color||p.themeColor)||(p.forge?.color||p.themeColor||'#684f83');ctx.lineWidth=2.5;ctx.fillStyle=ctx.strokeStyle;
   for(const b of p.forgeExtras||[]){
     ctx.save();const area=['meteor','mine','blackhole','lifebloom'].includes(b.kind);
-    if(b.kind==='starfall'){
+    if(b.kind==='meteor'){
+      // The same 45-tick descent timeline drives both the animation and
+      // the impact/damage in update(): no ground explosion until landing.
+      const t=Math.max(0,Math.min(1,b.age/(b.flight||45)));
+      const fall=1-(1-t)*(1-t);
+      const height=190*(1-fall),rockX=b.x-42*(1-t),rockY=b.y-height;
+      ctx.strokeStyle='#9b5d3a';ctx.lineWidth=2;
+      ctx.fillStyle='rgba(45,49,56,.13)';
+      ctx.beginPath();ctx.arc(b.x,b.y,b.a.radius,0,Math.PI*2);ctx.fill();ctx.stroke();
+      ctx.fillStyle='rgba(34,41,48,.24)';
+      ctx.beginPath();ctx.ellipse(b.x,b.y,19+15*t,6+4*t,0,0,Math.PI*2);ctx.fill();
+      ctx.save();ctx.lineCap='round';
+      const trail=1-t;
+      ctx.strokeStyle='#d6803f';ctx.lineWidth=10*trail+2;
+      ctx.beginPath();ctx.moveTo(rockX-65*trail,rockY-90*trail);
+      ctx.lineTo(rockX,rockY);ctx.stroke();
+      ctx.strokeStyle='#f5c170';ctx.lineWidth=3*trail+1;
+      ctx.beginPath();ctx.moveTo(rockX-50*trail,rockY-65*trail);
+      ctx.lineTo(rockX,rockY);ctx.stroke();
+      ctx.translate(rockX,rockY);ctx.rotate(b.age*.07);
+      ctx.fillStyle='#796250';ctx.strokeStyle='#3a3632';ctx.lineWidth=3;
+      ctx.beginPath();ctx.moveTo(-23,-11);ctx.lineTo(-8,-26);ctx.lineTo(18,-16);
+      ctx.lineTo(27,8);ctx.lineTo(6,23);ctx.lineTo(-23,16);ctx.closePath();
+      ctx.fill();ctx.stroke();
+      ctx.strokeStyle='#b69c7f';ctx.lineWidth=2;
+      ctx.beginPath();ctx.moveTo(-15,-6);ctx.lineTo(-3,-15);ctx.lineTo(9,-11);
+      ctx.moveTo(6,4);ctx.lineTo(19,9);ctx.stroke();ctx.restore();
+    }else if(b.kind==='starfall'){
       // Height, sky streak and shadow derive from one fall progress.
       if(b.age>=b.delay){
         const t=Math.max(0,Math.min(1,(b.age-b.delay)/b.flight));

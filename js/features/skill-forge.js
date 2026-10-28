@@ -181,11 +181,13 @@ function tickQueue(p,target){
         i++;continue;
       }
     }
+    // Tell the physical uppercut object whether a same-cast aircombo follows.
+    // The caster launches on the actual uppercut CONTACT frame, not at cast.
+    const aerialLink=q.a.type==='uppercut'&&p.forgeQueue.some(next=>
+      next.castId===q.castId&&next.step>q.step&&next.a.type==='aircombo');
+    if(aerialLink)p.uppercutFollow=true;
     execute(p,q.a,players.find(e=>e.playerNum===q.targetNum&&e.hp>0)||target);
-    if(q.a.type==='uppercut'&&p.forgeQueue.some(next=>next.castId===q.castId&&next.step>q.step&&next.a.type==='aircombo')){
-      // Rise with the target, so the next aerial hit shares its actual height.
-      global.AdvancedCombat?.launch(p,9);
-    }
+    if(aerialLink)p.uppercutFollow=false;
     p.forgeQueue.splice(i,1);
   }
 }
@@ -286,6 +288,9 @@ function advanceWorld(p,target){
   tickQueue(p,target);
   for(let i=p.forgeShots.length-1;i>=0;i--){
     const b=p.forgeShots[i];b.prevX=b.x;b.prevY=b.y;b.x+=b.vx;b.y+=b.vy;b.life--;
+    const blocked=global.AdvancedCombat?.blockSegment?.(
+      b.prevX,b.prevY,b.x,b.y,b.a?.damage||10,0);
+    if(blocked){p.forgeShots.splice(i,1);continue;}
     const e=enemies(p).find(e=>Math.hypot(e.x-b.x,e.y-b.y)<e.radius+8&&hit(p,e,b.a));
     if(e||b.life<=0||b.x<0||b.y<0||b.x>canvas.width||b.y>canvas.height)p.forgeShots.splice(i,1);
   }

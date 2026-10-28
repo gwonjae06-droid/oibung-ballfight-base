@@ -51,7 +51,10 @@ test('uppercut damages and launches; a dive lands with an impact',()=>{
   const h=boot(),p=fighter(1,140,170),e=fighter(2,175,170);
   h.sim.players.push(p,e);
   assert.equal(h.world.execute(p,action('uppercut'),e,h.api),true);
-  assert.ok(e.hp<300);assert.ok(e.vz>0);tick(h,4);assert.ok(e.z>0);
+  assert.equal(e.hp,300,'uppercut needs a visible windup before contact');
+  tick(h,7);assert.equal(e.hp,300);
+  tick(h,1);assert.ok(e.hp<300);assert.ok(e.vz>0);
+  tick(h,4);assert.ok(e.z>0);
   h.world.execute(p,action('leap'),e,h.api);tick(h,5);
   h.world.execute(p,action('dive',{damage:25}),e,h.api);
   tick(h,50);assert.equal(p.z,0);assert.ok(h.world.effects.some(x=>x.kind==='ring')||e.hp<300);
