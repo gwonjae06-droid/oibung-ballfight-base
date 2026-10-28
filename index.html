@@ -7,6 +7,7 @@
   <meta name="description" content="오이붕 아레나 — 자유형 스킬 제작, 리메이크된 5인의 자동 배틀과 전투 이펙트.">
   <title>오이붕 아레나 | OIBUNG ARENA</title>
   <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/ui-clarity.css">
 </head>
 <body>
   <main class="main-container" id="container">
@@ -18,19 +19,44 @@
       </div>
     </header>
 
-    <nav class="arena-category-nav" id="arena-category-nav" aria-label="게임 카테고리">
-      <a href="#arena-stage" data-category="arena">경기</a>
-      <a href="#match-setup" data-category="match" aria-current="location">대진 설정</a>
-      <a href="#character-studio-dialog" data-category="creator">커스텀 캐릭터 만들기</a>
-      <a href="#economy-section" data-category="economy">베팅 · 상점</a>
-      <a href="#cosmetic-arcade" data-category="cosmetics">가챠 · 꾸미기</a>
-      <a href="#point-finance" data-category="finance">투자 · 광산</a>
+    <nav class="arena-category-nav" id="arena-category-nav" aria-label="오이붕 아레나 이동 메뉴">
+      <div class="arena-nav-primary" role="group" aria-label="게임 핵심 메뉴">
+        <a href="#match-setup" data-category="match" aria-current="location">대진 설정</a>
+        <a href="#arena-stage" data-category="arena">전투 보기</a>
+        <a href="#character-studio-dialog" data-category="creator">캐릭터 제작</a>
+        <a href="#cosmetic-arcade" data-category="cosmetics">가챠 · 꾸미기</a>
+      </div>
+      <details class="arena-nav-more">
+        <summary>기타 활동 <span aria-hidden="true">＋</span></summary>
+        <div class="arena-nav-more-list">
+          <a href="#economy-section" data-category="economy">우승 예측 · 상점</a>
+          <a href="#point-finance" data-category="finance">투자 · 포인트 광산</a>
+        </div>
+      </details>
     </nav>
+
+    <section class="arena-purpose" id="arena-purpose" aria-labelledby="arena-purpose-title">
+      <div class="arena-purpose-copy">
+        <span class="eyebrow">YOUR GOAL / 최후의 1인</span>
+        <h2 id="arena-purpose-title">파이터를 고르고, 마지막 생존자를 지켜보세요.</h2>
+        <p>캐릭터를 선택하거나 직접 만든 뒤 경기 시작을 누르면 자동으로 싸웁니다. 마지막까지 살아남으면 승리!</p>
+      </div>
+      <ol class="arena-purpose-steps" aria-label="기본 플레이 순서">
+        <li data-ui-step="setup" aria-current="step"><span class="step-number">01</span><span><strong>파이터 선택</strong><small>대진 구성</small></span></li>
+        <li data-ui-step="battle"><span class="step-number">02</span><span><strong>경기 시작</strong><small>전투 관전</small></span></li>
+        <li data-ui-step="result"><span class="step-number">03</span><span><strong>승부 확인</strong><small>다음 경기</small></span></li>
+      </ol>
+      <div class="arena-purpose-next" aria-live="polite">
+        <span id="arena-next-label">지금 할 일 · 출전할 캐릭터를 선택하세요.</span>
+        <button id="arena-next-action" type="button">대진 설정으로 이동</button>
+      </div>
+    </section>
 
     <section class="battle-screen" aria-label="배틀 아레나">
       <div class="arena-heading">
         <span class="eyebrow">ARENA / 01</span>
         <strong id="title-text">1 VS 1</strong>
+        <small class="arena-match-objective">목표: 마지막까지 살아남기</small>
       </div>
       <div class="canvas-wrapper">
         <canvas id="arena" width="500" height="500" aria-label="캐릭터 자동 전투 화면"></canvas>
@@ -140,6 +166,7 @@
         <strong id="arcade-wallet" class="game-wallet">1,000 G</strong>
       </div>
       <p class="game-extra-info">이곳은 가챠·수집 전용입니다. 획득한 테두리, 스킬 색상, 궤적, 등장 연출과 모션은 <strong>커스텀 캐릭터 만들기 → 외형 꾸미기</strong>에서 원하는 캐릭터에게 개별 장착·해제하세요. 모든 캐릭터에 자동 적용되지 않습니다.</p>
+      <div class="arena-section-purpose">여기서 할 일: G로 <strong>꾸미기 아이템</strong>을 뽑고, 캐릭터 제작기에서 원하는 캐릭터에게 장착하세요. 전투 능력치는 올라가지 않습니다.</div>
       <div class="roulette-theatre" aria-label="가챠 룰렛 연출">
         <div class="roulette-orbit" aria-hidden="true"><canvas id="cosmetic-roulette" width="620" height="300"></canvas></div>
         <div class="roulette-showcase">
@@ -166,6 +193,7 @@
         <strong id="finance-wallet" class="game-wallet">1,000 G</strong>
       </div>
       <p class="game-extra-info">실제 주식·현금과 무관한 게임 내 가상 시세입니다. 5배 레버리지 손실은 원금을 초과하여 G가 음수가 될 수 있습니다.</p>
+      <div class="arena-section-purpose">선택 활동: <strong>광산</strong>에서 G를 모으거나, 변동하는 가상 종목에 <strong>투자</strong>할 수 있습니다. 전투 참여에 필수는 아닙니다.</div>
       <div class="finance-layout">
         <div class="finance-market">
           <div class="finance-subtitle"><strong>가상 종목 거래</strong><span>5종 종목 · 3초마다 자동 갱신</span></div>
@@ -227,5 +255,6 @@
   <script src="js/features/cosmetic-arcade.js"></script>
   <script src="js/features/point-market.js"></script>
   <script src="js/features/battle-effects.js"></script>
+  <script src="js/features/ui-flow.js"></script>
 </body>
 </html>
