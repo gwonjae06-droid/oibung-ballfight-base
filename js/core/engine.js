@@ -1,43 +1,74 @@
 /* Battle engine. Character-specific logic is registered in BEHAVIORS. */
-function toggleMode() {
-  if(roundStarted&&!isGameOver){const status=document.getElementById('bf-status');if(status)status.textContent='경기가 끝난 뒤 변경할 수 있습니다.';return;}
-  gameMode=gameMode==='1v1'?'1v1v1':'1v1';
-  const three=gameMode==='1v1v1';
-  canvas.width=canvas.height=three?650:500;
-  document.getElementById('container').classList[three?'add':'remove']('mode-3p');
-  document.getElementById('ui-container').classList[three?'add':'remove']('mode-3p');
-  document.getElementById('sec-p3').style.display=three?'block':'none';
-  document.getElementById('title-text').innerText=three?'3-WAY BATTLE':'1 VS 1';
-  document.getElementById('btn-mode').innerText=three?'3인전':'2인전';
-  reRollMatch();
+// Dynamic 2–10 fighter rounds. Logical canvas dimensions grow with the
+// roster; CSS handles the smooth visual transition in the main layout.
+function arenaDimensions(count){
+  const n=Math.max(2,Math.min(10,Math.round(count)||2));
+  const w=500+(n-2)*82;
+  const h=Math.round(w*(1+(n-2)*.022));
+  return {width:w,height:h};
+}
+function setMatchCount(count){
+  if(roundStarted&&!isGameOver){
+    const status=document.getElementById('bf-status');
+    if(status)status.textContent='경기가 끝난 뒤 인원수를 변경할 수 있습니다.';
+    const menu=document.getElementById('arena-player-count');
+    if(menu)menu.value=String(matchCount);
+    return false;
+  }
+  matchCount=Math.max(2,Math.min(10,Math.round(Number(count))||2));
+  gameMode=matchCount===2?'1v1':matchCount===3?'1v1v1':matchCount+'-way';
+  const dimensions=arenaDimensions(matchCount);
+  canvas.width=dimensions.width;canvas.height=dimensions.height;
+  const container=document.getElementById('container');
+  if(container)container.dataset.fighterCount=String(matchCount);
+  const wrapper=document.querySelector('.canvas-wrapper');
+  if(wrapper)wrapper.style.aspectRatio=dimensions.width+' / '+dimensions.height;
+  const title=document.getElementById('title-text');
+  if(title)title.innerText=matchCount===2?'1 VS 1':matchCount+'인 자유 대전';
+  const selector=document.getElementById('arena-player-count');
+  if(selector)selector.value=String(matchCount);
+  return reRollMatch();
+}
+function toggleMode(){return setMatchCount(matchCount>=10?2:matchCount+1);}
+function placeFighters(defs){
+  const count=defs.length,centerX=canvas.width/2,centerY=canvas.height/2;
+  // Evenly spaced on an ellipse, so everyone has comparable room and
+  // nobody spawns on top of another in a 10-fighter melee.
+  return defs.map((def,i)=>{
+    const angle=-Math.PI/2+i*Math.PI*2/count;
+    const distanceX=Math.min(canvas.width*.36,canvas.width/2-45);
+    const distanceY=Math.min(canvas.height*.34,canvas.height/2-45);
+    const p=def.createInstance(i+1);
+    p.x=centerX+Math.cos(angle)*distanceX;
+    p.y=centerY+Math.sin(angle)*distanceY;
+    const towards=Math.atan2(centerY-p.y,centerX-p.x);
+    p.vx=Math.cos(towards)*1.3;p.vy=Math.sin(towards)*1.3;
+    return p;
+  });
 }
 function reRollMatch(forcedDef) {
   if(roundStarted&&!isGameOver){setEconomyMessage('진행 중에는 재매칭할 수 없습니다.','bad');return false;}
-  const count=gameMode==='1v1'?2:3;
+  const count=matchCount;
   const pool=[...CHARACTER_DEFS,...CUSTOM_DEFS];
-  if(pool.length<count){setEconomyMessage('캐릭터 모듈이 아직 모두 로드되지 않았습니다.','bad');return false;}
-  const shuffled=[...pool];
-  for(let i=shuffled.length-1;i>0;i--){
-    const j=Math.floor(Math.random()*(i+1));
-    [shuffled[i],shuffled[j]]=[shuffled[j],shuffled[i]];
+  if(!pool.length){setEconomyMessage('캐릭터 모듈이 로드되지 않았습니다.','bad');return false;}
+  let defs;
+  if(Array.isArray(forcedDef)){
+    if(forcedDef.length!==count||forcedDef.some(d=>!pool.includes(d)))return false;
+    defs=forcedDef.slice(); // mirror matches allow repeated character definitions
+  }else{
+    const shuffled=pool.slice().sort(()=>Math.random()-.5);
+    if(forcedDef&&pool.includes(forcedDef)){
+      shuffled.splice(shuffled.indexOf(forcedDef),1);shuffled.unshift(forcedDef);
+    }
+    defs=Array.from({length:count},(_,i)=>shuffled[i%shuffled.length]);
   }
-  if(forcedDef&&pool.includes(forcedDef))shuffled=[forcedDef,...shuffled.filter(d=>d!==forcedDef)];
-  players=[];
-  for(let i=0;i<count;i++) {
-    const p=shuffled[i].createInstance(i+1);
-    if(count===2){p.x=i===0?130:370;p.y=250;p.vx=i===0?1.1:-1.1;p.vy=i===0?0.9:-0.9;}
-    else if(i===0){p.x=325;p.y=150;p.vx=(Math.random()-0.5)*2;p.vy=1;}
-    else if(i===1){p.x=490;p.y=480;p.vx=-1;p.vy=-0.8;}
-    else{p.x=160;p.y=480;p.vx=1;p.vy=-0.8;}
-    players.push(p);
-  }
+  players=placeFighters(defs);
   particles=[];floatingTexts=[];shockwaves=[];screenShake=0;
   globalThis.AdvancedCombat?.reset();
   isGameOver=false;isPlaying=false;roundStarted=false;roundStopped=false;roundSettled=false;selectedBetPlayerNum=null;activeBet=null;
   syncStopButton();
   Object.keys(reservedItems).forEach(id=>reservedItems[id]=[]);
-  document.getElementById('btn-start').innerText='경기 시작';
-  document.getElementById('btn-start').dataset.state='ready';
+  const start=document.getElementById('btn-start');if(start){start.innerText='경기 시작';start.dataset.state='ready';}
   updateUI();renderEconomyUI();draw();return true;
 }
 function togglePlay() {
@@ -189,6 +220,22 @@ function getArenaFighterName(p){
   return p.name+' '+ordinal;
 }
 function updateUI() {
+  // HUD cards are generated for the exact active roster, including up to
+  // ten independently tracked cooldown panels.
+  const hudContainer=document.getElementById('ui-container');
+  if(hudContainer&&hudContainer.children.length!==players.length){
+    hudContainer.replaceChildren();
+    players.forEach((_,index)=>{
+      const n=index+1,section=document.createElement('div');
+      section.className='player-section';section.id='sec-p'+n;
+      section.innerHTML='<div class="player-header"><div class="fighter-name"><span class="fighter-number">P'+n+'</span><span class="player-title" id="p'+n+'-name"></span></div>'+
+        '<span class="hp-text"><span id="p'+n+'-hp-text"></span><span class="hp-max"> / <span id="p'+n+'-maxhp"></span></span></span></div>'+
+        '<div class="hp-bar-track"><div id="p'+n+'-hp-bar" class="hp-bar-fill"></div></div>'+
+        '<span id="p'+n+'-tag" class="mode-tag" style="display:none"></span>';
+      hudContainer.append(section);
+    });
+  }
+  if(hudContainer)hudContainer.dataset.count=String(players.length);
   players.forEach((p,idx)=>{
     const n=idx+1,el=document.getElementById(`p${n}-name`);
     if(!el)return;

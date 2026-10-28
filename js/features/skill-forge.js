@@ -122,46 +122,53 @@ function allProfile(name='만능 파이터',description='모든 능력을 사용
     hp:360,speed:2.1,allAbilities:true,
     skills:[{name:'전체 스킬 사용',trigger:'auto',cooldown:4,actions:[settings('wave')]}]});
 }
+// A multi-theme roll draws every action from the UNION of selected families.
+// At least one action from each family is guaranteed, even for seven choices.
 function randomProfile(theme='any',rng=Math.random){
-  const selected=THEMES[theme]||pickRandom(rng,Object.values(THEMES));
-  const pool=allTypes(); // 'any' draws across every registered combat module.
-  const amount=theme==='any'?randInt(rng,1,4):randInt(rng,3,4);
+  const selectedKeys=(Array.isArray(theme)?theme:theme==='any'?[]:[theme])
+    .filter((key,index,items)=>!!THEMES[key]&&items.indexOf(key)===index);
+  const selectedThemes=selectedKeys.map(key=>THEMES[key]);
+  const selected=selectedThemes.length?selectedThemes[0]:pickRandom(rng,Object.values(THEMES));
+  const pool=selectedThemes.length?
+    [...new Set(selectedThemes.flatMap(t=>t.types).filter(type=>TYPE[type]))]:allTypes();
+  const amount=selectedThemes.length?Math.max(2,Math.min(4,selectedKeys.length)):randInt(rng,1,4);
+  const required=selectedKeys.slice();
+  // Shuffle required families so their actions get mixed among skill slots.
+  for(let i=required.length-1;i>0;i--){
+    const j=randInt(rng,0,i);[required[i],required[j]]=[required[j],required[i]];
+  }
   const used=new Set(),skills=[];
   const patterns=Object.keys(global.AbilityAtlas?.PATTERNS||{direct:1,fan:1,radial:1,line:1,cross:1,spiral:1,scatter:1});
   const targets=Object.keys(global.AbilityAtlas?.TARGETS||{nearest:1,farthest:1,lowest:1,highest:1,random:1,cluster:1});
-  const statuses=Object.keys(STATUS);
-  const triggers=Object.keys(TRIGGER);
+  const statuses=Object.keys(STATUS),triggers=Object.keys(TRIGGER);
   for(let i=0;i<amount;i++){
     const actions=[];
-    const steps=randInt(rng,1,3);
+    const needed=Math.ceil(required.length/Math.max(1,amount-i));
+    const steps=selectedThemes.length?Math.min(3,Math.max(needed,randInt(rng,1,3))):randInt(rng,1,3);
     for(let j=0;j<steps;j++){
-      // Theme narrows the first action only when a theme is explicitly chosen.
-      const themed=theme!=='any'&&j===0&&rng()<.65;
-      const candidates=themed?selected.types.filter(t=>TYPE[t]):pool;
+      const forced=required.shift();
+      const candidates=forced?THEMES[forced].types.filter(type=>TYPE[type]):pool;
       let type=pickRandom(rng,candidates.length?candidates:pool);
-      for(let tries=0;tries<12&&used.has(type);tries++)type=pickRandom(rng,pool);
+      for(let tries=0;tries<12&&used.has(type);tries++)type=pickRandom(rng,candidates.length?candidates:pool);
       used.add(type);
       actions.push({type,pattern:pickRandom(rng,patterns),target:pickRandom(rng,targets),
-        damage:randInt(rng,9,95),radius:randInt(rng,60,290),
-        count:randInt(rng,1,8),speed:randInt(rng,2,14),
-        duration:Math.round(randInt(rng,3,70))/10,
+        damage:randInt(rng,9,95),radius:randInt(rng,60,290),count:randInt(rng,1,8),
+        speed:randInt(rng,2,14),duration:randInt(rng,3,70)/10,
         status:pickRandom(rng,statuses),knockback:randInt(rng,0,9),
-        delay:j===0?0:Math.round(randInt(rng,0,20))/10});
+        delay:j===0?0:randInt(rng,0,20)/10});
     }
-    // Each roll includes at least one meaningful damaging ability.
     if(i===amount-1&&!skills.some(v=>v.actions.some(x=>offense.has(x.type)))&&!actions.some(x=>offense.has(x.type)))
-      actions[0].type=pickRandom(rng,[...offense].filter(t=>TYPE[t]));
-    const trigger=pickRandom(rng,triggers);
+      actions[0].type=pickRandom(rng,pool.filter(type=>offense.has(type)).length?pool.filter(type=>offense.has(type)):[...offense]);
     skills.push({name:TYPE[actions[0].type]+' '+pickRandom(rng,['연계','각성','변주','비기','파동']),
-      trigger,cooldown:Math.round(randInt(rng,5,200))/10,
+      trigger:pickRandom(rng,triggers),cooldown:randInt(rng,5,200)/10,
       threshold:randInt(rng,12,90),actions});
   }
-  // Name, numbers, status, action order, targeting and palette all vary.
+  const subject=selectedThemes.length?selectedThemes.map(t=>t.name).join('·'):selected.name;
   const name=pickRandom(rng,['방랑하는','고요한','폭주하는','날렵한','사나운','빛나는','수상한','정교한'])+
-    ' '+selected.name+' '+pickRandom(rng,['검사','마도사','소환사','모험가','수호자','괴짜','정령']);
-  return normalize({name,blurb:'전체 동작 풀에서 무작위 조합 · '+selected.name,
+    ' '+subject+' '+pickRandom(rng,['검사','마도사','소환사','모험가','수호자','괴짜','정령']);
+  return normalize({name,blurb:selectedThemes.length?'선택한 '+subject+' 계열의 무작위 혼합':'전체 동작 풀 무작위 조합',
     color:randomColor(rng),effectColor:randomColor(rng),hp:randInt(rng,140,500),
-    speed:Math.round(randInt(rng,6,50))/10,skills});
+    speed:randInt(rng,6,50)/10,skills});
 }
 
 let sequence=0;
@@ -624,7 +631,7 @@ function initializeUI(){
       global.CharacterStudioArt?.commit?.(id);
       reRollMatch();
       const first=$('bf-pick-0');
-      if(first){first.value=id;$('bf-apply').click();}
+      if(first){first.value=id;globalThis.applyFighterPicks?.();}
       roster();report(config.name+' 생성 완료 · P1 적용');
       global.ArenaCategories?.hideStudio?.();
     }catch(e){report(e.message);}
@@ -646,6 +653,6 @@ function initialize(){
   const oldDraw=drawCharacter;
   drawCharacter=function(p){if(p.forge)drawFighter(p);oldDraw(p);};
 }
-global.SkillForge={THEMES,randomProfile,normalize,register,remove,list,setDraft,refreshList:()=>refreshList(),persist,TYPE,TRIGGER,STATUS,ACTION_PARAMETERS,supportedParameter,cooldownFrames,advanceTimers:tickSkills,advanceWorld,hit,allProfile,allSkillset};
+global.SkillForge={THEMES,randomProfile,normalize,register,remove,list,setDraft,refreshList:()=>refreshList(),persist,TYPE,TRIGGER,STATUS,ACTION_PARAMETERS,supportedParameter,cooldownFrames,advanceTimers:tickSkills,advanceWorld,hit,allProfile,allSkillset,getDraft:()=>normalize(draft)};
 if(typeof document!=='undefined'&&document.querySelector('.bf-tools'))initialize();
 })(window);

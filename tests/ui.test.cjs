@@ -24,10 +24,10 @@ test('all required game and optional feature controls still exist', () => {
   const all = [...ids(html), ...ids(panelHtml()), ...ids(forge)];
   const required = [
     'arena', 'container', 'title-text', 'ui-container', 'sec-p1', 'sec-p2', 'sec-p3',
-    'btn-start', 'btn-reset', 'btn-mode', 'btn-stop', 'coin-balance', 'economy-message',
+    'btn-start', 'btn-reset', 'arena-player-count', 'btn-stop', 'coin-balance', 'economy-message',
     'wager-input', 'odds-text', 'bet-players', 'reserved-list', 'btn-max-bet',
     'targets-skillRush', 'targets-vitality', 'targets-speed',
-    'bf-picks', 'bf-speed', 'bf-apply', 'bf-name', 'bf-text',
+    'bf-picks', 'bf-speed', 'bf-name', 'bf-text',
     'bf-analyze', 'bf-create', 'bf-result', 'bf-status', 'bf-custom-list'
   ];
   for(const id of required)assert.ok(all.includes(id), 'missing DOM id: ' + id);

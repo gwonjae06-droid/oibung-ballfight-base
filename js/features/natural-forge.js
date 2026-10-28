@@ -371,7 +371,8 @@ function install(){
   const mode=document.getElementById('forge-natural-mode'),modeLabel=mode.previousElementSibling;
   const modeDetails=document.createElement('details'),modeSummary=document.createElement('summary');modeSummary.textContent='분석 방식 변경';modeDetails.append(modeSummary,modeLabel,mode);box.append(modeDetails);
   const randomBox=document.createElement('div');randomBox.className='forge-random';
-  randomBox.innerHTML='<label for="forge-random-theme">랜덤 캐릭터 테마</label><div class="forge-random-row"><select id="forge-random-theme"><option value="any">전체 랜덤</option>'+Object.entries(SkillForge.THEMES).map(([key,t])=>'<option value="'+key+'">'+t.name+'</option>').join('')+'</select><button type="button" id="forge-random">랜덤 초안 만들기</button></div><p class="bf-helper">이름·스킬·수치를 자동으로 조합합니다. 확인 후 캐릭터를 생성하세요.</p>';
+  randomBox.innerHTML='<fieldset class="forge-theme-picker"><legend>혼합할 능력 계열 선택 (복수 선택 가능)</legend><div class="forge-theme-grid">'+Object.entries(SkillForge.THEMES).map(([key,t])=>'<label class="forge-theme-choice"><input type="checkbox" name="forge-theme" value="'+key+'"><span>'+t.name+'</span></label>').join('')+'</div></fieldset><button type="button" id="forge-random">선택한 계열로 랜덤 초안 만들기</button><p class="bf-helper">선택한 계열마다 최소 한 동작을 넣고 나머지는 무작위로 섞습니다. 전체 55종을 이용하려면 아무 계열도 선택하지 마세요.</p>';
+  const pickedThemes=()=>Array.from(randomBox.querySelectorAll('input[name="forge-theme"]:checked'),input=>input.value);
   // The random option is offered as a compact secondary workflow below the main actions.
   const guide=document.createElement('details'),guideTitle=document.createElement('summary');
   guideTitle.textContent='지원 동작 '+Object.keys(SkillForge.TYPE).length+'종 · 상태 효과 '+(Object.keys(SkillForge.STATUS).length-1)+'종';guide.append(guideTitle);
@@ -461,7 +462,20 @@ function install(){
       }
       approved='';if(offer(out,text))return;
       if(!out.profile){status.textContent='구현할 효과가 없습니다. 문장을 추가하거나 선택을 바꿔 주세요.';choices={};return;}
-      SkillForge.setDraft(out.profile);approved=text;
+      // Natural-language interpretation changes SKILLS, not the portrait,
+      // uploaded picture, handwritten drawing or user-customized appearance.
+      const current=SkillForge.getDraft?.()||{};
+      const $id=id=>document.getElementById(id);
+      const appearance={
+        name:$id('bf-name')?.value.trim()||out.profile.name,
+        color:$id('forge-color')?.value||current.color,
+        effectColor:$id('forge-effect-color')?.value||current.effectColor,
+        artKey:current.artKey,
+        hp:Number($id('forge-hp')?.value||current.hp||250),
+        speed:Number($id('forge-speed')?.value||current.speed||1.8),
+        blurb:$id('bf-text')?.value.trim()||out.profile.blurb
+      };
+      SkillForge.setDraft({...out.profile,...appearance});approved=text;
       status.textContent=(out.mode==='server-ai'?'창작 AI':out.mode==='on-device-ai'?'기기 내 AI':'의미 분석')+' 완료 · 스킬 '+(out.profile.allAbilities?SkillForge.allSkillset().length:out.profile.skills.length)+'개'
         +'\n'+out.profile.skills.map(s=>SkillForge.TRIGGER[s.trigger]+' / '+s.cooldown+'초: '+s.actions.map(a=>SkillForge.TYPE[a.type]+(a.status!=='none'?' + '+SkillForge.STATUS[a.status]:'')).join(' → ')).join('\n')
         +(out.interpretation?'\n구현: '+out.interpretation:'')
@@ -474,9 +488,11 @@ function install(){
   });
   document.getElementById('forge-random').addEventListener('click',()=>{
     if(button.disabled)return;
-    const profile=SkillForge.randomProfile(document.getElementById('forge-random-theme').value);
+    const selected=pickedThemes();
+    const profile=SkillForge.randomProfile(selected.length?selected:'any');
     input.value='';approved='';choices={};choiceBox.replaceChildren();global.CharacterStudioArt?.reset?.();SkillForge.setDraft(profile);
-    status.textContent='랜덤 초안: '+profile.name+' · 스킬 '+profile.skills.length+'개. 마음에 들면 캐릭터 생성 버튼을 누르세요.';
+    status.textContent='혼합 계열: '+(selected.length?selected.map(key=>SkillForge.THEMES[key].name).join(' + '):'전체 55종')+
+      ' · 랜덤 초안: '+profile.name+' · 스킬 '+profile.skills.length+'개. 저장 버튼을 눌러 출전할 수 있습니다.';
     const report=document.getElementById('bf-result');if(report)report.textContent='';
   });
   input.addEventListener('input',()=>{approved='';choices={};choiceBox.replaceChildren();});
@@ -524,7 +540,8 @@ function install(){
       status.textContent='캐릭터는 최대 6명입니다. 기존 캐릭터를 삭제한 뒤 생성하세요.';
       return;
     }
-    const profile=SkillForge.randomProfile('any');
+    const selected=pickedThemes();
+    const profile=SkillForge.randomProfile(selected.length?selected:'any');
     input.value='';approved='';choices={};choiceBox.replaceChildren();
     global.CharacterStudioArt?.reset?.();SkillForge.setDraft(profile);
     saveBtn.click(); // Reuse the validated save, persistence and P1 selection flow.
@@ -537,12 +554,9 @@ function install(){
   actions.replaceChildren(saveBtn);
   // Do not reference the random button until it exists; otherwise the entire
   // studio installer aborts before its controls become usable.
-  randomEntry.append(randomHead,randomNow);
+  randomEntry.append(randomHead,randomBox,randomNow);
   body.insertBefore(randomEntry,nameLabel);
-  const randomDetail=document.createElement('details'),randomSummary=document.createElement('summary');
-  randomSummary.textContent='랜덤 테마 선택 · 초안 미리보기';randomDetail.className='forge-optional';
-  randomDetail.append(randomSummary,randomBox);
-  body.insertBefore(randomDetail,actions.nextSibling);
+  // One shared theme picker serves both preview and immediate save: no duplicate UI.
   advanced.append(inspect,document.getElementById('bf-result'));
   advanced.classList.add('forge-tuning');
   const library=document.createElement('details'),libraryTitle=document.createElement('summary');

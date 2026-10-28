@@ -7,7 +7,7 @@
   const panel = document.createElement('section');
   panel.className = 'bf-tools';
   panel.setAttribute('aria-label', '대진 설정');
-  panel.innerHTML = "\n    <div class=\"panel-heading\">\n      <span class=\"eyebrow\">MATCH SETUP</span>\n      <h2>대진 설정</h2>\n    </div>\n    <div class=\"bf-picks\" id=\"bf-picks\" aria-label=\"출전 캐릭터 선택\"></div>\n    <div class=\"bf-actions\">\n      <button type=\"button\" id=\"bf-apply\">대진 적용</button>\n    </div>\n    <div id=\"bf-status\" class=\"bf-notice\" role=\"status\" aria-live=\"polite\"></div>\n    <details class=\"bf-details\"><summary>커스텀 캐릭터</summary><div class=\"bf-details-body\"></div></details>";
+  panel.innerHTML = "\n    <div class=\"panel-heading\">\n      <span class=\"eyebrow\">MATCH SETUP</span>\n      <h2>대진 설정</h2>\n    </div>\n    <div class=\"bf-picks\" id=\"bf-picks\" aria-label=\"출전 캐릭터 선택\"></div>\n    <div id=\"bf-status\" class=\"bf-notice\" role=\"status\" aria-live=\"polite\"></div>\n    <details class=\"bf-details\"><summary>커스텀 캐릭터</summary><div class=\"bf-details-body\"></div></details>";
   document.querySelector('.battle-screen').after(panel);
 
   const economy = document.querySelector('.economy-card');
@@ -29,10 +29,12 @@
   }
   function refreshPicks() {
     const box=$('bf-picks');box.replaceChildren();
-    for(let i=0;i<(gameMode==='1v1'?2:3);i++) {
+    for(let i=0;i<matchCount;i++) {
       const label=document.createElement('label');label.textContent=`P${i+1}`;
       const select=document.createElement('select');select.id=`bf-pick-${i}`;
-      options(select,players[i]&&players[i].id);label.appendChild(select);box.appendChild(label);
+      options(select,players[i]&&players[i].id);
+      select.addEventListener('change',applyPicks);
+      label.appendChild(select);box.appendChild(label);
     }
     if(window.SkillForge)SkillForge.refreshList();
   }
@@ -42,18 +44,22 @@
     if(ok){$('wager-input').value='0';renderEconomyUI();refreshPicks();notice('');}
     return ok;
   };
-  function applyPicks() {
-    if(!allowed())return;
-    const defs=Array.from({length:gameMode==='1v1'?2:3},(_,i)=>pool().find(d=>d.id===($(`bf-pick-${i}`)||{}).value));
-    if(defs.some(d=>!d)){notice('출전 캐릭터를 모두 선택하세요.');return;}
-    if(!originalRoll())return;
-    players=defs.map((d,i)=>{
-      const old=players[i],p=d.createInstance(i+1);
-      Object.assign(p,{x:old.x,y:old.y,vx:old.vx,vy:old.vy});return p;
-    });
-    $('wager-input').value='0';updateUI();renderEconomyUI();draw();refreshPicks();notice('대진 적용 완료');
+  function applyPicks(){
+    if(!allowed()){
+      refreshPicks(); // Restore the actual current selection during live rounds.
+      return false;
+    }
+    const defs=Array.from({length:matchCount},(_,i)=>
+      pool().find(d=>d.id===($('bf-pick-'+i)||{}).value));
+    if(defs.some(d=>!d)){notice('출전 캐릭터를 모두 선택해 주세요.');return false;}
+    // A single select change immediately creates the selected lineup.
+    // Reuse the engine's full reset for projectiles, buffs and betting state.
+    if(!originalRoll(defs))return false;
+    $('wager-input').value='0';renderEconomyUI();refreshPicks();
+    notice('출전 캐릭터가 바로 변경되었습니다.');
+    return true;
   }
-  $('bf-apply').onclick=applyPicks;
+  window.applyFighterPicks=applyPicks;
   update=function(){
     if(isPlaying&&!isGameOver)players.forEach(p=>{if(p.bfDot>0&&p.hp>0){p.bfDot--;if(p.bfDot%30===0){const amount=Math.max(1,Math.min(6,p.bfDotDamage||2));p.hp=Math.max(0,p.hp-amount);addFloatingText('-'+amount,p.x,p.y-30,'#a75f2b',14);}}});
     originalUpdate();

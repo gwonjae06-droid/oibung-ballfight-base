@@ -17,7 +17,8 @@ function drawRoundedRect(context, x, y, width, height, radius) {
   context.fill();
 }
 
-let gameMode = '1v1'; // '1v1' | '1v1v1'
+let gameMode = '1v1'; // backwards-compatible label
+let matchCount = 2; // 2–10 active participants
 let isPlaying = false;
 let isGameOver = false;
 let roundStopped = false; // manual termination must not be mistaken for a victory

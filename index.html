@@ -76,7 +76,19 @@
       <nav class="control-panel" aria-label="경기 조작">
         <button id="btn-start" data-state="ready" type="button" onclick="togglePlay()">경기 시작</button>
         <button id="btn-reset" type="button" onclick="reRollMatch()">재매칭</button>
-        <button id="btn-mode" type="button" onclick="toggleMode()" aria-label="경기 모드 전환">2인전</button>
+        <label class="match-count-label" for="arena-player-count">참가 인원
+          <select id="arena-player-count" aria-label="경기 참가 인원 선택" onchange="setMatchCount(Number(this.value))">
+            <option value="2" selected>2인전</option>
+            <option value="3">3인전</option>
+            <option value="4">4인전</option>
+            <option value="5">5인전</option>
+            <option value="6">6인전</option>
+            <option value="7">7인전</option>
+            <option value="8">8인전</option>
+            <option value="9">9인전</option>
+            <option value="10">10인전</option>
+          </select>
+        </label>
       </nav>
     </section>
 

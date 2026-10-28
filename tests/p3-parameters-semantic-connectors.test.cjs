@@ -111,7 +111,7 @@ test('random button appears above name and prompt, never inside a collapsed deta
   const css=read('css/style.css');
   assert.match(natural,/randomEntry\.className='forge-random-entry'/);
   assert.match(natural,/body\.insertBefore\(randomEntry,nameLabel\)/);
-  assert.match(natural,/randomEntry\.append\(randomHead,randomNow\)/);
+  assert.match(natural,/randomEntry\.append\(randomHead,randomBox,randomNow\)/);
   assert.match(css,/\.forge-studio \.forge-random-entry #forge-random-create/);
   assert.match(natural,/q\.kind==='grouping'/);
 });

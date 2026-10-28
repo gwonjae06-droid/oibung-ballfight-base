@@ -1217,3 +1217,103 @@ html,body {background:#090a0c;color:var(--text);font-family:"Noto Sans KR", "Mal
 @media(prefers-reduced-motion:reduce){
   .character-studio-dialog button{transition:none}
 }
+
+
+/* Multi-fighter arena: smooth stage resize, readable 2–10 HUD cards. */
+#container{
+  --arena-layout-width:1160px;
+  width:min(calc(100% - 48px),var(--arena-layout-width))!important;
+  transition:width .5s ease;
+}
+#container[data-fighter-count="3"]{--arena-layout-width:1220px}
+#container[data-fighter-count="4"]{--arena-layout-width:1280px}
+#container[data-fighter-count="5"]{--arena-layout-width:1340px}
+#container[data-fighter-count="6"]{--arena-layout-width:1400px}
+#container[data-fighter-count="7"]{--arena-layout-width:1460px}
+#container[data-fighter-count="8"]{--arena-layout-width:1520px}
+#container[data-fighter-count="9"]{--arena-layout-width:1580px}
+#container[data-fighter-count="10"]{--arena-layout-width:1640px}
+#container .canvas-wrapper{
+  aspect-ratio:1;transition:aspect-ratio .5s ease;
+}
+#container .ui-container{
+  display:grid!important;
+  grid-template-columns:repeat(auto-fit,minmax(134px,1fr))!important;
+  gap:7px;
+}
+#container .ui-container .player-section{
+  display:block!important;grid-column:auto!important;
+  min-width:0;padding:9px;
+}
+#container .ui-container .fighter-name{min-width:0}
+#container .ui-container .fighter-number{font-size:10px}
+#container .ui-container .player-title{
+  font-size:12px;max-width:100%;
+}
+#container .ui-container .hp-text{font-size:10px}
+#container .ui-container .mode-tag{font-size:9px}
+#container .control-panel{
+  grid-template-columns:minmax(0,1.15fr) minmax(0,1fr) minmax(0,.92fr);
+  align-items:stretch;
+}
+.match-count-label{
+  display:flex;align-items:center;justify-content:space-between;
+  min-width:0;min-height:46px;padding:6px 9px;gap:8px;
+  border:1px solid #4f545c;border-radius:7px;background:#252a30;
+  color:#d9e2e8;font-size:12px;font-weight:800;
+}
+.match-count-label select{
+  min-width:70px;max-width:120px;min-height:35px;padding:4px 8px;
+  background:#191e24;color:#fff;border:1px solid #66717d;
+  border-radius:6px;font-size:12px;font-weight:750;
+}
+#container .arena-match-setup .bf-picks{
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;
+}
+#container .bet-players{grid-template-columns:repeat(auto-fit,minmax(90px,1fr))}
+#container .target-buttons{grid-template-columns:repeat(auto-fit,minmax(95px,1fr))}
+.forge-studio .forge-random-entry{
+  display:flex!important;flex-direction:column;align-items:stretch!important;gap:12px!important;
+}
+.forge-studio .forge-random-entry-copy{width:100%}
+.forge-studio .forge-random-entry #forge-random-create{width:100%;min-height:46px}
+.forge-studio .forge-random{
+  padding:0;margin:0;border:0;width:100%;
+}
+.forge-theme-picker{
+  margin:0;border:1px solid #40474f;border-radius:8px;padding:10px;
+  min-width:0;
+}
+.forge-theme-picker legend{
+  color:#d5dce4;font-size:12px;font-weight:800;padding:0 6px;
+}
+.forge-theme-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(96px,1fr));gap:5px}
+.forge-theme-choice{
+  display:flex!important;align-items:center;gap:7px;
+  padding:8px 9px;border:1px solid #3c434b;border-radius:6px;
+  background:#21262b;color:#e6ebef;font-size:12px;cursor:pointer;
+}
+.forge-theme-choice:has(input:checked){background:#394954;border-color:#849aa9}
+.forge-theme-choice input{width:17px;height:17px;accent-color:#a5c5dc;flex:0 0 auto;margin:0}
+.forge-theme-choice span{white-space:nowrap}
+.forge-studio .forge-random > button{
+  width:100%;min-height:42px;border:1px solid #556776;
+  border-radius:7px;background:#2b3741;color:#e7edf3;font-weight:750;font-size:12px;
+}
+.forge-studio .forge-random .bf-helper{margin:0;font-size:11px;line-height:1.5}
+@media(max-width:950px){
+  #container{width:min(calc(100% - 22px),680px)!important}
+  #container .ui-container{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+}
+@media(max-width:560px){
+  #container{width:calc(100% - 16px)!important}
+  #container .control-panel{gap:5px}
+  .match-count-label{padding:5px;gap:3px;font-size:10px}
+  .match-count-label select{min-width:68px;font-size:11px}
+  #container .ui-container .player-section{padding:7px}
+  #container .arena-match-setup .bf-picks{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  .forge-theme-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(prefers-reduced-motion:reduce){
+  #container,#container .canvas-wrapper{transition:none}
+}
