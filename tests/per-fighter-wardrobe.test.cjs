@@ -9,6 +9,7 @@ class Node {
     this.dataset={};this.style={setProperty(){}};
     this.textContent='';this.value='';this.disabled=false;this.innerHTMLValue='';
   }
+  get innerHTML(){return this.innerHTMLValue;}
   set innerHTML(value){
     this.innerHTMLValue=value;
     if(this.id==='skin-editor'){
