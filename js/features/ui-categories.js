@@ -77,7 +77,7 @@ if(studio){
   }
   if(saved){
     const summary=saved.querySelector(':scope > summary');
-    if(summary)summary.textContent='저장한 캐릭터 · 공유 · JSON';
+    if(summary)summary.textContent='JSON 가져오기 · 내보내기';
   }
 }
 let lastFocus=null;

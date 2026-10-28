@@ -589,12 +589,22 @@ function initializeUI(){
   function report(t){$('bf-result').textContent=t;}
   function roster(){
     const target=$('bf-custom-list');if(!target)return;
+    const owned=CUSTOM_DEFS.filter(d=>d.forgeData);
+    const count=$('forge-custom-count');
+    if(count)count.textContent=owned.length+' / 6';
     target.replaceChildren();
-    for(const def of CUSTOM_DEFS.filter(d=>d.forgeData)){
+    if(!owned.length){
+      const empty=document.createElement('p');empty.className='forge-roster-empty';
+      empty.textContent='저장한 캐릭터가 없습니다. 아래에서 캐릭터를 만들어 보세요.';
+      target.appendChild(empty);
+      return;
+    }
+    for(const def of owned){
       const row=document.createElement('div');row.className='forge-saved-row';
       const name=document.createElement('span');name.textContent=def.name;
       const remove=document.createElement('button');remove.type='button';remove.textContent='삭제';
       remove.dataset.forgeId=def.id;remove.className='forge-delete';
+      remove.setAttribute('aria-label',def.name+' 삭제');
       row.append(name,remove);target.appendChild(row);
     }
   }
@@ -604,8 +614,10 @@ function initializeUI(){
     const id=e.target.dataset.forgeId;
     if(!id)return;
     if(roundStarted&&!isGameOver){report('경기 종료 후 삭제할 수 있습니다.');return;}
-    if(!confirm('이 캐릭터를 삭제하시겠습니까?'))return;
-    if(remove(id)){reRollMatch();roster();report('캐릭터를 삭제했습니다.');}
+    const selected=CUSTOM_DEFS.find(d=>d.id===id&&d.forgeData);
+    if(!selected)return;
+    if(!confirm(selected.name+' 캐릭터를 삭제하시겠습니까?'))return;
+    if(remove(id)){reRollMatch();roster();report(selected.name+' 캐릭터를 삭제했습니다.');}
   });
   $('forge-skills').addEventListener('input',e=>{
     const key=e.target.dataset.field;
