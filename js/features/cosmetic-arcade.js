@@ -3,7 +3,7 @@
  */
 (function(global){
 'use strict';
-const KEY='oibung-cosmetics-v1',PRICE=300,REFUND=100;
+const KEY='oibung-cosmetics-v1',PRICE=300,REFUND=100,ITEM_CHANCE=.005,PITY_LIMIT=75;
 const OPTIONS={
   border:[
     {id:'border-steel',name:'청은 테두리',color:'#b9ddfb'},
@@ -43,11 +43,13 @@ function load(){
       const id=d.equipped?.[category];
       equipped[category]=owned.includes(id)&&items.some(v=>v.id===id)?id:null;
     }
-    return {owned,equipped};
-  }catch(_){return {owned:[],equipped:{}};}
+    return {owned,equipped,misses:Math.min(74,Math.max(0,Math.floor(Number(d.misses)||0))),draws:Math.max(0,Math.floor(Number(d.draws)||0))};
+  }catch(_){return {owned:[],equipped:{},misses:0,draws:0};}
 }
 const state=load();
 const effects=[];
+let lastDraw=null,spinning=false;
+const WISDOM=['오늘의 한 걸음이 내일의 거리를 바꾼다.','길이 막히면 속도보다 방향을 먼저 보라.','쉬어 가는 시간도 앞으로 나아가는 과정이다.','넘어진 횟수보다 다시 시작한 횟수를 세자.','작은 성취를 반복하면 큰 변화가 된다.','결과가 전부는 아니지만 경험은 항상 남는다.'];
 function save(){
   try{localStorage.setItem(KEY,JSON.stringify(state));return true;}
   catch(_){return false;}
@@ -57,21 +59,40 @@ function equipped(category){return byId(state.equipped[category]);}
 function wallet(){return typeof coins==='number'?coins:0;}
 function feedback(message){const el=document.getElementById('cosmetic-result');if(el)el.textContent=message;}
 function drawReward(rng=Math.random){
-  if(wallet()<PRICE){feedback('뽑기에 '+formatGold(PRICE-wallet())+'가 부족합니다. 광산에서 G를 획득하세요.');return null;}
-  coins-=PRICE;
-  const item=all[Math.min(all.length-1,Math.max(0,Math.floor(rng()*all.length)))];
-  if(state.owned.includes(item.id)){
-    coins+=REFUND;
-    feedback('중복 보상 · '+item.name+' → '+formatGold(REFUND)+' 반환');
+  if(spinning||wallet()<PRICE){if(!spinning)feedback('포인트가 부족합니다. 광산에서 G를 획득하세요.');return null;}
+  coins-=PRICE;state.draws++;
+  const roll=Math.min(.999999999,Math.max(0,Number(rng())||0));
+  const unowned=all.filter(item=>!state.owned.includes(item.id));
+  const pity=state.misses>=PITY_LIMIT-1;
+  let item=null;
+  if(pity){const pool=unowned.length?unowned:all;item=pool[Math.floor(Math.min(.999999999,Math.max(0,Number(rng())||0))*pool.length)];}
+  else if(roll<all.length*ITEM_CHANCE)item=all[Math.min(all.length-1,Math.floor(roll/ITEM_CHANCE))];
+  if(item){
+    if(state.owned.includes(item.id)){
+      coins+=REFUND;
+      state.misses=unowned.length?Math.min(74,state.misses+1):0;
+      lastDraw={kind:'duplicate',item,text:'중복 · '+item.name+' · '+formatGold(REFUND)+' 반환'};
+    }else{
+      state.owned.push(item.id);
+      if(!state.equipped[item.id.split('-')[0]])state.equipped[item.id.split('-')[0]]=item.id;
+      state.misses=0;
+      lastDraw={kind:'item',item,text:'신규 획득! '+item.name+' · 장착 완료 · 다음 경기부터 적용'};
+    }
   }else{
-    state.owned.push(item.id);
-    if(!state.equipped[item.id.split('-')[0]])state.equipped[item.id.split('-')[0]]=item.id;
-    feedback('신규 획득! '+item.name+' · 장착되었습니다. 다음 경기부터 적용됩니다.');
+    state.misses++;
+    if((Number(rng())||0)<.65){
+      const refunds=[20,30,40,50,60,80];
+      const amount=refunds[Math.floor(Math.min(.999999999,Math.max(0,Number(rng())||0))*refunds.length)];
+      coins+=amount;lastDraw={kind:'coins',amount,text:'소액 반환 · '+formatGold(amount)+' 지급'};
+    }else{
+      lastDraw={kind:'wisdom',text:WISDOM[Math.floor(Math.min(.999999999,Math.max(0,Number(rng())||0))*WISDOM.length)]};
+    }
   }
   save();global.saveEconomyState?.();
   if(typeof renderEconomyUI==='function')renderEconomyUI();
-  refresh();return item;
+  feedback(lastDraw.text);refresh();return item;
 }
+function lastResult(){return lastDraw?{...lastDraw}:null;}
 function equip(category,id){
   if(!OPTIONS[category])return false;
   if(id!==null&&(!state.owned.includes(id)||!OPTIONS[category].some(x=>x.id===id)))return false;
@@ -83,7 +104,7 @@ function refresh(){
   const walletEl=document.getElementById('arcade-wallet');
   if(walletEl)walletEl.textContent=formatGold(wallet());
   const btn=document.getElementById('cosmetic-draw');
-  if(btn)btn.disabled=wallet()<PRICE;
+  if(btn)btn.disabled=spinning||wallet()<PRICE;
   const host=document.getElementById('cosmetic-collections');if(!host)return;
   host.replaceChildren();
   for(const [category,items] of Object.entries(OPTIONS)){
@@ -230,8 +251,8 @@ function drawOver(ctx,list){
     ctx.restore();
   }
 }
-document.getElementById('cosmetic-draw')?.addEventListener('click',()=>drawReward());
+document.getElementById('cosmetic-draw')?.addEventListener('click',()=>beginRoulette());
 refresh();
-global.CosmeticArcade={drawReward,equip,refresh,applyToFighter,borderColor,borderGlow,startRound,onCast,tick,drawUnder,drawOver,
+global.CosmeticArcade={drawReward,beginRoulette,lastResult,equip,refresh,applyToFighter,borderColor,borderGlow,startRound,onCast,tick,drawUnder,drawOver,
   getOwned:()=>state.owned.slice(),getEquipped:()=>({...state.equipped}),price:PRICE};
 })(window);
