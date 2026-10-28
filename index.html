@@ -155,9 +155,9 @@
       <p class="game-extra-info">실제 주식·현금과 무관한 게임 내 가상 시세입니다. 5배 레버리지 손실은 원금을 초과하여 G가 음수가 될 수 있습니다.</p>
       <div class="finance-layout">
         <div class="finance-market">
-          <div class="finance-subtitle"><strong>가상 종목 거래</strong><span>시세 갱신은 버튼을 누를 때만 진행</span></div>
+          <div class="finance-subtitle"><strong>가상 종목 거래</strong><span>5종 종목 · 3초마다 자동 갱신</span></div>
           <label for="market-asset">종목 선택
-            <select id="market-asset"><option value="campus">캠퍼스 테크</option><option value="meteor">메테오 에너지</option><option value="arcana">아르카나 바이오</option></select>
+            <select id="market-asset"><option value="campus">이권재 컴퍼니</option><option value="meteor">배달의 서준</option><option value="arcana">아토믹 성원 박</option><option value="psychology">오슬우 심리학</option><option value="repeat">삼수를각오한최규원</option></select>
           </label>
           <div class="market-price"><strong id="market-price">100.00</strong><span id="market-change">0.00%</span></div>
           <svg id="market-history" viewBox="0 0 320 90" role="img" aria-label="가상 종목의 최근 가격 흐름"></svg>
@@ -165,7 +165,7 @@
             <label for="market-margin">투자 원금 (G)<input id="market-margin" type="number" min="10" step="10" value="100" inputmode="numeric"></label>
             <label for="market-leverage">레버리지<select id="market-leverage"><option value="1">1배</option><option value="5">5배 (고위험)</option></select></label>
           </div>
-          <div class="finance-buttons"><button id="market-open" type="button">투자 시작</button><button id="market-tick" type="button">시세 갱신</button><button id="market-close" type="button">포지션 청산</button></div>
+          <div class="finance-buttons"><button id="market-open" type="button">투자 시작</button><button id="market-close" type="button">포지션 청산</button></div>
           <p id="market-position" class="game-extra-info">열려 있는 포지션 없음</p>
           <p id="market-status" class="game-extra-status" role="status" aria-live="polite"></p>
         </div>
