@@ -511,6 +511,7 @@ function install(){
   }
   randomNow.addEventListener('click',()=>createGenerated([]));
   global.NaturalForge.generate=createGenerated;
+  global.NaturalForge.refreshGenerated=profile=>{if(!generated.hidden)showGenerated(profile);};
   actions.replaceChildren(saveBtn);
   // Do not reference the random button until it exists; otherwise the entire
   // studio installer aborts before its controls become usable.
