@@ -64,6 +64,15 @@ function install(){
     +'<small class="power-ranking-method">HP 260점 · 속도 145점 · 공격/보조 스킬과 쿨타임을 반영한 상대적 점수. 최신 공개 공유글 최대 100개 중 상위 10개.</small>';
   main.parentNode.insertBefore(aside,main);
   document.body.classList.add('has-power-ranking');
+  // Move the ONE existing share browser into the left-hand ranking panel.
+  // Its existing handlers, publish action and import action remain attached.
+  // The same nested ordering works when the panel moves below the game on mobile.
+  const gallery=global.document.querySelector('.community-section');
+  const afterRanking=aside.querySelector('.power-ranking-issues');
+  if(gallery&&afterRanking){
+    gallery.classList.add('power-ranking-gallery');
+    aside.insertBefore(gallery,afterRanking);
+  }
   const list=aside.querySelector('#power-ranking-list');
   const status=aside.querySelector('#power-ranking-status');
   const refresh=aside.querySelector('#power-ranking-reload');
