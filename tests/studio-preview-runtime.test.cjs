@@ -35,7 +35,7 @@ function fixture(){
     line:(...args)=>calls.push(['line',...args]),
     fighter:(...args)=>calls.push(['fighter',...args]),
     arm:(...args)=>calls.push(['arm',...args]),
-    label:type=>type,
+    label:type=>({uppercut:'어퍼컷',dash:'돌진'}[type]||type),
     caption,fill,track,lastText:''
   };
   vm.createContext(context);
