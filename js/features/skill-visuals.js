@@ -143,7 +143,9 @@ function add(kind,p,type,action,target,location){
 }
 function cast(p,action,target){
   if(!action?.type||!catalog[action.type])return false;
-  return add('cast',p,action.type,action,target);
+  const result=add('cast',p,action.type,action,target);
+  if(result)global.CosmeticArcade?.onCast?.(p,action,target);
+  return result;
 }
 function impact(p,e,action){
   if(!action?.type||!catalog[action.type]||!e)return false;
