@@ -4,6 +4,8 @@ const read=p=>fs.readFileSync(path.join(__dirname,'..',p),'utf8');
 function setup(){
  const h={window:null,players:[],CUSTOM_DEFS:[],BEHAVIORS:{},CHARACTER_PHOTOS:{},canvas:{width:500,height:500},createHitParticles(){},addFloatingText(){},getClosestAliveEnemy(p){return h.players.find(e=>e!==p&&e.hp>0)||null;}};
  h.window=h;vm.createContext(h);
+ vm.runInContext(read('js/features/forge-expansion.js'),h);
+ vm.runInContext(read('js/features/advanced-combat.js'),h);
  vm.runInContext(read('js/features/skill-forge.js'),h);
  vm.runInContext(read('js/features/block-forge.js'),h);
  return h;
