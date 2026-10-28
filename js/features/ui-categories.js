@@ -37,7 +37,7 @@ const head=document.createElement('header');head.className='character-studio-hea
 const heading=document.createElement('div');
 const kicker=document.createElement('span');kicker.className='eyebrow';kicker.textContent='CUSTOM FIGHTER STUDIO';
 const title=document.createElement('h2');title.textContent='캐릭터 만들기';
-const subtitle=document.createElement('p');subtitle.textContent='완전 랜덤 또는 계열 선택으로 생성하세요. 이름과 외형, 스킬은 직접 수정할 수도 있습니다.';
+const subtitle=document.createElement('p');subtitle.textContent='랜덤으로 생성하거나 블록을 조합하여 원하는 스킬을 직접 만드세요.';
 heading.append(kicker,title,subtitle);
 const close=document.createElement('button');close.type='button';close.id='close-character-studio';
 close.className='character-studio-close';close.textContent='✕ 닫기';
@@ -56,13 +56,14 @@ if(studio){
   const intro=find(el=>el.classList?.contains('forge-heading'));
   const random=find(el=>el.classList?.contains('forge-random-entry'));
   const name=find(el=>el.classList?.contains('forge-name'));
+  const blocks=find(el=>el.classList?.contains('block-forge'));
   const create=find(el=>el.classList?.contains('forge-primary-actions'));
   const basics=find(el=>el.tagName==='DETAILS'&&el.querySelector('summary')?.textContent.includes('외형'));
   const tuning=find(el=>el.classList?.contains('forge-tuning'));
   const library=find(el=>el.classList?.contains('forge-library'));
   const themes=find(el=>el.classList?.contains('forge-optional')&&el.querySelector('summary')?.textContent.includes('랜덤 테마'));
   const saved=find(el=>el.classList?.contains('forge-saved'));
-  const ordered=[intro,random,name,basics,create,tuning,library,themes,saved].filter(Boolean);
+  const ordered=[intro,random,name,basics,blocks,create,tuning,library,themes,saved].filter(Boolean);
   for(const node of ordered)studio.append(node);
   if(intro)intro.hidden=true;
   if(basics){

@@ -83,7 +83,8 @@ function normalize(value){
           radius:number(a.radius,30,300,120),count:Math.round(number(a.count,1,8,1)),
           speed:number(a.speed,2,14,5),duration:number(a.duration,.2,8,1.5),
           status:STATUS[a.status]?a.status:'none',
-          knockback:number(a.knockback,0,9,2),delay:number(a.delay,0,2,0)
+          knockback:number(a.knockback,0,9,2),delay:number(a.delay,0,2,0),
+          link:['and','after','with'].includes(a.link)?a.link:'and'
         }))};
     })
   };
@@ -217,7 +218,10 @@ function cast(p,s,target,index){
   for(let step=0;step<s.actions.length;step++){
     const a=s.actions[step];
     const requested=Math.max(0,Math.round(a.delay*60));
-    start=step===0?requested:Math.max(requested,start+(transitionLead[s.actions[step-1].type]||6));
+    const lead=transitionLead[s.actions[Math.max(0,step-1)].type]||6;
+    start=step===0?requested:a.link==='with'?Math.max(requested,start):
+      a.link==='after'?Math.max(requested,start+Math.max(24,lead)):
+      Math.max(requested,start+lead);
     p.forgeQueue.push({remaining:start,step,castId,skillIndex:index,
       a,targetNum:target?.playerNum??null,
       waitApex:step>0&&['leap','glide','hover','uppercut'].includes(s.actions[step-1].type)&&
@@ -482,7 +486,7 @@ function list(){
   return CUSTOM_DEFS.filter(d=>d.forgeData).map(d=>({id:d.id,profile:normalize(d.forgeData)}));
 }
 function setDraft(value){
-  draft=normalize(value);refreshForm();return draft;
+  draft=normalize(value);refreshForm();global.BlockForge?.refresh?.();return draft;
 }
 function saved(){
   try{const v=JSON.parse(localStorage.getItem(STORE)||'[]');return Array.isArray(v)?v.slice(0,6):[];}catch(_){return [];}

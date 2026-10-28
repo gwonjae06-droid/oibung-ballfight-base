@@ -1353,3 +1353,52 @@ html,body {background:#090a0c;color:var(--text);font-family:"Noto Sans KR", "Mal
 
 /* Generation feedback remains readable without the removed sentence generator. */
 .forge-studio #forge-generate-status{white-space:pre-wrap;color:#ccd6e0;font-size:12px;line-height:1.6}
+
+/* Block skill editor lives only in the custom studio. */
+.character-studio-dialog .block-forge{display:grid;gap:13px;min-width:0;padding:15px;border:1px solid #4e6070;background:#182129;border-radius:12px}
+.block-editor-head h3{font-size:17px;margin:3px 0 5px;color:#f1f6fa}
+.block-editor-head p{margin:0;font-size:12px;color:#c0cdd7;line-height:1.6}
+.block-chooser{display:grid;gap:9px;min-width:0;padding:12px;border-radius:9px;border:1px solid #425463;background:#1d2a35}
+.block-chooser-head,.block-composer-head,.block-skill-head,.block-skill-bottom{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
+.block-chooser-head strong,.block-composer-head strong{font-size:13px;color:#eff4f7}
+.block-chooser-head label{display:flex;align-items:center;gap:8px;font-size:11px;color:#becbd5}
+.block-chooser-head input{min-height:36px;min-width:0;width:min(220px,60vw);padding:7px;background:#111c25;border:1px solid #627584;border-radius:7px;color:#fff}
+.block-filters,.block-palette,.block-action-tools,.block-skill-tools{display:flex;flex-wrap:wrap;gap:6px}
+.block-filters button{min-height:32px;padding:6px 10px;border:1px solid #536674;border-radius:19px;background:#293844;color:#d2dee6;font-size:11px}
+.block-filters button[aria-pressed=true]{background:#dbe8f0;color:#14212b;border-color:#dbe8f0}
+.block-palette{max-height:174px;overflow:auto;align-content:flex-start;overscroll-behavior:contain}
+.block-chip{display:inline-flex;align-items:center;gap:12px;min-height:39px;padding:8px 11px;border:1px solid #6b8aa0;border-radius:7px;background:#2d485b;color:#edf6fa;font-size:12px;font-weight:700;cursor:grab}
+.block-chip:hover{background:#3a6078}
+.block-chip span{font-size:16px}
+.block-chooser>small,.block-composer-head small,.block-skill-bottom span{font-size:11px;color:#aabac6;line-height:1.5}
+.block-workspace{display:grid;gap:12px;min-width:0}
+.block-skill{display:grid;gap:10px;min-width:0;padding:12px;background:#19212a;border:1px solid #485864;border-radius:10px}
+.block-skill.is-active{border-color:#98b7c9;background:#1c2a35}
+.block-skill-head button,.block-action-tools button{min-height:33px;padding:6px 9px;background:#2c3d4b;border:1px solid #617588;border-radius:6px;color:#e5eef3;font-size:11px}
+.block-select{background:#40586b!important;font-weight:750!important}
+.block-skill button:disabled,.block-new-skill:disabled{opacity:.4;cursor:default}
+.block-meta,.block-params{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;min-width:0}
+.block-meta label,.block-params label{display:grid;gap:4px;min-width:0;font-size:10px;color:#becbd4}
+.block-meta input,.block-meta select,.block-params input,.block-params select,.block-join select{min-width:0;width:100%;min-height:38px;padding:7px;border-radius:6px;border:1px solid #586f7f;background:#101b24;color:#f3f7fa;font-size:12px}
+.block-action-stack{display:grid;gap:3px;min-width:0}
+.block-action{min-width:0;padding:10px;background:#263846;border:1px solid #738da1;border-left:4px solid #a0c4de;border-radius:8px;cursor:grab}
+.block-action-head{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:8px}
+.block-action-head strong{flex:1;font-size:13px;color:#f5f7fa}
+.block-action-grip{color:#b4cedd;font-size:20px}
+.block-action-tools button{min-height:29px;padding:5px 8px}
+.block-join{display:flex;align-items:center;gap:8px;padding:6px 10px;border-left:2px dashed #7694aa;margin:4px 6px;color:#d3e2ec}
+.block-join-label{font-size:11px}
+.block-join select{max-width:250px}
+.block-drop{height:11px;border-radius:5px}
+.block-drop:hover,.block-drop:focus-visible{background:#668aa3;outline:2px dashed #b7dbf2}
+.block-drop-last{display:flex;align-items:center;justify-content:center;height:auto;min-height:38px;border:1px dashed #69869a;color:#bbcedb;font-size:11px;margin-top:4px}
+.block-grammar{margin:0;padding:10px 11px;border:1px solid #3b5a71;border-radius:7px;background:#131f2a;color:#d4e4ef;font-size:11px;line-height:1.6;overflow-wrap:anywhere}
+.block-skill-bottom button,.block-new-skill{min-height:39px;padding:8px 10px;background:#345063;border:1px solid #718da2;border-radius:7px;color:#f0f6f9;font-size:11px;font-weight:700}
+.block-new-skill{width:100%;min-height:45px;font-size:12px}
+.block-status{font-size:11px;color:#c1d3e0;white-space:pre-wrap}
+.block-status:empty{display:none}
+.block-all-warning{padding:10px;background:#334654;color:#fff;border-radius:7px;font-size:12px;line-height:1.7}
+.block-all-warning button{min-height:34px;border:1px solid #abc3d4;background:#405e73;color:white;border-radius:6px}
+.block-forge button:not(:disabled){cursor:pointer}
+.block-forge button:focus-visible{outline:2px solid #d2e8f6;outline-offset:2px}
+@media(max-width:650px){.character-studio-dialog .block-forge{padding:10px}.block-chooser{padding:9px}.block-chooser-head label{width:100%;justify-content:space-between}.block-chooser-head input{flex:1;width:auto}.block-meta,.block-params{grid-template-columns:repeat(2,minmax(0,1fr))}.block-skill{padding:9px}.block-action{padding:9px}}
