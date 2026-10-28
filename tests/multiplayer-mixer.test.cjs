@@ -77,7 +77,8 @@ test('natural language edits retain current name, visual colors and photo art ke
 test('every chosen random family contributes an action to the mixed character',()=>{
   const global={window:null,players:[],CUSTOM_DEFS:[],CHARACTER_PHOTOS:{},BEHAVIORS:{}};
   global.window=global;vm.createContext(global);
-  vm.runInContext(read('js/features/skill-forge.js'),global);
+  for(const file of ['forge-expansion','advanced-combat','skill-forge'])
+    vm.runInContext(read('js/features/'+file+'.js'),global);
   const keys=Object.keys(global.SkillForge.THEMES);
   for(const chosen of [keys.slice(0,2),keys.slice(0,4),keys]){
     for(let run=0;run<12;run++){

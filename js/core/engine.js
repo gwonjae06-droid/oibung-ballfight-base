@@ -235,7 +235,7 @@ function updateUI() {
       hudContainer.append(section);
     });
   }
-  if(hudContainer)hudContainer.dataset.count=String(players.length);
+  if(hudContainer?.dataset)hudContainer.dataset.count=String(players.length);
   players.forEach((p,idx)=>{
     const n=idx+1,el=document.getElementById(`p${n}-name`);
     if(!el)return;
