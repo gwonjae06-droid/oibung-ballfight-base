@@ -1602,3 +1602,82 @@ html,body {background:#090a0c;color:var(--text);font-family:"Noto Sans KR", "Mal
     grid-template-columns:1fr;max-height:144px;
   }
 }
+
+
+/* Economy expansion: quiet, responsive gacha/market/mine workspaces. */
+.game-extra-panel{
+  grid-column:1/-1;min-width:0;padding:20px;border:1px solid #38464f;
+  border-radius:14px;background:linear-gradient(150deg,#19242c,#141a20);
+  color:#edf4f8;scroll-margin-top:75px;
+}
+.game-extra-title{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:7px}
+.game-extra-title h2{font-size:19px;letter-spacing:-.04em;margin:2px 0}
+.game-wallet{padding:7px 12px;border:1px solid #57716b;border-radius:8px;
+  background:#23352f;color:#d4f4d2;font-size:14px;font-variant-numeric:tabular-nums}
+.game-extra-info{font-size:11px;color:#afbdc6;line-height:1.6;margin:5px 0 13px}
+.game-extra-status{min-height:18px;margin:10px 0 0;font-size:11px;line-height:1.55;color:#d5e5ee}
+.arcade-pull{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;
+  padding:14px;border-radius:10px;background:#263340;border:1px solid #475c70}
+.arcade-pull>div{display:grid;gap:5px}
+.arcade-pull strong{font-size:15px}
+.arcade-pull span{font-size:11px;color:#afc3cf}
+.arcade-pull button,.finance-buttons button{
+  min-height:42px;padding:9px 15px;border:1px solid #82a3ad;border-radius:8px;
+  color:#f5fafc;background:#345a69;font-weight:800;font-size:12px}
+.arcade-pull button:hover:not(:disabled),.finance-buttons button:hover:not(:disabled){background:#467385}
+.cosmetic-collections{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:12px}
+.cosmetic-category{min-width:0;border:1px solid #384954;border-radius:9px;padding:11px;background:#1c2831}
+.cosmetic-category-header{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:9px}
+.cosmetic-category-header strong{font-size:12px}
+.cosmetic-category-header small{font-size:10px;color:#aebcc9}
+.cosmetic-options{display:flex;flex-wrap:wrap;gap:6px}
+.cosmetic-choice{flex:1 1 auto;min-width:0;min-height:34px;padding:6px 9px;
+  border:1px solid #455b6a;background:#263743;color:#d4e2eb;
+  border-radius:7px;font-size:11px;text-align:center}
+.cosmetic-choice[aria-pressed="true"]{border-color:var(--swatch,#b9d2e0);background:#384e58;
+  box-shadow:inset 0 0 0 1px var(--swatch,#b9d2e0);color:#fff}
+.cosmetic-choice:disabled{background:#1b252b;color:#72828b}
+.finance-layout{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:13px}
+.finance-market,.finance-mine{min-width:0;padding:16px;border:1px solid #3b4d57;border-radius:10px;background:#1a2731}
+.finance-subtitle{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.finance-subtitle strong{font-size:13px}
+.finance-subtitle span{font-size:10px;color:#abbfc9}
+.finance-market>label,.finance-trade-row label{display:grid;gap:5px;min-width:0;font-size:11px;color:#b3c7d2}
+.finance-market input,.finance-market select{width:100%;min-width:0;min-height:38px;
+  color:#f2f7fa;background:#253642;border:1px solid #526b7d;border-radius:7px;padding:7px 9px}
+.market-price{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin:10px 0 2px}
+.market-price strong{font-size:24px;font-variant-numeric:tabular-nums}
+.market-price span{font-size:11px;color:#b2efc4}
+.market-price span[data-direction="down"]{color:#f2a1a1}
+#market-history{width:100%;max-height:125px;display:block;background:#15232b;border-radius:8px;margin:6px 0 12px}
+.finance-trade-row{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.finance-buttons{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+.finance-buttons button{flex:1 1 120px;min-height:39px;padding:7px;font-size:11px}
+#market-close{border-color:#bd8888;background:#523638}
+.finance-mine p{font-size:11px;color:#b2c0cb;line-height:1.6}
+#mine-hit{display:grid;align-items:center;justify-items:center;gap:3px;width:100%;min-height:160px;
+  border-radius:14px;border:1px solid #8d9ea9;background:radial-gradient(circle at 50% 15%,#57717b,#2a414e 80%);
+  color:#fff;touch-action:manipulation;user-select:none;-webkit-user-select:none}
+#mine-hit span{font-size:40px}
+#mine-hit strong{font-size:17px}
+#mine-hit small{font-size:11px;color:#d6eff3}
+#mine-hit:active{transform:scale(.975);background:#456779}
+.mine-progress{display:flex;align-items:center;justify-content:space-between;gap:10px;
+  margin-top:12px;border-top:1px solid #3b4e58;padding-top:12px;color:#c3d1da;font-size:11px}
+.mine-progress strong{font-size:14px;color:#edf8d9;font-variant-numeric:tabular-nums}
+@media(max-width:760px){
+  .finance-layout{grid-template-columns:1fr}
+  .cosmetic-collections{grid-template-columns:1fr}
+  .game-extra-panel{padding:14px}
+  .finance-market,.finance-mine{padding:12px}
+  #mine-hit{min-height:132px}
+}
+@media(max-width:440px){
+  .game-extra-title h2{font-size:17px}
+  .game-wallet{font-size:12px}
+  .arcade-pull{padding:10px}
+  .arcade-pull button{width:100%}
+  .finance-trade-row{gap:6px}
+  .finance-buttons button{flex-basis:90px}
+}
+@media(prefers-reduced-motion:reduce){#mine-hit:active{transform:none}}

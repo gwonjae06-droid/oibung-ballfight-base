@@ -32,6 +32,7 @@
     oldUpdate();
     if(window.BattleFX)BattleFX.tick();
     window.SkillVisuals?.tick();
+    window.CosmeticArcade?.tick?.(players);
     const custom=players.some(p=>p.spec||p.forge);
     before.forEach(b=>{
       const p=b.p,c=color(p),loss=b.hp-p.hp;

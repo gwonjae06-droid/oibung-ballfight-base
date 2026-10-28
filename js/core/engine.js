@@ -41,6 +41,7 @@ function placeFighters(defs){
     const distanceX=Math.min(canvas.width*.36,canvas.width/2-45);
     const distanceY=Math.min(canvas.height*.34,canvas.height/2-45);
     const p=def.createInstance(i+1);
+    globalThis.CosmeticArcade?.applyToFighter?.(p);
     p.x=centerX+Math.cos(angle)*distanceX;
     p.y=centerY+Math.sin(angle)*distanceY;
     const towards=Math.atan2(centerY-p.y,centerX-p.x);
@@ -77,7 +78,7 @@ function reRollMatch(forcedDef) {
 function togglePlay() {
   if(isGameOver){reRollMatch();return;}
   if(!players.length)return;
-  if(!roundStarted){if(!beginRoundEconomy())return;roundStarted=true;}
+  if(!roundStarted){if(!beginRoundEconomy())return;roundStarted=true;globalThis.CosmeticArcade?.startRound?.(players);}
   isPlaying=!isPlaying;
   syncStopButton();
   const b=document.getElementById('btn-start');
