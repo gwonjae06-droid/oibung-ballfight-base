@@ -1877,3 +1877,54 @@ html,body {background:#090a0c;color:var(--text);font-family:"Noto Sans KR", "Mal
     transform:none!important;
   }
 }
+
+/* Studio: a real 2D combat rehearsal, intentionally restrained and responsive. */
+.character-studio-dialog .studio-motion-preview{
+  display:block;min-width:0;padding:12px 18px 10px;
+  background:#17232d;border-bottom:1px solid #405463;flex:0 0 auto;
+}
+.studio-motion-header,.studio-motion-footer,.studio-motion-buttons{
+  display:flex;align-items:center;justify-content:space-between;gap:9px;flex-wrap:wrap;
+}
+.studio-motion-header{margin-bottom:9px}
+.studio-motion-header strong{color:#f2f7fa;font-size:13px}
+.studio-motion-header small{color:#9fb3c3;font-size:10px;line-height:1.35}
+.studio-motion-body{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(130px,1fr);gap:13px;align-items:center}
+.studio-motion-stage{width:100%;max-width:none;aspect-ratio:8/3;min-width:0;border:1px solid #536777;border-radius:9px;overflow:hidden;background:#16232e}
+#studio-motion-canvas{width:100%;height:auto;aspect-ratio:8/3;display:block}
+.studio-motion-info{display:grid;gap:6px;align-content:center;min-width:0}
+.studio-motion-info label{color:#afc4cf;font-size:11px;font-weight:750}
+#studio-motion-select{min-width:0;width:100%;height:36px;padding:6px 9px;border:1px solid #536979;border-radius:7px;background:#233441;color:#e8f2f8;font-size:12px}
+#studio-motion-caption{min-height:18px;color:#e4eff5;font-size:11px;line-height:1.45;overflow-wrap:anywhere}
+#studio-motion-cooldown{color:#99b0bf;font-size:10px;line-height:1.4}
+.studio-motion-footer{margin-top:9px;gap:8px}
+.studio-motion-buttons{justify-content:flex-start;gap:6px}
+.studio-motion-buttons button,.studio-motion-buttons select{
+  min-height:34px;border:1px solid #536a79;border-radius:7px;background:#263846;
+  color:#eff7fc;font-size:11px;font-weight:700;padding:6px 10px;
+}
+.studio-motion-buttons button:hover:not(:disabled){background:#364f61}
+.studio-motion-buttons label{display:flex;align-items:center;gap:5px;color:#afc3ce;font-size:11px}
+.studio-motion-buttons label select{padding:5px;min-width:62px}
+.studio-motion-progress{flex:1 1 75px;height:5px;overflow:hidden;border-radius:99px;background:#334754;min-width:58px}
+#studio-motion-fill{height:100%;width:0;background:#b6d68d;border-radius:99px;transition:width .07s linear}
+.block-quick-preview{font-size:10px!important;padding:4px 7px!important;min-width:63px;white-space:nowrap}
+@media(max-width:690px){
+  .character-studio-dialog .studio-motion-preview{padding:10px 11px}
+  .studio-motion-body{grid-template-columns:minmax(0,1fr);gap:8px}
+  .studio-motion-info{grid-template-columns:minmax(110px,.9fr) minmax(0,1fr);gap:5px 8px}
+  .studio-motion-info label{grid-column:1;align-self:end}
+  #studio-motion-select{grid-column:1;grid-row:2}
+  #studio-motion-caption{grid-column:2;grid-row:2;align-self:center}
+  #studio-motion-cooldown{grid-column:1/-1}
+  .studio-motion-stage{max-width:none}
+}
+@media(max-width:380px){
+  .studio-motion-buttons{width:100%}
+  .studio-motion-buttons button{flex:1 1 auto;padding:5px 6px}
+  .studio-motion-progress{flex-basis:100%}
+}
+@media(prefers-reduced-motion:reduce){
+  #studio-motion-fill{transition:none}
+  .studio-motion-buttons button{transition:none!important}
+}
