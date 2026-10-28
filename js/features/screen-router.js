@@ -8,7 +8,7 @@ const NAMES={lobby:'메인 로비',tower:'도전의 탑',character:'캐릭터 �
  ranking:'캐릭터 랭킹',mine:'광산',stock:'주식'};
 const ICONS={tower:'⚔',character:'✦',ranking:'★',mine:'⛏',stock:'▥'};
 const DECKS={tower:'10개 층 · 층별 전술 · 보스와의 결전',character:'설계 · 조합 · 시연 · 저장 — 나만의 전투 방식을 완성하세요',
- ranking:'공유 파이터 분석과 내 도전 기록',mine:'한 번의 터치부터 차곡차곡 쌓이는 재화',stock:'다섯 가상 종목의 흐름을 읽는 모의 투자'};
+ ranking:'공유 파이터 분석과 내 도전 기록',mine:'터치 채굴로 G를 모으고 가챠에서 꾸미기 수집',stock:'다섯 가상 종목의 흐름을 읽는 모의 투자'};
 function install(){
   const doc=global.document,main=doc?.getElementById('container');
   if(!main||main.dataset.screenRouter==='ready')return null;
@@ -23,7 +23,7 @@ function install(){
   const market=finance.querySelector('.finance-market'),mine=finance.querySelector('.finance-mine');
   const ranking=doc.getElementById('community-power-ranking');
   const studio=doc.getElementById('character-studio-dialog');
-  const screens={};let active='lobby',subtab='tower',charTab='design',rankingTab='power';
+  const screens={};let active='lobby',subtab='tower',charTab='design',rankingTab='power',mineView='mine';
   const node=(tag,cls)=>{const e=doc.createElement(tag);if(cls)e.className=cls;return e;};
   const mount=doc.createElement('div');mount.id='arena-screen-stack';
   const lobby=node('section','arena-screen lobby-screen');
@@ -50,7 +50,7 @@ function install(){
   cards.innerHTML=[
    ['character','캐릭터 설계','블록으로 스킬을 만들고 외형을 꾸며 보세요.','스킬 코드 · 미리보기 · 가챠'],
    ['ranking','캐릭터 랭킹','공유 파이터와 내 탑 기록을 확인하세요.','파워랭킹 · 기록 · 공유'],
-   ['mine','포인트 광산','광석을 터치해 게임 재화 G를 획득하세요.','터치 채굴 · 누적 기록'],
+   ['mine','포인트 광산','G를 채굴하고 가챠로 꾸미기 아이템을 모으세요.','터치 채굴 · 단차 · 10연차'],
    ['stock','모의 주식','5개 가상 종목의 가격 변화를 이용하세요.','가상 투자 · 3초 시세']
   ].map(([id,name,desc,meta])=>'<button type="button" class="lobby-card lobby-'+id+'" data-screen="'+id+'">'
     +'<span class="lobby-card-icon" aria-hidden="true">'+ICONS[id]+'</span>'
@@ -97,12 +97,14 @@ function install(){
   const designTabs=node('nav','screen-tabs character-route-tabs');
   designTabs.setAttribute('aria-label','캐릭터 설계 메뉴');
   designTabs.innerHTML='<button type="button" data-character-tab="design">스킬 코딩 · 미리보기</button>'
-    +'<button type="button" data-character-tab="cosmetics">외형 꾸미기 · 가챠</button>';
+    +'<button type="button" data-character-tab="cosmetics">외형 꾸미기</button>';
   screens.character.append(designTabs);
   const designSlot=node('div','character-design-slot');designSlot.id='character-design-slot';
   if(studio)designSlot.append(studio);screens.character.append(designSlot);
   const cosmeticSlot=node('div','character-cosmetic-slot');cosmeticSlot.id='character-cosmetic-slot';
-  if(cosmetic)cosmeticSlot.append(cosmetic);
+  cosmeticSlot.innerHTML='<div class="character-cosmetic-guide"><strong>새 꾸미기 아이템이 필요하신가요?</strong>'
+    +'<p>광산의 가챠에서 획득한 아이템을 여기서 캐릭터별로 장착·해제할 수 있습니다.</p>'
+    +'<button type="button" data-screen="mine" data-mine-tab="gacha">⛏ 광산 가챠로 이동</button></div>';
   screens.character.append(cosmeticSlot);
   const score=node('section','tower-record-panel');score.id='tower-record-panel';
   score.innerHTML='<h3>내 브라우저 도전 기록</h3><p>온라인 기록이 아닙니다. 이 기기에 저장된 캐릭터별 최고 층입니다.</p>'
@@ -124,8 +126,16 @@ function install(){
     +'<p>이 기기의 도전 기록만 표시합니다. 전 세계 순위가 아닙니다.</p>'
     +'<div id="tower-personal-list" role="list">아직 기록이 없습니다.</div></div>';
   screens.ranking.append(rankingPower,score,shared,personal);
+  const mineTabs=node('nav','screen-tabs mine-route-tabs');
+  mineTabs.setAttribute('aria-label','광산과 가챠 선택');
+  mineTabs.innerHTML='<button type="button" data-mine-tab="mine">⛏ 포인트 채굴</button>'
+    +'<button type="button" data-mine-tab="gacha">✦ 가챠 · 수집 도감</button>';
+  screens.mine.append(mineTabs);
   const mineFrame=node('div','single-economy-slot');mineFrame.id='mine-screen-slot';
   if(mine)mineFrame.append(mine);screens.mine.append(mineFrame);
+  // MOVE the original roulette — keep every existing listener, owned cosmetic,
+  // pity counter and coin wallet. Never clone a second gacha.
+  if(cosmetic){cosmetic.classList.add('mine-gacha');screens.mine.append(cosmetic);}
   const stockFrame=node('div','single-economy-slot');stockFrame.id='stock-screen-slot';
   if(market)stockFrame.append(market);screens.stock.append(stockFrame);
   // Keep the legacy wallet IDs and finance shell mounted; their backing
@@ -197,17 +207,26 @@ function install(){
     if(old!=='free'&&subtab==='free'&&global.ArenaTower?.stage!=='fighting'&&
       typeof reRollMatch==='function')reRollMatch();
   }
+  function mineTab(id){
+    mineView=id==='gacha'?'gacha':'mine';
+    mineFrame.hidden=mineView!=='mine';
+    if(cosmetic)cosmetic.hidden=mineView!=='gacha';
+    for(const btn of mineTabs.querySelectorAll('button'))
+      btn.setAttribute('aria-pressed',String(btn.dataset.mineTab===mineView));
+    if(mineView==='gacha')global.CosmeticArcade?.refresh?.();
+  }
   function characterTab(id){
     charTab=id==='cosmetics'?'cosmetics':'design';
-    designSlot.hidden=charTab!=='design';cosmeticSlot.hidden=charTab!=='cosmetics';
+    designSlot.hidden=false;cosmeticSlot.hidden=charTab!=='cosmetics';
     for(const btn of designTabs.querySelectorAll('button')){
       btn.setAttribute('aria-pressed',String(btn.dataset.characterTab===charTab));
     }
-    if(charTab==='design'&&active==='character'){
+    if(active==='character'){
       const d=doc.getElementById('character-studio-dialog');
       if(d&&!d.open)d.setAttribute('open','');
+      global.CharacterStudioWorkspace?.selectTab?.(charTab==='cosmetics'?'appearance':'skills');
       global.dispatchEvent?.(new global.Event('studio:open'));
-    }else global.dispatchEvent?.(new global.Event('studio:close'));
+    }
   }
   function go(where){
     if(!ROUTES.includes(where))where='lobby';
@@ -233,18 +252,22 @@ function install(){
     }else if(where==='tower'){
       global.ArenaTower?.refresh?.();towerTab(subtab);
     }else if(where==='ranking')setRankingTab(rankingTab);
+    else if(where==='mine')mineTab(mineView);
     refresh();
     global.scrollTo?.({top:0,behavior:'instant'});
     return where;
   }
   function showArena(){doc.querySelector('.battle-screen')?.scrollIntoView?.({block:'start',behavior:'smooth'});}
   mount.addEventListener('click',event=>{
-    const b=event.target.closest('[data-screen],[data-tower-tab],[data-character-tab],[data-ranking-tab]');
+    const b=event.target.closest('[data-screen],[data-tower-tab],[data-character-tab],[data-ranking-tab],[data-mine-tab]');
     if(!b||!mount.contains(b))return;
-    if(b.dataset.screen)go(b.dataset.screen);
-    else if(b.dataset.towerTab)towerTab(b.dataset.towerTab);
+    if(b.dataset.screen){
+      go(b.dataset.screen);
+      if(b.dataset.mineTab)mineTab(b.dataset.mineTab);
+    }else if(b.dataset.towerTab)towerTab(b.dataset.towerTab);
     else if(b.dataset.characterTab)characterTab(b.dataset.characterTab);
     else if(b.dataset.rankingTab)setRankingTab(b.dataset.rankingTab);
+    else if(b.dataset.mineTab)mineTab(b.dataset.mineTab);
   });
   // The BGM controls are created on DOMContentLoaded by BackgroundMusic.
   // Relocate the original widgets to the lobby settings afterwards so saved
@@ -263,7 +286,7 @@ function install(){
     const next=global.location.hash.replace('#','');
     if(ROUTES.includes(next))go(next);
   });
-  const api={go,refresh,showArena,towerTab,characterTab,setRankingTab,get enabled(){return true;},
+  const api={go,refresh,showArena,towerTab,characterTab,mineTab,setRankingTab,get enabled(){return true;},
     get active(){return active;},get activeTowerTab(){return subtab;}};
   global.ArenaScreenRouter=api;
   return api;
