@@ -148,23 +148,87 @@ function applyToFighter(p){
   p.cosmeticTrail=[];
   p.cosmeticShotTrails=[];
   p.cosmeticEntrance=0;
+  p.cosmeticAge=0;
 }
 function borderColor(p){return p?.forge&&p.cosmetic?.border?byId(p.cosmetic.border)?.color:null;}
 function borderGlow(p){return borderColor(p)?7:0;}
+
+/* Three distinct animated metallic/neon borders, drawn in local character
+ * coordinates AFTER the photo clip. Purely decorative; no collision changes. */
+function drawBorder(ctx,p,r){
+  const type=p.cosmetic?.border;
+  const item=byId(type);if(!item)return false;
+  const age=p.cosmeticAge||0,phase=age*.045;
+  const reduced=!!global.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
+  const spin=reduced?0:phase,TAU=Math.PI*2;
+  ctx.save();ctx.lineCap='round';
+  const main=item.color;
+  ctx.shadowColor=main;ctx.shadowBlur=reduced?3:10;
+  const gradient=ctx.createLinearGradient(-r,-r,r,r);
+  gradient.addColorStop(0,'#ffffff');gradient.addColorStop(.27,main);
+  gradient.addColorStop(.55,'#334c63');gradient.addColorStop(.78,main);
+  gradient.addColorStop(1,'#f8f2df');
+  ctx.strokeStyle=gradient;ctx.lineWidth=3.6;
+  ring(ctx,0,0,r+2);
+  ctx.shadowBlur=reduced?0:15;
+  if(type==='border-steel'){
+    for(let i=0;i<4;i++){
+      const angle=spin*.55+i*Math.PI/2;
+      ctx.strokeStyle=i%2?'#7aabc9':'#e8f9ff';ctx.lineWidth=i%2?2.5:3.8;
+      ctx.beginPath();ctx.arc(0,0,r+6,angle,angle+.65);ctx.stroke();
+    }
+    for(let i=0;i<8;i++){
+      const a=i*TAU/8-spin*.2,x=Math.cos(a)*(r+8),y=Math.sin(a)*(r+8);
+      ctx.save();ctx.translate(x,y);ctx.rotate(a+Math.PI/4);
+      ctx.fillStyle='#d6f6ff';ctx.fillRect(-2.5,-2.5,5,5);ctx.restore();
+    }
+  }else if(type==='border-gold'){
+    for(let i=0;i<12;i++){
+      const a=i*TAU/12+spin*.2,inner=r+3,outer=r+11+(i%3)*3;
+      ctx.strokeStyle=i%2?'#f7d58c':'#a9792a';ctx.lineWidth=i%3===0?3.4:2;
+      ctx.beginPath();ctx.moveTo(Math.cos(a)*inner,Math.sin(a)*inner);
+      ctx.lineTo(Math.cos(a)*outer,Math.sin(a)*outer);ctx.stroke();
+    }
+    for(let i=0;i<4;i++){
+      const a=spin*.7+i*Math.PI/2;
+      ctx.strokeStyle='#fff1c5';ctx.lineWidth=4;
+      ctx.beginPath();ctx.arc(0,0,r+9,a,a+.38);ctx.stroke();
+    }
+  }else if(type==='border-neon'){
+    ctx.lineWidth=3.5;ctx.strokeStyle='#e68cfa';
+    ctx.setLineDash([Math.max(5,r*.42),9]);
+    ctx.lineDashOffset=-spin*16;ring(ctx,0,0,r+8);ctx.setLineDash([]);
+    ctx.lineWidth=2;ctx.strokeStyle='#6dcbff';
+    ctx.beginPath();ctx.arc(0,0,r+13,-spin*.6,-spin*.6+Math.PI*1.55);ctx.stroke();
+    for(let i=0;i<6;i++){
+      const a=spin*1.3+i*TAU/6;
+      ctx.fillStyle=i%2?'#f3a6ff':'#a9ecff';
+      ctx.beginPath();ctx.arc(Math.cos(a)*(r+10),Math.sin(a)*(r+10),2.5,0,TAU);ctx.fill();
+    }
+  }
+  ctx.restore();return true;
+}
+
 function startRound(list){
   effects.length=0;
   for(const p of list)if(p.cosmetic?.entrance)p.cosmeticEntrance=84;
 }
 function onCast(p,action,target){
-  if(!p?.forge||!p.cosmetic?.motion)return;
-  const item=byId(p.cosmetic.motion);if(!item)return;
-  effects.push({id:item.id,color:item.color,x:p.x,y:p.y,
-    targetX:target?.x??p.x+60,targetY:target?.y??p.y,age:0,life:34});
-  if(effects.length>28)effects.splice(0,effects.length-28);
+  if(!p?.forge)return;
+  const tint=byId(state.equipped.tint);
+  const motion=byId(p.cosmetic?.motion);
+  for(const item of [tint,motion]){
+    if(!item)continue;
+    effects.push({id:item.id,color:item.color,x:p.x,y:p.y,
+      targetX:target?.x??p.x+60,targetY:target?.y??p.y,
+      age:0,life:item.id.startsWith('tint-')?30:42});
+  }
+  if(effects.length>44)effects.splice(0,effects.length-44);
 }
 function tick(list){
   for(const p of list){
     if(!p?.cosmetic)return;
+    p.cosmeticAge=(p.cosmeticAge||0)+1;
     if(p.cosmeticEntrance>0)p.cosmeticEntrance--;
     if(p.cosmetic.trail&&p.hp>0){
       p.cosmeticTrail||=[];
@@ -373,5 +437,5 @@ drawWheel();
 document.getElementById('cosmetic-draw')?.addEventListener('click',()=>beginRoulette());
 refresh();
 global.CosmeticArcade={drawReward,beginRoulette,lastResult,equip,refresh,applyToFighter,borderColor,borderGlow,startRound,onCast,tick,drawUnder,drawOver,
-  getOwned:()=>state.owned.slice(),getEquipped:()=>({...state.equipped}),price:PRICE};
+  getOwned:()=>state.owned.slice(),getEquipped:()=>({...state.equipped}),price:PRICE,drawBorder,};
 })(window);
