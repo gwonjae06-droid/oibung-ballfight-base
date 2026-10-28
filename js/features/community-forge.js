@@ -22,6 +22,36 @@ function makeUrl(profile){
     title:'[ARENA SHARE] '+cfg.name,body
   }).toString();
 }
+// One bounded public read for the gallery and ranking. Only GitHub Issues
+// submitted with the share marker count; PRs and ordinary Issues do not.
+let publicSnapshot=null,loadedAt=0,request=null;
+async function loadShared(force=false){
+  if(!force&&publicSnapshot&&Date.now()-loadedAt<60000)return publicSnapshot;
+  if(!force&&request)return request;
+  const task=(async()=>{
+    const url='https://api.github.com/repos/'+OWNER+'/'+REPO+
+      '/issues?state=open&sort=created&direction=desc&per_page=100';
+    const response=await fetch(url,{headers:{Accept:'application/vnd.github+json'}});
+    if(!response.ok)throw Error('GitHub API 오류 ('+response.status+') · 잠시 후 다시 시도하세요.');
+    const issues=await response.json();
+    if(!Array.isArray(issues))throw Error('공유 목록 응답이 올바르지 않습니다.');
+    const result=[];
+    for(const issue of issues){
+      if(issue.pull_request||!String(issue.title||'').startsWith('[ARENA SHARE]'))continue;
+      const profile=parseBody(issue.body);
+      if(!profile)continue;
+      const number=Number(issue.number)||0;
+      const html='https://github.com/'+OWNER+'/'+REPO+'/issues/'+number;
+      result.push({number,profile,author:String(issue.user?.login||'GitHub 사용자'),
+        html_url:number>0?html:null});
+    }
+    publicSnapshot=result;
+    loadedAt=Date.now();
+    return result;
+  })();
+  request=task;
+  try{return await task;}finally{if(request===task)request=null;}
+}
 function install(){
   const panel=document.querySelector('.bf-tools');if(!panel)return;
   const section=document.createElement('details');
@@ -73,16 +103,10 @@ function install(){
     $('community-refresh').disabled=true;
     list.replaceChildren();
     try {
-      const url='https://api.github.com/repos/'+OWNER+'/'+REPO+'/issues?state=open&sort=created&direction=desc&per_page=100';
-      const response=await fetch(url,{headers:{Accept:'application/vnd.github+json'}});
-      if(!response.ok)throw Error('GitHub API 오류 ('+response.status+') · 잠시 후 다시 시도하세요.');
-      const issues=await response.json();
-      if(!Array.isArray(issues))throw Error('공유 목록 응답이 올바르지 않습니다.');
+      const shares=await loadShared();
       let count=0;
-      for(const issue of issues){
-        if(issue.pull_request||!String(issue.title||'').startsWith('[ARENA SHARE]'))continue;
-        const cfg=parseBody(issue.body);
-        if(!cfg)continue;
+      for(const issue of shares){
+        const cfg=issue.profile;
         count++;
         const card=document.createElement('article');card.className='community-item';
         const head=document.createElement('div');head.className='community-item-head';
@@ -109,8 +133,8 @@ function install(){
     }catch(e){state.textContent=e.message;}
     finally{$('community-refresh').disabled=false;}
   }
-  $('community-refresh').addEventListener('click',()=>{refreshOwn();reload();});
+  $('community-refresh').addEventListener('click',()=>{refreshOwn();publicSnapshot=null;reload();});
 }
-global.CommunityForge={makeBody,parseBody,makeUrl};
+global.CommunityForge={makeBody,parseBody,makeUrl,loadShared};
 if(typeof document!=='undefined'&&document.querySelector('.bf-tools'))install();
 })(window);
