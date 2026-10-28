@@ -14,7 +14,7 @@ function boot(){
   });
   const h={window:null,players:[],Math,ctx,canvas:{width:500,height:500},
     CUSTOM_DEFS:[],BEHAVIORS:{},CHARACTER_PHOTOS:{},createHitParticles(){},
-    addFloatingText(){},document:{querySelector(){return null;}},
+    addFloatingText(){},document:{querySelector(){return null;},getElementById(){return null;}},
     getClosestAliveEnemy(p){return h.players.find(e=>e!==p&&e.hp>0)||null;}};
   h.window=h;vm.createContext(h);
   for(const name of ['ability-atlas','forge-expansion','advanced-combat','skill-forge','natural-forge'])

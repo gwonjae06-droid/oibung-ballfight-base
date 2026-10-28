@@ -454,7 +454,7 @@ function stepObjects(api){
         const dirX=dx/d,dirY=dy/d;
         if(o.kind==='summon'){
           const chaseSpeed=cap(o.a.speed||5,2,9)*.76;
-          const desired=cap((d-e.radius-o.r)*.20,0,chaseSpeed);
+          const desired=Math.max(.75,cap((d-e.radius-o.r)*.20,0,chaseSpeed));
           o.vx=lerp(o.vx||0,dirX*desired,.24);
           o.vy=lerp(o.vy||0,dirY*desired,.24);
           // The pet physically occupies the position shown on screen.
