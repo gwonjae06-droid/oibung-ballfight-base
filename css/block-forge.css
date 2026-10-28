@@ -1,0 +1,75 @@
+/* Scratch-inspired blocks inside the existing custom character studio. */
+.block-forge{border:1px solid #52606b;border-radius:12px;background:#1b2229;overflow:hidden;min-width:0}
+.block-forge>summary{cursor:pointer;padding:15px 17px;font-weight:800;font-size:14px;color:#ecf5ff;list-style-position:inside}
+.block-forge[open]>summary{border-bottom:1px solid #394751;background:#26343f}
+.block-forge-help{margin:12px 16px;color:#b8cad7;line-height:1.6;font-size:12px}
+.block-forge-content{padding:3px 14px 16px;min-width:0}
+.block-forge-feedback{min-height:1em;margin:0 16px 14px;font-size:12px;line-height:1.5;color:#bee6d1}
+.block-skill-tabs{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 14px}
+.block-skill-tabs button,.block-groups button,.block-edit-actions button,
+.block-action-tools button,.block-join button{cursor:pointer;min-height:36px;border-radius:8px;border:1px solid #526373;background:#29333e;color:#eaf1f6;padding:7px 10px;font-size:12px;font-weight:700}
+.block-skill-tabs button.is-active,.block-groups button.is-active{background:#405b70;border-color:#b2d5ed;color:#fff}
+.block-forge button:disabled{cursor:not-allowed;opacity:.42}
+.block-forge button:focus-visible,.block-forge input:focus-visible,.block-forge select:focus-visible,
+.block-forge summary:focus-visible{outline:2px solid #c9ebff;outline-offset:2px}
+.block-skill-settings{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:14px}
+.block-skill-settings label,.block-params-grid label{display:flex;flex-direction:column;gap:6px;font-size:11px;font-weight:700;color:#c8d8e4;min-width:0}
+.block-skill-settings input,.block-skill-settings select,.block-params-grid input,.block-params-grid select,
+.block-join select,.block-join input,.block-search-label input{width:100%;min-width:0;min-height:38px;border:1px solid #657584;border-radius:7px;background:#141c24;color:#f1f6fa;padding:6px 8px;font-size:12px}
+.block-workspace{display:grid;grid-template-columns:minmax(0,1fr) minmax(200px,.58fr);align-items:start;gap:12px}
+.block-stack{padding:12px;border:1px dashed #55788c;border-radius:11px;background:#11191f;min-width:0}
+.block-action{min-width:0;border:1px solid #78a7c6;border-left:5px solid #78a7c6;border-radius:11px;background:#23394a;overflow:hidden;box-shadow:0 3px 10px #0002}
+.block-action-head{display:flex;align-items:center;gap:7px;padding:7px 8px;border-bottom:1px solid #44627a}
+.block-grab{cursor:grab!important;background:#385a72!important;border:1px solid #6e9bb7!important;color:#fff!important;min-height:33px;min-width:34px;border-radius:6px}
+.block-grab:active{cursor:grabbing!important}
+.block-order{font-size:11px;color:#c9e5f5;font-weight:800}
+.block-action-tools{display:flex;gap:4px;margin-left:auto}
+.block-action-tools button{min-width:32px;min-height:33px;padding:4px 7px}
+.block-sentence{display:flex;align-items:center;flex-wrap:wrap;gap:6px;padding:12px 9px}
+.block-token{display:inline-flex;align-items:center;border-radius:7px;padding:8px 9px;min-height:34px;font-size:12px;font-weight:750}
+.block-target{background:#374b67;color:#f0f5ff}
+.block-particle{background:#71542c;color:#fff1d7}
+.block-verb{color:#d8efff;font-size:11px}
+.block-type-select{width:auto;max-width:100%;min-width:122px;min-height:39px;border:1px solid #b3dcf3;border-radius:8px;background:#326f95;color:white;font-weight:850;font-size:13px;padding:7px}
+.block-params{border-top:1px solid #496a82}
+.block-params summary{cursor:pointer;padding:9px 12px;color:#bed6e8;font-size:11px}
+.block-params-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;padding:10px 12px 14px;background:#182630}
+.block-join{display:flex;align-items:center;gap:8px;flex-wrap:wrap;position:relative;margin:0 0 0 15px;padding:10px 5px 10px 15px;border-left:3px solid #c29a62}
+.block-join-caption{font-size:11px;color:#f2d8ad;font-weight:700}
+.block-join select{flex:1 1 170px;width:auto;max-width:280px;background:#383023;border-color:#967e53;color:#fff2db}
+.block-join button{min-height:34px;background:#45382c;border-color:#91724a}
+.block-link-delay{display:flex;align-items:center;gap:5px;color:#ffebcc;font-size:11px}
+.block-link-delay input{width:65px}
+.block-palette{min-width:0;border:1px solid #485760;border-radius:11px;background:#202a30;padding:11px}
+.block-palette>strong{display:block;font-size:13px;color:#f1f4f8;margin-bottom:10px}
+.block-groups{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.block-groups button{font-size:11px;padding:6px 4px;min-height:36px}
+.block-search-label{display:flex;flex-direction:column;gap:5px;margin:12px 0;font-size:11px;color:#d5e2ed}
+.block-palette-items{max-height:290px;overflow-y:auto;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;padding-right:3px;overscroll-behavior:contain}
+.block-palette-item{min-width:0;min-height:37px;text-align:left;cursor:pointer;border:1px solid #5a7c95;border-radius:8px;background:#34546a;color:#eff8ff;padding:7px 9px;font-size:11px;font-weight:700}
+.block-palette-item:hover{background:#47718c}
+.block-palette small{display:block;color:#9cb4c3;line-height:1.6;margin-top:10px}
+.block-limit,.block-semantic-note{font-size:11px;color:#a9bbc9;line-height:1.6}
+.block-limit{margin:12px 2px 0}
+.block-edit-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:13px}
+.block-preview-label{font-size:12px;font-weight:800;color:#dfe9f2;margin:17px 0 7px}
+.block-preview{display:block;padding:12px 13px;background:#1c2d38;border:1px solid #415e70;border-radius:8px;color:#e8f6ff;font-size:12px;line-height:1.7;overflow-wrap:anywhere}
+.block-semantic-note{margin:9px 2px 0}
+@media(max-width:760px){
+ .block-workspace{grid-template-columns:minmax(0,1fr)}
+ .block-skill-settings{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .block-params-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .block-palette-items{max-height:210px;grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+@media(max-width:440px){
+ .block-forge-content{padding:3px 10px 13px}
+ .block-forge-help{margin:11px 12px}
+ .block-skill-settings,.block-params-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .block-skill-tabs button{font-size:11px;padding:7px 8px}
+ .block-palette-items{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .block-join{gap:6px;flex-wrap:wrap}
+ .block-join select{flex:1 1 160px;max-width:100%}
+ .block-token{padding:7px 6px;font-size:11px}
+ .block-type-select{min-width:112px}
+ .block-sentence{gap:4px}
+}
