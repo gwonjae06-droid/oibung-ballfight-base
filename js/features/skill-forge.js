@@ -37,7 +37,7 @@ const ACTION_PARAMETERS=Object.freeze({
   dung:'target damage radius speed duration status knockback',
   lifebloom:'damage radius duration',
   resurrect:'',timestop:'radius duration',rewind:'duration',timeburst:'duration',
-  leap:'duration',hover:'duration',glide:'duration',
+  leap:'',hover:'duration',glide:'duration',
   dive:'damage radius speed status knockback',
   uppercut:'target damage radius status knockback',
   slash:'target damage radius status knockback',

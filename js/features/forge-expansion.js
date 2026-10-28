@@ -87,7 +87,7 @@ function execute(p,a,target,api){
     p.forgeExtras.push({kind:a.type,x:a.type==='lifebloom'?p.x:near.x,y:a.type==='lifebloom'?p.y:near.y,life:Math.round(a.duration*60),age:0,a});
   }else if(a.type==='starfall'){
     // Staggered descending bodies, not instant area markers.
-    const amount=Math.max(3,Math.min(8,Math.round(a.count||5)));
+    const amount=Math.max(1,Math.min(8,Math.round(a.count||5)));
     for(let i=0;i<amount;i++){
       const angle=i*2.399963,ring=i===0?0:(18+Math.sqrt(i/amount)*a.radius*.55);
       const x=Math.max(20,Math.min(canvas.width-20,near.x+Math.cos(angle)*ring));

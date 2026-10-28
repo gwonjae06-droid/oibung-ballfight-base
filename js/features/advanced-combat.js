@@ -433,7 +433,7 @@ function updateProjectiles(api){
     b.trail.unshift({x:b.x,y:b.y-b.height});
     if(b.trail.length>(reduced?4:11))b.trail.pop();
     if(b.kind==='splitshot'&&!b.split&&t>=.56){
-      b.split=true;const n=cap(Math.round(b.a.count||3),2,8);
+      b.split=true;const n=cap(Math.round(b.a.count||1),1,8);
       for(let j=0;j<n;j++){
         const theta=(j/n)*Math.PI*2;
         pushShot({kind:'fragment',owner:b.owner,x:b.x,y:b.y,startX:b.x,startY:b.y,

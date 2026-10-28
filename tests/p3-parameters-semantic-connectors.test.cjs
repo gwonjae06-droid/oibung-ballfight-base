@@ -36,6 +36,7 @@ test('55 types show only controls actually wired to their execution family',()=>
   assert.equal(h.SkillForge.supportedParameter('heal','count'),false);
   assert.equal(h.SkillForge.supportedParameter('resurrect','damage'),false);
   assert.equal(h.SkillForge.supportedParameter('fortify','duration'),true);
+  assert.equal(h.SkillForge.supportedParameter('leap','duration'),false,'fixed leap hover is not user configurable');
   assert.match(read('js/features/skill-forge.js'),/key&&!supportedParameter\(a.type,key\)/);
 });
 test('meteor, star rain and arcing projectiles actually use speed settings',()=>{
@@ -52,6 +53,9 @@ test('meteor, star rain and arcing projectiles actually use speed settings',()=>
   const slowStar=p.forgeExtras[0].flight;p.forgeExtras.length=0;
   h.ForgeExpansion.execute(p,a('starfall',12,3),enemy,api);
   assert.ok(p.forgeExtras[0].flight<slowStar);
+  p.forgeExtras.length=0;
+  h.ForgeExpansion.execute(p,a('starfall',6,1),enemy,api);
+  assert.equal(p.forgeExtras.length,1,'count 1 must mean exactly one falling star');
   h.AdvancedCombat.execute(p,a('arcshot',3),enemy,api);
   const arcSlow=h.AdvancedCombat.projectiles.at(-1).travel;
   h.AdvancedCombat.projectiles.length=0;
@@ -65,6 +69,7 @@ test('splitshot count means fragments, not count-squared projectile spam',()=>{
   h.AdvancedCombat.execute(p,{type:'splitshot',count:7,speed:7,radius:160,
     damage:30,knockback:0,status:'none'},enemy,api);
   assert.equal(h.AdvancedCombat.projectiles.filter(x=>x.kind==='splitshot').length,1);
+  assert.equal(h.AdvancedCombat.projectiles[0].a.count,7);
   for(let i=0;i<25;i++)h.AdvancedCombat.tick(api);
   assert.equal(h.AdvancedCombat.projectiles.filter(x=>x.kind==='fragment').length,7);
 });
