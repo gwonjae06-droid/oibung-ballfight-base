@@ -132,3 +132,23 @@ test('time-watch hands, directional wave and cosmic galaxy have dedicated effect
   assert.ok(s.includes("ghosts.push({x:e.lastX,y:e.lastY"));
   assert.ok(s.includes('const MOTION_LIMIT=50'));
 });
+
+test('distinct clock and blast sounds occur at their visual events, not as extra damage',()=>{
+  const {w,fx,actor}=setup(),events=[];
+  w.BattleFX={sound:(kind,volume)=>events.push({kind,volume})};
+  const p=actor('a',110,130),target=actor('b',180,130);
+  fx.cast(p,{type:'timestop',radius:130},target);
+  fx.cast(p,{type:'rewind',radius:130},target);
+  fx.cast(p,{type:'blackhole',radius:125},target);
+  fx.cast(p,{type:'meteor',radius:125},target);
+  assert.equal(events.filter(e=>e.kind==='clock').length,2);
+  assert.equal(events.filter(e=>e.kind==='cosmos').length,1);
+  assert.equal(events.filter(e=>e.kind==='blast').length,0,
+    'casting a delayed meteor must not sound like an explosion');
+  fx.detonate(p,'meteor',target.x,target.y,125);
+  assert.equal(events.filter(e=>e.kind==='blast').length,1,
+    'explosion sound belongs to the actual detonation');
+  assert.equal(target.hp,200);
+  const audio=read('js/features/vfx-audio.js');
+  for(const kind of ['clock','blast','cosmos'])assert.ok(audio.includes("kind==='"+kind+"'"));
+});
