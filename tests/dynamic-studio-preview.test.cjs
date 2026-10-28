@@ -3,7 +3,7 @@ const test=require('node:test'),assert=require('node:assert/strict');
 const vm=require('node:vm'),fs=require('node:fs'),path=require('node:path');
 const read=p=>fs.readFileSync(path.join(__dirname,'..',p),'utf8');
 function arena(){
-  const canvas={width:500,height:500},elements=new Map();
+  const canvas={width:500,height:500,getContext:()=>({})},elements=new Map();
   const doc={getElementById(id){
     if(id==='arena')return canvas;
     if(!elements.has(id))elements.set(id,{style:{},dataset:{},innerText:'',classList:{add(){},remove(){}}});
