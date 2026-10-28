@@ -22,7 +22,9 @@ function phase(state){
         action:'대진 설정으로 이동',intent:'match'};
   }
 }
+let instance=null;
 function install(){
+  if(instance)return instance;
   const doc=global.document;
   if(!doc)return null;
   const root=doc.getElementById('arena-purpose');
@@ -152,7 +154,8 @@ function install(){
     if(e.target.closest('a[data-category]'))more.open=false;
   });
   sync();
-  return {sync,phase,act};
+  instance={sync,phase,act};
+  return instance;
 }
 global.ArenaUIFlow={phase,install};
 if(typeof document!=='undefined')install();
