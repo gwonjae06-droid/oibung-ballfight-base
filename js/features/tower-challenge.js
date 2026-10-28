@@ -16,11 +16,29 @@ const FLOOR_RULES=[
   ['별의 회랑','운석과 별비가 떨어지는 전장','meteor'],
   ['공허의 지배자','블랙홀과 별비 · 최종 보스','blackhole']
 ];
+// Floor identity is visible in BOTH the pre-battle panel and the live Canvas.
+// The first two floors teach the player with 2 independently timed skills.
+// From floor 3 onward each opponent equips exactly four independent skills.
+const THEMES=['dojo','tidal','wind','ember','iron','venom','scope','clock','astral','void'];
+const ABILITIES=[
+  [['견습 사격','shot'],['입문 방호','shield']],
+  [['파도 충격','wave'],['해류의 화살','shot']],
+  [['바람 돌진','dash'],['공중 어퍼컷','uppercut'],['휘몰아치는 참격','slash'],['질풍 가속','haste']],
+  [['화염 폭발','nova'],['용암 지대','zone'],['불꽃 탄환','shot'],['열기 방호','shield']],
+  [['강철 어퍼컷','uppercut'],['철갑 방패','shield'],['불굴의 갑옷','fortify'],['철륜 회전베기','spinslash']],
+  [['맹독 장판','zone'],['흡수의 늪','drain'],['포자 함정','trap'],['늪지 재생','regen']],
+  [['추적 사격','homing'],['관통탄','pierce'],['곡사탄','arcshot'],['조준 거리 확보','retreat']],
+  [['시간 정지','timestop'],['시간 가속','timeburst'],['순간이동','blink'],['시간 되감기','rewind']],
+  [['운석 낙하','meteor'],['별비','starfall'],['행성 궤도','orbit'],['성운 번개','bolt']],
+  [['공허의 블랙홀','blackhole'],['심연의 별비','starfall'],['공허 장막','shield'],['중력 시간왜곡','timeburst']]
+];
 const cap=(v,min,max)=>Math.max(min,Math.min(max,Number(v)||0));
 function floor(n){
   const number=Math.round(cap(n,1,FINISH));
   const [name,description,main]=FLOOR_RULES[number-1],boss=number%5===0;
-  return {number,name,description,main,boss,
+  return {number,name,description,main,boss,scene:THEMES[number-1],
+    skills:ABILITIES[number-1].map(([label,type])=>({label,type})),
+    skillCount:ABILITIES[number-1].length,
     hp:Math.min(500,180+number*19+(boss?80:0)),
     speed:Math.min(4.5,1.15+number*.20),
     damage:Math.min(65,12+number*3+(boss?7:0)),
@@ -31,21 +49,21 @@ function action(type,damage,extra={}){
     speed:5,duration:1.7,status:'none',knockback:2,delay:0,link:'and',...extra};
 }
 function makeEnemy(n){
-  const f=floor(n),attack=action(f.main,f.damage);
-  if(n===4)attack.status='fire';
-  if(n===6){attack.status='poison';attack.duration=3;}
-  const skills=[{name:f.boss?'보스의 주력기':'층 특수 기술',
-    cooldown:f.cooldown,trigger:'auto',threshold:40,
-    actions:[attack]}];
-  if(n===3)skills[0].actions.unshift(action('dash',0,{speed:8,duration:.5}));
-  if(n===5)skills.push({name:'철갑 보호막',cooldown:4.2,trigger:'auto',
-    actions:[action('shield',0,{duration:1.8})]});
-  if(n===8)skills.push({name:'시간 왜곡',cooldown:4,trigger:'auto',
-    actions:[action('blink',0)]});
-  if(n===9)skills.push({name:'유성 낙하',cooldown:4,trigger:'auto',
-    actions:[action('starfall',26,{radius:140,count:4})]});
-  if(n===10)skills.push({name:'공허의 별비',cooldown:3.7,trigger:'auto',
-    actions:[action('starfall',39,{radius:150,count:5,status:'ice'})]});
+  const f=floor(n);
+  const skills=ABILITIES[f.number-1].map(([name,type],i)=>{
+    const isMovement=['dash','blink','retreat'].includes(type);
+    const isSupport=['shield','fortify','haste','regen','rewind','timestop','timeburst'].includes(type);
+    const attack=action(type,isMovement||isSupport?0:Math.round(f.damage*(i===0?1:.7)),{
+      radius:type==='starfall'||type==='blackhole'?155:112,
+      speed:type==='dash'?8:5,
+      duration:type==='dash'?0.5:type==='starfall'?2.5:1.7,
+      count:type==='starfall'?5:1,
+      status:(f.number===4&&['nova','zone','shot'].includes(type))?'fire':
+        f.number===6&&['zone','trap','drain'].includes(type)?'poison':'none'
+    });
+    return {name,cooldown:Number((f.cooldown+i*.55+(isSupport?.7:0)).toFixed(2)),
+      trigger:'auto',threshold:40,actions:[attack]};
+  });
   return {name:f.name,color:f.boss?'#7f5cce':'#b26b73',
     effectColor:f.boss?'#9457e2':'#d96c6e',
     hp:f.hp,speed:f.speed,skills};
@@ -86,9 +104,11 @@ function install(){
    +' aria-label="'+(i+1)+'층'+((i+1)%5===0?' 보스':'')+'"><strong>'
    +(i+1)+'F</strong>'+((i+1)%5===0?'<small>보스</small>':'<small>층</small>')+'</div>').join('')
    +'</div>'
+   +'<div class="tower-scene-identity"><span id="tower-scene-name">황혼의 수련장</span><span id="tower-skill-count">2개 독립 스킬</span></div>'
    +'<div class="tower-fighter-pick"><label for="tower-hero">출전 캐릭터'
    +'<select id="tower-hero"></select></label>'
-   +'<div class="tower-enemy"><strong id="tower-enemy">훈련의 문</strong><span id="tower-enemy-info">첫 도전을 준비하세요.</span></div></div>'
+   +'<div class="tower-enemy"><strong id="tower-enemy">훈련의 문</strong><span id="tower-enemy-info">첫 도전을 준비하세요.</span>'
+   +'<div class="tower-enemy-skills" id="tower-enemy-skills" aria-label="이번 층 적 스킬"></div></div></div>'
    +'<div class="tower-buttons"><button id="tower-start" type="button">1층 도전 시작</button>'
    +'<button id="tower-pause" type="button" hidden>⏸ 일시정지</button>'
    +'<button id="tower-abandon" type="button" hidden>도전 포기</button></div>'
@@ -124,6 +144,18 @@ function install(){
     el('tower-enemy').textContent=(f.boss?'👑 ':'')+f.name;
     el('tower-enemy-info').textContent=f.hp+' HP · 이동 '+f.speed.toFixed(1)+' · '+f.damage+' 기본 공격력';
     el('tower-best').textContent='최고 기록 '+best+'F (내 브라우저)';
+    screen.dataset.towerTheme=f.scene;
+    el('tower-scene-name').textContent=global.ArenaTowerScenes?.SCENES[level-1]?.name||f.name;
+    el('tower-skill-count').textContent=f.skillCount+'개 독립 스킬';
+    const skillHost=el('tower-enemy-skills');
+    skillHost.replaceChildren();
+    for(const entry of f.skills){
+      const badge=doc.createElement('span');
+      badge.className='tower-enemy-skill';
+      badge.textContent=entry.label;
+      badge.title=entry.label+' · '+(global.SkillForge?.TYPE?.[entry.type]||entry.type);
+      skillHost.append(badge);
+    }
     for(let i=1;i<=FINISH;i++){
       const chip=el('tower-chip-'+i);
       if(!chip)continue;
@@ -246,7 +278,11 @@ function install(){
     if(button)chooseReward(button.dataset.towerReward);
   });
   show();
-  const api={floor,makeEnemy,read,updateRecord,records,begin,forfeit,
+  function paintBackground(ctx,canvas){
+    if(!['fighting','reward','lost','won'].includes(stage)||screen.dataset.battleMode==='free')return false;
+    return global.ArenaTowerScenes?.paint?.(ctx,canvas.width,canvas.height,level)||false;
+  }
+  const api={floor,makeEnemy,read,updateRecord,records,begin,forfeit,paintBackground,
     chooseReward,onBattleEnd,isTransientDef,pauseAway,refresh:show,get active(){return active;},
     get stage(){return stage;},get state(){return current();}};
   global.ArenaTower=api;return api;

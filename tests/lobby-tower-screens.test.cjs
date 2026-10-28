@@ -59,7 +59,8 @@ test('router creates one lobby and exactly five separate destinations from exist
   assert.ok(src.includes('rankingPower.append(ranking)'));
   assert.ok(src.includes('shared.append(gallery)'));
   assert.ok(src.includes('designSlot.append(studio)'));
-  assert.ok(src.includes('cosmeticSlot.append(cosmetic)'));
+  assert.ok(src.includes('screens.mine.append(cosmetic)'));
+  assert.ok(src.includes('screens.character.append(cosmeticSlot)'));
   assert.ok(src.includes('mineFrame.append(mine)'));
   assert.ok(src.includes('stockFrame.append(market)'));
   assert.ok(src.includes('arenaSlot.append(arena)'));

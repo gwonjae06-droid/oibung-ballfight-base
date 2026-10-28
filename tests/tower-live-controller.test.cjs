@@ -10,7 +10,7 @@ function conclude(x,winner){
 function harness(){
   const nodes=new Map();
   class Element{
-    constructor(name='div'){this.tagName=name;this.listeners={};this.children=[];this.hidden=false;this.value='';}
+    constructor(name='div'){this.tagName=name;this.listeners={};this.children=[];this.hidden=false;this.value='';this.dataset={};}
     set id(value){this._id=value;nodes.set(value,this);}
     get id(){return this._id;}
     set innerHTML(value){

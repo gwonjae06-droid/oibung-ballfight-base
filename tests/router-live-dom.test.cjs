@@ -6,7 +6,8 @@ function setup(){
   const byId=new Map(),events=[];
   class El{
     constructor(tag='div'){this.tag=tag;this.dataset={};this.children=[];this.hidden=false;
-      this.attrs=new Map();this.queryMap={};this.listeners={};this.style={};this.textContent='';}
+      this.attrs=new Map();this.queryMap={};this.listeners={};this.style={};this.textContent='';
+      this.classes=new Set();this.classList={add:c=>this.classes.add(c),contains:c=>this.classes.has(c)};}
     set id(value){this._id=value;byId.set(value,this);}
     get id(){return this._id;}
     set innerHTML(text){
@@ -67,7 +68,8 @@ test('actual router constructs all six routes and preserves original game widget
   assert.equal(x.gallery.parent.id,'ranking-shared');
   assert.equal(x.market.parent.id,'stock-screen-slot');
   assert.equal(x.mine.parent.id,'mine-screen-slot');
-  assert.equal(x.cosmetic.parent.id,'character-cosmetic-slot');
+  assert.equal(x.cosmetic.parent.id,'screen-mine');
+  assert.ok(x.cosmetic.classList.contains('mine-gacha'));
   assert.equal(x.dialog.parent.id,'character-design-slot');
   const visited=[];
   for(const id of ['tower','character','ranking','mine','stock','lobby']){
@@ -96,6 +98,12 @@ test('tower and four ranking tabs toggle views without altering the underlying d
     assert.equal(x.byId.get(show).hidden,false);
     assert.equal(x.ranking.parent.id,'ranking-power','original ranking persists');
   }
+  r.go('mine');r.mineTab('gacha');
+  assert.equal(x.cosmetic.hidden,false);
+  assert.equal(x.byId.get('mine-screen-slot').hidden,true);
+  r.mineTab('mine');
+  assert.equal(x.cosmetic.hidden,true);
+  assert.equal(x.byId.get('mine-screen-slot').hidden,false);
   r.go('character');
   r.characterTab('cosmetics');
   assert.equal(x.byId.get('character-cosmetic-slot').hidden,false);
