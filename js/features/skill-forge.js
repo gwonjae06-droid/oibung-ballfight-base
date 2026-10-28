@@ -1,7 +1,7 @@
 /* Skill Forge: authored ability sequences, not keyword parsing or arbitrary JS. */
 (function(global){
 'use strict';
-const STORE='oibung-forge-v3', TYPE={wave:'충격파',shot:'투사체',beam:'레이저',bolt:'낙뢰',dash:'돌진',blink:'순간이동',heal:'회복',shield:'방어막',pull:'흡입',orbit:'회전 소환체',zone:'지속 장판'};
+const STORE='oibung-forge-v3', TYPE=global.ActionRegistry?.TYPE||{wave:'충격파',shot:'투사체',beam:'레이저',bolt:'낙뢰',dash:'돌진',blink:'순간이동',heal:'회복',shield:'방어막',pull:'흡입',orbit:'회전 소환체',zone:'지속 장판'};
 const TRIGGER={auto:'주기적으로',lowhp:'체력 이하',contact:'접촉 시',damaged:'피격 시'};
 const STATUS={none:'없음',ice:'둔화',fire:'화상',poison:'중독'};
 Object.assign(TYPE,global.ForgeExpansion?.TYPES||{});
@@ -10,7 +10,7 @@ Object.assign(STATUS,global.ForgeExpansion?.STATUSES||{});
 
 /* Per-type actionable controls. The stored schema stays backwards compatible;
  * the editor only shows inputs the actual execution path consumes. */
-const ACTION_PARAMETERS=Object.freeze({
+const ACTION_PARAMETERS=global.ActionRegistry?.ACTION_PARAMETERS||Object.freeze({
   wave:'pattern target damage radius count status knockback',
   shot:'pattern target damage radius count speed status knockback',
   beam:'pattern target damage radius count status knockback',
@@ -57,7 +57,7 @@ const ACTION_PARAMETERS=Object.freeze({
 });
 // Motion is not an attack. These actions may reposition a fighter but
 // never produce damage, statuses or knockback, even from old saved JSON.
-const MOVEMENT_ONLY=new Set(['dash','blink','leap','hover','glide','swap','retreat','portal']);
+const MOVEMENT_ONLY=global.ActionRegistry?.MOVEMENT_ONLY||new Set(['dash','blink','leap','hover','glide','swap','retreat','portal']);
 const supportedParameter=(type,key)=>key==='delay'||(' '+(ACTION_PARAMETERS[type]||'')+' ').includes(' '+key+' ');
 const number=(x,a,b,d=a)=>Number.isFinite(Number(x))?Math.max(a,Math.min(b,Number(x))):d;
 const clean=(v,n)=>String(v==null?'':v).replace(/[<>]/g,'').slice(0,n).trim();
@@ -105,7 +105,7 @@ const allTypes=()=>Object.keys(TYPE);
 const randInt=(rng,min,max)=>min+Math.floor(Math.max(0,Math.min(.999999999,rng()))*(max-min+1));
 const pickRandom=(rng,values)=>values[randInt(rng,0,values.length-1)];
 const randomColor=rng=>'#'+[0,1,2].map(()=>randInt(rng,48,218).toString(16).padStart(2,'0')).join('');
-const offense=new Set(['wave','shot','beam','bolt','pull','zone','homing','pierce','boomerang','chain','nova','meteor','mine','drain','blackhole','starfall','dung','uppercut','slash','spinslash','thrust','aircombo','arcshot','splitshot','dive','erupt','burrowdash','trap','turret','summon']);
+const offense=global.ActionRegistry?.OFFENSE||new Set(['wave','shot','beam','bolt','pull','zone','homing','pierce','boomerang','chain','nova','meteor','mine','drain','blackhole','starfall','dung','uppercut','slash','spinslash','thrust','aircombo','arcshot','splitshot','dive','erupt','burrowdash','trap','turret','summon']);
 const settings=(type,i=0)=>({
   type,pattern:'direct',target:'nearest',
   damage:18+i%5*3,radius:115+(i%4)*22,
@@ -282,6 +282,9 @@ function execute(p,a,target) {
   global.SkillVisuals?.cast(p,a,target); // Actual action execution, not cooldown booking.
   // In-world actions must dispatch through the same combat implementation
   // used by physics and visuals; they are not merely text menu entries.
+  // Action Registry code-authored skills receive the same hit/enemy API as
+  // built-in engine adapters. Preview and sound metadata are automatic.
+  if(global.ActionRegistry?.run(p,a,target,{hit,enemies}))return;
   if(global.AdvancedCombat?.execute(p,a,target,{hit,enemies}))return;
   if(global.ForgeExpansion?.execute(p,a,target,{hit,enemies}))return;
   if(global.AbilityAtlas && AbilityAtlas.execute(p,a,target,{hit,enemies}))return;
@@ -693,6 +696,6 @@ function initialize(){
   const oldDraw=drawCharacter;
   drawCharacter=function(p){if(p.forge)drawFighter(p);oldDraw(p);};
 }
-global.SkillForge={THEMES,randomProfile,normalize,register,remove,list,setDraft,refreshList:()=>refreshList(),persist,TYPE,TRIGGER,STATUS,ACTION_PARAMETERS,MOVEMENT_ONLY,supportedParameter,cooldownFrames,advanceTimers:tickSkills,advanceWorld,hit,allProfile,allSkillset,getDraft:()=>normalize(draft)};
+global.SkillForge={THEMES,randomProfile,normalize,register,remove,list,setDraft,refreshList:()=>refreshList(),refreshEditor:()=>{refreshBasics();render();},persist,TYPE,TRIGGER,STATUS,ACTION_PARAMETERS,MOVEMENT_ONLY,supportedParameter,cooldownFrames,advanceTimers:tickSkills,advanceWorld,hit,allProfile,allSkillset,getDraft:()=>normalize(draft)};
 if(typeof document!=='undefined'&&document.querySelector('.bf-tools'))initialize();
 })(window);
