@@ -106,35 +106,8 @@ let focus=0,profile=null,sequence=null,elapsed=0,raf=0,stamp=null,playing=true,s
 let lastText='',lastPicker='',pickedIndex=-1;
 const reduced=()=>!!global.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
 // Only the preview planner uses these values: no global engine clocks change.
-function plan(profileValue,scope){
-  const list=profileValue.allAbilities?global.SkillForge.allSkillset():profileValue.skills||[];
-  const events=[];
-  if(!list.length)return {events,duration:2600,skills:[],scope};
-  const selected=scope==='all'?'all':clamp(Number(scope)||0,0,list.length-1);
-  const selectedSkills=selected==='all'?list.slice(0,12):[list[selected]];
-  selectedSkills.forEach((sk,i)=>{
-    const si=selected==='all'?i:selected,period=clamp(Number(sk.cooldown)||3,.3,30)*1000;
-    const first=selected==='all'?280+i*170:260;
-    const cycles=selected==='all'?Math.ceil((9000-first)/period):1;
-    for(let cycle=0;cycle<cycles;cycle++){
-      const base=first+cycle*period;
-      let before=null;
-      (sk.actions||[]).slice(0,3).forEach((a,j)=>{
-        const link=j===0?'and':a.link||'and',len=duration(a);
-        const delay=clamp(Number(a.delay)||0,0,5)*1000;
-        const start=(j===0?base:link==='with'?before.start:
-          link==='after'?before.end+120:before.start+before.length*.72)+delay;
-        const event={action:a,skillIndex:si,actionIndex:j,skillName:sk.name||'스킬',
-          link,start,length:len,end:start+len};
-        if(start<11000)events.push(event);
-        before=event;
-      });
-    }
-  });
-  const end=Math.max(0,...events.map(e=>e.end));
-  return {events:events.sort((a,b)=>a.start-b.start),
-    duration:selected==='all'?9600:clamp(end+450,2300,10500),skills:list,scope:selected};
-}
+const plan=global.StudioMotionModel.plan;
+
 function circle(x,y,r,fill,stroke){
   ctx.beginPath();ctx.arc(x,y,Math.max(.5,r),0,TAU);
   if(fill){ctx.fillStyle=fill;ctx.fill();}
