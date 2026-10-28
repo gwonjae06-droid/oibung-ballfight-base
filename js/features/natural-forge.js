@@ -60,13 +60,16 @@ const ADVANCED_LEX={
 for(const [type,lex] of Object.entries(ADVANCED_LEX))
   if(SkillForge.TYPE?.[type])CAPABILITIES[type]={name:SkillForge.TYPE[type],lex};
 // Concrete physical vocabulary; abstract themes are offered as explicit choices below.
-CAPABILITIES.shot.lex=/화살|탄막|구슬|투사체|미사일|발사|연발|총알|얼음창|불덩|검기|사격|쏘(?:다|아|고|는|면)?|발포|투척|수리검|표창|창을|칼날|꽃잎|별을|별들이|씨앗|깃털|카드|동전|물방울/gi;
+CAPABILITIES.shot.lex=/화살|탄막|탄환|화염탄|냉기탄|불꽃탄|구슬|투사체|미사일|발사|연발|총알|얼음창|불덩|검기|사격|쏘(?:다|아|고|는|면)?|발포|투척|수리검|표창|창을|칼날|꽃잎|별을|별들이|씨앗|깃털|카드|동전|물방울/gi;
 const EXTRA_EFFECTS={freeze:/빙결|얼려|얼린|얼어붙|동결/,stun:/기절|스턴|정신을\s*잃|마비/,root:/속박|묶|발을\s*붙잡|뿌리로/,silence:/침묵|봉인|스킬을?\s*막|마법을?\s*금지/,bleed:/출혈|피를\s*흘|상처를\s*벌/,shock:/감전|전류/,vulnerable:/취약|방어력\s*감소|갑옷을?\s*깨/,weak:/약화|공격력\s*감소|힘을\s*빼/,fear:/공포|겁을|도망가게|두려움/,charm:/매혹|유혹|홀리|홀려/,blind:/실명|눈을\s*멀|눈부|시야를\s*가/,curse:/저주|회복\s*감소|치유\s*방해/};
 const EFFECTS={
   ice:/빙결|얼음|서리|냉기|둔화|슬로우|slow/gi,
   fire:/화염|불꽃|화상|불길|용암|폭염|burn/gi,
   poison:/맹독|중독|독(?!특|점|립|서)|독딜|독\s*(?:딜|피해|데미지|대미지)|도트\s*(?:데미지|대미지|딜|피해|뎀)|dot(?:\s*(?:damage|dmg))?|지속\s*(?:피해|딜|데미지|대미지)|초당\s*(?:데미지|피해)|틱(?:뎀|딜)|poison|독(?:을|으로)\s*(?:걸|입히|묻히)/gi
 };
+// Status riders describe the effect of the preceding delivery, not a
+// second independent zone/attack (e.g. "탄을 발사하고 적을 중독시킨다").
+const statusRider=s=>/^(?:적(?:을|에게|이|들이)?\s*)?(?:중독|기절|빙결|얼리|얼려|화상|태우|감전|출혈|마비|둔화|실명|속박|저주|느리게|약화)/.test(String(s).trim());
 const CONVENTIONS=[
   [/순간\s*이동|텔포|텔레포트|점멸|워프|(?:이동(?!\s*(?:속도|속력|속성|량|중)))/i,'이동 표현 → 텔레포트'],
   [/번개|벼락|천둥|전격|라이트닝/i,'번개 계열 → 낙뢰'],
@@ -202,6 +205,7 @@ function clauseUnits(sentence){
 }
 function groupConnection(left,right,link){
   const a=matchActions(left),b=matchActions(right);
+  if(statusRider(right))return 'modifier';
   if(!a.length||!b.length)return 'modifier'; // extra status, not an independent attack
   if(/(?:그\s*후|그\s*다음|이어서|연달아|연계해서|그대로|한\s*번에|곧바로|바로\s*이어)/.test(right))return 'combo';
   if(/(?:별도(?:의|로)?|독립(?:된|적으로)?|다른\s*(?:능력|스킬)|또\s*다른|새로운\s*스킬)/.test(right))return 'separate';
@@ -260,7 +264,8 @@ function parse(text,name='',choices={}){
       .replace(/(순간\s*이동|텔레포트|텔포|점멸|워프|이동|낙뢰|번개|벼락|충격파|돌진)\s*후\s*/g,'$1 → ')
       .replace(/(순간\s*이동|텔레포트|텔포|점멸|워프|이동|낙뢰|번개|벼락|충격파|돌진)하고\s*/g,'$1 → ')
       .replace(/\s+하고\s+/g,' → ')
-      .replace(/(?:걸고|입히고|뿌리고|시키고|던지고|발사하고)\s*,?\s*(?=\S)/g,' → ');
+      .replace(/(?:걸고|입히고|뿌리고|시키고|던지고|발사하고)\s*,?\s*(?=\S)/g,
+        (match,offset,text)=>statusRider(text.slice(offset+match.length))?' ':' → ');
     const fragments=segmented.split(/(?:그\s*후|그다음|그\s*다음|뒤이어|이어서|이후|한\s*뒤|한\s*후|하고\s*나서|→|->)+/).map(s=>s.trim()).filter(Boolean);
     const actions=[];
     for(const fragment of fragments){
