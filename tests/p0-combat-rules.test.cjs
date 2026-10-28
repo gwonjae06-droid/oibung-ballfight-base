@@ -38,7 +38,7 @@ function harness(){
 test('advanced delayed slash shares weak/fortify status resistance and knockback',()=>{
   const t=harness(),p=t.player(),e=t.foe(2,207,100);t.h.players.push(p,e);
   t.h.ForgeExpansion.applyStatus(e,p,{status:'weak',duration:2});
-  t.h.ForgeExpansion.applyStatus(p,e,{status:'fortify',duration:2});
+  t.h.ForgeExpansion.execute(e,{type:'fortify',duration:2,damage:0},p,{enemies:t.enemies});
   const a=t.action('slash',{damage:100,status:'stun',knockback:4});
   assert.equal(t.h.AdvancedCombat.execute(p,a,e,{hit:t.h.SkillForge.hit,enemies:t.enemies}),true);
   t.tick(10);
