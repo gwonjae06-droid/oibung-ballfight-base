@@ -112,6 +112,7 @@ function modify(profile,op){
       if(!idOk(skills,i)||!idOk(skills[i].actions,j))throw Error('동작을 찾지 못했습니다.');
       if(!['target','damage','status','radius','pattern','count','speed','duration','knockback','delay'].includes(op.key))
         throw Error('지원되지 않는 동작 설정입니다.');
+      if(!forge.supportedParameter(skills[i].actions[j].type,op.key))throw Error('이 동작에서 지원하지 않는 설정입니다.');
       skills[i].actions[j][op.key]=op.value;break;
     }
     default:throw Error('지원되지 않는 블록 조작입니다.');
@@ -173,9 +174,10 @@ function blockAction(a,si,ai,total){
   const required=ai>0;
   const link=required?
     '<div class="block-join"><span class="block-join-label">연결</span><select aria-label="앞 동작과의 연결 방식" data-edit="link" data-skill="'+si+'" data-index="'+ai+'">'+options(LINKS,a.link||'and')+'</select></div>':'';
-  const fields='<label>대상<select data-edit="param" data-key="target" data-skill="'+si+'" data-index="'+ai+'">'+options(TARGETS,a.target||'nearest')+'</select></label>'+
-    '<label>위력<input aria-label="동작 위력" type="number" min="0" max="120" step="1" data-edit="param" data-key="damage" data-skill="'+si+'" data-index="'+ai+'" value="'+escape(a.damage)+'"></label>'+
-    '<label>효과<select data-edit="param" data-key="status" data-skill="'+si+'" data-index="'+ai+'">'+options(STATUS,a.status||'none')+'</select></label>';
+  const can=key=>forge.supportedParameter(a.type,key);
+  const fields=(can('target')?'<label>대상<select data-edit="param" data-key="target" data-skill="'+si+'" data-index="'+ai+'">'+options(TARGETS,a.target||'nearest')+'</select></label>':'')+
+    (can('damage')?'<label>위력<input aria-label="동작 위력" type="number" min="0" max="120" step="1" data-edit="param" data-key="damage" data-skill="'+si+'" data-index="'+ai+'" value="'+escape(a.damage)+'"></label>':'')+
+    (can('status')?'<label>효과<select data-edit="param" data-key="status" data-skill="'+si+'" data-index="'+ai+'">'+options(STATUS,a.status||'none')+'</select></label>':'');
   return link+'<div class="block-drop" data-drop-skill="'+si+'" data-drop-index="'+ai+'" tabindex="0" aria-label="여기에 블록 놓기"></div>'+
     '<article class="block-action" draggable="true" data-drag-kind="action" data-drag-skill="'+si+'" data-drag-index="'+ai+'">'+
       '<div class="block-action-head"><span class="block-action-grip" aria-hidden="true">⠿</span><strong>'+escape(TYPES[a.type])+'</strong>'+
@@ -272,15 +274,18 @@ function mount(){
     e.dataTransfer.setData('text/plain',JSON.stringify(payload));
   });
   root.addEventListener('dragover',e=>{
-    if(e.target.closest('.block-drop'))e.preventDefault();
+    if(e.target.closest('.block-drop,.block-skill'))e.preventDefault();
   });
   root.addEventListener('drop',e=>{
-    const slot=e.target.closest('.block-drop');if(!slot)return;
+    const slot=e.target.closest('.block-drop'),card=e.target.closest('.block-skill');
+    if(!slot&&!card)return;
     e.preventDefault();
     try{
       const raw=e.dataTransfer?.getData('text/plain')||'';
       if(raw.length>250)return;
-      const payload=JSON.parse(raw),skill=Number(slot.dataset.dropSkill),at=Number(slot.dataset.dropIndex);
+      const payload=JSON.parse(raw);
+      const skill=slot?Number(slot.dataset.dropSkill):Number(card.dataset.cardSkill);
+      const at=slot?Number(slot.dataset.dropIndex):card.querySelectorAll('.block-action').length;
       if(payload.kind==='palette')apply({kind:'add',type:payload.type,skill,at});
       if(payload.kind==='action')apply({kind:'move',fromSkill:payload.skill,fromIndex:payload.index,skill,at});
     }catch(_){announce('이동할 수 없는 블록입니다.');}

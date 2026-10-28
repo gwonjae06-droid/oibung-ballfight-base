@@ -50,6 +50,7 @@ test('block drag move semantics, damage fields and caps',()=>{
  assert.throws(()=>b.modify(d,{kind:'remove',skill:0,index:5}),/존재하지 않는/);
  d=b.modify(d,{kind:'param',skill:1,index:1,key:'damage',value:57});
  assert.equal(d.skills[1].actions[1].damage,57);
+ assert.throws(()=>b.modify(d,{kind:'param',skill:1,index:0,key:'status',value:'poison'}),/지원하지 않는/);
  d=b.modify(d,{kind:'new-skill',type:'shield'});
  d=b.modify(d,{kind:'new-skill',type:'dash'});
  assert.throws(()=>b.modify(d,{kind:'new-skill',type:'heal'}),/최대 4개/);
@@ -59,7 +60,7 @@ test('same-tick parallel skills and delayed chain have different live effects',(
  const enemy={playerNum:2,x:160,y:100,vx:0,vy:0,hp:250,maxHp:250,radius:25,invincible:0};
  function simulate(link){
   const cfg={name:'시간 비교',hp:200,skills:[{name:'상태',trigger:'auto',cooldown:3,
-   actions:[{type:'shield',duration:1},{type:'heal',damage:20,link}]}]};
+   actions:[{type:'shield',duration:1},{type:'heal',damage:20,delay:2,link}]}]};
   const id=h.SkillForge.register(cfg),p=h.CUSTOM_DEFS.at(-1).createInstance(1);
   p.x=100;p.y=100;p.hp=100;p.forgeLastHp=100;p.forgeTicks=[200];
   h.players=[p,enemy];

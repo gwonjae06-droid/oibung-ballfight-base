@@ -1402,3 +1402,8 @@ html,body {background:#090a0c;color:var(--text);font-family:"Noto Sans KR", "Mal
 .block-forge button:not(:disabled){cursor:pointer}
 .block-forge button:focus-visible{outline:2px solid #d2e8f6;outline-offset:2px}
 @media(max-width:650px){.character-studio-dialog .block-forge{padding:10px}.block-chooser{padding:9px}.block-chooser-head label{width:100%;justify-content:space-between}.block-chooser-head input{flex:1;width:auto}.block-meta,.block-params{grid-template-columns:repeat(2,minmax(0,1fr))}.block-skill{padding:9px}.block-action{padding:9px}}
+
+/* Enlarged, accessible drag targets without visual clutter. */
+.block-drop:not(.block-drop-last){min-height:17px;height:17px}
+.block-params:empty{display:none}
+.block-skill{position:relative}

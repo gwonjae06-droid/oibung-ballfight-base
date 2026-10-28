@@ -219,7 +219,7 @@ function cast(p,s,target,index){
     const a=s.actions[step];
     const requested=Math.max(0,Math.round(a.delay*60));
     const lead=transitionLead[s.actions[Math.max(0,step-1)].type]||6;
-    start=step===0?requested:a.link==='with'?Math.max(requested,start):
+    start=step===0?requested:a.link==='with'?start:
       a.link==='after'?Math.max(requested,start+Math.max(24,lead)):
       Math.max(requested,start+lead);
     p.forgeQueue.push({remaining:start,step,castId,skillIndex:index,
