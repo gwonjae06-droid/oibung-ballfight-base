@@ -84,6 +84,10 @@ function normalize(value){
           speed:number(a.speed,2,14,5),duration:number(a.duration,.2,8,1.5),
           status:STATUS[a.status]?a.status:'none',
           knockback:number(a.knockback,0,9,2),delay:number(a.delay,0,2,0)
+        })),
+        links:s.actions.slice(1,3).map((_,j)=>({
+          mode:['after','together','delay'].includes(s.links?.[j]?.mode)?s.links[j].mode:'after',
+          delay:number(s.links?.[j]?.delay,0,2,0)
         }))};
     })
   };
@@ -217,10 +221,15 @@ function cast(p,s,target,index){
   for(let step=0;step<s.actions.length;step++){
     const a=s.actions[step];
     const requested=Math.max(0,Math.round(a.delay*60));
-    start=step===0?requested:Math.max(requested,start+(transitionLead[s.actions[step-1].type]||6));
+    const connection=s.links?.[step-1]||{mode:'after',delay:0};
+    const previous=start;
+    if(step===0)start=requested;
+    else if(connection.mode==='together')start=Math.max(requested,previous);
+    else if(connection.mode==='delay')start=Math.max(requested,previous+Math.round(number(connection.delay,0,2,0)*60));
+    else start=Math.max(requested,previous+(transitionLead[s.actions[step-1].type]||6));
     p.forgeQueue.push({remaining:start,step,castId,skillIndex:index,
       a,targetNum:target?.playerNum??null,
-      waitApex:step>0&&['leap','glide','hover','uppercut'].includes(s.actions[step-1].type)&&
+      waitApex:step>0&&connection.mode!=='together'&&['leap','glide','hover','uppercut'].includes(s.actions[step-1].type)&&
         ['dive','aircombo','slash','spinslash','thrust'].includes(a.type)});
   }
   if(p.forgeQueue.length>48)p.forgeQueue.splice(0,p.forgeQueue.length-48);
@@ -482,7 +491,9 @@ function list(){
   return CUSTOM_DEFS.filter(d=>d.forgeData).map(d=>({id:d.id,profile:normalize(d.forgeData)}));
 }
 function setDraft(value){
-  draft=normalize(value);refreshForm();return draft;
+  draft=normalize(value);refreshForm();
+  if(typeof global.dispatchEvent==='function')global.dispatchEvent(new Event('forge:draftchange'));
+  return draft;
 }
 function saved(){
   try{const v=JSON.parse(localStorage.getItem(STORE)||'[]');return Array.isArray(v)?v.slice(0,6):[];}catch(_){return [];}
@@ -612,6 +623,7 @@ function initializeUI(){
   });
   $('forge-skills').addEventListener('change',e=>{
     if(['type','trigger'].includes(e.target.dataset.field))render();
+    if(typeof global.dispatchEvent==='function')global.dispatchEvent(new Event('forge:draftchange'));
   });
   $('forge-skills').addEventListener('click',e=>{
     const button=e.target.closest('button[data-command]');
@@ -620,12 +632,22 @@ function initializeUI(){
     const action=button.dataset.command;
     if(action==='disable-all'){draft.allAbilities=false;render();return;}
     if(action==='remove-skill'&&draft.skills.length>1)draft.skills.splice(i,1);
-    if(action==='add-action'&&draft.skills[i].actions.length<3)draft.skills[i].actions.push(stage());
-    if(action==='remove-action'&&draft.skills[i].actions.length>1)draft.skills[i].actions.splice(j,1);
+    if(action==='add-action'&&draft.skills[i].actions.length<3){
+      draft.skills[i].actions.push(stage());
+      (draft.skills[i].links||(draft.skills[i].links=[])).push({mode:'after',delay:0});
+    }
+    if(action==='remove-action'&&draft.skills[i].actions.length>1){
+      draft.skills[i].actions.splice(j,1);
+      draft.skills[i].links?.splice(j===0?0:j-1,1);
+    }
     render();
+    if(typeof global.dispatchEvent==='function')global.dispatchEvent(new Event('forge:draftchange'));
   });
   $('forge-add-skill').addEventListener('click',()=>{
-    sync();if(!draft.allAbilities&&draft.skills.length<4){draft.skills.push(skill());render();}
+    sync();if(!draft.allAbilities&&draft.skills.length<4){
+      draft.skills.push(skill());render();
+      if(typeof global.dispatchEvent==='function')global.dispatchEvent(new Event('forge:draftchange'));
+    }
   });
   $('bf-analyze').addEventListener('click',()=>{
     try{
