@@ -1,6 +1,8 @@
 /* Battle engine. Character-specific logic is registered in BEHAVIORS. */
 // Dynamic 2–10 fighter rounds. Logical canvas dimensions grow with the
 // roster; CSS handles the smooth visual transition in the main layout.
+// One gentle oblique impulse per fighter pair prevents perfectly vertical ping-pong.
+let openingCollisionPairs=new Set();
 function arenaDimensions(count){
   const n=Math.max(2,Math.min(10,Math.round(count)||2));
   const w=500+(n-2)*82;
@@ -63,6 +65,7 @@ function reRollMatch(forcedDef) {
     defs=Array.from({length:count},(_,i)=>shuffled[i%shuffled.length]);
   }
   players=placeFighters(defs);
+  openingCollisionPairs.clear();
   particles=[];floatingTexts=[];shockwaves=[];screenShake=0;
   globalThis.AdvancedCombat?.reset();
   isGameOver=false;isPlaying=false;roundStarted=false;roundStopped=false;roundSettled=false;selectedBetPlayerNum=null;activeBet=null;
@@ -144,6 +147,17 @@ function handleCombat(pA,pB) {
     const impulse=Math.min(5,Math.max(1.8,-approach*0.58));
     pA.vx-=nx*impulse;pA.vy-=ny*impulse;
     pB.vx+=nx*impulse;pB.vy+=ny*impulse;
+    // Kick tangentially on the first genuine contact; equal/opposite
+    // impulses keep the pair's total momentum unchanged.
+    const pair=[pA.playerNum,pB.playerNum].sort((a,b)=>a-b).join(':');
+    if(!openingCollisionPairs.has(pair)&&approach<-.2){
+      openingCollisionPairs.add(pair);
+      const glance=Math.min(1.25,Math.max(.7,-approach*.21));
+      const side=pA.playerNum<=pB.playerNum?1:-1;
+      const tx=-ny*glance*side,ty=nx*glance*side;
+      pA.vx+=tx;pA.vy+=ty;
+      pB.vx-=tx;pB.vy-=ty;
+    }
   }
   [[pA,pB],[pB,pA]]
     .filter(([a])=>!globalThis.ForgeExpansion?.blocked(a)&&BEHAVIORS[a.id]&&BEHAVIORS[a.id].onContact)
@@ -169,10 +183,21 @@ function update() {
       if(!Number.isFinite(velocity)){p.vx=p.playerNum%2?1.4:-1.4;p.vy=0.9;}
       else if(velocity>12){p.vx=p.vx/velocity*12;p.vy=p.vy/velocity*12;}
       p.x+=p.vx*m;p.y+=p.vy*m;
-      if(p.x-p.radius<0){p.x=p.radius;p.vx*=-1;}
-      if(p.x+p.radius>canvas.width){p.x=canvas.width-p.radius;p.vx*=-1;}
-      if(p.y-p.radius<0){p.y=p.radius;p.vy*=-1;}
-      if(p.y+p.radius>canvas.height){p.y=canvas.height-p.radius;p.vy*=-1;}
+      let bounceX=false,bounceY=false;
+      if(p.x-p.radius<0){p.x=p.radius;p.vx=Math.abs(p.vx);bounceX=true;}
+      if(p.x+p.radius>canvas.width){p.x=canvas.width-p.radius;p.vx=-Math.abs(p.vx);bounceX=true;}
+      if(p.y-p.radius<0){p.y=p.radius;p.vy=Math.abs(p.vy);bounceY=true;}
+      if(p.y+p.radius>canvas.height){p.y=canvas.height-p.radius;p.vy=-Math.abs(p.vy);bounceY=true;}
+      if(bounceX||bounceY){
+        // Subtle, bounded wall energy and a tiny off-axis nudge: no
+        // repeated sticking on straight corridors and no runaway speed.
+        const before=Math.hypot(p.vx,p.vy);
+        if(bounceX)p.vy+=(p.vy<0?-1:1)*.09;
+        if(bounceY)p.vx+=(p.playerNum%2===0?-1:1)*.09;
+        const after=Math.hypot(p.vx,p.vy);
+        const newSpeed=Math.min(12,Math.max(after,Math.min(12,before*1.035+.03)));
+        if(after>0){p.vx=p.vx/after*newSpeed;p.vy=p.vy/after*newSpeed;}
+      }
     }
   });
   if(globalThis.AdvancedCombat)AdvancedCombat.tick({
