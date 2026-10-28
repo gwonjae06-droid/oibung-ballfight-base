@@ -358,9 +358,8 @@ function stepMelee(o,p,api){
         angle:o.face+(kind==='cut'?Math.PI/2:0),col:color(p),
         life:kind==='stab'?16:22,stage:'impact'
       });
-      // The tiny directional impulse reinforces which way the blade struck.
-      e.vx=(e.vx||0)+Math.cos(o.face)*.45;
-      e.vy=(e.vy||0)+Math.sin(o.face)*.45;
+      // The shared confirmed-hit pipeline now provides strong, sustained
+      // directional knockback. Do not add a second ad-hoc blade shove.
     }
   }
   if(o.a.type==='aircombo'&&strikeIndex<o.impactAges.length-1){
