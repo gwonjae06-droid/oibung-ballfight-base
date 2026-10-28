@@ -23,7 +23,7 @@ manager.className='studio-roster-manager';
 manager.setAttribute('aria-label','커스텀 캐릭터 삭제 및 관리');
 manager.innerHTML='<div class="studio-roster-heading"><strong>내 커스텀 캐릭터</strong>'
   +'<span id="forge-custom-count" aria-label="저장한 캐릭터 수"></span></div>'
-  +'<p class="studio-roster-guide">삭제하려면 캐릭터 이름 옆의 삭제 버튼을 누르세요.</p>';
+  +'<span class="studio-roster-guide">목록에서 삭제 · 대진 선택 가능</span>';
 if(owned)manager.append(owned);
 if(feedback)manager.append(feedback);
 const rest=Array.from(studio.children).filter(n=>![random,name,blocks,tuning,library,appearance,basics,create,saved].includes(n));
@@ -38,9 +38,11 @@ skills.setAttribute('role','tabpanel');looks.setAttribute('role','tabpanel');
 skills.setAttribute('aria-labelledby','studio-tab-skills');
 looks.setAttribute('aria-labelledby','studio-tab-appearance');
 looks.hidden=true;
-[random,blocks,tuning,library,...rest].filter(Boolean).forEach(node=>skills.append(node));
+[blocks,random,tuning,library,...rest].filter(Boolean).forEach(node=>skills.append(node));
 [basics,appearance].filter(Boolean).forEach(node=>looks.append(node));
-studio.replaceChildren(...[name,manager,tabs,skills,looks,create,saved].filter(Boolean));
+// Keep live code blocks at the beginning of the editing column. The saved
+// fighter manager stays accessible below the primary Save action.
+studio.replaceChildren(...[name,tabs,skills,looks,create,manager,saved].filter(Boolean));
 // Refresh the count and rows after moving their original DOM container.
 global.SkillForge.refreshList?.();
 let motion=null;
@@ -71,9 +73,9 @@ tabs.addEventListener('keydown',event=>{
 
 const preview=document.createElement('section');
 preview.className='studio-motion-preview';
-preview.setAttribute('aria-label','실제 전투 데이터를 변경하지 않는 동작 미리보기');
+preview.setAttribute('aria-label','왼쪽 고정 동작 미리보기 · 실제 전투 데이터와 분리됨');
 preview.innerHTML=
-  '<div class="studio-motion-header"><strong>동작 미리보기</strong><small>연출 시연 · 실제 피해 없음</small></div>'
+  '<div class="studio-motion-header"><strong>동작 미리보기</strong><small>선택한 코드 블록의 동작을 실시간 확인 · 실제 피해 없음</small></div>'
   +'<div class="studio-motion-body"><div class="studio-motion-stage"><canvas id="studio-motion-canvas" width="480" height="180" aria-label="2D 캐릭터가 훈련 더미 앞에서 설정한 스킬을 시연하는 화면"></canvas></div>'
   +'<div class="studio-motion-info"><label for="studio-motion-select">미리볼 스킬</label><select id="studio-motion-select" aria-label="미리보기 스킬 선택"></select>'
   +'<span id="studio-motion-caption" aria-live="off">스킬을 조합하면 동작을 보여줍니다.</span><span id="studio-motion-cooldown"></span></div></div>'
