@@ -149,7 +149,7 @@ function actor(p,type,angle){
     color:p.forge?.effectColor||p.effectColor||p.borderColor||'#98683c'});
 }
 function contact(p,target){
-  if(!p||!target||target.hp<=0)return;
+  if(!p||!target)return;
   const angle=Math.atan2(target.y-p.y,target.x-p.x);
   actor(p,'punch',angle); // Legacy contact events are only called after real HP loss.
 }
