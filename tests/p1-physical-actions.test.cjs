@@ -131,12 +131,12 @@ test('meteor visibly descends with a shadow; landing damage is delayed',()=>{
   t.h.players.push(p,e);
   t.h.ForgeExpansion.execute(p,t.action('meteor',{radius:100,damage:60}),e,t.api);
   const meteor=p.forgeExtras[0];
-  assert.equal(meteor.flight,45);
+  assert.equal(meteor.flight,Math.round(270/7),'meteor uses configured speed');
   t.h.ForgeExpansion.update(p,t.api);
   t.marks.length=0;t.h.ForgeExpansion.draw(p);
   assert.ok(t.marks.some(x=>x[0]==='ellipse'),'ground shadow is rendered');
   assert.ok(t.marks.some(x=>x[0]==='lineTo'),'falling burning tail is rendered');
-  for(let i=0;i<43;i++)t.h.ForgeExpansion.update(p,t.api);
+  for(let i=0;i<meteor.flight-2;i++)t.h.ForgeExpansion.update(p,t.api);
   assert.equal(e.hp,300,'no damage while above ground');
   t.h.ForgeExpansion.update(p,t.api);
   assert.ok(e.hp<300,'damage is applied at impact time only');

@@ -7,6 +7,55 @@ const STATUS={none:'없음',ice:'둔화',fire:'화상',poison:'중독'};
 Object.assign(TYPE,global.ForgeExpansion?.TYPES||{});
 Object.assign(TYPE,global.AdvancedCombat?.TYPES||{});
 Object.assign(STATUS,global.ForgeExpansion?.STATUSES||{});
+
+/* Per-type actionable controls. The stored schema stays backwards compatible;
+ * the editor only shows inputs the actual execution path consumes. */
+const ACTION_PARAMETERS=Object.freeze({
+  wave:'pattern target damage radius count status knockback',
+  shot:'pattern target damage radius count speed status knockback',
+  beam:'pattern target damage radius count status knockback',
+  bolt:'pattern target damage radius count status knockback',
+  dash:'target damage speed duration status knockback',
+  blink:'target damage radius status knockback',
+  heal:'damage',shield:'duration',pull:'damage radius status knockback',
+  orbit:'damage radius count duration status knockback',
+  zone:'pattern target damage radius count duration status knockback',
+  homing:'target damage radius count speed status knockback',
+  pierce:'target damage radius count speed status knockback',
+  boomerang:'target damage radius count speed status knockback',
+  chain:'target damage radius count status knockback',
+  nova:'damage radius status knockback',
+  meteor:'target damage radius speed status knockback',
+  mine:'damage radius duration status knockback',
+  drain:'target damage radius status knockback',
+  swap:'target',retreat:'target radius',
+  cleanse:'',haste:'duration',regen:'damage duration',fortify:'duration',
+  flight:'target damage radius duration status knockback',
+  burrow:'target damage radius duration status knockback',
+  blackhole:'target damage radius duration status',
+  starfall:'target damage radius count speed status knockback',
+  dung:'target damage radius speed duration status knockback',
+  lifebloom:'damage radius duration',
+  resurrect:'',timestop:'radius duration',rewind:'duration',timeburst:'duration',
+  leap:'duration',hover:'duration',glide:'duration',
+  dive:'damage radius speed status knockback',
+  uppercut:'target damage radius status knockback',
+  slash:'target damage radius status knockback',
+  spinslash:'target damage radius status knockback',
+  thrust:'target damage radius status knockback',
+  aircombo:'target damage radius status knockback',
+  arcshot:'target damage radius count speed status knockback',
+  splitshot:'target damage radius count speed status knockback',
+  wall:'target radius damage duration',
+  portal:'target radius duration',
+  summon:'target damage radius speed duration status knockback',
+  turret:'target damage radius speed duration status knockback',
+  trap:'damage radius duration status knockback',
+  grow:'count duration',shrink:'count duration',
+  burrowdash:'target damage radius duration status knockback',
+  erupt:'damage radius status knockback'
+});
+const supportedParameter=(type,key)=>key==='delay'||(' '+(ACTION_PARAMETERS[type]||'')+' ').includes(' '+key+' ');
 const number=(x,a,b,d=a)=>Number.isFinite(Number(x))?Math.max(a,Math.min(b,Number(x))):d;
 const clean=(v,n)=>String(v==null?'':v).replace(/[<>]/g,'').slice(0,n).trim();
 const color=(c)=>/^#[0-9a-f]{6}$/i.test(c)?c:'#a78bfa';
@@ -193,6 +242,9 @@ function tickQueue(p,target){
   }
 }
 function execute(p,a,target) {
+  // Keep target-selector semantics consistent across all three engines.
+  const selected=global.AbilityAtlas?.choose?.(p,enemies(p),a.target)||target;
+  target=selected;
   global.SkillVisuals?.cast(p,a,target); // Actual action execution, not cooldown booking.
   // In-world actions must dispatch through the same combat implementation
   // used by physics and visuals; they are not merely text menu entries.
@@ -438,22 +490,23 @@ function render(){
     const si='data-skill="'+i+'"';
     const parts=s.actions.map((a,j)=>{
       const aj=si+' data-stage="'+j+'"';
-      const box=(title,html)=>'<label>'+title+html+'</label>';
+      const box=(title,html,key)=>key&&!supportedParameter(a.type,key)?'':'<label>'+title+html+'</label>';
       return '<section class="forge-action">'
       +'<div class="forge-top"><span>ACTION '+(j+1)+'</span><button type="button" class="forge-delete" data-command="remove-action" '+aj+'>제거</button></div>'
       +'<div class="forge-grid">'
       +box('동작',choice('type',TYPE,a.type,aj))
-      +box('공격 배치',choice('pattern',global.AbilityAtlas?.PATTERNS||{direct:'직선 집중'},a.pattern||'direct',aj))
-      +box('대상 우선순위',choice('target',global.AbilityAtlas?.TARGETS||{nearest:'가장 가까운 적'},a.target||'nearest',aj))
-      +box('위력',field('damage',a.damage,'type="number" min="0" max="120" step="1" '+aj))
-      +box('범위',field('radius',a.radius,'type="number" min="30" max="300" step="5" '+aj))
-      +box('개수',field('count',a.count,'type="number" min="1" max="8" step="1" '+aj))
-      +box('속도',field('speed',a.speed,'type="number" min="2" max="14" step=".5" '+aj))
-      +box('지속 (초)',field('duration',a.duration,'type="number" min=".2" max="8" step=".2" '+aj))
-      +box('상태이상',choice('status',STATUS,a.status,aj))
-      +box('넉백',field('knockback',a.knockback,'type="number" min="0" max="9" step=".5" '+aj))
-      +box('발동 지연',field('delay',a.delay,'type="number" min="0" max="2" step=".1" '+aj))
+      +box('공격 배치',choice('pattern',global.AbilityAtlas?.PATTERNS||{direct:'직선 집중'},a.pattern||'direct',aj),'pattern')
+      +box('대상 우선순위',choice('target',global.AbilityAtlas?.TARGETS||{nearest:'가장 가까운 적'},a.target||'nearest',aj),'target')
+      +box('위력',field('damage',a.damage,'type="number" min="0" max="120" step="1" '+aj),'damage')
+      +box('범위',field('radius',a.radius,'type="number" min="30" max="300" step="5" '+aj),'radius')
+      +box('개수',field('count',a.count,'type="number" min="1" max="8" step="1" '+aj),'count')
+      +box('속도',field('speed',a.speed,'type="number" min="2" max="14" step=".5" '+aj),'speed')
+      +box('지속 (초)',field('duration',a.duration,'type="number" min=".2" max="8" step=".2" '+aj),'duration')
+      +box('상태이상',choice('status',STATUS,a.status,aj),'status')
+      +box('넉백',field('knockback',a.knockback,'type="number" min="0" max="9" step=".5" '+aj),'knockback')
+      +box('발동 지연',field('delay',a.delay,'type="number" min="0" max="2" step=".1" '+aj),'delay')
       +'</div>'
+      +'<p class="forge-parameter-note">동작에 실제 적용되는 설정만 표시됩니다 · 발동 지연은 모든 동작에 적용</p>'
       +(global.AdvancedCombat?.DESCRIPTIONS?.[a.type]
         ?'<p class="forge-physics-note">'+escape(global.AdvancedCombat.DESCRIPTIONS[a.type])+'</p>':'')
       +'</section>';
@@ -588,6 +641,6 @@ function initialize(){
   const oldDraw=drawCharacter;
   drawCharacter=function(p){if(p.forge)drawFighter(p);oldDraw(p);};
 }
-global.SkillForge={THEMES,randomProfile,normalize,register,remove,list,setDraft,refreshList:()=>refreshList(),persist,TYPE,TRIGGER,STATUS,cooldownFrames,advanceTimers:tickSkills,advanceWorld,hit,allProfile,allSkillset};
+global.SkillForge={THEMES,randomProfile,normalize,register,remove,list,setDraft,refreshList:()=>refreshList(),persist,TYPE,TRIGGER,STATUS,ACTION_PARAMETERS,supportedParameter,cooldownFrames,advanceTimers:tickSkills,advanceWorld,hit,allProfile,allSkillset};
 if(typeof document!=='undefined'&&document.querySelector('.bf-tools'))initialize();
 })(window);

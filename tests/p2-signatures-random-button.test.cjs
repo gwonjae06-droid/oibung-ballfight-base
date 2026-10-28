@@ -91,7 +91,9 @@ test('primary random button creates and deploys a fully random fighter directly'
   assert.ok(natural.includes("SkillForge.randomProfile('any')"));
   assert.ok(natural.includes('SkillForge.setDraft(profile)'));
   assert.ok(natural.includes('saveBtn.click()'));
-  assert.ok(natural.includes('actions.replaceChildren(saveBtn,randomNow)'));
+  assert.ok(natural.includes('actions.replaceChildren(saveBtn)'));
+  assert.ok(natural.includes('body.insertBefore(randomEntry,nameLabel)'));
+  assert.ok(natural.includes("randomEntry.className='forge-random-entry'"));
   assert.ok(natural.includes('roundStarted&&!isGameOver'));
   assert.ok(natural.includes('SkillForge.list().length>=6'));
   assert.ok(forge.includes('function randomProfile('));

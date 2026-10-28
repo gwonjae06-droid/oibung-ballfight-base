@@ -195,14 +195,18 @@ function execute(p,a,target,api){
       a,shape,z:groundHeight(p),hits:0,impactAges:a.type==='aircombo'?[9,22,35]:[10]});
   }else if(a.type==='arcshot'||a.type==='splitshot'){
     if(!enemy)return true;
-    for(let i=0;i<cap(Math.round(a.count||1),1,8);i++){
-      const offset=(i-((a.count||1)-1)/2)*14;
+    // Splitshot count controls *shards*, not an accidental count² volley.
+    const volleys=a.type==='splitshot'?1:cap(Math.round(a.count||1),1,8);
+    for(let i=0;i<volleys;i++){
+      const offset=(i-(volleys-1)/2)*14;
       const destX=cap(enemy.x+Math.cos(face+Math.PI/2)*offset,18,canvas.width-18);
       const destY=cap(enemy.y+Math.sin(face+Math.PI/2)*offset,18,canvas.height-18);
+      const distance=Math.hypot(destX-p.x,destY-p.y);
+      const travel=cap(Math.ceil(distance/(Math.max(2,a.speed||6)*.5)),24,72);
       pushShot({kind:a.type,owner:p.playerNum,x:p.x,y:p.y,startX:p.x,startY:p.y,
-        tx:destX,ty:destY,age:0,travel:a.type==='arcshot'?38:26,
-        a,z:groundHeight(p),split:false,life:80});
-      mark('target',destX,destY,Math.min(radius*.35,58),col,a.type==='arcshot'?42:25);
+        tx:destX,ty:destY,age:0,travel,
+        a,z:groundHeight(p),split:false,life:travel+8});
+      mark('target',destX,destY,Math.min(radius*.35,58),col,travel+5);
     }
   }else if(a.type==='wall'){
     const x=enemy?cap((p.x+enemy.x)/2,35,canvas.width-35):cap(p.x+Math.cos(face)*70,35,canvas.width-35);
@@ -435,7 +439,7 @@ function updateProjectiles(api){
         pushShot({kind:'fragment',owner:b.owner,x:b.x,y:b.y,startX:b.x,startY:b.y,
           tx:cap(b.x+Math.cos(theta)*Math.min(95,b.a.radius),15,canvas.width-15),
           ty:cap(b.y+Math.sin(theta)*Math.min(95,b.a.radius),15,canvas.height-15),
-          age:0,travel:18,a:b.a,life:28,height:0});
+          age:0,travel:cap(Math.ceil(95/Math.max(2,b.a.speed||6)),10,40),a:b.a,life:50,height:0});
       }
       mark('cleave',b.x,b.y,34,color(p),18,b.age*.24);
       mark('burst',b.x,b.y,33,color(p),17);

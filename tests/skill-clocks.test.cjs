@@ -86,7 +86,8 @@ test('renderer no longer intentionally freezes the physics clock on strong hits'
 test('studio merges duplicate primary preview and saved/share library controls',()=>{
   const natural=fs.readFileSync(path.join(__dirname,'../js/features/natural-forge.js'),'utf8');
   const shared=fs.readFileSync(path.join(__dirname,'../js/features/community-forge.js'),'utf8');
-  assert.ok(natural.includes("actions.replaceChildren(saveBtn,randomNow)"));
+  assert.ok(natural.includes("actions.replaceChildren(saveBtn)"));
+  assert.ok(natural.includes("body.insertBefore(randomEntry,nameLabel)"));
   assert.ok(natural.includes("advanced.append(inspect,document.getElementById('bf-result'))"));
   assert.ok(natural.includes("library.append(libraryTitle,catalogDetail,guide)"));
   assert.ok(natural.includes("saved.append(savedTitle,document.getElementById('bf-custom-list'),body.querySelector('.forge-json'))"));

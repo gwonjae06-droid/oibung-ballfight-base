@@ -41,9 +41,9 @@ const ADVANCED_LEX={
   glide:/활공|글라이딩|공중\s*미끄러|날아\s*다니/gi,
   dive:/급강하|내려찍|공중\s*강습|급히\s*내려|내리꽂/gi,
   uppercut:/어퍼컷|올려치|띄워\s*올리|공중으로\s*띄우/gi,
-  slash:/검격|베기|베어|베다|칼로\s*치|참격/gi,
+  slash:/검격|베기|베어|베다|베고|칼로\s*치|참격/gi,
   spinslash:/회전\s*베기|회전\s*검격|휠윈드|칼을\s*휘두르/gi,
-  thrust:/찌르기|찌른|관통\s*찌르|검으로\s*꿰뚫/gi,
+  thrust:/찌르기|찌른|찌르고|찌르며|관통\s*찌르|검으로\s*꿰뚫/gi,
   aircombo:/공중\s*연속\s*공격|공중\s*콤보|공중에서\s*연타/gi,
   arcshot:/곡사탄|포물선\s*(?:탄|발사|공격)|곡사\s*공격|곡선\s*투사체/gi,
   splitshot:/분열탄|분열\s*탄환|갈라지는\s*탄|쪼개지는\s*탄/gi,
@@ -182,6 +182,63 @@ function isAllIntent(text){
     /(?:스킬|능력|기술|마법|동작)\s*(?:전부|전체|모두|다)\s*(?:가진|사용|쓸\s*수|보유|습득|익힌)/i.test(input) ||
     /(?:모든\s*능력|모든\s*스킬|전능|만능\s*캐릭터)/i.test(input);
 }
+
+function triggerMeaning(s){
+  if(/(?:체력|HP)\s*\d{1,2}\s*%|체력이?\s*(?:낮|부족|떨어)|죽기\s*직전/.test(s))return 'lowhp';
+  if(/피격|맞(?:을\s*때|으면)|공격을\s*받|공격받/.test(s))return 'damaged';
+  if(/접촉|부딪|충돌|닿으면/.test(s))return 'contact';
+  return 'auto';
+}
+// Korean connective grammar: joining actions is not always adding skills.
+const defensiveTypes=new Set(['heal','shield','cleanse','regen','fortify','lifebloom','resurrect','grow','shrink']);
+const connectiveVerb=/(발사하|발사|쏘|던지|베|찌르|휘두르|올려치|소환하|소환|펼치|설치하|설치|회복하|치유하|만들|생성하|돌진하|이동하|뛰어오르|막|쓰|날리|뿌리|걸|입히|시키|점프하|날아오르|떠오르|사용하|폭발시키|공격하)고\s*,?\s*(?=\S)/g;
+function clauseUnits(sentence){
+  const divided=sentence.replace(connectiveVerb,(_,verb)=>verb+'고 ↝ ')
+    .replace(/(?:,\s*)?(그리고|또한|추가로)\s+/g,(_,connector)=>' ↝'+connector+' ');
+  return divided.split(/\s*↝/).map((t,i)=>{
+    t=t.trim();const m=i&&t.match(/^(그리고|또한|추가로)\s*/);
+    return {text:m?t.slice(m[0].length).trim():t,link:m?m[1]:(i?'고':'start')};
+  }).filter(x=>x.text);
+}
+function groupConnection(left,right,link){
+  const a=matchActions(left),b=matchActions(right);
+  if(!a.length||!b.length)return 'modifier'; // extra status, not an independent attack
+  if(/(?:그\s*후|그\s*다음|이어서|연달아|연계해서|그대로|한\s*번에|곧바로|바로\s*이어)/.test(right))return 'combo';
+  if(/(?:별도(?:의|로)?|독립(?:된|적으로)?|다른\s*(?:능력|스킬)|또\s*다른|새로운\s*스킬)/.test(right))return 'separate';
+  const ltrigger=triggerMeaning(left),rtrigger=triggerMeaning(right);
+  if(ltrigger!==rtrigger&&rtrigger!=='auto')return 'separate';
+  const aDefense=a.some(x=>defensiveTypes.has(x.type));
+  const bDefense=b.some(x=>defensiveTypes.has(x.type));
+  if(aDefense!==bDefense)return 'separate';
+  if(link==='고')return 'combo';
+  return 'ambiguous'; // "그리고" can mean a combo or a second skill.
+}
+function semanticSentences(text,choices={},questions=[]){
+  const result=[];
+  for(const original of String(text).split(/\.(?!\d)|[\n!?。]+/).map(x=>x.trim()).filter(Boolean)){
+    const units=clauseUnits(original);
+    if(!units.length)continue;
+    let phrase=units[0].text;
+    for(const unit of units.slice(1)){
+      const meaning=groupConnection(phrase,unit.text,unit.link);
+      if(meaning==='modifier'){phrase+=' '+unit.text;continue;}
+      const key='연결 방식: '+phrase+' / '+unit.text;
+      let relation=meaning;
+      if(meaning==='ambiguous'){
+        if(choices[key]==='combo')relation='combo';
+        else if(choices[key]==='separate')relation='separate';
+        else{
+          questions.push({kind:'grouping',text:key,options:['combo','separate']});
+          relation='combo';
+        }
+      }
+      if(relation==='separate'){result.push(phrase);phrase=unit.text;}
+      else phrase+=' → '+unit.text;
+    }
+    result.push(phrase);
+  }
+  return result;
+}
 function parse(text,name='',choices={}){
   const original=String(text||'').trim();
   if(original.length<4)throw Error('능력을 구체적으로 적어 주세요.');
@@ -191,8 +248,8 @@ function parse(text,name='',choices={}){
       unmapped:[],questions:[],aliases:['전체 능력 모드: 등록된 모든 스킬을 독립적으로 사용'],
       mode:'grammar',interpretation:'전체 '+SkillForge.allSkillset().length+'종류의 스킬을 모두 보유합니다. 각 스킬은 개별 쿨타임을 갖습니다.'};
   }
-  const sentences=original.split(/\.(?!\d)|[\n!?。]+|(?:그리고|또한|추가로)(?=\s*\S)/).map(s=>s.trim()).filter(Boolean);
   const skills=[],unmapped=[],aliases=new Set(),questions=[];
+  const sentences=semanticSentences(original,choices,questions);
   for(const [re,msg] of CONVENTIONS)if(test(re,original))aliases.add(msg);
   for(const sentence of sentences.slice(0,14)){
     if(skills.length>=4){unmapped.push('스킬은 최대 4개입니다: '+sentence);break;}
@@ -369,13 +426,19 @@ function install(){
   function offer(out,text){
     choiceBox.replaceChildren();
     if(!out.questions?.length)return false;
-    status.textContent='이 표현은 어떤 효과인가요? 선택한 효과로 문장을 다시 분석합니다.';
+    status.textContent='문맥상 연결 방식이 모호한 부분이 있습니다. 스킬 구분 또는 효과를 선택해 주세요.';
     for(const q of out.questions){
       const group=document.createElement('section'),label=document.createElement('p');label.textContent=q.text;group.append(label);
       const select=document.createElement('select');select.setAttribute('aria-label',q.text+' 효과 선택');
       const initial=document.createElement('option');initial.value='';initial.textContent='효과를 선택하세요';select.append(initial);
-      const keys=[...new Set([...q.options,...Object.keys(SkillForge.TYPE)])];
-      for(const key of [...keys,'skip']){const option=document.createElement('option');option.value=key;option.textContent=key==='skip'?'이 표현은 구현하지 않음':SkillForge.TYPE[key];select.append(option);}
+      const keys=q.kind==='grouping'?['combo','separate']:[...new Set([...q.options,...Object.keys(SkillForge.TYPE)])];
+      for(const key of (q.kind==='grouping'?keys:[...keys,'skip'])){
+        const option=document.createElement('option');option.value=key;
+        option.textContent=q.kind==='grouping'
+          ?(key==='combo'?'한 스킬의 연계 동작':'서로 다른 독립 스킬')
+          :key==='skip'?'이 표현은 구현하지 않음':SkillForge.TYPE[key];
+        select.append(option);
+      }
       select.addEventListener('change',()=>{choices[q.text]=select.value;});group.append(select);choiceBox.append(group);
     }
     const retry=document.createElement('button');retry.type='button';retry.textContent='선택한 효과로 다시 만들기';
@@ -428,7 +491,14 @@ function install(){
   inspect.classList.add('forge-inspect');
   const nameLabel=document.getElementById('bf-name').parentElement,basicGrid=nameLabel.parentElement;
   const heading=document.createElement('div');heading.className='forge-heading';heading.innerHTML='<span class="eyebrow">CHARACTER STUDIO</span><h3>나만의 파이터</h3><p>문장으로 설계하거나, 랜덤으로 발견하세요.</p>';
-  body.prepend(heading,nameLabel);nameLabel.classList.add('forge-name');body.insertBefore(box,nameLabel.nextSibling);
+  body.prepend(heading,nameLabel);
+  const randomEntry=document.createElement('section');randomEntry.className='forge-random-entry';
+  const randomHead=document.createElement('div');randomHead.className='forge-random-entry-copy';
+  const randomTitle=document.createElement('strong');randomTitle.textContent='랜덤 캐릭터 바로 생성';
+  const randomHelp=document.createElement('small');randomHelp.textContent='버튼 한 번으로 능력·수치·외형을 무작위 생성하고 출전합니다.';
+  randomHead.append(randomTitle,randomHelp);randomEntry.append(randomHead,randomNow);
+  body.insertBefore(randomEntry,nameLabel);
+  nameLabel.classList.add('forge-name');body.insertBefore(box,nameLabel.nextSibling);
   const basics=document.createElement('details'),basicTitle=document.createElement('summary');basicTitle.textContent='외형 · 체력 · 이동 속도';basics.append(basicTitle,basicGrid,document.getElementById('bf-text').parentElement);
   body.insertBefore(basics,advanced);
   const actions=document.getElementById('bf-create').parentElement;
@@ -460,10 +530,10 @@ function install(){
         profile.skills.map(s=>s.name+' ('+s.actions.map(a=>SkillForge.TYPE[a.type]).join(' → ')+')').join('\n')
       :result||'생성 결과를 확인해 주세요.';
   });
-  actions.replaceChildren(saveBtn,randomNow);
-  const randomDetail=document.createElement('details'),randomTitle=document.createElement('summary');
-  randomTitle.textContent='랜덤 캐릭터 만들기';randomDetail.className='forge-optional';
-  randomDetail.append(randomTitle,randomBox);
+  actions.replaceChildren(saveBtn);
+  const randomDetail=document.createElement('details'),randomSummary=document.createElement('summary');
+  randomSummary.textContent='랜덤 테마 선택 · 초안 미리보기';randomDetail.className='forge-optional';
+  randomDetail.append(randomSummary,randomBox);
   body.insertBefore(randomDetail,actions.nextSibling);
   advanced.append(inspect,document.getElementById('bf-result'));
   advanced.classList.add('forge-tuning');
@@ -482,6 +552,6 @@ function install(){
   body.classList.add('forge-studio');
 }
 
-global.NaturalForge={parse,analyze,suggestions,isAllIntent};
+global.NaturalForge={parse,analyze,suggestions,isAllIntent,semanticSentences,groupConnection};
 if(typeof document!=='undefined'&&document.getElementById('forge-skills'))install();
 })(window);

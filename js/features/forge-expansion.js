@@ -92,7 +92,7 @@ function execute(p,a,target,api){
       const angle=i*2.399963,ring=i===0?0:(18+Math.sqrt(i/amount)*a.radius*.55);
       const x=Math.max(20,Math.min(canvas.width-20,near.x+Math.cos(angle)*ring));
       const y=Math.max(20,Math.min(canvas.height-20,near.y+Math.sin(angle)*ring));
-      const delay=i*7,flight=25+(i%3)*3;
+      const delay=i*7,flight=Math.max(18,Math.min(65,Math.round(150/Math.max(2,a.speed||6))))+(i%3)*3;
       p.forgeExtras.push({kind:'starfall',x,y,age:0,life:delay+flight,
         delay,flight,total:delay+flight,hit:false,a});
     }
@@ -110,7 +110,7 @@ function execute(p,a,target,api){
       global.BattleFX?.beam?.(origin.x,origin.y,next.x,next.y,p.forge.color);api.hit(p,next,a,Math.pow(.8,i));visited.add(next);origin=next;
     }
   }else if(a.type==='meteor'||a.type==='mine'){
-    const travel=45;
+    const travel=Math.max(20,Math.min(75,Math.round(270/Math.max(2,a.speed||6))));
     p.forgeExtras.push({kind:a.type,
       x:a.type==='mine'?p.x:near.x,y:a.type==='mine'?p.y:near.y,
       life:a.type==='mine'?Math.round(a.duration*60):travel,
@@ -190,7 +190,7 @@ function draw(p){
   for(const b of p.forgeExtras||[]){
     ctx.save();const area=['meteor','mine','blackhole','lifebloom'].includes(b.kind);
     if(b.kind==='meteor'){
-      // The same 45-tick descent timeline drives both the animation and
+      // The same speed-derived descent timeline drives both the animation and
       // the impact/damage in update(): no ground explosion until landing.
       const t=Math.max(0,Math.min(1,b.age/(b.flight||45)));
       const fall=1-(1-t)*(1-t);

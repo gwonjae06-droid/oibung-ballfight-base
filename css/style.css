@@ -883,3 +883,31 @@ html,body {background:#090a0c;color:var(--text);font-family:"Noto Sans KR", "Mal
 @media(prefers-reduced-motion:reduce){
   .forge-studio .forge-primary-actions #forge-random-create{transition:none}
 }
+
+/* P3: random generation is a visible first-class studio action, not buried in Details. */
+.forge-studio .forge-random-entry{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  border:1px solid #7a8491;border-radius:11px;
+  background:rgba(85,100,117,.19);padding:12px 13px;margin:2px 0;
+}
+.forge-studio .forge-random-entry-copy{min-width:0;display:grid;gap:4px}
+.forge-studio .forge-random-entry-copy strong{color:#f2f5f7;font-size:13px}
+.forge-studio .forge-random-entry-copy small{color:#bcc5cf;font-size:11px;line-height:1.5}
+.forge-studio .forge-random-entry #forge-random-create{
+  display:inline-flex;align-items:center;justify-content:center;
+  flex-shrink:0;min-height:47px;min-width:180px;padding:10px 15px;
+  color:#fff;background:#526578;border:1px solid #a5b5c6;border-radius:8px;
+  font:750 13px/1.35 "Noto Sans KR",system-ui,sans-serif;cursor:pointer;
+}
+.forge-studio .forge-random-entry #forge-random-create:hover{background:#667b92}
+.forge-studio .forge-random-entry #forge-random-create:focus-visible{
+  outline:2px solid #fff;outline-offset:3px
+}
+.forge-studio .forge-parameter-note{font-size:11px;line-height:1.5;color:#aebbc8;margin:8px 0 0}
+@media(max-width:560px){
+  .forge-studio .forge-random-entry{flex-wrap:wrap;gap:9px}
+  .forge-studio .forge-random-entry #forge-random-create{min-width:0;width:100%;min-height:46px}
+}
+@media(prefers-reduced-motion:reduce){
+  .forge-studio .forge-random-entry #forge-random-create{transition:none}
+}
