@@ -68,6 +68,7 @@ function reRollMatch(forcedDef) {
   players=placeFighters(defs);
   openingCollisionPairs.clear();
   particles=[];floatingTexts=[];shockwaves=[];screenShake=0;
+  globalThis.ImpactPhysics?.reset?.();
   globalThis.AdvancedCombat?.reset();
   isGameOver=false;isPlaying=false;roundStarted=false;roundStopped=false;roundSettled=false;selectedBetPlayerNum=null;activeBet=null;
   syncStopButton();
@@ -176,7 +177,9 @@ function update() {
     if(p.slowTimer>0){p.slowTimer--;if(p.slowTimer<=0)p.slowMultiplier=1;}
   });
   if(screenShake>0.5)screenShake*=0.88;
+  globalThis.ImpactPhysics?.tick?.();
   players.forEach(updateCharacter);
+  players.forEach(p=>globalThis.ImpactPhysics?.integrate?.(p));
   players.forEach(p=>{
     if(p.hp>0&&(!p.jumpState||p.jumpState==='ground')){
       const m=(p.slowTimer>0?p.slowMultiplier:1)*(globalThis.ForgeExpansion?.movement(p)??1);
@@ -214,6 +217,7 @@ function update() {
         defender.hp=Math.max(0,defender.hp-value);defender.invincible=12;
         addFloatingText('-'+value,defender.x,defender.y-28,attacker.forge?.color||'#4b5563',17);
         createHitParticles(defender.x,defender.y,attacker.forge?.color||'#58687a',12);
+        globalThis.ImpactPhysics?.hit?.(attacker,defender,value,{knockback:action.knockback||0});
       }
       if(action.status==='ice'){defender.slowTimer=Math.max(defender.slowTimer||0,90);defender.slowMultiplier=.5;}
       if(action.status==='fire'||action.status==='poison')defender.bfDot=Math.max(defender.bfDot||0,Math.round((action.duration||2)*60));
