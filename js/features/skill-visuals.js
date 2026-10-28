@@ -310,7 +310,8 @@ function add(kind,p,type,action,target,location){
     family==='cosmos'?50:kind==='cast'?27:30;
   const entry={type,family,kind,x,y,angle,age:0,life:duration,radius:clamp(action?.radius||80,20,300),
     color:global.arenaEffectColor?.(p.forge?.effectColor||p.effectColor||catalog[type][1])||p.forge?.effectColor||p.effectColor||catalog[type][1],
-    source:kind==='cast'&&!targeted?p:null,scale:clamp((action?.radius||130)/130,.78,1.2),
+    source:kind==='cast'&&!targeted&&!['wave','explosion'].includes(family)?p:null,
+    scale:clamp((action?.radius||130)/130,.78,1.2),
     lastX:p.x,lastY:p.y};
   if(effects.length>=MAX)effects.shift();
   effects.push(entry);return true;
