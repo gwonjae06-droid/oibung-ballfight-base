@@ -125,6 +125,7 @@ function applyToFighter(p){
     p.effectColor=item.color;
   }
   p.cosmeticTrail=[];
+  p.cosmeticShotTrails=[];
   p.cosmeticEntrance=0;
 }
 function borderColor(p){return p?.forge&&p.cosmetic?.border?byId(p.cosmetic.border)?.color:null;}
@@ -148,6 +149,17 @@ function tick(list){
       p.cosmeticTrail||=[];
       p.cosmeticTrail.unshift({x:p.x,y:p.y});
       if(p.cosmeticTrail.length>12)p.cosmeticTrail.pop();
+      // Real projectile positions, not invented trajectories: forge bullets and
+      // moving expansion missiles leave independent short-lived streaks.
+      p.cosmeticShotTrails||=[];
+      for(const point of p.cosmeticShotTrails)point.age++;
+      p.cosmeticShotTrails=p.cosmeticShotTrails.filter(point=>point.age<13);
+      const active=[...(p.forgeShots||[]),
+        ...(p.forgeExtras||[]).filter(b=>['dung','homing','pierce','boomerang'].includes(b.kind))];
+      for(const b of active.slice(0,30))
+        if(Number.isFinite(b.x)&&Number.isFinite(b.y))
+          p.cosmeticShotTrails.push({x:b.x,y:b.y,age:0});
+      if(p.cosmeticShotTrails.length>130)p.cosmeticShotTrails.splice(0,p.cosmeticShotTrails.length-130);
     }
   }
   for(let i=effects.length-1;i>=0;i--){effects[i].age++;if(effects[i].age>=effects[i].life)effects.splice(i,1);}
@@ -173,6 +185,11 @@ function drawUnder(ctx,list){
           ctx.beginPath();ctx.arc(a.x,a.y,Math.max(1,5-i*.32),0,Math.PI*2);ctx.fill();
         }
       });
+    }
+    for(const point of p.cosmeticShotTrails||[]){
+      ctx.globalAlpha=(1-point.age/13)*.55;
+      ctx.fillStyle=c;ctx.beginPath();
+      ctx.arc(point.x,point.y,Math.max(1,4-point.age*.22),0,Math.PI*2);ctx.fill();
     }
     ctx.restore();
   }
