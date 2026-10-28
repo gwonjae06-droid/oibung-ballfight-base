@@ -302,9 +302,10 @@ function stepHeight(p,api){
       p.jumpMotion={phase:'landing',age:0,kind:p.jumpMotion?.kind||'knockup'};
       mark('ring',p.x,p.y,75,color(p),24);
       mark('dust',p.x,p.y,63,color(p),22);
-      add('burst',p.x,p.y,{r:42,col:color(p),life:18,stage:'impact'});
-      sfx('heavy',.7);
+      // Landings without an authored slam are movement, not attack impacts.
       if(p.slam){
+        add('burst',p.x,p.y,{r:42,col:color(p),life:18,stage:'impact'});
+        sfx('heavy',.7);
         const action=p.slam.a;
         for(const e of enemies(p))if(Math.hypot(e.x-p.x,e.y-p.y)<action.radius*.65+e.radius)
           strike(p,e,action,api,0);
