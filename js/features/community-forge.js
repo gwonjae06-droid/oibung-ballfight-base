@@ -111,7 +111,7 @@ function install(){
         const card=document.createElement('article');card.className='community-item';
         const head=document.createElement('div');head.className='community-item-head';
         const name=document.createElement('strong');name.textContent=cfg.name;
-        const author=document.createElement('small');author.textContent='by '+String(issue.user?.login||'GitHub 사용자');
+        const author=document.createElement('small');author.textContent='by '+issue.author;
         head.append(name,author);
         const info=document.createElement('p');info.textContent=cfg.skills.length+'개 스킬 · '+cfg.hp+' HP · 이동속도 '+cfg.speed;
         const tools=document.createElement('div');tools.className='bf-btn-row';
