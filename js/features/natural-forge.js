@@ -501,8 +501,7 @@ function install(){
   const randomHead=document.createElement('div');randomHead.className='forge-random-entry-copy';
   const randomTitle=document.createElement('strong');randomTitle.textContent='랜덤 캐릭터 바로 생성';
   const randomHelp=document.createElement('small');randomHelp.textContent='버튼 한 번으로 능력·수치·외형을 무작위 생성하고 출전합니다.';
-  randomHead.append(randomTitle,randomHelp);randomEntry.append(randomHead,randomNow);
-  body.insertBefore(randomEntry,nameLabel);
+  randomHead.append(randomTitle,randomHelp);
   nameLabel.classList.add('forge-name');body.insertBefore(box,nameLabel.nextSibling);
   const basics=document.createElement('details'),basicTitle=document.createElement('summary');basicTitle.textContent='외형 · 체력 · 이동 속도';basics.append(basicTitle,basicGrid,document.getElementById('bf-text').parentElement);
   body.insertBefore(basics,advanced);
@@ -536,6 +535,10 @@ function install(){
       :result||'생성 결과를 확인해 주세요.';
   });
   actions.replaceChildren(saveBtn);
+  // Do not reference the random button until it exists; otherwise the entire
+  // studio installer aborts before its controls become usable.
+  randomEntry.append(randomHead,randomNow);
+  body.insertBefore(randomEntry,nameLabel);
   const randomDetail=document.createElement('details'),randomSummary=document.createElement('summary');
   randomSummary.textContent='랜덤 테마 선택 · 초안 미리보기';randomDetail.className='forge-optional';
   randomDetail.append(randomSummary,randomBox);
