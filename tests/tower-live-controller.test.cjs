@@ -127,3 +127,15 @@ test('forfeit ends run without giving floor-clear reward',()=>{
   assert.equal(x.tower.records()[0].best,0);
   assert.equal(x.el('tower-abandon').hidden,true);
 });
+
+test('rejected engine start leaves Tower retryable and explains the waiting screen',()=>{
+  const x=harness();
+  x.world.togglePlay=()=>false;
+  assert.equal(x.tower.begin(),false);
+  assert.equal(x.tower.active,false);
+  assert.equal(x.tower.stage,'ready');
+  assert.equal(x.el('tower-start').hidden,false);
+  assert.match(x.el('tower-feedback').textContent,/전투 엔진이 시작되지 않았습니다/);
+  assert.equal(x.world.isPlaying,false);
+  assert.equal(x.tower.begin(),false,'retry must remain available');
+});
