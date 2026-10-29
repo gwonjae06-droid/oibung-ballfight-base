@@ -88,7 +88,7 @@ test('tower clears a floor and immediately launches the next fight without rewar
   assert.equal(x.tower.state.cleared,1);
   assert.equal(x.tower.state.level,2,'victory automatically enters floor two');
   assert.equal(x.world.coins,1000,'there is no floor-clear gold');
-  assert.equal(x.el('tower-rewards'),null,'reward UI is not mounted');
+  assert.equal(x.el('tower-rewards'),undefined,'reward UI is not mounted');
   assert.equal(x.tower.stage,'fighting');
   assert.equal(x.world.CUSTOM_DEFS.length,0);
   conclude(x,x.world.players[1]);
