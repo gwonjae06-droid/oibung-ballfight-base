@@ -211,6 +211,10 @@ function install(){
   }
   function show(){
     refreshHero();
+    // Only the live manual battle uses the distraction-free layout. Clearing,
+    // preparing, losing and free matches show the full Tower controls again.
+    screen.dataset.manualFocus=String(active&&mode==='manual'&&stage==='fighting');
+    screen.dataset.towerPhase=stage;
     const f=floor(level),best=read(global.localStorage).records[key(selectedDef())]?.best||0;
     el('tower-floor').textContent=level+' / '+FINISH+'F';
     el('tower-rule').textContent=f.difficulty+' · '+f.description;
