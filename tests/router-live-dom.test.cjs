@@ -66,7 +66,7 @@ test('actual router constructs all six routes and preserves original game widget
   assert.equal(r.active,'lobby');
   assert.equal(x.main.dataset.screenRouter,'ready');
   assert.equal(x.arena.parent.id,'tower-arena-slot');
-  assert.equal(x.tools.parent.id,'tower-free-slot');
+  assert.equal(x.tools.parent.id,'pve-free-slot');
   assert.equal(x.ranking.parent.id,'ranking-power');
   assert.equal(x.gallery.parent.id,'ranking-shared');
   assert.equal(x.market.parent.id,'stock-screen-slot');
@@ -75,24 +75,28 @@ test('actual router constructs all six routes and preserves original game widget
   assert.ok(x.cosmetic.classList.contains('mine-gacha'));
   assert.equal(x.dialog.parent.id,'character-design-slot');
   const visited=[];
-  for(const id of ['tower','character','ranking','mine','stock','lobby']){
+  for(const id of ['tower','pve','character','ranking','mine','stock','lobby']){
     assert.equal(r.go(id),id);
     visited.push(r.active);
     assert.equal(x.byId.get('screen-'+id).hidden,false);
   }
-  assert.deepEqual(visited,['tower','character','ranking','mine','stock','lobby']);
+  assert.deepEqual(visited,['tower','pve','character','ranking','mine','stock','lobby']);
   assert.equal(x.byId.get('screen-tower').hidden,true);
   assert.equal(x.events.includes('studio:open'),true);
   assert.equal(x.events.includes('studio:close'),true);
   assert.equal(x.dialog.open,false);
 });
-test('tower and four ranking tabs toggle views without altering the underlying data',()=>{
+test('PvE is a standalone route; rankings keep their underlying data',()=>{
   const x=setup(),r=x.game.ArenaScreenRouter;
   r.go('tower');
-  r.towerTab('free');
-  assert.equal(x.byId.get('tower-free-slot').hidden,false);
-  assert.equal(x.byId.get('tower-mode-slot').hidden,true);
-  r.towerTab('tower');
+  r.go('pve');
+  assert.equal(r.active,'pve');
+  assert.equal(x.arena.parent.id,'pve-arena-slot');
+  assert.equal(x.tools.parent.id,'pve-free-slot');
+  assert.equal(x.byId.get('screen-tower').hidden,true);
+  r.go('tower');
+  assert.equal(r.active,'tower');
+  assert.equal(x.arena.parent.id,'tower-arena-slot');
   assert.equal(x.byId.get('tower-mode-slot').hidden,false);
   r.go('ranking');
   for(const [id,show] of [['power','ranking-power'],['tower','tower-record-panel'],
