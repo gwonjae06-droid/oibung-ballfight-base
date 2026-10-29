@@ -28,7 +28,7 @@ function setup(){
   const fighter={playerNum:1,hp:250,maxHp:250,x:100,y:100,vx:0,vy:0,
     speedMultiplier:1,forgeDash:0,forge:{speed:3,skills:Array.from({length:4},(_,i)=>({name:'스킬'+i,cooldown:2}))},
     forgeTicks:[120,120,120,120]};
-  const opponent={playerNum:2,hp:200,x:180,y:100};
+  const opponent={playerNum:2,hp:200,maxHp:200,x:180,y:100};
   const w={window:null,document:doc,console,Math,players:[fighter,opponent],
     isPlaying:true,isGameOver:false,ArenaTower:tower,
     ArenaScreenRouter:{active:'tower',activeTowerTab:'tower'},
@@ -40,6 +40,9 @@ function setup(){
     getClosestAliveEnemy(){return opponent;},
     addEventListener:(type,fn)=>{events[type]=fn;}
   };
+  const pause=new Element('button');pause.id='tower-pause';
+  pause.click=()=>{w.isPlaying=!w.isPlaying;};
+  tower.forfeit=()=>{tower.stage='lost';tower.active=false;return true;};
   w.window=w;vm.createContext(w);vm.runInContext(src,w);
   const el=id=>nodes.get(id),controller=w.ArenaTowerControls;
   assert.ok(controller);
@@ -96,4 +99,44 @@ test('manual controls are scoped to Tower and appear after the arena',()=>{
   const html=fs.readFileSync(path.join(__dirname,'../index.html'),'utf8');
   assert.match(html,/js\/features\/tower-controls\.js/);
   assert.ok(!html.includes('id="tower-speed"'));
+});
+
+test('focused HUD shows floor, both hit points and combat controls without relying on old HUD',()=>{
+  const h=setup();
+  assert.equal(h.el('tower-manual-hud').hidden,false);
+  assert.equal(h.el('tower-manual-floor').textContent,'1 / 10F');
+  assert.equal(h.el('tower-manual-player-hp').textContent,'250 / 250');
+  assert.equal(h.el('tower-manual-enemy-hp').textContent,'200 / 200');
+  assert.equal(h.el('tower-manual-player-bar').style.width,'100.0%');
+  h.fighter.hp=100;h.opponent.hp=50;h.controller.refresh();
+  assert.equal(h.el('tower-manual-player-bar').style.width,'40.0%');
+  assert.equal(h.el('tower-manual-enemy-bar').style.width,'25.0%');
+});
+test('compact HUD pauses and resumes the underlying Tower and blocks controls when paused',()=>{
+  const h=setup(),pause=h.el('tower-manual-pause');
+  keyboard(h,'d');h.controller.update(h.fighter,h.opponent);
+  assert.ok(h.fighter.vx>0);
+  pause.listeners.click();
+  assert.equal(h.w.isPlaying,false);
+  assert.equal(pause.textContent,'▶ 계속');
+  assert.deepEqual(Array.from(h.controller.input.keys),[],'pause releases active keys');
+  assert.equal(h.controller.update(h.fighter,h.opponent),false);
+  assert.equal(h.el('tower-manual-hud').hidden,false,'paused combat retains its controls');
+  pause.listeners.click();
+  assert.equal(h.w.isPlaying,true);
+  assert.equal(pause.textContent,'⏸ 일시정지');
+  h.el('tower-manual-leave').listeners.click();
+  assert.equal(h.tower.active,false);
+  assert.equal(h.el('tower-manual-hud').hidden,true);
+  assert.equal(h.el('tower-manual-controls').hidden,true);
+});
+test('responsive focus CSS hides optional panels but keeps canvas, HP, speed and skills',()=>{
+  const css=fs.readFileSync(path.join(__dirname,'../css/tower-mine-ui.css'),'utf8');
+  assert.match(css,/#screen-tower\[data-manual-focus="true"\] #tower-mode-slot/);
+  assert.match(css,/#screen-tower\[data-manual-focus="true"\] #tower-arena-slot/);
+  assert.match(css,/#tower-manual-hud\[hidden\]/);
+  assert.match(css,/#tower-manual-player-bar|tower-manual-hp-track/);
+  assert.match(css,/media\(pointer:coarse\)/);
+  assert.match(css,/\.tower-manual-abilities/);
+  assert.match(css,/#btn-stop/);
 });

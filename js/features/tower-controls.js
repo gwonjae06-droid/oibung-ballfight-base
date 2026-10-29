@@ -16,8 +16,31 @@ controls.innerHTML='<div class="tower-manual-head"><strong>직접 조종</strong
   +'<div class="tower-manual-abilities" id="tower-manual-abilities"></div></div>'
   +'<p class="tower-manual-hint" id="tower-manual-hint" role="status" aria-live="polite">스킬 사용 시 기존 쿨타임과 전투 판정이 그대로 적용됩니다.</p>';
 slot.append(controls);
+// Dedicated, compact battle HUD above the canvas. The original Tower
+// configuration panel and large per-fighter cards remain intact for auto
+// battles and all intermissions, but do not obscure manual gameplay.
+const hud=doc.createElement('section');
+hud.id='tower-manual-hud';hud.className='tower-manual-hud';hud.hidden=true;
+hud.setAttribute('aria-label','도전의 탑 전투 정보와 조작');
+hud.innerHTML='<div class="tower-manual-hud-title"><span id="tower-manual-floor">1층</span><strong id="tower-manual-opponent">전투 준비</strong></div>'
+  +'<div class="tower-manual-vitals">'
+  +'<div class="tower-manual-vital"><div><span id="tower-manual-player-name">내 캐릭터</span><strong id="tower-manual-player-hp">0 / 0</strong></div><div class="tower-manual-hp-track"><span id="tower-manual-player-bar"></span></div></div>'
+  +'<div class="tower-manual-vital tower-manual-enemy"><div><span>상대 HP</span><strong id="tower-manual-enemy-hp">0 / 0</strong></div><div class="tower-manual-hp-track"><span id="tower-manual-enemy-bar"></span></div></div></div>'
+  +'<div class="tower-manual-hud-actions"><button type="button" id="tower-manual-pause" aria-label="도전의 탑 일시정지 또는 재개">⏸ 일시정지</button>'
+  +'<button type="button" id="tower-manual-leave" aria-label="도전의 탑 포기">도전 포기</button></div>';
+if(typeof slot.prepend==='function')slot.prepend(hud);
+else slot.append(hud);
 const stick=doc.getElementById('tower-joystick'),knob=doc.getElementById('tower-joystick-knob'),
   list=doc.getElementById('tower-manual-abilities'),hint=doc.getElementById('tower-manual-hint');
+const hudEl=id=>doc.getElementById(id);
+hudEl('tower-manual-pause')?.addEventListener('click',()=>{
+  if(!visible())return;
+  doc.getElementById('tower-pause')?.click?.();refresh();
+});
+hudEl('tower-manual-leave')?.addEventListener('click',()=>{
+  if(!visible())return;
+  tower()?.forfeit?.();refresh();
+});
 const keys=new Set(),buttons=[],HOTKEYS=['Q','E','R','F'];
 let owner=null,pointer=null,touchX=0,touchY=0,frame=0;
 for(let i=0;i<4;i++){
@@ -43,11 +66,25 @@ function resetInput(){
 function refresh(){
   const active=visible();
   controls.hidden=!active;
+  hud.hidden=!active;
   if(!active){resetInput();return;}
+  if(!running())resetInput();
   const p=typeof players!=='undefined'?players[0]:null;
   if(!p?.manualTower)return;
   const blocked=!!global.ForgeExpansion?.blocked(p);
   const live=running();
+  const enemy=typeof players!=='undefined'?players[1]:null;
+  const stage=tower()?.state,level=stage?.level||1;
+  hudEl('tower-manual-floor').textContent=level+' / 10F';
+  hudEl('tower-manual-opponent').textContent=tower()?.floor?.(level)?.name||'적과 전투 중';
+  hudEl('tower-manual-player-name').textContent=p.name||'내 캐릭터';
+  hudEl('tower-manual-player-hp').textContent=Math.ceil(Math.max(0,p.hp))+' / '+p.maxHp;
+  hudEl('tower-manual-player-bar').style.width=(Math.max(0,Math.min(100,p.hp/p.maxHp*100))||0).toFixed(1)+'%';
+  if(enemy){
+    hudEl('tower-manual-enemy-hp').textContent=Math.ceil(Math.max(0,enemy.hp))+' / '+enemy.maxHp;
+    hudEl('tower-manual-enemy-bar').style.width=(Math.max(0,Math.min(100,enemy.hp/enemy.maxHp*100))||0).toFixed(1)+'%';
+  }
+  hudEl('tower-manual-pause').textContent=live?'⏸ 일시정지':'▶ 계속';
   for(let i=0;i<buttons.length;i++){
     const b=buttons[i],s=p.forge.skills[i];
     b.hidden=!s;
