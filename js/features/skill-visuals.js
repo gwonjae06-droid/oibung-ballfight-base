@@ -32,7 +32,7 @@ const catalog=global.ActionRegistry?.visualCatalog||Object.freeze({
 });
 const TYPES=global.ActionRegistry?.ids()||Object.freeze(Object.keys(catalog));
 const MAX=68;
-let effects=[],low=false,frame=0;
+let effects=[],low=false,frame=0,spawnListener=null;
 const clamp=(v,l,h)=>Math.max(l,Math.min(h,v));
 const arc=(c,x,y,r,a,b)=>{c.beginPath();c.arc(x,y,Math.max(.2,r),a,b);c.stroke();};
 const line=(c,...pts)=>{c.beginPath();for(let i=0;i<pts.length;i+=2){
@@ -323,7 +323,11 @@ function add(kind,p,type,action,target,location){
     scale:clamp((action?.radius||130)/130,.78,1.2),
     lastX:p.x,lastY:p.y};
   if(effects.length>=MAX)effects.shift();
-  effects.push(entry);return true;
+  effects.push(entry);
+  // PvP's isolated iframe listens for newly generated VFX so it can send
+  // tiny, immediate events. Other game modes leave the listener unset.
+  if(spawnListener)spawnListener(entry);
+  return true;
 }
 function cast(p,action,target){
   if(!action?.type||!catalog[action.type])return false;
@@ -421,8 +425,29 @@ function previewFrame(ctx,options={}){
   if(!renderFamily(ctx,e))drawMotif(ctx,e.type,e.age,e.life);
   ctx.restore();return true;
 }
+function replay(event,fighters=[]){
+  if(!event||!catalog[event.type]||!['cast','impact'].includes(event.kind))
+    return false;
+  const finite=(v,defaultValue)=>Number.isFinite(Number(v))?Number(v):defaultValue;
+  const source=event.follow&&Number.isInteger(event.owner)?fighters[event.owner]:null;
+  const safe={
+    type:event.type,kind:event.kind,family:familyOf(event.type),
+    x:finite(event.x,source?.x||0),y:finite(event.y,source?.y||0),
+    angle:finite(event.angle,0),radius:clamp(finite(event.radius,80),20,300),
+    color:typeof event.color==='string'&&/^#[0-9a-f]{3,8}$/i.test(event.color)?
+      event.color:catalog[event.type][1],
+    age:Math.max(0,Math.min(6,finite(event.age,0))),
+    life:clamp(finite(event.life,30),10,90),
+    scale:clamp(finite(event.scale,1),.5,1.6),
+    source:source||null,lastX:finite(event.x,0),lastY:finite(event.y,0)
+  };
+  if(effects.length>=MAX)effects.shift();
+  effects.push(safe);
+  return true;
+}
 function clear(){effects.length=0;ghosts=[];poses=new WeakMap();activePoses.clear();frame=0;}
 function setReduced(v){low=!!v;}
-global.SkillVisuals={exportEffects:()=>effects,importEffects:value=>{effects=value;},catalog,get TYPES(){return global.ActionRegistry?.ids()||TYPES;},FAMILIES,ARM_IDLE_FRAMES,cast,impact,contact,detonate,previewFrame,drawAction,tick,draw,clear,setReduced,
+global.SkillVisuals={exportEffects:()=>effects,importEffects:value=>{effects=value;},
+  setSpawnListener:fn=>{spawnListener=typeof fn==='function'?fn:null;},replay,catalog,get TYPES(){return global.ActionRegistry?.ids()||TYPES;},FAMILIES,ARM_IDLE_FRAMES,cast,impact,contact,detonate,previewFrame,drawAction,tick,draw,clear,setReduced,
   get active(){return effects.length;}};
 })(window);
