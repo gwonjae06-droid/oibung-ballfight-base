@@ -124,7 +124,7 @@
     window.SkillVisuals?.setReduced(gentle.checked);
     window.ImpactPhysics?.setReduced?.(gentle.checked);
     window.ArenaResolution?.sync?.();
-    if(!globalThis.ArenaScreenRouter?.enabled||globalThis.ArenaScreenRouter.active==='tower')draw();
+    if(!globalThis.ArenaScreenRouter?.enabled||['tower','pve'].includes(globalThis.ArenaScreenRouter.active))draw();
     requestAnimationFrame(gameLoop);
   };
   speed.onchange=()=>{acc=0;last=null;};

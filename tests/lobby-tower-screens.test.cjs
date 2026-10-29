@@ -53,7 +53,7 @@ test('malformed records and excessive counters safely clamp to valid floor range
 });
 test('router creates one lobby and exactly five separate destinations from existing nodes',()=>{
   const src=read('js/features/screen-router.js'),html=read('index.html');
-  for(const name of ['lobby','tower','character','ranking','mine','stock'])
+  for(const name of ['lobby','tower','pve','character','ranking','mine','stock'])
     assert.ok(src.includes("'"+name+"'"),name);
   assert.ok(src.includes("lobby.append(hero)"));
   assert.ok(src.includes('rankingPower.append(ranking)'));
@@ -65,6 +65,8 @@ test('router creates one lobby and exactly five separate destinations from exist
   assert.ok(src.includes('stockFrame.append(market)'));
   assert.ok(src.includes('arenaSlot.append(arena)'));
   assert.ok(src.includes('free.append(tools)'));
+  assert.ok(src.includes('pve.append(pveArena,free)'));
+  assert.ok(src.includes("['pve','PvE"));
   assert.ok(src.includes("main.dataset.route=where"));
   assert.ok(src.includes("global.ArenaScreenRouter=api"));
   assert.ok(src.includes("global.ArenaTower?.records?.()"));
@@ -108,9 +110,9 @@ test('creator remains inline and stored UI singletons are neither cloned nor rei
   assert.ok(css.includes('#screen-character #character-studio-dialog'));
   assert.ok(css.includes('position:relative!important;display:block!important'));
   assert.ok(css.includes('body.has-power-ranking{display:block!important'));
-  assert.ok(effects.includes("ArenaScreenRouter.active==='tower'"));
+  assert.ok(effects.includes("['tower','pve'].includes(globalThis.ArenaScreenRouter.active)"));
   assert.ok(router.includes("if(typeof isPlaying!=='undefined'&&isPlaying"));
-  assert.ok(router.includes('towerTab(subtab)'));
+  assert.ok(router.includes("where==='pve'||where==='tower'" ) || router.includes("where==='tower'||where==='pve'"));
   for(const p of ['screen-router.js','tower-challenge.js','ui-categories.js']){
     assert.doesNotThrow(()=>new vm.Script(read('js/features/'+p)));
   }

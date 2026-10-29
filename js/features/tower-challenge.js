@@ -151,26 +151,41 @@ function install(){
   if(!screen)return null;
   const mount=doc.getElementById('tower-mode-slot')||screen;
   const panel=doc.createElement('section');panel.id='tower-challenge';panel.className='tower-challenge';
-  panel.innerHTML='<div class="tower-head"><div><span class="eyebrow">PVE CHALLENGE / 10 FLOORS</span>'
-   +'<h2>도전의 탑 <span id="tower-floor">1 / 10F</span></h2>'
-   +'<p id="tower-rule">층을 선택해 도전을 시작하세요.</p></div>'
-   +'<strong id="tower-best">최고 기록 0F</strong></div>'
+  panel.innerHTML='<div class="tower-head"><div class="tower-head-current">'
+   +'<span class="tower-kicker">현재 층</span>'
+   +'<h2><span id="tower-floor">1 / 10F</span></h2>'
+   +'<p id="tower-rule"></p></div>'
+   +'<strong id="tower-best">최고 0F</strong></div>'
+   +'<div class="tower-fighter-pick"><label for="tower-hero">내 파이터'
+   +'<select id="tower-hero"></select></label>'
+   +'<div class="tower-enemy"><small>상대</small><strong id="tower-enemy">훈련의 문</strong></div></div>'
+   +'<div class="tower-mode-picker"><strong>전투 방식</strong>'
+   +'<label><input type="radio" name="tower-play-mode" value="auto" checked> 자동 전투</label>'
+   +'<label><input type="radio" name="tower-play-mode" value="manual"> 직접 조종</label></div>'
+   +'<div class="tower-buttons"><button id="tower-start" type="button">1층 시작</button>'
+   +'<button id="tower-pause" type="button" hidden>⏸ 일시정지</button>'
+   +'<button id="tower-abandon" type="button" hidden>도전 포기</button></div>'
+   +'<p class="tower-feedback" id="tower-feedback" role="status" aria-live="polite" hidden></p>'
+   +'<div class="tower-folds">'
+   +'<details class="tower-disclosure" id="tower-progress-details">'
+   +'<summary>전체 층 진행도 <span id="tower-progress-label">0 / 10</span></summary>'
    +'<div class="tower-floor-track" aria-label="도전의 탑 10개 층 진행도">'
    +Array.from({length:FINISH},(_,i)=>'<div class="tower-floor-chip" id="tower-chip-'+(i+1)+'"'
    +' aria-label="'+(i+1)+'층'+((i+1)%5===0?' 보스':'')+'"><strong>'
    +(i+1)+'F</strong>'+((i+1)%5===0?'<small>보스</small>':'<small>층</small>')+'</div>').join('')
-   +'</div>'
-   +'<div class="tower-scene-identity"><span id="tower-scene-name">황혼의 수련장</span><span id="tower-skill-count">2개 독립 스킬</span></div>'
-   +'<div class="tower-mode-picker"><strong>조작 방식</strong><label><input type="radio" name="tower-play-mode" value="auto" checked> 자동 전투</label><label><input type="radio" name="tower-play-mode" value="manual"> 직접 조종</label><small>직접 조종: WASD/방향키 이동 · Q/E/R/F 스킬 · 모바일 터치 지원</small></div>'
-   +'<div class="tower-fighter-pick"><label for="tower-hero">출전 캐릭터'
-   +'<select id="tower-hero"></select></label>'
-   +'<div class="tower-enemy"><strong id="tower-enemy">훈련의 문</strong><span id="tower-enemy-info">첫 도전을 준비하세요.</span>'
-   +'<div class="tower-enemy-skills" id="tower-enemy-skills" aria-label="이번 층 적 스킬 상세"></div>'
-   +'<p class="tower-skill-hint">스킬을 누르면 상세 능력을 볼 수 있습니다. 보호막·무적 상태와 공중 회피 중에는 일부 공격의 피해가 적용되지 않습니다.</p></div></div>'
-   +'<div class="tower-buttons"><button id="tower-start" type="button">1층 도전 시작</button>'
-   +'<button id="tower-pause" type="button" hidden>⏸ 일시정지</button>'
-   +'<button id="tower-abandon" type="button" hidden>도전 포기</button></div>'
-   +'<p class="tower-feedback" id="tower-feedback" role="status" aria-live="polite">각 층을 클리어하면 다음 층에서 대기합니다. 시작 버튼을 눌러 전투를 재개하세요.</p>';
+   +'</div></details>'
+   +'<details class="tower-disclosure" id="tower-enemy-details">'
+   +'<summary>상대 스킬·상세 정보</summary>'
+   +'<div class="tower-disclosure-body"><div class="tower-scene-identity">'
+   +'<span id="tower-scene-name">황혼의 수련장</span>'
+   +'<span id="tower-skill-count">2개 스킬</span></div>'
+   +'<p id="tower-enemy-info"></p>'
+   +'<div class="tower-enemy-skills" id="tower-enemy-skills" aria-label="상대 스킬 상세"></div></div>'
+   +'</details>'
+   +'<details class="tower-disclosure" id="tower-help-details">'
+   +'<summary>조작 방법</summary>'
+   +'<div class="tower-disclosure-body">직접 조종: WASD/방향키로 이동 · Q/E/R/F로 스킬 사용 · 모바일에서는 터치 조작</div>'
+   +'</details></div>';
   mount.append(panel);
   const el=id=>doc.getElementById(id),hero=el('tower-hero'),message=el('tower-feedback'),
     start=el('tower-start'),pause=el('tower-pause'),abandon=el('tower-abandon');
@@ -219,11 +234,12 @@ function install(){
     el('tower-floor').textContent=level+' / '+FINISH+'F';
     el('tower-rule').textContent=f.difficulty+' · '+f.description;
     el('tower-enemy').textContent=(f.boss?'👑 ':'')+f.name;
-    el('tower-enemy-info').textContent=f.difficulty+' · '+f.hp+' HP · 이동 '+f.speed.toFixed(1)+' · '+f.damage+' 기본 공격력';
-    el('tower-best').textContent='최고 기록 '+best+'F (내 브라우저)';
+    el('tower-enemy-info').textContent='체력 '+f.hp+' · 공격 '+f.damage+' · 이동 '+f.speed.toFixed(1);
+    el('tower-best').textContent='최고 '+best+'F';
+    el('tower-progress-label').textContent=cleared+' / '+FINISH+' 완료';
     screen.dataset.towerTheme=f.scene;
     el('tower-scene-name').textContent=global.ArenaTowerScenes?.SCENES[level-1]?.name||f.name;
-    el('tower-skill-count').textContent=f.skillCount+'개 독립 스킬 · 주기 발동 '+f.autoSkillCount+'개';
+    el('tower-skill-count').textContent=f.skillCount+'개 스킬';
     const skillHost=el('tower-enemy-skills');
     skillHost.replaceChildren();
     // Use the same generated enemy profile that is registered for combat:
@@ -251,9 +267,11 @@ function install(){
       chip.setAttribute('data-boss',String(i%5===0));
     }
     start.textContent=stage==='between'?'▶ '+level+'층 시작':
-      stage==='fighting'?'전투 진행 중':stage==='ready'?'1층 도전 시작':'새로운 도전 시작';
-    start.hidden=stage==='fighting';
+      stage==='fighting'?'전투 진행 중':stage==='ready'?'▶ 1층 시작':'▶ 다시 도전';
+    start.hidden=stage==='fighting'||stage==='between';
     clearOverlay.hidden=stage!=='between';
+    // Feedback is shown only for actionable results and errors.
+    message.hidden=stage==='fighting'||stage==='between'||!message.textContent;
     if(stage==='between'){
       el('tower-clear-title').textContent=cleared+'층 클리어!';
       el('tower-clear-next').textContent=level+'층 · '+f.name+' 준비 완료 · 시작을 누르면 전투가 시작됩니다.';
@@ -302,7 +320,7 @@ function install(){
     if(!isPlaying)togglePlay({towerBattle:true});
     if(!isPlaying||!roundStarted)throw Error('전투 엔진이 시작되지 않았습니다. 자유 대전 상태를 초기화하고 다시 시도해 주세요.');
     stage='fighting';
-    message.textContent=level+'층 전투 진행 중 · '+floor(level).name;
+    message.textContent='';
     show();
     // The focused manual HUD must remain visible when starting a new floor;
     // the old generic scroll target could place the health bars off screen.
@@ -328,7 +346,7 @@ function install(){
     const who=selectedDef();
     if(!who){message.textContent='캐릭터가 없습니다. 캐릭터 설계에서 먼저 만들어 주세요.';return false;}
     if(roundStarted&&!isGameOver){message.textContent='진행 중인 자유 대전을 먼저 종료해 주세요.';return false;}
-    selected=who;active=true;stage='ready';level=1;cleared=0;
+    message.textContent='';selected=who;active=true;stage='ready';level=1;cleared=0;
     try{startFight();return true;}
     catch(e){
       active=false;stage='ready';cleanup();
@@ -394,7 +412,8 @@ function install(){
   });
    show();
   function paintBackground(ctx,canvas){
-    if(!['fighting','between','lost','won'].includes(stage)||screen.dataset.battleMode==='free')return false;
+    if(!['fighting','between','lost','won'].includes(stage)||
+       global.ArenaScreenRouter?.active!=='tower')return false;
     return global.ArenaTowerScenes?.paint?.(ctx,canvas.width,canvas.height,level)||false;
   }
   const api={floor,makeEnemy,read,updateRecord,records,begin,forfeit,paintBackground,

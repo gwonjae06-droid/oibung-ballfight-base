@@ -267,3 +267,26 @@ body.has-power-ranking{display:block!important;max-width:none!important;margin:0
     padding:0 0 12px!important;overflow:visible!important;
   }
 }
+
+
+/* PvE is now an independent lobby destination; the single shared arena is
+ * moved between PvE and Tower, not duplicated. All game handlers survive. */
+#pve-arena-slot .battle-screen{width:100%!important;min-width:0;max-width:none!important;
+  display:grid!important;margin:0!important;grid-column:auto!important}
+#pve-arena-slot .canvas-wrapper{max-width:760px;margin:0 auto}
+#pve-free-slot{display:grid;gap:16px;min-width:0}
+#pve-free-slot .bf-tools{width:100%!important;max-width:none!important;margin:0!important;
+  grid-column:auto!important}
+#pve-free-slot .bf-fold{width:100%!important;max-width:none!important;margin:0!important}
+#pve-arena-slot .arena-setup-controls[hidden]{display:none!important}
+#screen-pve .screen-deck{max-width:420px}
+.lobby-pve .lobby-card-icon{background:#344d48;color:#b9f8dd}
+/* Tower has its own start/abandon/pause controls. Hide the duplicate generic
+ * match buttons without removing nodes needed by the existing engine. */
+#screen-tower #tower-arena-slot .arena-heading,
+#screen-tower #tower-arena-slot .control-panel,
+#screen-tower #tower-arena-slot .arena-match-objective,
+#screen-tower #tower-arena-slot #btn-stop{display:none!important}
+#screen-tower #tower-arena-slot .arena-top-controls:has(#bf-speed){
+  pointer-events:none}
+#screen-tower #tower-arena-slot #bf-speed{pointer-events:auto}

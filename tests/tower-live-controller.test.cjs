@@ -97,8 +97,8 @@ test('a floor clear displays victory and prepares the next floor without startin
   assert.equal(x.el('tower-clear-overlay').hidden,false);
   assert.equal(x.el('tower-clear-title').textContent,'1층 클리어!');
   assert.match(x.el('tower-clear-next').textContent,/2층/);
-  assert.equal(x.el('tower-start').hidden,false);
-  assert.match(x.el('tower-start').textContent,/2층 시작/);
+  assert.equal(x.el('tower-start').hidden,true,'the floor clear overlay owns the next-floor action');
+  assert.match(x.el('tower-next-start').textContent,/2층 시작/);
   assert.equal(x.el('tower-pause').hidden,true);
   assert.equal(x.world.CUSTOM_DEFS.length,0);
   const sequence=x.world.seq;

@@ -85,7 +85,7 @@ test('each battleground draws a physically distinct 2D canvas motif without affe
   assert.ok(render.includes('globalThis.ArenaTower?.paintBackground?.(ctx,canvas)'));
   const tower=read('js/features/tower-challenge.js');
   assert.match(tower,/screen\.dataset\.towerTheme=f\.scene/);
-  assert.match(tower,/screen\.dataset\.battleMode==='free'/,'free match has original background');
+  assert.match(tower,/global\.ArenaScreenRouter\?\.active!=='tower'/,'independent PvE free matches do not use Tower backgrounds');
 });
 test('existing single roulette moves into mine, controls and pity remain untouched',()=>{
   const router=read('js/features/screen-router.js'),gacha=read('js/features/cosmetic-arcade.js');

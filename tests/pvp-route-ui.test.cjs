@@ -4,7 +4,7 @@ const fs=require('node:fs'),path=require('node:path');
 const read=p=>fs.readFileSync(path.join(__dirname,'..',p),'utf8');
 test('PvP route is discoverable from the lobby and mode is selected before matching',()=>{
   const router=read('js/features/screen-router.js'),pvp=read('js/features/pvp-online.js');
-  assert.match(router,/ROUTES=\['lobby','tower','pvp'/);
+  assert.match(router,/ROUTES=\['lobby','tower','pve','pvp'/);
   assert.match(router,/\['pvp','온라인 PvP'/);
   assert.match(router,/data-screen/);
   assert.match(pvp,/name="pvp-mode" value="auto" checked/);
