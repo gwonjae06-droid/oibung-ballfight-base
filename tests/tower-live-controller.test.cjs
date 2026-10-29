@@ -30,7 +30,9 @@ function harness(){
   }
   const screen=new Element();screen.id='screen-tower';
   const slot=new Element();slot.id='tower-mode-slot';
-  const doc={getElementById:id=>nodes.get(id)||null,createElement:type=>new Element(type)};
+  const canvasWrap=new Element('div');
+  const doc={getElementById:id=>nodes.get(id)||null,createElement:type=>new Element(type),
+    querySelector:sel=>sel==='#tower-arena-slot .canvas-wrapper'?canvasWrap:null};
   const saved=new Map();
   const world={
     window:null,document:doc,console,Math,Date,
@@ -72,9 +74,9 @@ function harness(){
   };
   vm.runInContext(src,world,{filename:'tower-challenge.js'});
   const tower=world.ArenaTower,el=id=>nodes.get(id);
-  return {world,tower,el,saved};
+  return {world,tower,el,saved,canvasWrap};
 }
-test('the real tower controller starts fresh two-fighter rounds, awards wins and never adds enemy to player roster',()=>{
+test('tower clears a floor and immediately launches the next fight without rewards',()=>{
   const x=harness();
   assert.equal(x.tower.begin(),true);
   assert.equal(x.tower.stage,'fighting');
@@ -83,11 +85,10 @@ test('the real tower controller starts fresh two-fighter rounds, awards wins and
   assert.equal(x.world.CUSTOM_DEFS.length,0);
   assert.equal(x.tower.isTransientDef(x.tower.isTransientDef?null:null),false);
   conclude(x,x.world.players[0]);
-  assert.equal(x.tower.stage,'reward');
   assert.equal(x.tower.state.cleared,1);
-  assert.equal(x.tower.chooseReward('gold'),true);
-  assert.equal(x.world.coins,1055);
-  assert.equal(x.tower.state.level,2);
+  assert.equal(x.tower.state.level,2,'victory automatically enters floor two');
+  assert.equal(x.world.coins,1000,'there is no floor-clear gold');
+  assert.equal(x.el('tower-rewards'),null,'reward UI is not mounted');
   assert.equal(x.tower.stage,'fighting');
   assert.equal(x.world.CUSTOM_DEFS.length,0);
   conclude(x,x.world.players[1]);
@@ -96,7 +97,7 @@ test('the real tower controller starts fresh two-fighter rounds, awards wins and
   assert.equal(x.tower.records()[0].attempts,1);
   assert.equal(x.tower.begin(),true,'player can retry after defeat');
 });
-test('bonuses are applied only to fresh battle instances and 10th win records completion',()=>{
+test('automatic progression never applies rewards and 10th win records completion',()=>{
   const x=harness(),base=x.world.CHARACTER_DEFS[0];
   assert.equal(x.tower.begin(),true);
   for(let floor=1;floor<=10;floor++){
@@ -104,16 +105,16 @@ test('bonuses are applied only to fresh battle instances and 10th win records co
     assert.equal(x.world.CUSTOM_DEFS.length,0,'bosses are transient');
     conclude(x,x.world.players[0]);
     if(floor<10){
-      assert.equal(x.tower.stage,'reward');
-      assert.equal(x.tower.chooseReward('hp'),true);
-      assert.equal(x.world.players[0].maxHp,220+(floor*40>200?200:floor*40));
       assert.equal(x.tower.stage,'fighting');
+      assert.equal(x.tower.state.level,floor+1);
+      assert.equal(x.world.players[0].maxHp,220,'no between-floor HP reward');
     }
   }
   assert.equal(x.tower.stage,'won');
   assert.equal(x.tower.active,false);
   assert.equal(x.tower.records()[0].best,10);
-  assert.equal(base.createInstance(1).maxHp,220,'bonuses do not mutate original definition');
+  assert.equal(base.createInstance(1).maxHp,220,'the original definition is unchanged');
+  assert.equal(x.world.coins,1000,'the entire tower has no per-floor gold payouts');
   assert.equal(x.tower.begin(),true);
   assert.equal(x.world.players[0].maxHp,220,'new runs start without old buffs');
 });
@@ -138,4 +139,27 @@ test('rejected engine start leaves Tower retryable and explains the waiting scre
   assert.match(x.el('tower-feedback').textContent,/전투 엔진이 시작되지 않았습니다/);
   assert.equal(x.world.isPlaying,false);
   assert.equal(x.tower.begin(),false,'retry must remain available');
+});
+
+test('tower-only speed control cycles 1x, 2x, 3x and persists between floors',()=>{
+  const x=harness(),button=x.el('tower-speed');
+  assert.ok(button,'tower speed button exists');
+  assert.ok(x.canvasWrap.children.includes(button),'control is attached to the actual arena');
+  assert.equal(button.hidden,true,'not displayed before a run');
+  assert.equal(x.tower.speed,1);
+  assert.equal(x.tower.begin(),true);
+  assert.equal(button.hidden,false);
+  button.listeners.click();
+  assert.equal(x.tower.speed,2);
+  button.listeners.click();
+  assert.equal(x.tower.speed,3);
+  assert.equal(button.textContent,'⏩ 3×');
+  assert.equal(x.tower.setSpeed(10),3,'3x is the hard upper limit');
+  conclude(x,x.world.players[0]);
+  assert.equal(x.tower.state.level,2);
+  assert.equal(x.tower.speed,3,'speed persists through automatic floor transitions');
+  conclude(x,x.world.players[1]);
+  assert.equal(button.hidden,true,'hidden on defeat');
+  assert.equal(x.tower.begin(),true);
+  assert.equal(x.tower.speed,1,'new run starts at 1x');
 });
