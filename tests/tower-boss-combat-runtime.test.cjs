@@ -5,7 +5,8 @@ const read=p=>fs.readFileSync(path.join(__dirname,'..',p),'utf8');
 function world(){
   const h={window:null,Math,Date,console,players:[],CUSTOM_DEFS:[],BEHAVIORS:{},
     CHARACTER_PHOTOS:{},createHitParticles(){},addFloatingText(){},
-    document:{querySelector(){return null;}},getClosestAliveEnemy(){return null;}};
+    document:{querySelector(){return null;},getElementById(){return null;}},
+    getClosestAliveEnemy(){return null;}};
   h.window=h;
   vm.createContext(h);
   for(const name of ['action-registry','skill-forge','tower-challenge'])
