@@ -9,13 +9,38 @@ export class MatchHub{
   constructor(ctx,env){
     this.ctx=ctx;this.env=env;this.clients=new Map();
     this.waiting={auto:[],manual:[]};this.rooms=new Map();this.interval=null;
+    // Cloudflare may hibernate an idle waiting room. WebSocket attachments
+    // survive hibernation, so restore both mode queues in original FIFO order.
+    for(const socket of this.ctx.getWebSockets?.()||[]){
+      const previous=socket.deserializeAttachment?.()||{};
+      if(previous.room){
+        // Running matches use a live interval and normally cannot hibernate.
+        // If a worker is restarted unexpectedly, never fabricate a result.
+        try{socket.close(1012,'실시간 경기가 중단됐습니다. 다시 매칭해 주세요.');}catch(_){}
+        continue;
+      }
+      const mode=['auto','manual'].includes(previous.mode)?previous.mode:null;
+      const client={mode,room:null,slot:-1,lastPacket:0,packets:0,
+        joinedAt:Number(previous.joinedAt)||0,
+        profile:mode?normalizeProfile(previous.profile):null};
+      this.clients.set(socket,client);
+      if(mode)this.waiting[mode].push(socket);
+    }
+    for(const queue of Object.values(this.waiting))
+      queue.sort((a,b)=>(this.clients.get(a)?.joinedAt||0)-
+        (this.clients.get(b)?.joinedAt||0));
+  }
+  remember(socket,client){
+    socket.serializeAttachment?.({mode:client.mode,room:client.room,
+      slot:client.slot,joinedAt:client.joinedAt||0,profile:client.profile||null});
   }
   async fetch(request){
     if(request.headers.get('upgrade')?.toLowerCase()!=='websocket')
       return json({error:'WebSocket 연결이 필요합니다.'},426);
     const pair=new WebSocketPair(),client=pair[0],socket=pair[1];
     this.ctx.acceptWebSocket(socket);
-    this.clients.set(socket,{mode:null,room:null,slot:-1,lastPacket:0,packets:0});
+    const entry={mode:null,room:null,slot:-1,lastPacket:0,packets:0};
+    this.clients.set(socket,entry);this.remember(socket,entry);
     this.send(socket,{type:'connected'});
     return new Response(null,{status:101,webSocket:client});
   }
@@ -34,6 +59,7 @@ export class MatchHub{
     const room=createRoom(ca.profile,cb.profile,mode,Date.now());
     room.id=id;room.sockets=[a,b];room.lastTick=Date.now();
     ca.room=cb.room=id;ca.slot=0;cb.slot=1;
+    this.remember(a,ca);this.remember(b,cb);
     this.rooms.set(id,room);
     this.send(a,{type:'matched',you:0,mode,room:id});
     this.send(b,{type:'matched',you:1,mode,room:id});
@@ -47,7 +73,8 @@ export class MatchHub{
       for(const socket of room.sockets)this.send(socket,{type:'result',winner:room.winner});
       this.rooms.delete(room.id);
       for(const socket of room.sockets){
-        const c=this.clients.get(socket);if(c){c.room=null;c.slot=-1;c.mode=null;}
+        const c=this.clients.get(socket);
+        if(c){c.room=null;c.slot=-1;c.mode=null;this.remember(socket,c);}
       }
     }
   }
@@ -75,7 +102,7 @@ export class MatchHub{
       const mode=msg.mode;
       if(!['auto','manual'].includes(mode))return this.send(socket,{type:'error',message:'모드를 다시 선택하세요.'});
       client.profile=normalizeProfile(msg.profile);
-      client.mode=mode;
+      client.mode=mode;client.joinedAt=now;this.remember(socket,client);
       const queue=this.waiting[mode];
       let opponent=null;
       while(queue.length){
@@ -90,7 +117,8 @@ export class MatchHub{
     }
     if(msg.type==='cancel'){
       if(client.room)return this.send(socket,{type:'error',message:'진행 중인 경기는 포기로 종료하세요.'});
-      this.removeFromQueue(socket);client.mode=null;this.send(socket,{type:'cancelled'});return;
+      this.removeFromQueue(socket);client.mode=null;this.remember(socket,client);
+      this.send(socket,{type:'cancelled'});return;
     }
     if(msg.type==='ping'){this.send(socket,{type:'pong',t:now});return;}
     if(!client.room)return;
