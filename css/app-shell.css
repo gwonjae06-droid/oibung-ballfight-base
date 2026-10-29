@@ -100,11 +100,6 @@ body.has-power-ranking{display:block!important;max-width:none!important;margin:0
 #tower-abandon{background:#4a2931;color:#f8d1d3;border-color:#976a70}
 .tower-feedback{padding:12px 14px;border-radius:9px;border:1px solid #4d6374;
   background:#1c3241;color:#e2f1fc;font-size:12px;line-height:1.6;margin:0}
-.tower-rewards{border-top:1px solid #5a687a;padding-top:14px}
-.tower-rewards h3{font-size:16px;color:#f3f8fc;margin:0 0 11px}
-.tower-reward-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
-.tower-reward-grid button{padding:12px 8px;min-height:53px;border:1px solid #a8b6ca;
-  background:#31485c;color:#f4faff;border-radius:9px;font-size:12px;font-weight:800}
 #tower-arena-slot .battle-screen{width:100%!important;min-width:0;max-width:none!important;
   display:grid!important;margin:0!important;grid-column:auto!important}
 #tower-arena-slot .canvas-wrapper{max-width:760px;margin:0 auto}
@@ -172,7 +167,6 @@ body.has-power-ranking{display:block!important;max-width:none!important;margin:0
   .screen-wallet{margin-left:0;font-size:13px}
   .screen-heading h2{font-size:20px}
   .tower-challenge,.tower-record-panel,.single-economy-slot{padding:13px}
-  .tower-reward-grid{grid-template-columns:1fr}
   .tower-head,.tower-fighter-pick{align-items:stretch}
   .tower-head{display:grid}
   .tower-enemy{min-width:0}
