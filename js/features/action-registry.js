@@ -78,6 +78,14 @@ function moduleTypes(executor){
 }
 function sound(type,stage='cast'){return get(type)?.audio?.[stage]||'cast';}
 function isMovement(type){return movementOnly.has(type);}
+// A fast moving bullet may cross a fighter between frames without ending
+// its update inside the circular hitbox. Use the whole swept path instead.
+function sweptCircle(x1,y1,x2,y2,cx,cy,radius){
+  const dx=x2-x1,dy=y2-y1,denom=dx*dx+dy*dy;
+  const t=denom>1e-10?Math.max(0,Math.min(1,((cx-x1)*dx+(cy-y1)*dy)/denom)):0;
+  const px=x1+dx*t,py=y1+dy*t;
+  return Math.hypot(cx-px,cy-py)<=Math.max(0,radius);
+}
 function isProjectile(type){return get(type)?.physics==='projectile';}
 function duration(type){return get(type)?.preview.duration||950;}
 function run(caster,action,target,api){
@@ -86,7 +94,7 @@ function run(caster,action,target,api){
   return d.execute(caster,action,target,api)===true;
 }
 const API={register,get,ids,entries,byGroup,moduleTypes,sound,isMovement,isProjectile,
-  duration,run,TYPE:types,ACTION_PARAMETERS:parameters,
+  duration,run,sweptCircle,TYPE:types,ACTION_PARAMETERS:parameters,
   GROUPS:groups,visualCatalog:visual,FAMILIES:familySets,MOVEMENT_ONLY:movementOnly,
   OFFENSE:offensive};
 global.ActionRegistry=API;

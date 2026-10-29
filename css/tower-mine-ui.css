@@ -27,12 +27,27 @@
 }
 #tower-scene-name{color:#f7f0e9;font-weight:850;font-size:13px}
 #tower-skill-count{color:var(--tower-accent);font-size:11px;font-weight:850}
-.tower-enemy-skills{display:flex;flex-wrap:wrap;gap:6px;margin-top:7px}
-.tower-enemy-skill{
+/* Compact skill summaries, with accurate per-skill mechanics on expansion. */
+.tower-enemy-skills{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin-top:7px}
+#screen-tower details.tower-enemy-skill{
+  min-width:0;margin:0;padding:0;overflow:hidden;
   border:1px solid color-mix(in srgb,var(--tower-accent),#52677e 60%);
-  border-radius:6px;padding:6px 8px;background:#121f30d9;
-  color:#dce8f1;font-size:11px;font-weight:750;line-height:1.4
+  border-radius:9px;background:#121f30d9;color:#dce8f1;font-size:11px;line-height:1.45
 }
+#screen-tower .tower-enemy-skill summary{
+  display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;
+  gap:4px 9px;padding:10px 11px;cursor:pointer;list-style:none;
+}
+#screen-tower .tower-enemy-skill summary::-webkit-details-marker{display:none}
+#screen-tower .tower-enemy-skill summary::after{content:'⌄';color:var(--tower-accent);font-size:17px}
+#screen-tower .tower-enemy-skill[open] summary::after{content:'⌃'}
+#screen-tower .tower-enemy-skill summary strong{font-size:12px;color:#f5f8ff}
+#screen-tower .tower-enemy-skill summary small{font-size:11px;color:var(--tower-accent);font-weight:700}
+#screen-tower .tower-enemy-skill summary:focus-visible{outline:3px solid #f1dcaa;outline-offset:-3px}
+#screen-tower .tower-enemy-skill-body{padding:0 11px 11px;border-top:1px solid #405467}
+#screen-tower .tower-enemy-skill-body p{margin:8px 0 0;line-height:1.65;color:#dce8f1}
+#screen-tower .tower-enemy-skill-body .tower-enemy-skill-meta{font-size:11px;color:#b8cae2}
+
 #screen-tower .tower-enemy{border-color:var(--tower-accent)}
 #screen-tower .tower-enemy strong{color:#fff2dd}
 #screen-tower .tower-feedback{border-left-color:var(--tower-accent)}
@@ -98,8 +113,8 @@
 }
 @media(max-width:700px){
   .tower-scene-identity{padding:10px;gap:8px}
-  .tower-enemy-skills{gap:5px}
-  .tower-enemy-skill{font-size:10px;padding:5px}
+  .tower-enemy-skills{grid-template-columns:1fr;gap:6px}
+  #screen-tower .tower-enemy-skill summary{padding:9px 10px}
   #screen-mine #cosmetic-arcade{padding:12px}
   .character-cosmetic-guide{padding:11px}
   #screen-character .block-inspector-toggle{flex-wrap:wrap}
