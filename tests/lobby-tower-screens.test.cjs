@@ -88,8 +88,11 @@ test('tower uses original 2-person combat engine with transient real Forge enemi
   assert.ok(!src.includes("bonus.hp")&&!src.includes("bonus.speed"),'no per-floor stat boost');
   assert.ok(src.includes('level++;')&&src.includes('startFight();'),'clear advances directly');
   assert.ok(src.includes("return {active,stage,level,cleared"));
-  assert.ok(src.includes("speedButton.id='tower-speed'"));
-  assert.ok(src.includes("setSpeed(speed%3+1)"));
+  assert.ok(!src.includes("tower-speed"),'Tower must not create a second speed widget');
+  assert.ok(!src.includes('setSpeed('),'Tower must not own a separate speed state');
+  const markup=read('index.html');
+  assert.equal((markup.match(/id="bf-speed"/g)||[]).length,1);
+  assert.ok(markup.includes('<option value="3">3×</option>'));
 });
 test('creator remains inline and stored UI singletons are neither cloned nor reinitialized',()=>{
   const router=read('js/features/screen-router.js');

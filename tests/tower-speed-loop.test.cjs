@@ -3,8 +3,8 @@ const test=require('node:test'),assert=require('node:assert/strict');
 const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
 const source=fs.readFileSync(path.join(__dirname,'../js/features/battle-effects.js'),'utf8');
 
-function simulate({route='tower',tab='tower',active=true,towerSpeed=3,freeSpeed='2'}={}){
-  const queue=[],speedSelect={value:freeSpeed};
+function simulate({route='tower',tab='tower',speedValue='3'}={}){
+  const queue=[],speedSelect={value:speedValue};
   let steps=0;
   const ctx={save(){},restore(){}};
   const menu={appendChild(){}};
@@ -20,7 +20,6 @@ function simulate({route='tower',tab='tower',active=true,towerSpeed=3,freeSpeed=
       addEventListener(){}
     },
     requestAnimationFrame(fn){queue.push(fn);},
-    ArenaTower:{active,speed:towerSpeed},
     ArenaScreenRouter:{active:route,activeTowerTab:tab},
     matchMedia(){return {matches:false};}
   };
@@ -33,16 +32,29 @@ function simulate({route='tower',tab='tower',active=true,towerSpeed=3,freeSpeed=
   return steps;
 }
 
-test('Tower 3x accelerates actual 60Hz combat simulation',()=>{
-  assert.equal(simulate({towerSpeed:1}),1);
-  assert.equal(simulate({towerSpeed:2}),2);
-  assert.equal(simulate({towerSpeed:3}),3);
+test('the shared in-game selector applies 1x, 2x and 3x to Tower combat',()=>{
+  assert.equal(simulate({speedValue:'1'}),1);
+  assert.equal(simulate({speedValue:'2'}),2);
+  assert.equal(simulate({speedValue:'3'}),3);
 });
-test('free match never inherits tower 3x setting',()=>{
-  assert.equal(simulate({tab:'free',active:false,towerSpeed:3,freeSpeed:'2'}),2);
-  assert.equal(simulate({tab:'free',active:false,towerSpeed:3,freeSpeed:'1'}),1);
-  assert.equal(simulate({route:'lobby',active:true,towerSpeed:3,freeSpeed:'2'}),2);
+test('the very same selector provides 3x in free battle',()=>{
+  for(const speedValue of ['1','2','3']){
+    const expected=Number(speedValue);
+    assert.equal(simulate({route:'tower',tab:'free',speedValue}),expected);
+    assert.equal(simulate({route:'lobby',speedValue}),expected);
+  }
 });
-test('tower multiplier is limited to 3x even with bad runtime values',()=>{
-  assert.equal(simulate({towerSpeed:99}),3);
+test('invalid speed values are clamped to 1x through 3x',()=>{
+  assert.equal(simulate({speedValue:'99'}),3);
+  assert.equal(simulate({speedValue:'-5'}),1);
+  assert.equal(simulate({speedValue:'not-a-number'}),1);
+});
+test('only one visible speed selector is declared in the shared battle canvas',()=>{
+  const html=fs.readFileSync(path.join(__dirname,'../index.html'),'utf8');
+  const tower=fs.readFileSync(path.join(__dirname,'../js/features/tower-challenge.js'),'utf8');
+  const css=fs.readFileSync(path.join(__dirname,'../css/tower-mine-ui.css'),'utf8');
+  assert.equal((html.match(/id="bf-speed"/g)||[]).length,1);
+  for(const value of ['1','2','3'])assert.ok(html.includes('<option value="'+value+'">'));
+  assert.ok(!tower.includes('tower-speed'));
+  assert.ok(!css.includes('tower-speed'));
 });

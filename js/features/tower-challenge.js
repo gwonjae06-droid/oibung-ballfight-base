@@ -173,25 +173,7 @@ function install(){
   mount.append(panel);
   const el=id=>doc.getElementById(id),hero=el('tower-hero'),message=el('tower-feedback'),
     start=el('tower-start'),pause=el('tower-pause'),abandon=el('tower-abandon');
-  let active=false,stage='ready',level=1,cleared=0,selected=null,temporary=null,speed=1;
-  // Tower-only transparent 1×/2×/3× control on the actual battle canvas.
-  const canvasWrap=doc.querySelector?.('#tower-arena-slot .canvas-wrapper');
-  const speedButton=doc.createElement('button');
-  speedButton.id='tower-speed';
-  speedButton.type='button';
-  speedButton.className='tower-speed-control';
-  speedButton.hidden=true;
-  function setSpeed(value){
-    speed=Math.max(1,Math.min(3,Math.round(Number(value)||1)));
-    speedButton.textContent='⏩ '+speed+'×';
-    speedButton.title='도전의 탑 전용 · 누르면 '+(speed%3+1)+'배속';
-    speedButton.setAttribute('aria-label','도전의 탑 '+speed+'배속, 누르면 '+(speed%3+1)+'배속');
-    speedButton.dataset.speed=String(speed);
-    return speed;
-  }
-  speedButton.addEventListener('click',()=>setSpeed(speed%3+1));
-  canvasWrap?.append(speedButton);
-  setSpeed(1);
+  let active=false,stage='ready',level=1,cleared=0,selected=null,temporary=null;
   const pool=()=>[...CHARACTER_DEFS,...CUSTOM_DEFS];
   function selectedDef(){return pool().find(d=>d.id===hero.value)||pool()[0]||null;}
   function current(){return {active,stage,level,cleared,boss:floor(level).boss,selected:key(selected)};}
@@ -246,7 +228,6 @@ function install(){
     pause.hidden=stage!=='fighting';
     pause.textContent=isPlaying?'⏸ 일시정지':'▶ 전투 계속';
     abandon.hidden=!active;
-    speedButton.hidden=stage!=='fighting';
     hero.disabled=active;
   }
   function cleanup(){
@@ -286,7 +267,7 @@ function install(){
     const who=selectedDef();
     if(!who){message.textContent='캐릭터가 없습니다. 캐릭터 설계에서 먼저 만들어 주세요.';return false;}
     if(roundStarted&&!isGameOver){message.textContent='진행 중인 자유 대전을 먼저 종료해 주세요.';return false;}
-    selected=who;active=true;stage='ready';level=1;cleared=0;setSpeed(1);
+    selected=who;active=true;stage='ready';level=1;cleared=0;
     try{startFight();return true;}
     catch(e){
       active=false;stage='ready';cleanup();
@@ -349,7 +330,7 @@ function install(){
     return global.ArenaTowerScenes?.paint?.(ctx,canvas.width,canvas.height,level)||false;
   }
   const api={floor,makeEnemy,read,updateRecord,records,begin,forfeit,paintBackground,
-    onBattleEnd,isTransientDef,pauseAway,refresh:show,setSpeed,get speed(){return speed;},get active(){return active;},
+    onBattleEnd,isTransientDef,pauseAway,refresh:show,get active(){return active;},
     get stage(){return stage;},get state(){return current();}};
   global.ArenaTower=api;return api;
 }
