@@ -13,17 +13,14 @@ async function client(){
       detectSessionInUrl:false}})).catch(e=>{clientPromise=null;throw e;});
   return clientPromise;
 }
-function rules(){
-  return global.OibungPvpRules
-    ?Promise.resolve(global.OibungPvpRules)
-    :Promise.reject(Error('PvP 전투 엔진이 로드되지 않았습니다. 페이지를 새로고침하세요.'));
-}
+function rules(){return global.PvpOriginalEngine.load();}
+
 class SupabasePvpTransport{
   constructor(){
     this.readyState=0;this.onmessage=null;this.onerror=null;this.onclose=null;
     this.closed=false;this.room=null;this.channel=null;this.poll=null;this.sim=null;
     this.current=null;this.side=-1;this.mode=null;this.profile=null;
-    this.readyTicker=null;this.lastBroadcast=0;
+    this.readyTicker=null;this.lastBroadcast=0;this.peerReady=false;this.lastStep=0;
     this.start().catch(e=>this.fail(e));
   }
   emit(msg){if(!this.closed)this.onmessage?.({data:JSON.stringify(msg)});}
@@ -65,6 +62,7 @@ class SupabasePvpTransport{
     this.current=rule.createRoom(rule.normalizeProfile(data.fighter_a),
       rule.normalizeProfile(data.fighter_b),data.mode,Date.now(),
       [data.mode_a||data.mode,data.mode_b||data.mode]);
+    this.rule=rule;
     this.channel=this.sb.channel('oibung-pvp:'+this.room,
       {config:{private:true,broadcast:{self:false,ack:false}}});
     this.channel.on('broadcast',{event:'control'},({payload})=>this.control(payload,rule));
@@ -72,6 +70,8 @@ class SupabasePvpTransport{
       if(this.side!==1)return;
       if(payload?.type==='state'){
         if(this.readyTicker){global.clearInterval(this.readyTicker);this.readyTicker=null;}
+        if(payload.seq<= (this.receivedSeq||0))return;
+        this.receivedSeq=payload.seq;rule.receive(payload);
         this.emit(payload);
       }
       if(payload?.type==='result')this.emit(payload);
@@ -97,7 +97,12 @@ class SupabasePvpTransport{
   }
   control(message,rule){
     if(this.closed||!this.current||!message)return;
-    if(message.type==='ready')return;
+    if(message.type==='ready'){
+      if(this.side===0&&message.from===1&&!this.peerReady){
+        this.peerReady=true;this.lastStep=Date.now();this.current.started=this.lastStep;
+      }
+      return;
+    }
     if(message.type==='forfeit'){
       if(this.side===0){this.current.ended=true;this.current.winner=1-message.from;}
       else{this.emit({type:'result',winner:1-message.from});this.close();}
@@ -108,13 +113,20 @@ class SupabasePvpTransport{
     if(message.type==='cast')rule.cast(this.current,1,Number(message.slot),Date.now());
   }
   advance(rule){
-    if(this.closed||!this.current||this.done)return;
+    if(this.closed||!this.current||this.done||(!this.peerReady&&!this.current.ended))return;
     const now=Date.now();
-    rule.step(this.current,.05,now);
+    // Use elapsed time, substepped for collision stability. Never advance
+    // cooldowns by wall time while movement advances only one delayed tick.
+    let remaining=Math.min(250,Math.max(0,now-this.lastStep));
+    while(remaining>0&&!this.current.ended){
+      const ms=Math.min(25,remaining);remaining-=ms;
+      rule.step(this.current,ms/1000,now-remaining);
+    }
+    this.lastStep=now;
     // 10 broadcasts per second: preserve ability events between packets.
-    if(!this.current.ended&&now-this.lastBroadcast<96)return;
+    if(!this.current.ended&&now-this.lastBroadcast<125)return;
     this.lastBroadcast=now;
-    const snap=rule.snapshot(this.current,now);
+    const snap=rule.snapshot(this.current,now);snap.seq=(this.sequence=(this.sequence||0)+1);
     this.emit(snap);
     this.channel?.send({type:'broadcast',event:'state',payload:snap});
     if(snap.finished){
@@ -139,10 +151,7 @@ class SupabasePvpTransport{
       else if(msg.type==='cast')rules().then(r=>r.cast(this.current,0,Number(msg.slot)));
       else if(msg.type==='forfeit'){
         this.current.ended=true;this.current.winner=1;
-        this.advance({step:()=>{},snapshot:()=>({type:'state',finished:true,winner:1,
-          mode:this.mode,clock:0,players:this.current.players.map(p=>({
-            x:p.x,y:p.y,name:p.name,color:p.color,hp:p.hp,maxHp:p.maxHp,
-            cooldowns:[0,0,0,0],skills:p.skills})),bullets:[],events:[]})});
+        this.advance(this.rule);
       }
     }else this.channel?.send({type:'broadcast',event:'control',
       payload:{...msg,from:this.side}});

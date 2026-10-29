@@ -56,7 +56,7 @@ test('mixed PvP has authored slots, dojo stage and visible attack feedback',()=>
  const pvp=read('js/features/pvp-online.js');
  const rules=read('workers/pvp-rules.mjs');
  const sql=read('supabase/pvp_mixed_modes.sql');
- assert.match(pvp,/s\.actions\?\.slice\(0,3\)/);
+ assert.match(read("js/features/pvp-original-engine.js"),/s\.actions\.slice\(0,3\)/);
  assert.match(pvp,/button\.hidden=!skill/);
  assert.match(pvp,/ArenaTowerScenes\?\.paint/);
  assert.match(pvp,/function spawnEffects\(/);

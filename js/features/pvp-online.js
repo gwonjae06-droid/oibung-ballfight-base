@@ -20,7 +20,7 @@ host.innerHTML='<section class="pvp-lobby" id="pvp-lobby">'
   +'<div class="pvp-lobby-actions"><button id="pvp-search" type="button">랜덤 매칭 시작</button>'
   +'<button id="pvp-cancel" type="button" hidden>매칭 취소</button></div>'
   +'<p class="pvp-status" id="pvp-status" role="status" aria-live="polite">자동 또는 직접 조종을 선택하세요.</p>'
-  +'<p class="pvp-balance-note">PvP 베타: 자동·직접 조종 혼합 매칭, 실제 제작한 1~4개 스킬 및 최대 3개 연계 동작을 사용합니다. 일부 고유 행동은 PvP 표준 효과로 변환됩니다. 전투 계산은 한 플레이어 기기에서 수행하므로 랭킹전용 치트 방지는 지원하지 않습니다.</p></section>'
+  +'<p class="pvp-balance-note">PvP 베타: 자동·직접 조종 혼합 매칭, 실제 제작한 1~4개 스킬 및 최대 3개 연계 동작을 사용합니다. 원래 전투 엔진의 스킬과 연계를 사용합니다. 전투 계산은 한 플레이어 기기에서 수행하므로 랭킹전용 치트 방지는 지원하지 않습니다.</p></section>'
   +'<section class="pvp-match" id="pvp-match" hidden aria-label="실시간 온라인 PvP 전투">'
   +'<div class="pvp-match-header"><div><small id="pvp-match-type">자동 전투</small><strong id="pvp-round-state">온라인 경기</strong></div>'
   +'<span id="pvp-clock">2:00</span><button type="button" id="pvp-forfeit">경기 포기</button></div>'
@@ -71,13 +71,7 @@ function roster(){
 function profile(){
   const def=[...CHARACTER_DEFS,...CUSTOM_DEFS].find(d=>d.id===$('pvp-fighter').value);
   if(!def)return null;
-  const data=def.forgeData;
-  return {id:def.id,name:def.name,color:data?.color||def.themeColor||'#4f86c6',
-    // Preserve the real 1–4 authored skill slots and first three combo actions.
-    // Built-in fighters use their official PvP fallback kits in the ruleset.
-    ...(data?{skills:data.skills?.slice(0,4).map(s=>({
-      name:s.name,actions:s.actions?.slice(0,3).map(a=>({type:a.type}))||[]
-    }))||[]}: {})};
+  return global.PvpOriginalEngine.pack(def);
 }
 function clearInput(){
   keys.clear();touchX=touchY=0;pointer=null;
@@ -116,11 +110,13 @@ function showMatch(data){
   $('pvp-forfeit').hidden=false;
   visualEffects.length=0;flecks.length=0;lastHealth.fill(null);
   if(mode==='manual')startSending();
+  global.PvpOriginalEngine.show();
   animate();
 }
 function renderState(data){
   if(data.events?.length)spawnEffects(data.events,data.players);
   latest=data;
+  if(data.finished)global.PvpOriginalEngine.paint();
   const theirs=data.players?.[1-side]?.mode==='auto'?'자동':'직접';
   $('pvp-round-state').textContent='내 '+(mode==='auto'?'자동':'직접')+' VS 상대 '+theirs;
   $('pvp-clock').textContent=Math.floor(Math.max(0,data.clock)/60)+':'+
@@ -224,7 +220,7 @@ function inputKey(event,down){
   if(!matched||mode!=='manual'||global.ArenaScreenRouter?.active!=='pvp')return;
   if(event.ctrlKey||event.metaKey||event.altKey||
      event.target?.closest?.('input,textarea,select,[contenteditable="true"]'))return;
-  const key=String(event.key||'').toLowerCase();
+  const key=/^Key[A-Z]$/.test(event.code||'')?event.code.slice(3).toLowerCase():String(event.key||'').toLowerCase();
   if(['w','a','s','d','arrowup','arrowleft','arrowdown','arrowright'].includes(key)){
     if(down)keys.add(key);else keys.delete(key);
     event.preventDefault?.();
@@ -261,7 +257,7 @@ function animate(){
   if(frame!==null||typeof global.requestAnimationFrame!=='function')return;
   const loop=()=>{
     if(!matched){frame=null;return;}
-    draw();
+    global.PvpOriginalEngine.paint();
     frame=global.requestAnimationFrame(loop);
   };
   frame=global.requestAnimationFrame(loop);

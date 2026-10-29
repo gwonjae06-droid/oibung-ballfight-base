@@ -752,6 +752,6 @@ function initialize(){
   const oldDraw=drawCharacter;
   drawCharacter=function(p){if(p.forge)drawFighter(p);oldDraw(p);};
 }
-global.SkillForge={THEMES,randomProfile,normalize,register,remove,list,setDraft,refreshList:()=>refreshList(),refreshEditor:()=>{refreshBasics();render();},persist,TYPE,TRIGGER,STATUS,ACTION_PARAMETERS,MOVEMENT_ONLY,supportedParameter,cooldownFrames,advanceTimers:tickSkills,advanceWorld,hit,enableManual,manualUpdate,manualCast,allProfile,allSkillset,getDraft:()=>normalize(draft)};
+global.SkillForge={drawFighter,THEMES,randomProfile,normalize,register,remove,list,setDraft,refreshList:()=>refreshList(),refreshEditor:()=>{refreshBasics();render();},persist,TYPE,TRIGGER,STATUS,ACTION_PARAMETERS,MOVEMENT_ONLY,supportedParameter,cooldownFrames,advanceTimers:tickSkills,advanceWorld,hit,enableManual,manualUpdate,manualCast,allProfile,allSkillset,getDraft:()=>normalize(draft)};
 if(typeof document!=='undefined'&&document.querySelector('.bf-tools'))initialize();
 })(window);

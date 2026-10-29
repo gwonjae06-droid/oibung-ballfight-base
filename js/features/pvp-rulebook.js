@@ -166,14 +166,17 @@ function step(room,dt,now=Date.now()){
     p.x=clamp(p.x+p.dx*speed*dt,26,WIDTH-26);
     p.y=clamp(p.y+p.dy*speed*dt,26,HEIGHT-26);
   }
-  for(let i=room.pending.length-1;i>=0;i--){
-    const next=room.pending[i];
-    if(now>=next.at){room.pending.splice(i,1);perform(room,next.owner,next.slot,next.action,now);}
+  room.pending.sort((a,b)=>a.at-b.at);
+  while(room.pending.length&&room.pending[0].at<=now){
+    const next=room.pending.shift();perform(room,next.owner,next.slot,next.action,now);
   }
   for(let i=room.projectiles.length-1;i>=0;i--){
     const b=room.projectiles[i],e=room.players[1-b.owner];
+    const oldX=b.x,oldY=b.y;
     b.x+=b.vx*dt;b.y+=b.vy*dt;b.life-=dt;
-    if(Math.hypot(e.x-b.x,e.y-b.y)<31){
+    const dx=b.x-oldX,dy=b.y-oldY,length2=dx*dx+dy*dy;
+    const t=length2?clamp(((e.x-oldX)*dx+(e.y-oldY)*dy)/length2,0,1):0;
+    if(Math.hypot(e.x-(oldX+dx*t),e.y-(oldY+dy*t))<31){
       damage(room,b.owner,b.damage,now);room.projectiles.splice(i,1);
     }else if(b.life<=0||b.x<0||b.x>WIDTH||b.y<0||b.y>HEIGHT)room.projectiles.splice(i,1);
   }
