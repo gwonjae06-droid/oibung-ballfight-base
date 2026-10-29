@@ -13,13 +13,17 @@ async function client(){
       detectSessionInUrl:false}})).catch(e=>{clientPromise=null;throw e;});
   return clientPromise;
 }
-let rulesPromise;
-function rules(){return rulesPromise||(rulesPromise=import('../../workers/pvp-rules.mjs'));}
+function rules(){
+  return global.OibungPvpRules
+    ?Promise.resolve(global.OibungPvpRules)
+    :Promise.reject(Error('PvP 전투 엔진이 로드되지 않았습니다. 페이지를 새로고침하세요.'));
+}
 class SupabasePvpTransport{
   constructor(){
     this.readyState=0;this.onmessage=null;this.onerror=null;this.onclose=null;
     this.closed=false;this.room=null;this.channel=null;this.poll=null;this.sim=null;
-    this.current=null;this.side=-1;this.mode=null;this.profile=null;this.peerInputs=[];
+    this.current=null;this.side=-1;this.mode=null;this.profile=null;
+    this.readyTicker=null;this.lastBroadcast=0;
     this.start().catch(e=>this.fail(e));
   }
   emit(msg){if(!this.closed)this.onmessage?.({data:JSON.stringify(msg)});}
@@ -59,13 +63,17 @@ class SupabasePvpTransport{
     this.room=data.room;this.side=data.side;
     const rule=await rules();
     this.current=rule.createRoom(rule.normalizeProfile(data.fighter_a),
-      rule.normalizeProfile(data.fighter_b),data.mode);
+      rule.normalizeProfile(data.fighter_b),data.mode,Date.now(),
+      [data.mode_a||data.mode,data.mode_b||data.mode]);
     this.channel=this.sb.channel('oibung-pvp:'+this.room,
       {config:{private:true,broadcast:{self:false,ack:false}}});
     this.channel.on('broadcast',{event:'control'},({payload})=>this.control(payload,rule));
     this.channel.on('broadcast',{event:'state'},({payload})=>{
       if(this.side!==1)return;
-      if(payload?.type==='state')this.emit(payload);
+      if(payload?.type==='state'){
+        if(this.readyTicker){global.clearInterval(this.readyTicker);this.readyTicker=null;}
+        this.emit(payload);
+      }
       if(payload?.type==='result')this.emit(payload);
     });
     await new Promise((resolve,reject)=>{
@@ -77,7 +85,12 @@ class SupabasePvpTransport{
     if(this.closed)return;
     this.emit({type:'matched',you:this.side,mode:data.mode,room:this.room});
     if(this.side===1){
-      await this.channel.send({type:'broadcast',event:'control',payload:{type:'ready',from:1}});
+      // Reannounce readiness until the first snapshot, avoiding a race when
+      // the second browser subscribes before the host subscribes.
+      const announce=()=>this.channel?.send({type:'broadcast',event:'control',
+        payload:{type:'ready',from:1}});
+      announce();
+      this.readyTicker=global.setInterval(announce,850);
     }else{
       this.sim=global.setInterval(()=>this.advance(rule),50);
     }
@@ -95,19 +108,24 @@ class SupabasePvpTransport{
     if(message.type==='cast')rule.cast(this.current,1,Number(message.slot),Date.now());
   }
   advance(rule){
-    if(this.closed||!this.current||this.current.ended&&this.done)return;
+    if(this.closed||!this.current||this.done)return;
     const now=Date.now();
     rule.step(this.current,.05,now);
+    // 10 broadcasts per second: preserve ability events between packets.
+    if(!this.current.ended&&now-this.lastBroadcast<96)return;
+    this.lastBroadcast=now;
     const snap=rule.snapshot(this.current,now);
     this.emit(snap);
-    if(this.channel)this.channel.send({type:'broadcast',event:'state',payload:snap});
+    this.channel?.send({type:'broadcast',event:'state',payload:snap});
     if(snap.finished){
       this.done=true;
       const result={type:'result',winner:snap.winner};
       this.emit(result);
       this.channel?.send({type:'broadcast',event:'state',payload:result});
-      this.sb.rpc('oibung_pvp_leave',{p_room:this.room});
       if(this.sim){global.clearInterval(this.sim);this.sim=null;}
+      // Let the final snapshot and result reach the opponent BEFORE the
+      // room is marked ended (RLS otherwise revokes their Realtime channel).
+      global.setTimeout(()=>this.sb?.rpc('oibung_pvp_leave',{p_room:this.room}),2500);
     }
   }
   send(data){
@@ -139,6 +157,7 @@ class SupabasePvpTransport{
     this.closed=true;this.readyState=3;
     if(this.poll)global.clearInterval(this.poll);
     if(this.sim)global.clearInterval(this.sim);
+    if(this.readyTicker)global.clearInterval(this.readyTicker);
     if(this.channel)this.sb?.removeChannel(this.channel);
     if(this.sb)this.sb.rpc('oibung_pvp_leave',{p_room:this.room}).catch(()=>{});
     this.onclose?.();
