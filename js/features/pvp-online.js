@@ -134,6 +134,7 @@ function renderState(data){
   }
   if(!view)view=data.players.map(p=>({x:p.x,y:p.y}));
   // Never pad skills: one authored skill means exactly one visible button.
+  $('pvp-skills').style.setProperty('--pvp-skill-count',String(Math.max(1,own?.skills?.length||1)));
   for(let i=0;i<buttons.length;i++){
     const button=buttons[i],skill=own?.skills?.[i];
     button.hidden=!skill;
