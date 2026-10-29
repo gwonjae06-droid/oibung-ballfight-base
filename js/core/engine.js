@@ -83,17 +83,28 @@ function reRollMatch(forcedDef) {
   const start=document.getElementById('btn-start');if(start){start.innerText='경기 시작';start.dataset.state='ready';}
   updateUI();renderEconomyUI();draw();return true;
 }
-function togglePlay() {
-  if(isGameOver){reRollMatch();return;}
-  if(!players.length)return;
-  if(!roundStarted){if(!beginRoundEconomy())return;roundStarted=true;globalThis.CosmeticArcade?.startRound?.(players);}
+function togglePlay({towerBattle=false}={}) {
+  if(isGameOver){reRollMatch();return false;}
+  if(!players.length)return false;
+  if(!roundStarted){
+    if(towerBattle){
+      // Tower fights have no wager or shop reservations. Do not block their
+      // start on hidden free-battle economy inputs or betting validation.
+      const wager=document.getElementById('wager-input');
+      if(wager)wager.value='0';
+      selectedBetPlayerNum=null;activeBet=null;roundSettled=false;
+      Object.keys(reservedItems).forEach(id=>reservedItems[id]=[]);
+    }else if(!beginRoundEconomy())return false;
+    roundStarted=true;
+    globalThis.CosmeticArcade?.startRound?.(players);
+  }
   isPlaying=!isPlaying;
   globalThis.BackgroundMusic?.setBattle(true,!isPlaying);
   syncStopButton();
   const b=document.getElementById('btn-start');
-  b.innerText=isPlaying?'일시정지':'경기 계속';
-  b.dataset.state=isPlaying?'playing':'paused';
+  if(b){b.innerText=isPlaying?'일시정지':'경기 계속';b.dataset.state=isPlaying?'playing':'paused';}
   renderEconomyUI();
+  return isPlaying;
 }
 // Kept separate from pause: this closes the current round without declaring
 // the remaining fighters a winner. A stopped bet is returned exactly once.
