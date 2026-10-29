@@ -30,8 +30,9 @@ test('PvP manual mode requires player skill input and keeps distinct cooldowns',
   assert.ok(Math.hypot(room.players[0].dx,room.players[0].dy)<=1.00001);
   m.step(room,.05,1200);
   assert.ok(room.players[0].x>110);
-  assert.equal(m.cast(room,0,1,1201),false,'wave is outside of range');
-  assert.equal(m.cast(room,0,1,1202),false,'cooldown now applies even on miss');
+  assert.equal(m.cast(room,0,1,1201),true,'wave triggers but misses outside of range');
+  assert.equal(room.players[1].hp,240,'out-of-range cast does not damage an enemy');
+  assert.equal(m.cast(room,0,1,1202),false,'cooldown applies even on miss');
   assert.equal(m.cast(room,0,0,1202),true);
   assert.equal(m.cast(room,0,0,1203),false,'no immediate skill replay');
   assert.equal(room.players[0].ready[1],1201+m.ABILITIES.wave.cooldown*1000);
