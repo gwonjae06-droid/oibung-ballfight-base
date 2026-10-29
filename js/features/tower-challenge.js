@@ -210,8 +210,12 @@ function install(){
     p.speedMultiplier=(p.speedMultiplier||1)*(1+bonus.speed);
     if(bonus.speed){p.vx*=1+bonus.speed;p.vy*=1+bonus.speed;}
     const wager=el('wager-input');if(wager)wager.value='0';
-    stage='fighting';message.textContent=level+'층 전투 진행 중 · '+floor(level).name;
-    if(!isPlaying)togglePlay();
+    // Confirm that the actual engine has entered a live round before hiding
+    // the start control. Otherwise the canvas stays on "대기 중" indefinitely.
+    if(!isPlaying)togglePlay({towerBattle:true});
+    if(!isPlaying||!roundStarted)throw Error('전투 엔진이 시작되지 않았습니다. 자유 대전 상태를 초기화하고 다시 시도해 주세요.');
+    stage='fighting';
+    message.textContent=level+'층 전투 진행 중 · '+floor(level).name;
     show();
     global.ArenaScreenRouter?.showArena?.();
   }
@@ -222,7 +226,11 @@ function install(){
     if(roundStarted&&!isGameOver){message.textContent='진행 중인 자유 대전을 먼저 종료해 주세요.';return false;}
     selected=who;active=true;stage='ready';level=1;cleared=0;bonus={hp:0,speed:0};
     try{startFight();return true;}
-    catch(e){active=false;stage='ready';cleanup();message.textContent=e.message;show();return false;}
+    catch(e){
+      active=false;stage='ready';cleanup();
+      message.textContent='도전 시작 실패 · '+(e?.message||'알 수 없는 오류');
+      show();return false;
+    }
   }
   function onBattleEnd(winner,reason){
     if(!active||stage!=='fighting')return false;
