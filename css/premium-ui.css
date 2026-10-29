@@ -199,7 +199,7 @@ body{
 .tower-floor-chip small{font-size:9px;opacity:.78}
 #tower-arena-slot .battle-screen{background:linear-gradient(140deg,#293444,#172232)!important;
   border:1px solid #606d83!important;box-shadow:0 16px 33px #0007;border-radius:16px}
-#tower-free-slot .arena-match-setup{background:var(--oa-surface);border-color:#67738a}
+#pve-free-slot .arena-match-setup{background:var(--oa-surface);border-color:#67738a}
 #screen-ranking .community-power-ranking{background:var(--oa-surface)!important;border-color:#727c91!important;
   border-top:2px solid #bfa375!important;border-radius:16px!important;box-shadow:0 14px 34px #0006}
 .tower-record-entry{background:linear-gradient(155deg,#2d3d50,#1b2939);border-color:#5f778d;padding:15px}
