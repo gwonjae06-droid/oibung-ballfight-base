@@ -201,7 +201,7 @@ function handleCombat(pA,pB) {
   // Collisions caused by another successful hit are not bonus attacks.
   if((pA.impactSpeed||0)>4||(pB.impactSpeed||0)>4)return;
   [[pA,pB],[pB,pA]]
-    .filter(([a])=>!globalThis.ForgeExpansion?.blocked(a)&&BEHAVIORS[a.id]&&BEHAVIORS[a.id].onContact)
+    .filter(([a])=>!a.manualTower&&!globalThis.ForgeExpansion?.blocked(a)&&BEHAVIORS[a.id]&&BEHAVIORS[a.id].onContact)
     .sort((x,y)=>(BEHAVIORS[x[0].id].order||99)-(BEHAVIORS[y[0].id].order||99))
     .forEach(([a,b])=>{
       const hp=b.hp;
