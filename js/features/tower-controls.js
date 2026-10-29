@@ -15,6 +15,22 @@ controls.innerHTML='<div class="tower-manual-head"><strong>직접 조종</strong
   +'<span class="tower-joystick-knob" id="tower-joystick-knob" aria-hidden="true"></span></div><small>이동</small></div>'
   +'<div class="tower-manual-abilities" id="tower-manual-abilities"></div></div>'
   +'<p class="tower-manual-hint" id="tower-manual-hint" role="status" aria-live="polite">스킬 사용 시 기존 쿨타임과 전투 판정이 그대로 적용됩니다.</p>';
+// A compact, always-visible HP strip replaces the oversized spectator HUD.
+const focusHud=doc.createElement('section');
+focusHud.id='tower-focus-hud';focusHud.className='tower-focus-hud';focusHud.hidden=true;
+focusHud.setAttribute('aria-label','직접 조종 체력 및 현재 층');
+focusHud.innerHTML='<div class="tower-focus-fighter tower-focus-player">'
+  +'<div class="tower-focus-label"><span>PLAYER</span><strong id="tower-focus-player-name">파이터</strong>'
+  +'<small id="tower-focus-player-hp">HP</small></div>'
+  +'<div class="tower-focus-track"><div id="tower-focus-player-fill"></div></div></div>'
+  +'<div class="tower-focus-stage"><strong id="tower-focus-floor">1 / 10F</strong>'
+  +'<small id="tower-focus-state">전투 준비</small></div>'
+  +'<div class="tower-focus-fighter tower-focus-enemy">'
+  +'<div class="tower-focus-label"><span>ENEMY</span><strong id="tower-focus-enemy-name">적</strong>'
+  +'<small id="tower-focus-enemy-hp">HP</small></div>'
+  +'<div class="tower-focus-track"><div id="tower-focus-enemy-fill"></div></div></div>';
+if(typeof slot.prepend==='function')slot.prepend(focusHud);
+else slot.append(focusHud);
 slot.append(controls);
 const stick=doc.getElementById('tower-joystick'),knob=doc.getElementById('tower-joystick-knob'),
   list=doc.getElementById('tower-manual-abilities'),hint=doc.getElementById('tower-manual-hint');
@@ -28,10 +44,12 @@ for(let i=0;i<4;i++){
   list.append(button);buttons.push(button);
 }
 const tower=()=>global.ArenaTower;
-function visible(){
-  return tower()?.active===true&&tower()?.mode==='manual'&&tower()?.stage==='fighting'&&
+function manualSession(){
+  return tower()?.active===true&&tower()?.mode==='manual'&&
+    ['fighting','between'].includes(tower()?.stage)&&
     global.ArenaScreenRouter?.active==='tower'&&global.ArenaScreenRouter?.activeTowerTab==='tower';
 }
+function visible(){return manualSession()&&tower()?.stage==='fighting';}
 function running(){
   return visible()&&typeof isPlaying!=='undefined'&&isPlaying&&
     typeof isGameOver!=='undefined'&&!isGameOver;
@@ -40,14 +58,41 @@ function resetInput(){
   keys.clear();pointer=null;touchX=0;touchY=0;
   if(knob)knob.style.transform='translate(0px,0px)';
 }
+const hudFields={
+  floor:doc.getElementById('tower-focus-floor'),
+  state:doc.getElementById('tower-focus-state'),
+  player:{name:doc.getElementById('tower-focus-player-name'),
+    hp:doc.getElementById('tower-focus-player-hp'),
+    fill:doc.getElementById('tower-focus-player-fill')},
+  enemy:{name:doc.getElementById('tower-focus-enemy-name'),
+    hp:doc.getElementById('tower-focus-enemy-hp'),
+    fill:doc.getElementById('tower-focus-enemy-fill')}
+};
+function updateHud(){
+  const state=tower()?.state||{},p=typeof players!=='undefined'?players[0]:null;
+  const enemy=typeof players!=='undefined'?players[1]:null;
+  if(hudFields.floor)hudFields.floor.textContent=(state.level||1)+' / 10F';
+  if(hudFields.state)hudFields.state.textContent=tower()?.stage==='between'?
+    '다음 층 준비 · 시작 대기':(typeof isPlaying!=='undefined'&&isPlaying?'전투 중':'일시정지');
+  for(const [side,actor] of [['player',p],['enemy',enemy]]){
+    const display=hudFields[side],max=Math.max(1,Number(actor?.maxHp)||1);
+    const hp=Math.max(0,Math.min(max,Number(actor?.hp)||0));
+    if(display.name)display.name.textContent=actor?.name||'준비 중';
+    if(display.hp)display.hp.textContent=Math.ceil(hp)+' / '+Math.ceil(max);
+    if(display.fill)display.fill.style.width=(hp/max*100).toFixed(1)+'%';
+  }
+}
 function refresh(){
-  const active=visible();
+  const focus=manualSession(),active=visible();
+  focusHud.hidden=!focus;
   controls.hidden=!active;
+  if(focus)updateHud();
   if(!active){resetInput();return;}
   const p=typeof players!=='undefined'?players[0]:null;
   if(!p?.manualTower)return;
   const blocked=!!global.ForgeExpansion?.blocked(p);
   const live=running();
+  if(!live)resetInput();
   for(let i=0;i<buttons.length;i++){
     const b=buttons[i],s=p.forge.skills[i];
     b.hidden=!s;
