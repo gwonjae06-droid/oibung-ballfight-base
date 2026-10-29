@@ -84,6 +84,9 @@ function reRollMatch(forcedDef) {
   updateUI();renderEconomyUI();draw();return true;
 }
 function togglePlay({towerBattle=false}={}) {
+  // A waiting Tower floor can only be started from its dedicated Start
+  // control. The shared free-battle button must not bypass the intermission.
+  if(globalThis.ArenaTower?.active&&globalThis.ArenaTower.stage==='between'&&!towerBattle)return false;
   if(isGameOver){reRollMatch();return false;}
   if(!players.length)return false;
   if(!roundStarted){
