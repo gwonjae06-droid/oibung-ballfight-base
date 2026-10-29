@@ -106,7 +106,7 @@
       const step=1000/60;
       // One speed selector drives every match, including the Tower.
       // Clamp values so invalid DOM changes cannot multiply the physics rate.
-      const multiplier=Math.max(1,Math.min(3,Number(speed.value)||1));
+      const multiplier=Math.max(1,Math.min(3,Math.round(Number(speed.value)||1)));
       acc+=delta*multiplier;
       let steps=0;
       while(acc+0.000001>=step&&steps<10){
