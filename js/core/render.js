@@ -19,6 +19,21 @@ const z=globalThis.AdvancedCombat?.visibleHeight(p) ?? (p.jumpHeight||0);
 const pose=globalThis.AdvancedCombat?.pose(p)||{sx:1,sy:1,tilt:0};
 const scale=globalThis.AdvancedCombat?.size(p) ?? (1+Math.max(0,z)/140);
 const offset=-z;
+// Manual Tower fighter: a subtle ground reticle and motion trail make it
+// instantly clear which character the player is steering, even in an effect storm.
+if(p.manualTower&&p.hp>0&&globalThis.ArenaTower?.active&&globalThis.ArenaTower?.mode==='manual'){
+  ctx.save();
+  const motion=Math.hypot(p.vx||0,p.vy||0);
+  ctx.strokeStyle='#367bc0';ctx.lineWidth=2.3;ctx.globalAlpha=.82;
+  ctx.beginPath();ctx.arc(p.x,p.y,p.radius+8,0,Math.PI*2);ctx.stroke();
+  if(motion>.5){
+    const vx=p.vx/motion,vy=p.vy/motion;
+    ctx.strokeStyle='#3fa8db';ctx.lineWidth=4;ctx.globalAlpha=.46;
+    ctx.beginPath();ctx.moveTo(p.x-vx*(p.radius+5),p.y-vy*(p.radius+5));
+    ctx.lineTo(p.x-vx*(p.radius+27),p.y-vy*(p.radius+27));ctx.stroke();
+  }
+  ctx.restore();
+}
 // Ground coordinates stay fixed: the shadow always remains beneath the body.
 if(Math.abs(z)>1){
   ctx.save();
@@ -57,7 +72,10 @@ ctx.fillStyle='#fff';ctx.textAlign='center';ctx.textBaseline='middle';
 ctx.fillText(name,labelX,labelY-4);ctx.restore();
 }
 function draw(){
-ctx.save();ctx.clearRect(0,0,canvas.width,canvas.height);ctx.fillStyle='#fff';ctx.fillRect(0,0,canvas.width,canvas.height);globalThis.ArenaTower?.paintBackground?.(ctx,canvas);if(screenShake>0.5){const x=(Math.random()-0.5)*screenShake,y=(Math.random()-0.5)*screenShake;ctx.translate(x,y);}
+ctx.save();ctx.clearRect(0,0,canvas.width,canvas.height);ctx.fillStyle='#fff';ctx.fillRect(0,0,canvas.width,canvas.height);globalThis.ArenaTower?.paintBackground?.(ctx,canvas);
+const manualCamera=globalThis.ArenaTowerControls?.camera?.(canvas.width,canvas.height);
+if(manualCamera)globalThis.ArenaTowerControls?.applyView?.(ctx,manualCamera);
+if(screenShake>0.5){const x=(Math.random()-0.5)*screenShake,y=(Math.random()-0.5)*screenShake;ctx.translate(x,y);}
 shockwaves.forEach(w=>{ctx.beginPath();ctx.arc(w.x,w.y,w.radius,0,Math.PI*2);ctx.strokeStyle=`rgba(4,120,87,${w.alpha})`;ctx.lineWidth=6;ctx.stroke();ctx.beginPath();ctx.arc(w.x,w.y,w.radius*0.7,0,Math.PI*2);ctx.fillStyle=`rgba(5,150,105,${w.alpha*0.2})`;ctx.fill();});
 players.forEach(p=>{
 if(p.id==='bae'&&p.waves)p.waves.forEach(w=>{ctx.beginPath();ctx.arc(w.x,w.y,w.currentRadius,0,Math.PI*2);ctx.strokeStyle=`rgba(234,88,12,${w.alpha})`;ctx.lineWidth=3;ctx.stroke();ctx.beginPath();ctx.arc(w.x,w.y,w.currentRadius*0.85,0,Math.PI*2);ctx.fillStyle=`rgba(249,115,22,${w.alpha*0.12})`;ctx.fill();});
@@ -77,6 +95,8 @@ floatingTexts.forEach(f=>{ctx.save();
   ctx.textAlign='center';ctx.textBaseline='middle';
   ctx.strokeStyle='rgba(255,255,255,.92)';ctx.lineWidth=2.8;ctx.lineJoin='round';
   ctx.strokeText(f.text,f.x,f.y);ctx.fillText(f.text,f.x,f.y);ctx.restore();});
+// Pause/win labels stay screen-centred rather than tracking the hero.
+ctx.restore();ctx.save();
 if(!isPlaying&&!isGameOver){ctx.fillStyle='rgba(255,255,255,.45)';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.font='700 23px "Noto Sans KR", sans-serif';ctx.fillStyle='#252525';ctx.textAlign='center';ctx.fillText(roundStarted?'일시정지':'대기 중',canvas.width/2,canvas.height/2);}
 if(isGameOver){ctx.fillStyle='rgba(255,255,255,.88)';ctx.fillRect(0,0,canvas.width,canvas.height);const alive=players.filter(p=>p.hp>0);ctx.font='750 28px "Noto Sans KR", sans-serif';ctx.fillStyle='#202020';ctx.textAlign='center';ctx.fillText(roundStopped?'경기 중단 · 무승부':alive.length===1?`${getArenaFighterName(alive[0])} 승리`:'무승부',canvas.width/2,canvas.height/2-10);}
 ctx.restore();
