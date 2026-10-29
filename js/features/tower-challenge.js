@@ -162,11 +162,12 @@ function install(){
    +'</div>'
    +'<div class="tower-scene-identity"><span id="tower-scene-name">황혼의 수련장</span><span id="tower-skill-count">2개 독립 스킬</span></div>'
    +'<div class="tower-mode-picker"><strong>조작 방식</strong><label><input type="radio" name="tower-play-mode" value="auto" checked> 자동 전투</label><label><input type="radio" name="tower-play-mode" value="manual"> 직접 조종</label><small>직접 조종: WASD/방향키 이동 · Q/E/R/F 스킬 · 모바일 터치 지원</small></div>'
+   +'<details class="tower-intel-details" id="tower-intel" open><summary>출전 정보 · 적 스킬 자세히 보기</summary>'
    +'<div class="tower-fighter-pick"><label for="tower-hero">출전 캐릭터'
    +'<select id="tower-hero"></select></label>'
    +'<div class="tower-enemy"><strong id="tower-enemy">훈련의 문</strong><span id="tower-enemy-info">첫 도전을 준비하세요.</span>'
    +'<div class="tower-enemy-skills" id="tower-enemy-skills" aria-label="이번 층 적 스킬 상세"></div>'
-   +'<p class="tower-skill-hint">스킬을 누르면 상세 능력을 볼 수 있습니다. 보호막·무적 상태와 공중 회피 중에는 일부 공격의 피해가 적용되지 않습니다.</p></div></div>'
+   +'<p class="tower-skill-hint">스킬을 누르면 상세 능력을 볼 수 있습니다. 보호막·무적 상태와 공중 회피 중에는 일부 공격의 피해가 적용되지 않습니다.</p></div></div></details>'
    +'<div class="tower-buttons"><button id="tower-start" type="button">1층 도전 시작</button>'
    +'<button id="tower-pause" type="button" hidden>⏸ 일시정지</button>'
    +'<button id="tower-abandon" type="button" hidden>도전 포기</button></div>'
@@ -189,6 +190,7 @@ function install(){
   doc.querySelector?.('#tower-arena-slot .canvas-wrapper')?.append(clearOverlay);
   const nextStart=el('tower-next-start');
   let active=false,stage='ready',level=1,cleared=0,selected=null,temporary=null,mode='auto';
+  let previousFocus=false,previousStage='ready';
   const pool=()=>[...CHARACTER_DEFS,...CUSTOM_DEFS];
   function selectedDef(){return pool().find(d=>d.id===hero.value)||pool()[0]||null;}
   function current(){return {active,stage,level,cleared,boss:floor(level).boss,selected:key(selected),mode};}
@@ -211,6 +213,17 @@ function install(){
   }
   function show(){
     refreshHero();
+    // Keep the arena and input unobstructed during manual combat; full enemy
+    // details remain available as one expandable, keyboard-accessible drawer.
+    const focus=mode==='manual'&&active&&['fighting','between'].includes(stage);
+    screen.dataset.manualFocus=String(focus);
+    screen.dataset.towerStage=stage;
+    const intel=el('tower-intel');
+    if(intel){
+      if(focus&&(!previousFocus||(previousStage==='between'&&stage==='fighting')))intel.open=false;
+      else if(!focus&&previousFocus)intel.open=true;
+    }
+    previousFocus=focus;previousStage=stage;
     const f=floor(level),best=read(global.localStorage).records[key(selectedDef())]?.best||0;
     el('tower-floor').textContent=level+' / '+FINISH+'F';
     el('tower-rule').textContent=f.difficulty+' · '+f.description;
