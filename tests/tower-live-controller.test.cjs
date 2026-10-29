@@ -230,7 +230,7 @@ test('failed intermission Start keeps the round paused and retryable',()=>{
   const x=harness();x.tower.begin();
   conclude(x,x.world.players[0]);
   const existingSeq=x.world.seq;
-  x.world.togglePlay=()=>false;
+  x.world.togglePlay=()=>{x.world.roundStarted=true;return false;};
   assert.equal(x.tower.begin(),false);
   assert.equal(x.tower.stage,'between');
   assert.equal(x.world.isPlaying,false);
