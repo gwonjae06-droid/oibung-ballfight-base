@@ -64,3 +64,13 @@ test('authored multi-action skills execute chained attacks with visual events an
  assert.ok(state.events.some(e=>e.type==='hit'&&Number.isFinite(e.x)));
  assert.ok(casts.every(e=>Number.isFinite(e.x)&&Number.isFinite(e.targetX)));
 });
+
+test('browser rulebook exactly mirrors Node PvP rules and is loaded before matchmaking',()=>{
+ const fs=require('node:fs');
+ const file=fs.readFileSync(path.join(__dirname,'../js/features/pvp-rulebook.js'),'utf8');
+ const original=fs.readFileSync(path.join(__dirname,'../workers/pvp-rules.mjs'),'utf8');
+ assert.ok(file.includes(original.replace(/^export /gm,'')),'browser and Node must run identical combat rules');
+ const html=fs.readFileSync(path.join(__dirname,'../index.html'),'utf8');
+ assert.ok(html.indexOf('pvp-rulebook.js')<html.indexOf('pvp-supabase.js'));
+ assert.ok(html.indexOf('pvp-supabase.js')<html.indexOf('pvp-online.js'));
+});
