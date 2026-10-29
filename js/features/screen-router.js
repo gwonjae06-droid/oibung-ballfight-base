@@ -3,11 +3,11 @@
  * Screen switching neither clones widgets nor reloads the document. */
 (function(global){
 'use strict';
-const ROUTES=['lobby','tower','pvp','character','ranking','mine','stock'];
-const NAMES={lobby:'메인 로비',tower:'도전의 탑',pvp:'온라인 PvP',character:'캐릭터 설계',
+const ROUTES=['lobby','tower','pve','pvp','character','ranking','mine','stock'];
+const NAMES={lobby:'메인 로비',tower:'도전의 탑',pve:'PvE · 자유 대전',pvp:'온라인 PvP',character:'캐릭터 설계',
  ranking:'캐릭터 랭킹',mine:'광산',stock:'주식'};
-const ICONS={tower:'⚔',pvp:'⚡',character:'✦',ranking:'★',mine:'⛏',stock:'▥'};
-const DECKS={tower:'10개 층 · 층별 전술 · 보스와의 결전',pvp:'자동 또는 직접 조종 선택 → 같은 모드 1:1 랜덤 매칭',character:'설계 · 조합 · 시연 · 저장 — 나만의 전투 방식을 완성하세요',
+const ICONS={tower:'⚔',pve:'🎯',pvp:'⚡',character:'✦',ranking:'★',mine:'⛏',stock:'▥'};
+const DECKS={tower:'10층까지 순서대로 도전',pve:'자유롭게 캐릭터를 골라 AI 전투를 즐기세요',pvp:'온라인 1:1 랜덤 매칭',character:'설계 · 조합 · 시연 · 저장 — 나만의 전투 방식을 완성하세요',
  ranking:'공유 파이터 분석과 내 도전 기록',mine:'터치 채굴로 G를 모으고 가챠에서 꾸미기 수집',stock:'다섯 가상 종목의 흐름을 읽는 모의 투자'};
 function install(){
   const doc=global.document,main=doc?.getElementById('container');
@@ -23,7 +23,7 @@ function install(){
   const market=finance.querySelector('.finance-market'),mine=finance.querySelector('.finance-mine');
   const ranking=doc.getElementById('community-power-ranking');
   const studio=doc.getElementById('character-studio-dialog');
-  const screens={};let active='lobby',subtab='tower',charTab='design',rankingTab='power',mineView='mine';
+  const screens={};let active='lobby',charTab='design',rankingTab='power',mineView='mine';
   const node=(tag,cls)=>{const e=doc.createElement(tag);if(cls)e.className=cls;return e;};
   const mount=doc.createElement('div');mount.id='arena-screen-stack';
   const lobby=node('section','arena-screen lobby-screen');
@@ -48,6 +48,7 @@ function install(){
   lobby.append(hero);
   const cards=node('div','lobby-cards');
   cards.innerHTML=[
+   ['pve','PvE · 자유 대전','원하는 파이터를 선택해 AI 전투를 즐기세요.','자유 대전 · 2~10인 · 실험 전투'],
    ['pvp','온라인 PvP','자동 또는 직접 조종을 고른 뒤 다른 플레이어와 매칭하세요.','1:1 랜덤 매칭 · 온라인 서버 필요'],
    ['character','캐릭터 설계','블록으로 스킬을 만들고 외형을 꾸며 보세요.','스킬 코드 · 미리보기 · 가챠'],
    ['ranking','캐릭터 랭킹','공유 파이터와 내 탑 기록을 확인하세요.','파워랭킹 · 기록 · 공유'],
@@ -84,17 +85,16 @@ function install(){
   if(oldNav)legacy.append(oldNav);
   if(oldPurpose)legacy.append(oldPurpose);
   main.append(legacy);
-  const tower=screens.tower;
-  const towerTabs=node('nav','screen-tabs');
-  towerTabs.setAttribute('aria-label','도전의 탑 모드');
-  towerTabs.innerHTML='<button type="button" data-tower-tab="tower">도전의 탑</button>'
-    +'<button type="button" data-tower-tab="free">자유 대전 · 실험 전투</button>';
-  tower.append(towerTabs);
+  const tower=screens.tower,pve=screens.pve;
   const slot=node('div','tower-mode-slot');slot.id='tower-mode-slot';tower.append(slot);
-  const arenaSlot=node('div','tower-arena-slot');arenaSlot.id='tower-arena-slot';arenaSlot.append(arena);tower.append(arenaSlot);
-  const free=node('div','tower-free-slot');free.id='tower-free-slot';
+  // There is exactly ONE live canvas/engine. Move its original DOM node
+  // between routes rather than cloning canvases, timers or game controls.
+  const arenaSlot=node('div','tower-arena-slot');arenaSlot.id='tower-arena-slot';
+  arenaSlot.append(arena);tower.append(arenaSlot);
+  const pveArena=node('div','pve-arena-slot');pveArena.id='pve-arena-slot';
+  const free=node('div','pve-free-slot');free.id='pve-free-slot';
   free.append(tools);if(wager)free.append(wager);
-  tower.append(free);
+  pve.append(pveArena,free);
   const designTabs=node('nav','screen-tabs character-route-tabs');
   designTabs.setAttribute('aria-label','캐릭터 설계 메뉴');
   designTabs.innerHTML='<button type="button" data-character-tab="design">스킬 제작</button>'
@@ -201,25 +201,16 @@ function install(){
     for(const b of rankingTabs.querySelectorAll('button'))
       b.setAttribute('aria-pressed',String(b.dataset.rankingTab===rankingTab));
   }
-  function towerTab(id){
-    const old=subtab;
-    subtab=id==='free'?'free':'tower';
-    const challenge=doc.getElementById('tower-mode-slot');
-    challenge.hidden=subtab!=='tower';
-    free.hidden=subtab!=='free';
-    for(const btn of towerTabs.querySelectorAll('button')){
-      btn.setAttribute('aria-pressed',String(btn.dataset.towerTab===subtab));
-    }
-    tower.dataset.battleMode=subtab;
-    const canControl=subtab==='free'||global.ArenaTower?.stage==='fighting';
-    const legacyControls=doc.querySelector('.arena-setup-controls');
-    if(legacyControls)legacyControls.hidden=!canControl;
-    if(subtab==='free'&&global.ArenaTower?.active){
-      // Never switch the same live battle engine into free mode mid-run.
-      towerTab('tower');return;
-    }
-    if(old!=='free'&&subtab==='free'&&global.ArenaTower?.stage!=='fighting'&&
-      typeof reRollMatch==='function')reRollMatch();
+  // Compatibility with old UI shortcuts: routing has no tower sub-tabs now.
+  function towerTab(id){return go(id==='free'?'pve':'tower');}
+  function moveArena(where){
+    const destination=where==='pve'?pveArena:arenaSlot;
+    if(arena.parentElement!==destination)destination.append(arena);
+    tower.dataset.battleMode='tower';
+    pve.dataset.battleMode='free';
+    // The old native game controls are only relevant to free PvE.
+    const legacyControls=arena.querySelector('.arena-setup-controls');
+    if(legacyControls)legacyControls.hidden=where!=='pve';
   }
   function mineTab(id){
     mineView=id==='gacha'?'gacha':'mine';
@@ -244,6 +235,20 @@ function install(){
   }
   function go(where){
     if(!ROUTES.includes(where))where='lobby';
+    if(where==='pve'&&global.ArenaTower?.active){
+      // A prepared Tower floor owns the shared engine until its run ends.
+      // Never silently abandon a run or replace its fighters.
+      const feedback=doc.getElementById('tower-feedback');
+      if(feedback){feedback.textContent='진행 중인 도전을 종료한 후 PvE로 이동할 수 있습니다.';feedback.hidden=false;}
+      return active;
+    }
+    if(active==='pve'&&where!=='pve'){
+      // Free matches must not leave roundStarted=true or block Tower start.
+      if(typeof roundStarted!=='undefined'&&roundStarted&&!isGameOver&&
+         typeof stopMatch==='function')stopMatch();
+      else if(typeof isPlaying!=='undefined'&&isPlaying&&typeof togglePlay==='function')togglePlay();
+      global.BackgroundMusic?.setBattle?.(false);
+    }
     if(active==='tower'&&where!=='tower'){
       if(typeof isPlaying!=='undefined'&&isPlaying&&typeof togglePlay==='function')togglePlay();
       global.BackgroundMusic?.setBattle?.(false);
@@ -254,6 +259,7 @@ function install(){
       global.dispatchEvent?.(new global.Event('studio:close'));
     }
     active=where;
+    if(where==='tower'||where==='pve')moveArena(where);
     global.ArenaPvp?.onRoute?.(where==='pvp');
     for(const [id,page] of Object.entries(screens)){
       page.hidden=id!==where;
@@ -265,7 +271,9 @@ function install(){
       if(dialog&&!dialog.open)dialog.setAttribute('open','');
       characterTab(charTab);
     }else if(where==='tower'){
-      global.ArenaTower?.refresh?.();towerTab(subtab);
+      global.ArenaTower?.refresh?.();
+    }else if(where==='pve'){
+      if(typeof reRollMatch==='function'&&(!roundStarted||isGameOver))reRollMatch();
     }else if(where==='ranking')setRankingTab(rankingTab);
     else if(where==='mine')mineTab(mineView);
     refresh();
@@ -274,13 +282,12 @@ function install(){
   }
   function showArena(){doc.querySelector('.battle-screen')?.scrollIntoView?.({block:'start',behavior:'smooth'});}
   mount.addEventListener('click',event=>{
-    const b=event.target.closest('[data-screen],[data-tower-tab],[data-character-tab],[data-ranking-tab],[data-mine-tab]');
+    const b=event.target.closest('[data-screen],[data-character-tab],[data-ranking-tab],[data-mine-tab]');
     if(!b||!mount.contains(b))return;
     if(b.dataset.screen){
       go(b.dataset.screen);
       if(b.dataset.mineTab)mineTab(b.dataset.mineTab);
-    }else if(b.dataset.towerTab)towerTab(b.dataset.towerTab);
-    else if(b.dataset.characterTab)characterTab(b.dataset.characterTab);
+    }else if(b.dataset.characterTab)characterTab(b.dataset.characterTab);
     else if(b.dataset.rankingTab)setRankingTab(b.dataset.rankingTab);
     else if(b.dataset.mineTab)mineTab(b.dataset.mineTab);
   });
@@ -302,7 +309,7 @@ function install(){
     if(ROUTES.includes(next))go(next);
   });
   const api={go,refresh,showArena,towerTab,characterTab,mineTab,setRankingTab,get enabled(){return true;},
-    get active(){return active;},get activeTowerTab(){return subtab;}};
+    get active(){return active;},get activeTowerTab(){return active==='pve'?'free':'tower';}};
   global.ArenaScreenRouter=api;
   return api;
 }
