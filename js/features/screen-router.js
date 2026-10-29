@@ -96,11 +96,24 @@ function install(){
   tower.append(free);
   const designTabs=node('nav','screen-tabs character-route-tabs');
   designTabs.setAttribute('aria-label','캐릭터 설계 메뉴');
-  designTabs.innerHTML='<button type="button" data-character-tab="design">스킬 코딩 · 미리보기</button>'
+  designTabs.innerHTML='<button type="button" data-character-tab="design">스킬 제작</button>'
     +'<button type="button" data-character-tab="cosmetics">외형 꾸미기</button>';
   screens.character.append(designTabs);
   const designSlot=node('div','character-design-slot');designSlot.id='character-design-slot';
-  if(studio)designSlot.append(studio);screens.character.append(designSlot);
+  if(studio){
+     // Reuse the original creator and its event handlers, but let the route
+     // heading/tabs be the only visible navigation chrome.
+     designSlot.append(studio);
+     studio.classList.add('character-studio-embedded');
+     for(const selector of ['.character-studio-head','.studio-category-tabs']){
+       const duplicate=studio.querySelector(selector);
+       if(duplicate){
+         duplicate.hidden=true;
+         duplicate.setAttribute('aria-hidden','true');
+       }
+     }
+   }
+   screens.character.append(designSlot);
   const cosmeticSlot=node('div','character-cosmetic-slot');cosmeticSlot.id='character-cosmetic-slot';
   cosmeticSlot.innerHTML='<div class="character-cosmetic-guide"><strong>새 꾸미기 아이템이 필요하신가요?</strong>'
     +'<p>광산의 가챠에서 획득한 아이템을 여기서 캐릭터별로 장착·해제할 수 있습니다.</p>'
