@@ -5,6 +5,8 @@ updateUI=()=>{};syncStopButton=()=>{};
 global.settleRound=()=>{};
 let current=null,accumulator=0,remote=false,targets=null,lastPaint=0;
 let steer=null,fxOutbox=[],fxSequence=0,remoteFxSequence=0,preview=null,fxFrameCarry=0;
+let fxWake=null;
+function setFxWake(fn){fxWake=typeof fn==='function'?fn:null;}
 function captureFx(effect,owner){
   if(remote||!current||current.ended)return;
   const src=players.indexOf(owner);
@@ -15,6 +17,7 @@ function captureFx(effect,owner){
     angle:effect.angle,radius:effect.radius,color:effect.color,
     life:effect.life,scale:effect.scale
   });
+  fxWake?.();
 }
 function drainFx(max=24){return fxOutbox.splice(0,Math.min(24,Math.max(1,max)));}
 // Called as soon as a remote effect event arrives, not on the next
@@ -54,7 +57,24 @@ updateCharacter=function(p){
 };
 const baseDraw=drawCharacter;
 drawCharacter=p=>{if(p.forge)SkillForge.drawFighter(p);baseDraw(p);};
-global.ArenaTower={paintBackground:(c,s)=>ArenaTowerScenes.paint(c,s.width,s.height,1)};
+// Cache the detailed Tower scene at its native canvas resolution.
+let stageCache=null,stageWidth=0,stageHeight=0;
+global.ArenaTower={paintBackground:(c,s)=>{
+ if((!stageCache||stageWidth!==s.width||stageHeight!==s.height)&&
+    typeof document.createElement==='function'){
+   const cached=document.createElement('canvas');
+   cached.width=s.width;cached.height=s.height;
+   const cachedCtx=cached.getContext?.('2d');
+   if(cachedCtx){
+     ArenaTowerScenes.paint(cachedCtx,s.width,s.height,1);
+     stageCache=cached;stageWidth=s.width;stageHeight=s.height;
+   }
+ }
+ if(stageCache&&typeof c.drawImage==='function'){
+   c.drawImage(stageCache,0,0);return true;
+ }
+ return ArenaTowerScenes.paint(c,s.width,s.height,1);
+}};
 function createRoom(a,b,mode,now,modes){
  AdvancedCombat.reset();SkillVisuals.clear();CUSTOM_DEFS.forEach(d=>delete BEHAVIORS[d.id]);CUSTOM_DEFS.length=0;
  const defs=[a,b].map(raw=>{
@@ -190,5 +210,5 @@ function paint(){
 }
 
 global.PvpRuntime={createRoom,setInput,cast,step,snapshot,receive,receiveFx,
-  drainFx,previewCast,predict,paint};
+  drainFx,setFxWake,previewCast,predict,paint};
 })(window);
