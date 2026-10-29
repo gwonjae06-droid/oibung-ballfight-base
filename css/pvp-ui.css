@@ -63,7 +63,7 @@
   touch-action:none;user-select:none}
 #pvp-stick{display:block;width:42px;height:42px;border-radius:50%;border:2px solid white;
   background:#aec8da;box-shadow:0 2px 9px #0009;pointer-events:none}
-.pvp-skills{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));flex:1;gap:8px}
+.pvp-skills{display:grid;grid-template-columns:repeat(var(--pvp-skill-count,4),minmax(0,1fr));flex:1;gap:8px}
 .pvp-skill{min-width:0;min-height:72px;display:grid;justify-items:center;gap:4px;
   padding:8px 4px;border:1px solid #c9a778;border-radius:10px;background:#40546b;
   color:#f2f8ff;touch-action:none;-webkit-tap-highlight-color:transparent}
