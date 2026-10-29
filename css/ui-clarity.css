@@ -391,3 +391,121 @@
   .character-studio-dialog .studio-motion-progress,
   #container .arena-match-setup .arena-setup-controls button{transition:none!important}
 }
+
+/* Custom studio: first choose a workflow, then preview-left / editor-right. */
+.character-studio-dialog .studio-mode-picker,
+.character-studio-dialog .studio-mode-screen{min-width:0;max-width:100%}
+.character-studio-dialog .studio-mode-picker[hidden],
+.character-studio-dialog .studio-mode-screen[hidden],
+.character-studio-dialog .studio-motion-preview[hidden],
+.character-studio-dialog .forge-random-entry[hidden],
+.character-studio-dialog .forge-name[hidden],
+.character-studio-dialog .forge-primary-actions[hidden],
+.character-studio-dialog .forge-saved[hidden],
+.character-studio-dialog .studio-clarity-steps[hidden],
+.character-studio-dialog .studio-save-purpose[hidden]{display:none!important}
+.character-studio-dialog .character-studio-shell[data-studio-mode="choose"],
+.character-studio-dialog .character-studio-shell[data-studio-mode="appearance"]{
+  grid-template-columns:minmax(0,1fr)!important
+}
+.character-studio-dialog .character-studio-shell[data-studio-mode="choose"] .character-studio-content,
+.character-studio-dialog .character-studio-shell[data-studio-mode="appearance"] .character-studio-content{
+  grid-column:1/-1;grid-row:2
+}
+.character-studio-dialog .studio-mode-picker{max-width:900px;margin:22px auto 34px}
+.character-studio-dialog .studio-mode-intro{text-align:center;margin:4px auto 27px;max-width:660px}
+.character-studio-dialog .studio-mode-intro .eyebrow{
+  color:#dbc7a3;font-size:11px;font-weight:900;letter-spacing:.16em
+}
+.character-studio-dialog .studio-mode-intro h3{
+  margin:10px 0;font-size:clamp(21px,2.6vw,29px);line-height:1.35;color:#fff4e1
+}
+.character-studio-dialog .studio-mode-intro p{
+  margin:0;color:#bacada;line-height:1.75;font-size:14px
+}
+.character-studio-dialog .studio-mode-choices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+.character-studio-dialog .studio-mode-choice{
+  display:flex;flex-direction:column;align-items:flex-start;text-align:left;
+  min-width:0;gap:12px;min-height:265px;padding:28px;
+  border:1px solid #668096;border-radius:18px;
+  background:linear-gradient(155deg,#2b4156,#192735);color:#f7f9fc;
+  cursor:pointer;box-shadow:0 9px 27px #0005;transition:border-color .15s,transform .15s
+}
+.character-studio-dialog .studio-mode-choice:hover{border-color:#e0bd88;transform:translateY(-2px)}
+.character-studio-dialog .studio-mode-choice:focus-visible,
+.character-studio-dialog .studio-mode-toolbar button:focus-visible,
+.character-studio-dialog .studio-random-skill:focus-visible,
+.character-studio-dialog .studio-roll-four:focus-visible{
+  outline:3px solid #ebc78d;outline-offset:3px
+}
+.character-studio-dialog .studio-mode-icon{font-size:34px;line-height:1.2}
+.character-studio-dialog .studio-mode-choice strong{font-size:21px;letter-spacing:-.03em}
+.character-studio-dialog .studio-mode-choice small{
+  font-size:13px;color:#d0dfec;line-height:1.75;font-weight:500
+}
+.character-studio-dialog .studio-mode-cta{
+  margin-top:auto;color:#ffe1a8;font-size:13px;font-weight:800
+}
+.character-studio-dialog .studio-mode-screen{display:grid;align-content:start;gap:13px}
+.character-studio-dialog .studio-mode-toolbar{
+  display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;
+  margin-bottom:7px;color:#c8a979;font-size:10px;font-weight:900;letter-spacing:.12em
+}
+.character-studio-dialog .studio-mode-toolbar button,
+.character-studio-dialog .studio-switch-to-compose{
+  border:1px solid #778da5;background:#26394c;color:#f0f6fd;
+  border-radius:9px;min-height:42px;padding:9px 13px;cursor:pointer;
+  font-size:13px;font-weight:700
+}
+.character-studio-dialog .studio-mode-toolbar button:hover,
+.character-studio-dialog .studio-switch-to-compose:hover{background:#39536c}
+.character-studio-dialog .studio-mode-screen h3{
+  font-size:20px;color:#ffedcf;margin:2px 0 0
+}
+.character-studio-dialog .studio-mode-description,
+.character-studio-dialog .studio-compose-heading p{
+  color:#bfd0df;margin:0;font-size:13px;line-height:1.75
+}
+.character-studio-dialog .studio-roll-four{
+  display:block;min-height:56px;width:100%;padding:12px 16px;
+  border:1px solid #f0c98c;border-radius:10px;
+  background:linear-gradient(135deg,#e5c59b,#b88f5e);
+  color:#17202c;font-size:16px;font-weight:900;cursor:pointer
+}
+.character-studio-dialog .studio-roll-four:hover{filter:brightness(1.08)}
+.character-studio-dialog .studio-roll-status{min-height:20px;color:#b8d7be;font-size:12px;line-height:1.55}
+.character-studio-dialog .studio-random-results{display:grid;gap:10px;min-width:0}
+.character-studio-dialog .studio-result-heading{color:#bccbd9;font-size:12px;margin:0 0 3px;line-height:1.6}
+.character-studio-dialog .studio-random-skill{
+  display:flex;flex-direction:column;text-align:left;min-width:0;gap:7px;
+  border-radius:12px;border:1px solid #526b83;background:#1f3040;
+  padding:14px 16px;color:#edf5fd;cursor:pointer
+}
+.character-studio-dialog .studio-random-skill:hover{border-color:#d4b98b;background:#2b4054}
+.character-studio-dialog .studio-random-skill[aria-pressed="true"]{
+  border-color:#e0be88;box-shadow:inset 3px 0 #e0be88;background:#344658
+}
+.character-studio-dialog .studio-random-skill strong{font-size:14px;color:#fff0d5}
+.character-studio-dialog .studio-random-skill span{
+  overflow-wrap:anywhere;font-size:13px;line-height:1.55;color:#ecf0f3
+}
+.character-studio-dialog .studio-random-skill small{font-size:11px;color:#b5cada}
+.character-studio-dialog .studio-switch-to-compose{width:100%;margin-top:4px}
+.character-studio-dialog .studio-compose-heading{display:grid;gap:6px}
+@media(max-width:700px){
+  .character-studio-dialog .studio-mode-picker{margin:9px auto 18px}
+  .character-studio-dialog .studio-mode-choices{grid-template-columns:1fr;gap:10px}
+  .character-studio-dialog .studio-mode-choice{
+    min-height:136px;gap:7px;padding:16px 18px;border-radius:12px
+  }
+  .character-studio-dialog .studio-mode-icon{font-size:27px}
+  .character-studio-dialog .studio-mode-choice strong{font-size:17px}
+  .character-studio-dialog .studio-mode-choice small{font-size:12px}
+  .character-studio-dialog .studio-mode-intro{margin-bottom:15px}
+  .character-studio-dialog .studio-mode-intro h3{font-size:20px}
+  .character-studio-dialog .studio-mode-intro p{font-size:12px}
+  .character-studio-dialog .studio-mode-screen h3{font-size:18px}
+}
+@media(prefers-reduced-motion:reduce){
+  .character-studio-dialog .studio-mode-choice{transition:none}
+}

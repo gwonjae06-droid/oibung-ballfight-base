@@ -243,7 +243,7 @@ function refresh(reset=false){
   if(reset)elapsed=0;
   elapsed=Math.min(elapsed,sequence.duration);
   const selected=sequence.skills[focus]||sequence.skills[0];
-  cooldown.textContent=focus==='all'?'최대 12개 스킬을 각자의 쿨타임으로 시연합니다.':
+  cooldown.textContent=focus==='all'?'스킬 '+sequence.skills.length+'개를 각자의 쿨타임으로 시연합니다.':
     '발동: '+(global.SkillForge.TRIGGER[selected?.trigger]||'자동')+' · 개별 쿨타임 '+(selected?.cooldown||3)+'초';
   draw(elapsed);
 }
@@ -303,6 +303,8 @@ refresh(true);
 if(dialog.open)start();
 motion={setVisible,refresh,selectSkill,plan,get timeline(){return sequence;},get time(){return elapsed;}};
 global.CharacterStudioWorkspace={selectTab,refresh:()=>refresh(),
+  setPreviewVisible:on=>motion?.setVisible?.(on),
+  selectPreviewSkill:(si,index)=>selectSkill(si,index),
   previewSkill:(si,index)=>{selectTab('skills');selectSkill(si,index);},
   planPreview:plan,get activeTab(){return looks.hidden?'skills':'appearance';},
   get previewTimeline(){return sequence;}};
