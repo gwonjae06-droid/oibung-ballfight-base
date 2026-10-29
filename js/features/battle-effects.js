@@ -104,7 +104,13 @@
     const delta=Math.min(100,Math.max(0,time-last));last=time;
     if(isPlaying&&!isGameOver){
       const step=1000/60;
-      acc+=delta*(speed.value==='2'?2:1);
+      // The Tower has its own 1×/2×/3× control. Free matches stay at the
+      // existing 1×/2× speed and never inherit a Tower speed choice.
+      const towerSpeed=globalThis.ArenaScreenRouter?.active==='tower'&&
+        globalThis.ArenaScreenRouter?.activeTowerTab==='tower'&&globalThis.ArenaTower?.active;
+      const multiplier=towerSpeed?Math.max(1,Math.min(3,Number(globalThis.ArenaTower.speed)||1)):
+        speed.value==='2'?2:1;
+      acc+=delta*multiplier;
       let steps=0;
       while(acc+0.000001>=step&&steps<10){
         update();acc=Math.max(0,acc-step);steps++;
