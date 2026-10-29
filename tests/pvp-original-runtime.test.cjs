@@ -5,7 +5,10 @@ function world(){
  const canvas={width:500,height:500,getContext:()=>ctx};
  const w={console,Math,Date,Set,Map,Image:class{},localStorage:{getItem:()=>null},document:{getElementById:id=>id==='arena'?canvas:{style:{},dataset:{}},querySelector:()=>null},requestAnimationFrame(){}};w.window=w;vm.createContext(w);
  const html=fs.readFileSync('pvp-runtime.html','utf8');
- for(const m of html.matchAll(/src="([^"]+)"/g))vm.runInContext(fs.readFileSync(m[1],'utf8'),w,{filename:m[1]});return w;
+ for(const m of html.matchAll(/src="([^"]+)"/g)){
+  const script=m[1].split('?')[0];
+  vm.runInContext(fs.readFileSync(script,'utf8'),w,{filename:script});
+ }return w;
 }
 const profile={name:'연계',hp:300,speed:2,color:'#4588aa',skills:[{name:'화염 연사',trigger:'auto',cooldown:.2,actions:[{type:'shot',damage:30,count:3,speed:10,radius:120,status:'fire',delay:0},{type:'bolt',damage:20,radius:300,delay:.1}]}]};
 test('original online runtime runs authored combo damage and renders both peers',()=>{
