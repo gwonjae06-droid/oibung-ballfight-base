@@ -31,6 +31,9 @@ function setup(){
   const main=new El('main');main.id='container';
   const header=new El(),nav=new El(),purpose=new El(),arena=new El(),tools=new El(),finance=new El(),ranking=new El(),gallery=new El(),dialog=new El(),cosmetic=new El(),wager=new El(),market=new El(),mine=new El(),guide=new El();
   ranking.id='community-power-ranking';dialog.id='character-studio-dialog';
+  const innerHeading=new El('header'),innerTabs=new El('nav');
+  dialog.queryMap['.character-studio-head']=innerHeading;
+  dialog.queryMap['.studio-category-tabs']=innerTabs;
   nav.queryMap['.arena-guide-reopen']=guide;
   finance.queryMap['.finance-market']=market;finance.queryMap['.finance-mine']=mine;
   ranking.queryMap['.community-section']=gallery;
@@ -55,7 +58,7 @@ function setup(){
   game.window=game;vm.createContext(game);
   vm.runInContext(source,game,{filename:'screen-router.js'});
   return {game,main,header,arena,tools,ranking,gallery,market,mine,dialog,
-    cosmetic,guide,events,byId};
+    innerHeading,innerTabs,cosmetic,guide,events,byId};
 }
 test('actual router constructs all six routes and preserves original game widgets',()=>{
   const x=setup(),r=x.game.ArenaScreenRouter;
@@ -109,4 +112,29 @@ test('tower and four ranking tabs toggle views without altering the underlying d
   assert.equal(x.byId.get('character-cosmetic-slot').hidden,false);
   r.characterTab('design');
   assert.equal(x.byId.get('character-design-slot').hidden,false);
+});
+
+test('character route embeds a single editor without an inner duplicate heading or tabs',()=>{
+  const x=setup(),r=x.game.ArenaScreenRouter;
+  r.go('character');
+  assert.equal(x.dialog.parent.id,'character-design-slot');
+  assert.equal(x.dialog.classList.contains('character-studio-embedded'),true);
+  assert.equal(x.innerHeading.hidden,true);
+  assert.equal(x.innerTabs.hidden,true);
+  assert.equal(x.innerHeading.attrs.get('aria-hidden'),'true');
+  assert.equal(x.innerTabs.attrs.get('aria-hidden'),'true');
+  assert.equal(r.active,'character');
+  r.characterTab('cosmetics');
+  r.characterTab('design');
+  assert.equal(x.innerHeading.hidden,true,'switching design modes must not restore nested chrome');
+  assert.equal(x.innerTabs.hidden,true);
+});
+test('embedded character layout removes modal frame and nested scroll area',()=>{
+  const css=fs.readFileSync(path.join(__dirname,'../css/app-shell.css'),'utf8');
+  assert.match(css,/#screen-character #character-studio-dialog\.character-studio-embedded\{/);
+  assert.match(css,/\.character-studio-embedded \.character-studio-head,/);
+  assert.match(css,/\.character-studio-embedded \.studio-category-tabs\{/);
+  assert.match(css,/\.character-studio-embedded \.character-studio-content\{[\s\S]*?overflow:visible!important/);
+  assert.match(css,/#screen-character \.character-studio-embedded \.studio-motion-preview\{/);
+  assert.match(css,/@media\(max-width:1100px\), \(max-height:640px\)/);
 });
