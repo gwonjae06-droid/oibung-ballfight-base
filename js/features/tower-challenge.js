@@ -116,18 +116,29 @@ function install(){
    +'<div class="tower-buttons"><button id="tower-start" type="button">1층 도전 시작</button>'
    +'<button id="tower-pause" type="button" hidden>⏸ 일시정지</button>'
    +'<button id="tower-abandon" type="button" hidden>도전 포기</button></div>'
-   +'<p class="tower-feedback" id="tower-feedback" role="status" aria-live="polite">나만의 파이터가 어디까지 도달할지 도전해 보세요.</p>'
-   +'<div id="tower-rewards" class="tower-rewards" hidden aria-label="층 클리어 보상 선택">'
-   +'<h3>층 클리어! 보상을 하나 선택하세요.</h3><div class="tower-reward-grid">'
-   +'<button type="button" data-tower-reward="gold">G 보상 받기</button>'
-   +'<button type="button" data-tower-reward="hp">다음 층 최대 HP +40</button>'
-   +'<button type="button" data-tower-reward="speed">다음 층 이동 +12%</button>'
-   +'</div></div>';
+   +'<p class="tower-feedback" id="tower-feedback" role="status" aria-live="polite">승리하면 보상 선택 없이 다음 층으로 자동 진입합니다.</p>';
   mount.append(panel);
   const el=id=>doc.getElementById(id),hero=el('tower-hero'),message=el('tower-feedback'),
-    start=el('tower-start'),pause=el('tower-pause'),abandon=el('tower-abandon'),rewards=el('tower-rewards');
-  let active=false,stage='ready',level=1,cleared=0,selected=null,temporary=null;
-  let bonus={hp:0,speed:0},lastWinner=null;
+    start=el('tower-start'),pause=el('tower-pause'),abandon=el('tower-abandon');
+  let active=false,stage='ready',level=1,cleared=0,selected=null,temporary=null,speed=1;
+  // Tower-only transparent 1×/2×/3× control on the actual battle canvas.
+  const canvasWrap=doc.querySelector?.('#tower-arena-slot .canvas-wrapper');
+  const speedButton=doc.createElement('button');
+  speedButton.id='tower-speed';
+  speedButton.type='button';
+  speedButton.className='tower-speed-control';
+  speedButton.hidden=true;
+  function setSpeed(value){
+    speed=Math.max(1,Math.min(3,Math.round(Number(value)||1)));
+    speedButton.textContent='⏩ '+speed+'×';
+    speedButton.title='도전의 탑 전용 · 누르면 '+(speed%3+1)+'배속';
+    speedButton.setAttribute('aria-label','도전의 탑 '+speed+'배속, 누르면 '+(speed%3+1)+'배속');
+    speedButton.dataset.speed=String(speed);
+    return speed;
+  }
+  speedButton.addEventListener('click',()=>setSpeed(speed%3+1));
+  canvasWrap?.append(speedButton);
+  setSpeed(1);
   const pool=()=>[...CHARACTER_DEFS,...CUSTOM_DEFS];
   function selectedDef(){return pool().find(d=>d.id===hero.value)||pool()[0]||null;}
   function current(){return {active,stage,level,cleared,boss:floor(level).boss,selected:key(selected)};}
@@ -169,22 +180,15 @@ function install(){
       chip.setAttribute('data-boss',String(i%5===0));
     }
     start.textContent=stage==='won'?'새로운 도전 시작':'1층 도전 시작';
-    start.hidden=stage==='fighting'||stage==='reward';
+    start.hidden=stage==='fighting';
     pause.hidden=stage!=='fighting';
     pause.textContent=isPlaying?'⏸ 일시정지':'▶ 전투 계속';
     abandon.hidden=!active;
-    rewards.hidden=stage!=='reward';
+    speedButton.hidden=stage!=='fighting';
     hero.disabled=active;
   }
   function cleanup(){
     if(temporary){delete BEHAVIORS[temporary.id];temporary=null;}
-  }
-  function giveGold(value){
-    const n=Math.max(0,Math.floor(value)),before=coins;
-    coins=Math.min(1e9,coins+n);
-    if(!saveEconomyState()){coins=before;return false;}
-    renderEconomyUI();
-    return true;
   }
   function buildEnemy(){
     cleanup();
@@ -204,11 +208,7 @@ function install(){
     if(!selected||!pool().includes(selected))throw Error('출전 캐릭터를 다시 선택하세요.');
     if(!setMatchCount(2))throw Error('2인 대전 변경 실패');
     if(!reRollMatch([selected,enemy]))throw Error('대진 구성 실패');
-    const p=players[0];
-    // Buffs exist only on this freshly created run instance.
-    p.maxHp+=bonus.hp;p.hp=p.maxHp;
-    p.speedMultiplier=(p.speedMultiplier||1)*(1+bonus.speed);
-    if(bonus.speed){p.vx*=1+bonus.speed;p.vy*=1+bonus.speed;}
+    // New floor, fresh fighter: no between-floor reward or stat bonus.
     const wager=el('wager-input');if(wager)wager.value='0';
     // Confirm that the actual engine has entered a live round before hiding
     // the start control. Otherwise the canvas stays on "대기 중" indefinitely.
@@ -224,7 +224,7 @@ function install(){
     const who=selectedDef();
     if(!who){message.textContent='캐릭터가 없습니다. 캐릭터 설계에서 먼저 만들어 주세요.';return false;}
     if(roundStarted&&!isGameOver){message.textContent='진행 중인 자유 대전을 먼저 종료해 주세요.';return false;}
-    selected=who;active=true;stage='ready';level=1;cleared=0;bonus={hp:0,speed:0};
+    selected=who;active=true;stage='ready';level=1;cleared=0;setSpeed(1);
     try{startFight();return true;}
     catch(e){
       active=false;stage='ready';cleanup();
@@ -240,29 +240,25 @@ function install(){
       message.textContent='도전 종료 · '+cleared+'층 클리어. 최고 기록이 저장됐습니다.';
       show();global.ArenaScreenRouter?.refresh?.();return true;
     }
-    cleared=level;lastWinner=winner;
+    cleared=level;
     updateRecord(global.localStorage,selected,cleared,true);
     if(level>=FINISH){
       active=false;stage='won';cleanup();
       message.textContent='🏆 10층 정복 성공! 최종 우승 기록이 저장됐습니다.';
       show();global.ArenaScreenRouter?.refresh?.();return true;
     }
-    stage='reward';
-    const rewardGold=40+level*15;
-    rewards.querySelector('[data-tower-reward="gold"]').textContent=rewardGold+' G 받기';
-    message.textContent=level+'층 승리! 세 가지 보상 중 하나를 선택하면 다음 층으로 진행합니다.';
-    show();global.ArenaScreenRouter?.refresh?.();return true;
-  }
-  function chooseReward(type){
-    if(stage!=='reward'||!active)return false;
-    if(type==='gold'){
-      if(!giveGold(40+level*15)){message.textContent='포인트 저장 실패. 다시 시도하세요.';return false;}
-    }else if(type==='hp')bonus.hp=Math.min(200,bonus.hp+40);
-    else if(type==='speed')bonus.speed=Math.min(.6,bonus.speed+.12);
-    else return false;
+    // Advance immediately when a floor is won, with no reward menu or buffs.
     level++;
-    try{startFight();return true;}
-    catch(e){message.textContent='다음 층 준비 실패: '+e.message;return false;}
+    try{
+      startFight();
+      global.ArenaScreenRouter?.refresh?.();
+      return true;
+    }catch(e){
+      active=false;stage='lost';cleanup();
+      message.textContent='다음 층 시작 실패 · '+(e?.message||'알 수 없는 오류')+' · 처음부터 다시 도전할 수 있습니다.';
+      show();global.ArenaScreenRouter?.refresh?.();
+      return false;
+    }
   }
   function forfeit(){
     if(!active)return false;
@@ -285,17 +281,13 @@ function install(){
   });
   abandon.addEventListener('click',forfeit);
   hero.addEventListener('change',show);
-  rewards.addEventListener('click',event=>{
-    const button=event.target.closest('[data-tower-reward]');
-    if(button)chooseReward(button.dataset.towerReward);
-  });
-  show();
+   show();
   function paintBackground(ctx,canvas){
-    if(!['fighting','reward','lost','won'].includes(stage)||screen.dataset.battleMode==='free')return false;
+    if(!['fighting','lost','won'].includes(stage)||screen.dataset.battleMode==='free')return false;
     return global.ArenaTowerScenes?.paint?.(ctx,canvas.width,canvas.height,level)||false;
   }
   const api={floor,makeEnemy,read,updateRecord,records,begin,forfeit,paintBackground,
-    chooseReward,onBattleEnd,isTransientDef,pauseAway,refresh:show,get active(){return active;},
+    onBattleEnd,isTransientDef,pauseAway,refresh:show,setSpeed,get speed(){return speed;},get active(){return active;},
     get stage(){return stage;},get state(){return current();}};
   global.ArenaTower=api;return api;
 }
