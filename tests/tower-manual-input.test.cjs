@@ -140,3 +140,51 @@ test('responsive focus CSS hides optional panels but keeps canvas, HP, speed and
   assert.match(css,/\.tower-manual-abilities/);
   assert.match(css,/#btn-stop/);
 });
+
+test('touch joystick remains active while another touch presses a skill without double firing',()=>{
+  const h=setup(),stick=h.el('tower-joystick');
+  const button=h.el('tower-manual-abilities').children[0];
+  stick.listeners.pointerdown({pointerId:11,pointerType:'touch',clientX:82,clientY:50,preventDefault(){}});
+  assert.equal(h.controller.input.pointer,11);
+  const skillPress={pointerId:22,pointerType:'touch',preventDefault(){this.prevented=true;}};
+  button.listeners.pointerdown(skillPress);
+  assert.equal(skillPress.prevented,true);
+  assert.deepEqual(h.calls.cast,[0],'second finger casts skill immediately');
+  assert.equal(h.controller.input.pointer,11,'joystick keeps ownership of original finger');
+  assert.ok(h.controller.input.touchX>0,'movement input still active');
+  h.controller.update(h.fighter,h.opponent);
+  assert.ok(h.fighter.vx>0,'player keeps moving during skill');
+  button.listeners.click();
+  assert.deepEqual(h.calls.cast,[0],'synthetic click is suppressed after touch');
+  stick.listeners.pointerup({pointerId:11});
+  assert.equal(h.controller.input.touchX,0);
+});
+test('manual tracking camera enlarges characters but does not alter physics positions',()=>{
+  const h=setup(),old={x:h.fighter.x,y:h.fighter.y,enemyX:h.opponent.x};
+  const view=h.controller.camera(500,500);
+  assert.ok(view.zoom>1&&view.zoom<=1.2);
+  assert.equal(h.fighter.x,old.x);
+  assert.equal(h.fighter.y,old.y);
+  assert.equal(h.opponent.x,old.enemyX);
+  const commands=[],ctx={translate:(...args)=>commands.push(['translate',...args]),
+    scale:(...args)=>commands.push(['scale',...args])};
+  h.controller.applyView(ctx,view);
+  assert.equal(commands.length,3);
+  assert.equal(commands[1][1],view.zoom);
+  h.tower.mode='auto';
+  assert.equal(h.controller.camera(500,500),null,'no zoom in automatic fight');
+});
+test('mobile layout pins two-thumb controls below expanded arena, and renderer shares one camera',()=>{
+  const css=fs.readFileSync(path.join(__dirname,'../css/tower-mine-ui.css'),'utf8');
+  assert.match(css,/max-width:800px\) and \(pointer:coarse\)/);
+  assert.match(css,/position:fixed!important;bottom:0;left:0;right:0/);
+  assert.match(css,/env\(safe-area-inset-bottom,0px\)/);
+  assert.match(css,/canvas-wrapper\{[\s\S]*?max-width:none!important/);
+  assert.match(css,/\.tower-manual-skill\{[\s\S]*?touch-action:none/);
+  const renderer=fs.readFileSync(path.join(__dirname,'../js/core/render.js'),'utf8');
+  const effects=fs.readFileSync(path.join(__dirname,'../js/features/battle-effects.js'),'utf8');
+  assert.match(renderer,/ArenaTowerControls\?\.camera\?\./);
+  assert.match(renderer,/ArenaTowerControls\?\.applyView\?\./);
+  assert.match(effects,/ArenaTowerControls\?\.applyView\?\./);
+  assert.match(renderer,/p\.manualTower&&p\.hp>0/);
+});
