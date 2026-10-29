@@ -176,7 +176,9 @@ function update(p,api){
         fromX,fromY,b.x,b.y,b.a?.damage||10,0)){
         extras.splice(i,1);continue;
       }
-      for(const e of api.enemies(p))if(!b.hits.includes(e.playerNum)&&Math.hypot(e.x-b.x,e.y-b.y)<e.radius+8&&api.hit(p,e,b.a)){
+      for(const e of api.enemies(p))if(!b.hits.includes(e.playerNum)&&
+        global.ActionRegistry.sweptCircle(fromX,fromY,b.x,b.y,e.x,e.y,e.radius+8)&&
+        api.hit(p,e,b.a,1,0)){
         b.hits.push(e.playerNum);
         global.AdvancedCombat?.mark?.('burst',e.x,e.y,20,(p.forge.effectColor||p.forge.color),13);
         if(b.kind==='dung'){e.slowTimer=Math.round(b.a.duration*60);e.slowMultiplier=.5;}
