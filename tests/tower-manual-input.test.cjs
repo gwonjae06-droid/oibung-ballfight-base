@@ -97,3 +97,37 @@ test('manual controls are scoped to Tower and appear after the arena',()=>{
   assert.match(html,/js\/features\/tower-controls\.js/);
   assert.ok(!html.includes('id="tower-speed"'));
 });
+
+test('compact HP strip updates live statistics without hiding the playfield',()=>{
+  const h=setup();
+  assert.equal(h.el('tower-focus-hud').hidden,false);
+  assert.equal(h.el('tower-focus-player-hp').textContent,'250 / 250');
+  assert.equal(h.el('tower-focus-enemy-hp').textContent,'200 / 200');
+  h.fighter.hp=125;h.opponent.hp=40;h.controller.refresh();
+  assert.equal(h.el('tower-focus-player-hp').textContent,'125 / 250');
+  assert.equal(h.el('tower-focus-player-fill').style.width,'50.0%');
+  assert.equal(h.el('tower-focus-enemy-fill').style.width,'20.0%');
+});
+test('intermission shows HP and Next Start overlay without live buttons or movement',()=>{
+  const h=setup();
+  h.tower.stage='between';h.w.isPlaying=false;
+  h.controller.refresh();
+  assert.equal(h.el('tower-focus-hud').hidden,false,'next-floor HUD remains visible');
+  assert.equal(h.el('tower-manual-controls').hidden,true,'touch attacks are hidden until Start');
+  assert.equal(h.el('tower-focus-state').textContent,'다음 층 준비 · 시작 대기');
+  keyboard(h,'w');
+  assert.equal(h.controller.update(h.fighter,h.opponent),false);
+  assert.equal(h.controller.cast(0),false);
+  h.tower.stage='fighting';h.w.isPlaying=true;h.controller.refresh();
+  assert.equal(h.el('tower-manual-controls').hidden,false);
+});
+test('focus styling removes duplicate spectator HUD and keeps speed selector',()=>{
+  const css=fs.readFileSync(path.join(__dirname,'../css/tower-mine-ui.css'),'utf8');
+  assert.match(css,/data-manual-focus="true"/);
+  assert.match(css,/#tower-arena-slot \.ui-container\{\s*display:none!important/);
+  assert.match(css,/\.tower-intel-details\[open\]/);
+  assert.match(css,/#tower-focus-hud/);
+  assert.match(css,/\.tower-manual-abilities/);
+  const router=fs.readFileSync(path.join(__dirname,'../js/features/screen-router.js'),'utf8');
+  assert.match(router,/doc\.getElementById\('tower-arena-slot'\)/);
+});
