@@ -141,25 +141,13 @@ test('rejected engine start leaves Tower retryable and explains the waiting scre
   assert.equal(x.tower.begin(),false,'retry must remain available');
 });
 
-test('tower-only speed control cycles 1x, 2x, 3x and persists between floors',()=>{
-  const x=harness(),button=x.el('tower-speed');
-  assert.ok(button,'tower speed button exists');
-  assert.ok(x.canvasWrap.children.includes(button),'control is attached to the actual arena');
-  assert.equal(button.hidden,true,'not displayed before a run');
-  assert.equal(x.tower.speed,1);
+test('Tower uses the shared in-game speed selector and keeps automatic floor progression',()=>{
+  const x=harness();
+  assert.equal(x.el('tower-speed'),undefined,'no duplicate Tower-only speed button');
+  assert.equal(typeof x.tower.setSpeed,'undefined');
   assert.equal(x.tower.begin(),true);
-  assert.equal(button.hidden,false);
-  button.listeners.click();
-  assert.equal(x.tower.speed,2);
-  button.listeners.click();
-  assert.equal(x.tower.speed,3);
-  assert.equal(button.textContent,'⏩ 3×');
-  assert.equal(x.tower.setSpeed(10),3,'3x is the hard upper limit');
   conclude(x,x.world.players[0]);
   assert.equal(x.tower.state.level,2);
-  assert.equal(x.tower.speed,3,'speed persists through automatic floor transitions');
-  conclude(x,x.world.players[1]);
-  assert.equal(button.hidden,true,'hidden on defeat');
-  assert.equal(x.tower.begin(),true);
-  assert.equal(x.tower.speed,1,'new run starts at 1x');
+  assert.equal(x.tower.stage,'fighting');
+  assert.equal(x.el('tower-speed'),undefined);
 });
