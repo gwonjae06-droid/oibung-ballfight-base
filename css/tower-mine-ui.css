@@ -239,3 +239,150 @@
     to{opacity:1;transform:translateY(0) scale(1)}
   }
 }
+
+/* The full opponent sheet is available on demand, never forced over combat. */
+#screen-tower .tower-intel-details{min-width:0;border:1px solid #53677b;border-radius:10px;
+  background:rgba(13,23,36,.45);overflow:hidden}
+#screen-tower .tower-intel-details>summary{
+  list-style:none;min-height:43px;display:flex;align-items:center;gap:9px;
+  padding:10px 14px;cursor:pointer;color:#e7ecf7;font-weight:850;font-size:12px
+}
+#screen-tower .tower-intel-details>summary::-webkit-details-marker{display:none}
+#screen-tower .tower-intel-details>summary::before{content:'▸';color:var(--tower-accent)}
+#screen-tower .tower-intel-details[open]>summary::before{content:'▾'}
+#screen-tower .tower-intel-details>summary:focus-visible{outline:3px solid #f3d6a2;outline-offset:-3px}
+#screen-tower .tower-intel-details>.tower-fighter-pick{padding:0 13px 14px}
+/* Manual play reduces the tower setup to a slim tactical toolbar.
+   All information remains available under one optional disclosure. */
+#screen-tower[data-manual-focus="true"]{gap:9px}
+#screen-tower[data-manual-focus="true"]>.screen-heading{
+  min-height:0;padding:0;margin:0;gap:9px;border:0
+}
+#screen-tower[data-manual-focus="true"]>.screen-heading .screen-deck,
+#screen-tower[data-manual-focus="true"]>.screen-heading .eyebrow{display:none}
+#screen-tower[data-manual-focus="true"]>.screen-heading h2{font-size:17px;margin:0}
+#screen-tower[data-manual-focus="true"]>.screen-heading .screen-home{
+  min-height:38px;padding:7px 11px;font-size:11px
+}
+#screen-tower[data-manual-focus="true"]>.screen-tabs{display:none!important}
+#screen-tower[data-manual-focus="true"] #tower-challenge.tower-challenge{
+  display:flex!important;align-items:center;justify-content:space-between;
+  flex-wrap:wrap;gap:7px 12px;padding:9px 12px;border-radius:12px
+}
+#screen-tower[data-manual-focus="true"] .tower-challenge>.tower-floor-track,
+#screen-tower[data-manual-focus="true"] .tower-challenge>.tower-scene-identity,
+#screen-tower[data-manual-focus="true"] .tower-challenge>.tower-mode-picker,
+#screen-tower[data-manual-focus="true"] .tower-challenge>.tower-feedback{display:none!important}
+#screen-tower[data-manual-focus="true"] .tower-challenge>.tower-head{
+  display:block;flex:1 1 110px;min-width:0
+}
+#screen-tower[data-manual-focus="true"] .tower-head .eyebrow,
+#screen-tower[data-manual-focus="true"] .tower-head p,
+#screen-tower[data-manual-focus="true"] #tower-best{display:none!important}
+#screen-tower[data-manual-focus="true"] .tower-head h2{margin:0;font-size:15px}
+#screen-tower[data-manual-focus="true"] .tower-head h2 span{font-size:14px}
+#screen-tower[data-manual-focus="true"] .tower-intel-details{
+  order:2;flex:0 1 auto;border-radius:9px
+}
+#screen-tower[data-manual-focus="true"] .tower-intel-details[open]{flex:1 1 100%}
+#screen-tower[data-manual-focus="true"] .tower-intel-details>summary{
+  padding:6px 9px;min-height:36px;font-size:11px
+}
+#screen-tower[data-manual-focus="true"] .tower-challenge>.tower-buttons{
+  order:1;gap:6px;margin:0
+}
+#screen-tower[data-manual-focus="true"] .tower-challenge>.tower-buttons button{
+  min-height:36px;padding:6px 10px;font-size:11px
+}
+#screen-tower[data-manual-focus="true"] #tower-arena-slot{
+  display:flex;flex-direction:column;align-items:stretch;gap:9px;
+  min-width:0;width:100%;max-width:850px;margin:0 auto
+}
+#screen-tower[data-manual-focus="true"] #tower-arena-slot .battle-screen{
+  padding:0!important;border:0!important;border-radius:12px!important;
+  background:transparent!important;box-shadow:none!important
+}
+#screen-tower[data-manual-focus="true"] #tower-arena-slot .arena-heading,
+#screen-tower[data-manual-focus="true"] #tower-arena-slot .control-panel,
+#screen-tower[data-manual-focus="true"] #tower-arena-slot .arena-setup-controls,
+#container #screen-tower[data-manual-focus="true"] #tower-arena-slot .ui-container{
+  display:none!important
+}
+#screen-tower[data-manual-focus="true"] #tower-arena-slot .arena-stop-button{display:none!important}
+#screen-tower[data-manual-focus="true"] #tower-arena-slot .canvas-wrapper{
+  width:min(100%,760px,70dvh);max-width:760px;margin:0 auto;
+  border:2px solid #6c7a88;border-radius:13px;
+  box-shadow:0 12px 30px #0006
+}
+/* The HUD is outside the playfield so neither health bars nor skill timers
+   conceal bullets, enemy telegraphs or the player's character. */
+#tower-focus-hud{
+  display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);
+  align-items:center;gap:13px;min-width:0;padding:10px 14px;
+  border:1px solid #627d92;border-radius:12px;
+  background:linear-gradient(120deg,#233345,#182738);color:#f2f6fc
+}
+#tower-focus-hud[hidden]{display:none!important}
+.tower-focus-fighter{min-width:0;display:grid;gap:6px}
+.tower-focus-label{display:flex;align-items:baseline;gap:6px;flex-wrap:wrap;min-width:0}
+.tower-focus-label>span{font-size:9px;letter-spacing:.12em;font-weight:900;color:#f3cf95}
+.tower-focus-label>strong{font-size:12px;max-width:50%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tower-focus-label>small{margin-left:auto;font-size:10px;white-space:nowrap;
+  font-variant-numeric:tabular-nums;color:#d3e1ed}
+.tower-focus-track{height:8px;border-radius:99px;background:#080f19;overflow:hidden}
+.tower-focus-track>div{height:100%;width:100%;border-radius:inherit;
+  background:linear-gradient(90deg,#60dba4,#b5f5b5);transition:width .15s linear}
+.tower-focus-enemy .tower-focus-track>div{background:linear-gradient(90deg,#e4858b,#fbbe91)}
+.tower-focus-stage{min-width:80px;text-align:center;display:grid;gap:2px}
+.tower-focus-stage strong{font-size:17px;line-height:1.1;color:#ffdc9a;font-variant-numeric:tabular-nums}
+.tower-focus-stage small{font-size:10px;color:#bdcee1}
+#screen-tower[data-manual-focus="true"] #tower-manual-controls{
+  margin:0 auto;max-width:760px;width:100%;padding:10px 13px;
+  border-color:#6e859a;border-radius:12px;background:#1b2d41;
+  box-shadow:0 9px 20px #0004
+}
+#screen-tower[data-manual-focus="true"] .tower-manual-head{margin-bottom:7px}
+#screen-tower[data-manual-focus="true"] .tower-manual-hint{margin-top:7px;min-height:12px}
+#screen-tower[data-manual-focus="true"] #tower-manual-controls .tower-manual-skill{
+  min-height:63px;border-radius:10px
+}
+@media(hover:hover) and (pointer:fine){
+  #screen-tower[data-manual-focus="true"] .tower-joystick-area{display:none}
+}
+@media(max-width:680px){
+  #screen-tower[data-manual-focus="true"]>.screen-heading{display:none!important}
+  #screen-tower[data-manual-focus="true"] #tower-challenge.tower-challenge{
+    gap:5px 8px;padding:7px 9px
+  }
+  #screen-tower[data-manual-focus="true"] .tower-head h2{font-size:13px}
+  #screen-tower[data-manual-focus="true"] #tower-arena-slot{gap:5px}
+  #tower-focus-hud{padding:8px;gap:6px;border-radius:9px}
+  .tower-focus-stage{min-width:55px}
+  .tower-focus-stage strong{font-size:13px}
+  .tower-focus-stage small{font-size:9px;max-width:76px}
+  .tower-focus-label{gap:2px 4px}
+  .tower-focus-label>span{font-size:8px}
+  .tower-focus-label>strong{font-size:10px}
+  .tower-focus-label>small{font-size:9px}
+  #screen-tower[data-manual-focus="true"] #tower-arena-slot .canvas-wrapper{
+    width:100%;border-radius:9px
+  }
+  #screen-tower[data-manual-focus="true"] #tower-manual-controls{
+    padding:8px;position:sticky;bottom:env(safe-area-inset-bottom,0px);
+    z-index:12;border-radius:11px
+  }
+  #screen-tower[data-manual-focus="true"] .tower-manual-head{margin:0 0 5px}
+  #screen-tower[data-manual-focus="true"] .tower-manual-head span{display:none}
+  #screen-tower[data-manual-focus="true"] .tower-manual-layout{gap:8px}
+  #screen-tower[data-manual-focus="true"] .tower-joystick{height:91px;width:91px}
+  #screen-tower[data-manual-focus="true"] .tower-joystick-knob{height:37px;width:37px}
+  #screen-tower[data-manual-focus="true"] #tower-manual-controls .tower-manual-skill{
+    min-height:52px;padding:4px 3px;gap:2px
+  }
+  #screen-tower[data-manual-focus="true"] .tower-manual-hint{
+    margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:10px
+  }
+}
+@media(prefers-reduced-motion:reduce){
+  .tower-focus-track>div{transition:none}
+}
