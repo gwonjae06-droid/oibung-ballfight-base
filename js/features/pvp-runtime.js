@@ -4,12 +4,16 @@
 updateUI=()=>{};syncStopButton=()=>{};
 global.settleRound=()=>{};
 let current=null,accumulator=0,remote=false,targets=null,lastPaint=0;
+let steer=null;
 const baseUpdate=updateCharacter;
 updateCharacter=function(p){
  if(!p.onlineManual)return baseUpdate(p);
  const target=getClosestAliveEnemy(p);
  if(ForgeExpansion.blocked(p)){SkillForge.advanceTimers(p);SkillForge.advanceWorld(p,target);return;}
- if(!(p.forgeDash>0)){p.vx=(p.inputX||0)*p.forge.speed;p.vy=(p.inputY||0)*p.forge.speed;}
+ if(!(p.forgeDash>0)){
+   const speed=Math.max(.6,Math.min(5,Number(p.forge?.speed)||2.4));
+   p.vx=(p.inputX||0)*speed;p.vy=(p.inputY||0)*speed;
+  }
  SkillForge.manualUpdate(p,target);
 };
 const baseDraw=drawCharacter;
@@ -23,8 +27,12 @@ function createRoom(a,b,mode,now,modes){
  });
  players=placeFighters(defs);particles=[];floatingTexts=[];shockwaves=[];
  openingCollisionPairs.clear();isPlaying=true;isGameOver=false;roundStarted=true;
- players.forEach((p,i)=>{p.onlineManual=modes[i]==='manual';if(p.onlineManual)SkillForge.enableManual(p);});
- remote=false;targets=null;accumulator=0;current={players,started:now,elapsed:0,ended:false,winner:null,modes,pending:[]};return current;
+ players.forEach((p,i)=>{
+  p.onlineManual=modes[i]==='manual';
+  if(p.onlineManual)SkillForge.enableManual(p);
+ });
+ remote=false;targets=null;steer=null;lastPaint=0;accumulator=0;
+ current={players,started:now,elapsed:0,ended:false,winner:null,modes,pending:[]};return current;
 }
 function setInput(room,i,msg,now=Date.now()){
  const p=players[i];if(!p?.onlineManual||room.ended)return false;
@@ -56,24 +64,82 @@ function decode(v){
  if('$fighter'in v)return players[v.$fighter];if('$set'in v)return new Set(v.$set.map(decode));
  const out=Array.isArray(v)?[]:{};for(const k of Object.keys(v))out[k]=decode(v[k]);return out;
 }
-function snapshot(room){return {type:'state',clock:Math.max(0,120-room.elapsed),finished:room.ended,winner:room.winner,
- players:players.map((p,i)=>({x:p.x,y:p.y,hp:p.hp,maxHp:p.maxHp,name:p.name,color:p.themeColor,mode:room.modes[i],
- skills:p.forge?.skills.slice(0,4).map(s=>({name:s.name}))||[],
- cooldowns:p.forge?.skills.slice(0,4).map((s,j)=>Math.max(0,(SkillForge.cooldownFrames(p,s)-(p.forgeTicks[j]||0))/60))||[]})),
- world:{skillEffects:encode(SkillVisuals.exportEffects()),players:players.map(p=>encode(p,true)),objects:encode(AdvancedCombat.objects),projectiles:encode(AdvancedCombat.projectiles),effects:encode(AdvancedCombat.effects),floatingTexts:encode(floatingTexts),shockwaves:encode(shockwaves)}};}
+// Heavy effect data is transferred only 2 times per second. Frequent
+// position, HP and cooldown updates stay small and interpolate smoothly.
+function snapshot(room,full=true){
+ const state={type:'state',clock:Math.max(0,120-room.elapsed),finished:room.ended,winner:room.winner,
+  players:players.map((p,i)=>({x:p.x,y:p.y,hp:p.hp,maxHp:p.maxHp,name:p.name,
+   color:p.themeColor,mode:room.modes[i],
+   skills:p.forge?.skills.slice(0,4).map(s=>({name:s.name}))||[],
+   cooldowns:p.forge?.skills.slice(0,4).map((s,j)=>
+     Math.max(0,(SkillForge.cooldownFrames(p,s)-(p.forgeTicks[j]||0))/60))||[]}))};
+ if(full){
+   const take=(a,n)=>Array.isArray(a)?a.slice(-n):[];
+   state.world={
+     skillEffects:encode(take(SkillVisuals.exportEffects(),24)),
+     players:players.map(p=>encode(p,true)),
+     objects:encode(take(AdvancedCombat.objects,24)),
+     projectiles:encode(take(AdvancedCombat.projectiles,36)),
+     effects:encode(take(AdvancedCombat.effects,24)),
+     floatingTexts:encode(take(floatingTexts,16)),
+     shockwaves:encode(take(shockwaves,16))
+   };
+ }
+ return state;
+}
 function receive(s){
- if(!s.world)return;
- remote=true;targets=s.world.players.map(p=>({x:p.x,y:p.y}));
- s.world.players.forEach((p,i)=>{const old={x:players[i].x,y:players[i].y};Object.assign(players[i],decode(p));Object.assign(players[i],old);});
- for(const k of ['objects','projectiles','effects'])AdvancedCombat[k].splice(0,AdvancedCombat[k].length,...decode(s.world[k]));
- SkillVisuals.importEffects(decode(s.world.skillEffects||[]));
- floatingTexts=decode(s.world.floatingTexts);shockwaves=decode(s.world.shockwaves);
+ if(!s?.players||s.players.length!==2)return;
+ remote=true;targets=s.players.map(p=>({x:p.x,y:p.y}));
+ if(s.world?.players?.length===2){
+   s.world.players.forEach((p,i)=>{
+     const old={x:players[i].x,y:players[i].y};
+     Object.assign(players[i],decode(p));Object.assign(players[i],old);
+   });
+   for(const k of ['objects','projectiles','effects'])
+     if(Array.isArray(s.world[k]))AdvancedCombat[k].splice(0,AdvancedCombat[k].length,...decode(s.world[k]));
+   if(s.world.skillEffects)SkillVisuals.importEffects(decode(s.world.skillEffects));
+   if(s.world.floatingTexts)floatingTexts=decode(s.world.floatingTexts);
+   if(s.world.shockwaves)shockwaves=decode(s.world.shockwaves);
+ }
+ s.players.forEach((p,i)=>{
+   players[i].hp=p.hp;players[i].maxHp=p.maxHp;
+ });
  isGameOver=!!s.finished;isPlaying=!isGameOver;
 }
-function paint(){
- const now=Date.now(),alpha=1-Math.exp(-Math.min(100,now-(lastPaint||now))/45);lastPaint=now;
- if(remote&&targets)players.forEach((p,i)=>{p.x+=(targets[i].x-p.x)*alpha;p.y+=(targets[i].y-p.y)*alpha;});
- draw();SkillVisuals.draw(ctx);
+function predict(side,msg){
+ if(!remote||!current||current.ended||side!==1||!players[side]?.onlineManual)return;
+ const x=Math.max(-1,Math.min(1,Number(msg.x)||0));
+ const y=Math.max(-1,Math.min(1,Number(msg.y)||0));
+ const n=Math.max(1,Math.hypot(x,y));steer={side,x:x/n,y:y/n};
 }
-global.PvpRuntime={createRoom,setInput,cast,step,snapshot,receive,paint};
+function paint(){
+ const now=Date.now(),dt=Math.min(40,Math.max(0,now-(lastPaint||now)));
+ const alpha=1-Math.exp(-dt/85);lastPaint=now;
+ if(remote&&targets)players.forEach((p,i)=>{
+   if(steer?.side===i&&p.hp>0){
+     const speed=Math.max(.6,Math.min(5,Number(p.forge?.speed)||2.4));
+     p.x=Math.max(p.radius||28,Math.min(canvas.width-(p.radius||28),
+       p.x+steer.x*speed*dt/(1000/60)));
+     p.y=Math.max(p.radius||28,Math.min(canvas.height-(p.radius||28),
+       p.y+steer.y*speed*dt/(1000/60)));
+   }
+   p.x+=(targets[i].x-p.x)*alpha;p.y+=(targets[i].y-p.y)*alpha;
+ });
+ draw();SkillVisuals.draw(ctx);
+ // Individual HP bar tracks each fighter on the original arena canvas.
+ players.forEach((p,i)=>{
+   if(!p||p.hp<=0)return;
+   const w=76,h=9,rad=Number(p.radius)||30;
+   const x=Math.max(2,Math.min(canvas.width-w-2,p.x-w/2));
+   const y=Math.max(4,p.y-rad-27);
+   const ratio=Math.min(1,Math.max(0,p.hp/Math.max(1,p.maxHp)));
+   ctx.save();ctx.fillStyle='#18202bdc';ctx.fillRect(x-2,y-2,w+4,h+4);
+   ctx.fillStyle='#2b3545';ctx.fillRect(x,y,w,h);
+   ctx.fillStyle=i===0?'#8be8b5':'#f6a6ad';ctx.fillRect(x,y,w*ratio,h);
+   ctx.strokeStyle='#f7f4ea';ctx.lineWidth=1;ctx.strokeRect(x,y,w,h);
+   ctx.restore();
+ });
+}
+
+global.PvpRuntime={createRoom,setInput,cast,step,snapshot,receive,predict,paint};
 })(window);
