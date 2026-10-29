@@ -304,7 +304,11 @@ function install(){
     stage='fighting';
     message.textContent=level+'층 전투 진행 중 · '+floor(level).name;
     show();
-    global.ArenaScreenRouter?.showArena?.();
+    // The focused manual HUD must remain visible when starting a new floor;
+    // the old generic scroll target could place the health bars off screen.
+    const manualHud=mode==='manual'&&doc.getElementById('tower-manual-hud');
+    if(manualHud?.scrollIntoView)manualHud.scrollIntoView({block:'start',behavior:'smooth'});
+    else global.ArenaScreenRouter?.showArena?.();
     return true;
   }
   function startFight(){
