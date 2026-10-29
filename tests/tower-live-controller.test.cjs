@@ -151,3 +151,33 @@ test('Tower uses the shared in-game speed selector and keeps automatic floor pro
   assert.equal(x.tower.stage,'fighting');
   assert.equal(x.el('tower-speed'),undefined);
 });
+
+test('manual Tower choice prepares P1 each floor, retains control mode and locks it during fights',()=>{
+  const h=harness(),prepared=[];
+  h.world.ArenaTowerControls={prepare(p){prepared.push(p);return true;},refresh(){}};
+  assert.equal(h.tower.mode,'auto','existing runs default to automatic');
+  assert.equal(h.tower.setMode('manual'),true);
+  assert.equal(h.tower.mode,'manual');
+  assert.equal(h.tower.begin(),true);
+  assert.equal(prepared.length,1);
+  assert.equal(prepared[0],h.world.players[0],'only first player is manually prepared');
+  assert.equal(h.tower.setMode('auto'),false,'mode cannot change during an active run');
+  conclude(h,h.world.players[0]);
+  assert.equal(h.tower.state.level,2);
+  assert.equal(h.tower.mode,'manual','mode stays selected across floors');
+  assert.equal(prepared.length,2);
+  assert.equal(prepared[1],h.world.players[0],'next floor has a new controlled instance');
+  conclude(h,h.world.players[1]);
+  assert.equal(h.tower.active,false);
+  assert.equal(h.tower.setMode('auto'),true,'mode unlocked when the challenge ends');
+  assert.equal(h.tower.begin(),true);
+  assert.equal(prepared.length,2,'automatic run must not prepare manual input');
+});
+test('manual control unavailable does not silently start an AI fight',()=>{
+  const h=harness();
+  assert.equal(h.tower.setMode('manual'),true);
+  assert.equal(h.tower.begin(),false);
+  assert.equal(h.tower.stage,'ready');
+  assert.equal(h.tower.active,false);
+  assert.match(h.el('tower-feedback').textContent,/수동 조작 모듈/);
+});
