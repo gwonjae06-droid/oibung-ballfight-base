@@ -17,7 +17,7 @@ test('PvP route is discoverable from the lobby and mode is selected before match
 test('PvP never pretends local AI or an unconfigured endpoint is an online match',()=>{
   const pvp=read('js/features/pvp-online.js'),server=read('workers/pvp-worker.mjs');
   assert.match(pvp,/Supabase PvP 연결 모듈을 불러오지 못했습니다/);
-  assert.match(pvp,/같은 모드/);
+  assert.match(pvp,/자동·직접 조종 모든 사용자를 찾고 있습니다/);
   assert.match(pvp,/Supabase 무료 Realtime/);
   assert.match(server,/this\.waiting=\{auto:\[\],manual:\[\]\}/);
   assert.match(server,/if\(opponent\)this\.startRoom\(opponent,socket,mode\)/);
@@ -50,4 +50,22 @@ test('Supabase-only PvP uses authentic anonymous sessions and mode-separated dat
  assert.match(sql,/realtime\.messages for select to authenticated/);
  assert.match(sql,/realtime\.messages for insert to authenticated/);
  assert.doesNotMatch(s,/service_role|sb_secret_/);
+});
+
+test('mixed PvP has authored slots, dojo stage and visible attack feedback',()=>{
+ const pvp=read('js/features/pvp-online.js');
+ const rules=read('workers/pvp-rules.mjs');
+ const sql=read('supabase/pvp_mixed_modes.sql');
+ assert.match(pvp,/s\.actions\?\.slice\(0,3\)/);
+ assert.match(pvp,/button\.hidden=!skill/);
+ assert.match(pvp,/ArenaTowerScenes\?\.paint/);
+ assert.match(pvp,/function spawnEffects\(/);
+ assert.match(pvp,/function paintEffects\(/);
+ assert.match(pvp,/visualEffects\.push\(\{type:'cast'/);
+ assert.match(rules,/p\.mode==='auto'/);
+ assert.match(rules,/p\.mode==='manual'/);
+ assert.match(sql,/order by joined_at asc limit 1/);
+ assert.doesNotMatch(sql,/where mode=p_mode and user_id<>uid/);
+ assert.match(sql,/control_a/);
+ assert.match(sql,/control_b/);
 });
