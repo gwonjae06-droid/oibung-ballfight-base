@@ -7,10 +7,10 @@ if(!screen)return;
 const host=doc.createElement('div');host.id='pvp-app';host.className='pvp-app';
 host.innerHTML='<section class="pvp-lobby" id="pvp-lobby">'
   +'<div class="pvp-intro"><span class="eyebrow">ONLINE MATCH / 1 VS 1</span>'
-  +'<h3>나만의 파이터로 대결</h3><p>캐릭터와 전투 방식을 선택하고 같은 모드의 다른 플레이어를 찾습니다.</p></div>'
+  +'<h3>나만의 파이터로 대결</h3><p>캐릭터와 전투 방식을 선택하세요. 자동·직접 조종 플레이어 모두 랜덤 매칭됩니다.</p></div>'
   +'<label class="pvp-label" for="pvp-fighter">출전 캐릭터</label><select id="pvp-fighter"></select>'
   +'<fieldset class="pvp-mode-list"><legend>전투 방식 · 매칭 전에 선택</legend>'
-  +'<label><input type="radio" name="pvp-mode" value="auto" checked><span><strong>자동 전투</strong><small>AI가 이동·스킬을 사용합니다. 같은 자동 전투 상대만 매칭됩니다.</small></span></label>'
+  +'<label><input type="radio" name="pvp-mode" value="auto" checked><span><strong>자동 전투</strong><small>AI가 내 캐릭터를 조종합니다. 직접 조종 상대와도 만날 수 있습니다.</small></span></label>'
   +'<label><input type="radio" name="pvp-mode" value="manual"><span><strong>직접 조종</strong><small>WASD/방향키·Q/E/R/F 또는 모바일 조이스틱으로 조작합니다.</small></span></label></fieldset>'
   +'<details class="pvp-network" hidden><summary>온라인 서버 연결 설정</summary>'
   +'<label for="pvp-server">PvP 서버 주소 (wss://)</label>'
@@ -20,7 +20,7 @@ host.innerHTML='<section class="pvp-lobby" id="pvp-lobby">'
   +'<div class="pvp-lobby-actions"><button id="pvp-search" type="button">랜덤 매칭 시작</button>'
   +'<button id="pvp-cancel" type="button" hidden>매칭 취소</button></div>'
   +'<p class="pvp-status" id="pvp-status" role="status" aria-live="polite">자동 또는 직접 조종을 선택하세요.</p>'
-  +'<p class="pvp-balance-note">Supabase 무료 베타: 로그인·매칭은 Supabase에서 검증하지만 전투 계산은 첫 번째 플레이어 기기에서 실행합니다. 승패 치트 방지와 랭킹전은 아직 지원하지 않습니다. 도전의 탑과 스킬 효과가 일부 다를 수 있습니다.</p></section>'
+  +'<p class="pvp-balance-note">PvP 베타: 자동·직접 조종 혼합 매칭, 실제 제작한 1~4개 스킬 및 최대 3개 연계 동작을 사용합니다. 일부 고유 행동은 PvP 표준 효과로 변환됩니다. 전투 계산은 한 플레이어 기기에서 수행하므로 랭킹전용 치트 방지는 지원하지 않습니다.</p></section>'
   +'<section class="pvp-match" id="pvp-match" hidden aria-label="실시간 온라인 PvP 전투">'
   +'<div class="pvp-match-header"><div><small id="pvp-match-type">자동 전투</small><strong id="pvp-round-state">온라인 경기</strong></div>'
   +'<span id="pvp-clock">2:00</span><button type="button" id="pvp-forfeit">경기 포기</button></div>'
@@ -37,6 +37,8 @@ host.innerHTML='<section class="pvp-lobby" id="pvp-lobby">'
 screen.append(host);
 const $=id=>doc.getElementById(id);
 const buttons=[],HOTKEYS=['q','e','r','f'],keys=new Set();
+const visualEffects=[],flecks=[],lastHealth=[null,null];
+let fxClock=0;
 const pad=$('pvp-pad'),knob=$('pvp-stick');
 let socket=null,searching=false,matched=false,mode='auto',side=0,latest=null,view=null,
   frame=null,sendLoop=null,active=true,pointer=null,touchX=0,touchY=0,lastServer='';
@@ -71,7 +73,11 @@ function profile(){
   if(!def)return null;
   const data=def.forgeData;
   return {id:def.id,name:def.name,color:data?.color||def.themeColor||'#4f86c6',
-    skills:data?.skills?.slice(0,4).map(s=>({name:s.name,type:s.actions?.[0]?.type||'shot'}))||[]};
+    // Preserve the real 1–4 authored skill slots and first three combo actions.
+    // Built-in fighters use their official PvP fallback kits in the ruleset.
+    ...(data?{skills:data.skills?.slice(0,4).map(s=>({
+      name:s.name,actions:s.actions?.slice(0,3).map(a=>({type:a.type}))||[]
+    }))||[]}: {})};
 }
 function clearInput(){
   keys.clear();touchX=touchY=0;pointer=null;
@@ -93,6 +99,7 @@ function closeConnection(message=''){
     try{current.close();}catch(_){}
   }
   cleanup();searching=false;matched=false;latest=null;view=null;
+  visualEffects.length=0;flecks.length=0;lastHealth.fill(null);
   $('pvp-lobby').hidden=false;$('pvp-match').hidden=true;
   $('pvp-search').hidden=false;$('pvp-cancel').hidden=true;
   $('pvp-fighter').disabled=false;
@@ -102,15 +109,20 @@ function closeConnection(message=''){
 function showMatch(data){
   searching=false;matched=true;side=data.you===1?1:0;
   $('pvp-lobby').hidden=true;$('pvp-match').hidden=false;
-  $('pvp-match-type').textContent=mode==='auto'?'자동 전투 · 관전':'직접 조종 · PvP';
+  $('pvp-match-type').textContent=mode==='auto'?'자동 조종 · PvP':'직접 조종 · PvP';
   $('pvp-result').hidden=true;$('pvp-again').hidden=true;
   $('pvp-input').hidden=mode!=='manual';
   $('pvp-round-state').textContent='상대 발견 · 경기 진행';
+  $('pvp-forfeit').hidden=false;
+  visualEffects.length=0;flecks.length=0;lastHealth.fill(null);
   if(mode==='manual')startSending();
   animate();
 }
 function renderState(data){
+  if(data.events?.length)spawnEffects(data.events,data.players);
   latest=data;
+  const theirs=data.players?.[1-side]?.mode==='auto'?'자동':'직접';
+  $('pvp-round-state').textContent='내 '+(mode==='auto'?'자동':'직접')+' VS 상대 '+theirs;
   $('pvp-clock').textContent=Math.floor(Math.max(0,data.clock)/60)+':'+
     String(Math.floor(Math.max(0,data.clock)%60)).padStart(2,'0');
   const own=data.players[side],other=data.players[1-side];
@@ -121,13 +133,17 @@ function renderState(data){
     $('pvp-hp-text-'+i).textContent=Math.ceil(p.hp)+' / '+p.maxHp;
   }
   if(!view)view=data.players.map(p=>({x:p.x,y:p.y}));
-  if(own?.skills)for(let i=0;i<4;i++){
-    const button=buttons[i],skill=own.skills[i];
+  // Never pad skills: one authored skill means exactly one visible button.
+  for(let i=0;i<buttons.length;i++){
+    const button=buttons[i],skill=own?.skills?.[i];
+    button.hidden=!skill;
     if(!skill)continue;
-    const cd=own.cooldowns[i]||0;
+    const cd=own.cooldowns?.[i]||0;
     button.children[1].textContent=skill.name;
     button.children[2].textContent=cd>0?cd.toFixed(1)+'s':'준비';
     button.disabled=cd>0||!matched;
+    button.setAttribute('aria-label',HOTKEYS[i].toUpperCase()+' '+skill.name+
+      (cd>0?' 재사용 '+cd.toFixed(1)+'초':' 사용 가능'));
   }
 }
 function finish(winner,reason){
@@ -142,7 +158,7 @@ function finish(winner,reason){
 function onMessage(event){
   let data;try{data=JSON.parse(event.data);}catch(_){return;}
   if(data.type==='connected'){send({type:'queue',mode,profile:profile()});}
-  else if(data.type==='queued')status('매칭 대기 중 · '+(mode==='auto'?'자동 전투':'직접 조종')+' 상대를 찾고 있습니다.');
+  else if(data.type==='queued')status('매칭 대기 중 · 자동·직접 조종 모든 사용자를 찾고 있습니다.');
   else if(data.type==='matched'){showMatch(data);}
   else if(data.type==='state'){if(!matched&&data.finished!==true)return;renderState(data);if(data.finished)finish(data.winner);}
   else if(data.type==='result'){if(matched)finish(data.winner);}
@@ -181,12 +197,15 @@ for(let i=0;i<4;i++){
   const button=doc.createElement('button');button.type='button';
   button.className='pvp-skill';button.innerHTML='<kbd>'+HOTKEYS[i].toUpperCase()+'</kbd><strong>스킬 '+(i+1)+'</strong><small>준비</small>';
   let touchAt=-Infinity;
+  button.hidden=true;
   button.addEventListener('pointerdown',e=>{
     if(e.pointerType!=='touch'&&e.pointerType!=='pen')return;
-    e.preventDefault?.();touchAt=Date.now();if(matched&&mode==='manual')send({type:'cast',slot:i});
+    e.preventDefault?.();touchAt=Date.now();
+    if(!button.hidden&&!button.disabled&&matched&&mode==='manual')send({type:'cast',slot:i});
   });
   button.addEventListener('click',()=>{
-    if(Date.now()-touchAt>650&&matched&&mode==='manual')send({type:'cast',slot:i});
+    if(Date.now()-touchAt>650&&!button.hidden&&!button.disabled&&matched&&mode==='manual')
+      send({type:'cast',slot:i});
   });
   $('pvp-skills').append(button);buttons.push(button);
 }
@@ -210,7 +229,10 @@ function inputKey(event,down){
     event.preventDefault?.();
   }
   const i=HOTKEYS.indexOf(key);
-  if(i>=0){if(down&&!event.repeat)send({type:'cast',slot:i});event.preventDefault?.();}
+  if(i>=0){
+    if(down&&!event.repeat&&!buttons[i].hidden&&!buttons[i].disabled)send({type:'cast',slot:i});
+    event.preventDefault?.();
+  }
 }
 global.addEventListener('keydown',e=>inputKey(e,true));
 global.addEventListener('keyup',e=>inputKey(e,false));
@@ -244,13 +266,14 @@ function animate(){
   frame=global.requestAnimationFrame(loop);
 }
 function draw(){
-  if(!latest||!ctx)return;
+  if(!latest||!ctx||!latest.players?.length)return;
   const w=canvas.width,h=canvas.height;
-  ctx.clearRect(0,0,w,h);ctx.fillStyle='#f0f3f5';ctx.fillRect(0,0,w,h);
-  ctx.strokeStyle='#dce3e8';ctx.lineWidth=1;
-  for(let x=20;x<w;x+=34){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,h);ctx.stroke();}
-  for(let y=20;y<h;y+=34){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w,y);ctx.stroke();}
-  ctx.setLineDash([9,12]);ctx.strokeStyle='#c2cdda';ctx.lineWidth=2;
+  // Reuse the *actual Tower's cached 2D dojo scenery* rather than a blank
+  // white grid. The separate multiplayer simulation stays isolated.
+  if(!global.ArenaTowerScenes?.paint?.(ctx,w,h,1)){
+    ctx.clearRect(0,0,w,h);ctx.fillStyle='#62564e';ctx.fillRect(0,0,w,h);
+  }
+  ctx.strokeStyle='#eed6ab66';ctx.lineWidth=2;ctx.setLineDash([10,11]);
   ctx.beginPath();ctx.moveTo(w/2,0);ctx.lineTo(w/2,h);ctx.stroke();ctx.setLineDash([]);
   latest.players.forEach((p,i)=>{
     if(!view[i])view[i]={x:p.x,y:p.y};
@@ -264,13 +287,19 @@ function draw(){
     ctx.beginPath();ctx.arc(x,y,25,0,Math.PI*2);ctx.fill();ctx.stroke();
     ctx.fillStyle='#fff';ctx.font='900 18px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
     ctx.fillText(String(p.name||'P')[0],x,y+1);
-    ctx.fillStyle='#213142';ctx.font='bold 13px sans-serif';ctx.fillText(i===side?'YOU':'RIVAL',x,y-47);
+    ctx.fillStyle='#fdf3df';ctx.strokeStyle='#202832';ctx.lineWidth=3;ctx.font='bold 14px sans-serif';
+    ctx.strokeText(i===side?'YOU':'RIVAL',x,y-49);ctx.fillText(i===side?'YOU':'RIVAL',x,y-49);
+    if(p.stunned){ctx.fillStyle='#f9db77';ctx.font='bold 13px sans-serif';ctx.fillText('★',x,y-70);}
+    if(p.haste){ctx.strokeStyle='#75e7ff';ctx.lineWidth=2;ctx.beginPath();ctx.arc(x,y,38,0,Math.PI*2);ctx.stroke();}
     ctx.restore();
   });
-  for(const b of latest.bullets){
-    ctx.beginPath();ctx.arc(b.x,b.y,7,0,Math.PI*2);ctx.fillStyle=b.owner===side?'#398ac9':'#b85c6a';ctx.fill();
-    ctx.strokeStyle='#263849';ctx.lineWidth=2;ctx.stroke();
+  for(const b of latest.bullets||[]){
+    ctx.save();ctx.shadowColor=b.owner===side?'#63e9ff':'#ff9c7a';ctx.shadowBlur=14;
+    ctx.beginPath();ctx.arc(b.x,b.y,9,0,Math.PI*2);
+    ctx.fillStyle=b.owner===side?'#5fe9ff':'#fda58f';ctx.fill();
+    ctx.strokeStyle='#ffffff';ctx.lineWidth=1.5;ctx.stroke();ctx.restore();
   }
+  paintEffects();
 }
 function onRoute(open){
   active=!!open;
