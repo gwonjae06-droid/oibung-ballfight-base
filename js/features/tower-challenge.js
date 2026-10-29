@@ -170,10 +170,24 @@ function install(){
    +'<div class="tower-buttons"><button id="tower-start" type="button">1층 도전 시작</button>'
    +'<button id="tower-pause" type="button" hidden>⏸ 일시정지</button>'
    +'<button id="tower-abandon" type="button" hidden>도전 포기</button></div>'
-   +'<p class="tower-feedback" id="tower-feedback" role="status" aria-live="polite">승리하면 보상 선택 없이 다음 층으로 자동 진입합니다.</p>';
+   +'<p class="tower-feedback" id="tower-feedback" role="status" aria-live="polite">각 층을 클리어하면 다음 층에서 대기합니다. 시작 버튼을 눌러 전투를 재개하세요.</p>';
   mount.append(panel);
   const el=id=>doc.getElementById(id),hero=el('tower-hero'),message=el('tower-feedback'),
     start=el('tower-start'),pause=el('tower-pause'),abandon=el('tower-abandon');
+  // Between floors the new opponents are already built, but the game engine
+  // must remain fully stopped until an explicit Start press.
+  const clearOverlay=doc.createElement('div');
+  clearOverlay.id='tower-clear-overlay';
+  clearOverlay.className='tower-clear-overlay';
+  clearOverlay.hidden=true;
+  clearOverlay.setAttribute('aria-live','polite');
+  clearOverlay.innerHTML='<div class="tower-clear-panel">'
+    +'<span class="tower-clear-eyebrow">FLOOR CLEARED</span>'
+    +'<h3 id="tower-clear-title">층 클리어!</h3>'
+    +'<p id="tower-clear-next">다음 층이 준비됐습니다.</p>'
+    +'<button id="tower-next-start" type="button">다음 층 시작</button></div>';
+  doc.querySelector?.('#tower-arena-slot .canvas-wrapper')?.append(clearOverlay);
+  const nextStart=el('tower-next-start');
   let active=false,stage='ready',level=1,cleared=0,selected=null,temporary=null,mode='auto';
   const pool=()=>[...CHARACTER_DEFS,...CUSTOM_DEFS];
   function selectedDef(){return pool().find(d=>d.id===hero.value)||pool()[0]||null;}
@@ -232,8 +246,15 @@ function install(){
       chip.setAttribute('aria-current',String(i===level));
       chip.setAttribute('data-boss',String(i%5===0));
     }
-    start.textContent=stage==='won'?'새로운 도전 시작':'1층 도전 시작';
+    start.textContent=stage==='between'?'▶ '+level+'층 시작':
+      stage==='fighting'?'전투 진행 중':stage==='ready'?'1층 도전 시작':'새로운 도전 시작';
     start.hidden=stage==='fighting';
+    clearOverlay.hidden=stage!=='between';
+    if(stage==='between'){
+      el('tower-clear-title').textContent=cleared+'층 클리어!';
+      el('tower-clear-next').textContent=level+'층 · '+f.name+' 준비 완료 · 시작을 누르면 전투가 시작됩니다.';
+      nextStart.textContent='▶ '+level+'층 시작';
+    }
     pause.hidden=stage!=='fighting';
     pause.textContent=isPlaying?'⏸ 일시정지':'▶ 전투 계속';
     abandon.hidden=!active;
@@ -258,7 +279,7 @@ function install(){
     temporary={id,def};
     return def;
   }
-  function startFight(){
+  function prepareFight(){
     const enemy=buildEnemy();
     if(!selected||!pool().includes(selected))throw Error('출전 캐릭터를 다시 선택하세요.');
     if(!setMatchCount(2))throw Error('2인 대전 변경 실패');
@@ -268,17 +289,33 @@ function install(){
         throw Error('수동 조작 모듈을 불러오지 못했습니다. 새로고침 후 재시도하세요.');
     }
     // New floor, fresh fighter: no between-floor reward or stat bonus.
+    // reRollMatch leaves isPlaying=false, roundStarted=false, isGameOver=false.
     const wager=el('wager-input');if(wager)wager.value='0';
-    // Confirm that the actual engine has entered a live round before hiding
-    // the start control. Otherwise the canvas stays on "대기 중" indefinitely.
+  }
+  function startPrepared(){
+    // Start only the already prepared combatants; never reroll them when the
+    // player presses "next floor" after inspecting the next enemy's skills.
     if(!isPlaying)togglePlay({towerBattle:true});
     if(!isPlaying||!roundStarted)throw Error('전투 엔진이 시작되지 않았습니다. 자유 대전 상태를 초기화하고 다시 시도해 주세요.');
     stage='fighting';
     message.textContent=level+'층 전투 진행 중 · '+floor(level).name;
     show();
     global.ArenaScreenRouter?.showArena?.();
+    return true;
+  }
+  function startFight(){
+    prepareFight();
+    return startPrepared();
   }
   function begin(){
+    if(stage==='between'&&active){
+      if(isPlaying||roundStarted||isGameOver)return false;
+      try{return startPrepared();}
+      catch(e){
+        message.textContent=level+'층 시작 실패 · '+(e?.message||'알 수 없는 오류')+' · 다시 시작을 눌러 주세요.';
+        show();return false;
+      }
+    }
     if(active||stage==='fighting')return false;
     const who=selectedDef();
     if(!who){message.textContent='캐릭터가 없습니다. 캐릭터 설계에서 먼저 만들어 주세요.';return false;}
@@ -306,15 +343,18 @@ function install(){
       message.textContent='🏆 10층 정복 성공! 최종 우승 기록이 저장됐습니다.';
       show();global.ArenaScreenRouter?.refresh?.();return true;
     }
-    // Advance immediately when a floor is won, with no reward menu or buffs.
+    // Next floor is initialized but deliberately NOT started. The win
+    // acknowledgement stays on screen until the player presses Start.
     level++;
     try{
-      startFight();
-      global.ArenaScreenRouter?.refresh?.();
+      prepareFight();
+      stage='between';
+      message.textContent='✓ '+cleared+'층 클리어! '+level+'층이 준비됐습니다. 시작 버튼을 눌러 진행하세요.';
+      show();global.ArenaScreenRouter?.refresh?.();
       return true;
     }catch(e){
       active=false;stage='lost';cleanup();
-      message.textContent='다음 층 시작 실패 · '+(e?.message||'알 수 없는 오류')+' · 처음부터 다시 도전할 수 있습니다.';
+      message.textContent='다음 층 준비 실패 · '+(e?.message||'알 수 없는 오류')+' · 처음부터 다시 도전할 수 있습니다.';
       show();global.ArenaScreenRouter?.refresh?.();
       return false;
     }
@@ -335,6 +375,7 @@ function install(){
     if(active&&stage==='fighting'&&isPlaying)togglePlay();
   }
   start.addEventListener('click',begin);
+  nextStart?.addEventListener('click',begin);
   pause.addEventListener('click',()=>{
     if(stage==='fighting'&&roundStarted&&!isGameOver){togglePlay();show();}
   });
@@ -345,7 +386,7 @@ function install(){
   });
    show();
   function paintBackground(ctx,canvas){
-    if(!['fighting','lost','won'].includes(stage)||screen.dataset.battleMode==='free')return false;
+    if(!['fighting','between','lost','won'].includes(stage)||screen.dataset.battleMode==='free')return false;
     return global.ArenaTowerScenes?.paint?.(ctx,canvas.width,canvas.height,level)||false;
   }
   const api={floor,makeEnemy,read,updateRecord,records,begin,forfeit,paintBackground,
