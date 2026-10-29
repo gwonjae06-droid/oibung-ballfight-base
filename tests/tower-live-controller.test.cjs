@@ -76,7 +76,7 @@ function harness(){
   const tower=world.ArenaTower,el=id=>nodes.get(id);
   return {world,tower,el,saved,canvasWrap};
 }
-test('tower clears a floor and immediately launches the next fight without rewards',()=>{
+test('a floor clear displays victory and prepares the next floor without starting combat',()=>{
   const x=harness();
   assert.equal(x.tower.begin(),true);
   assert.equal(x.tower.stage,'fighting');
@@ -86,18 +86,37 @@ test('tower clears a floor and immediately launches the next fight without rewar
   assert.equal(x.tower.isTransientDef(x.tower.isTransientDef?null:null),false);
   conclude(x,x.world.players[0]);
   assert.equal(x.tower.state.cleared,1);
-  assert.equal(x.tower.state.level,2,'victory automatically enters floor two');
+  assert.equal(x.tower.state.level,2,'victory prepares floor two');
   assert.equal(x.world.coins,1000,'there is no floor-clear gold');
   assert.equal(x.el('tower-rewards'),undefined,'reward UI is not mounted');
-  assert.equal(x.tower.stage,'fighting');
+  assert.equal(x.tower.stage,'between','the next floor is not yet fighting');
+  assert.equal(x.world.isPlaying,false);
+  assert.equal(x.world.roundStarted,false);
+  assert.equal(x.world.isGameOver,false);
+  assert.equal(x.world.players[1].name,x.tower.makeEnemy(2).name,'new opponent is prepared');
+  assert.equal(x.el('tower-clear-overlay').hidden,false);
+  assert.equal(x.el('tower-clear-title').textContent,'1층 클리어!');
+  assert.match(x.el('tower-clear-next').textContent,/2층/);
+  assert.equal(x.el('tower-start').hidden,false);
+  assert.match(x.el('tower-start').textContent,/2층 시작/);
+  assert.equal(x.el('tower-pause').hidden,true);
   assert.equal(x.world.CUSTOM_DEFS.length,0);
+  const sequence=x.world.seq;
+  assert.equal(x.tower.onBattleEnd(x.world.players[0]),false,'old victory cannot auto-skip another floor');
+  assert.equal(x.world.seq,sequence,'no enemy is spawned until an actual clear');
+  x.el('tower-next-start').listeners.click();
+  assert.equal(x.tower.stage,'fighting');
+  assert.equal(x.world.isPlaying,true);
+  assert.equal(x.world.roundStarted,true);
+  assert.equal(x.el('tower-clear-overlay').hidden,true);
+  assert.equal(x.world.seq,sequence,'start does not reroll prepared enemy');
   conclude(x,x.world.players[1]);
   assert.equal(x.tower.stage,'lost');
   assert.equal(x.tower.records()[0].best,1);
   assert.equal(x.tower.records()[0].attempts,1);
   assert.equal(x.tower.begin(),true,'player can retry after defeat');
 });
-test('automatic progression never applies rewards and 10th win records completion',()=>{
+test('ten floors require explicit starts, have no rewards and record completion',()=>{
   const x=harness(),base=x.world.CHARACTER_DEFS[0];
   assert.equal(x.tower.begin(),true);
   for(let floor=1;floor<=10;floor++){
@@ -105,9 +124,14 @@ test('automatic progression never applies rewards and 10th win records completio
     assert.equal(x.world.CUSTOM_DEFS.length,0,'bosses are transient');
     conclude(x,x.world.players[0]);
     if(floor<10){
-      assert.equal(x.tower.stage,'fighting');
+      assert.equal(x.tower.stage,'between');
       assert.equal(x.tower.state.level,floor+1);
+      assert.equal(x.world.isPlaying,false);
+      assert.equal(x.world.roundStarted,false);
       assert.equal(x.world.players[0].maxHp,220,'no between-floor HP reward');
+      assert.equal(x.tower.begin(),true,'pressing Start begins next floor');
+      assert.equal(x.tower.stage,'fighting');
+      assert.equal(x.world.isPlaying,true);
     }
   }
   assert.equal(x.tower.stage,'won');
@@ -141,15 +165,18 @@ test('rejected engine start leaves Tower retryable and explains the waiting scre
   assert.equal(x.tower.begin(),false,'retry must remain available');
 });
 
-test('Tower uses the shared in-game speed selector and keeps automatic floor progression',()=>{
+test('Tower uses the shared speed selector and waits between floors',()=>{
   const x=harness();
   assert.equal(x.el('tower-speed'),undefined,'no duplicate Tower-only speed button');
   assert.equal(typeof x.tower.setSpeed,'undefined');
   assert.equal(x.tower.begin(),true);
   conclude(x,x.world.players[0]);
   assert.equal(x.tower.state.level,2);
-  assert.equal(x.tower.stage,'fighting');
+  assert.equal(x.tower.stage,'between');
   assert.equal(x.el('tower-speed'),undefined);
+  assert.equal(x.el('tower-clear-overlay').hidden,false);
+  assert.equal(x.tower.begin(),true);
+  assert.equal(x.tower.stage,'fighting');
 });
 
 test('manual Tower choice prepares P1 each floor, retains control mode and locks it during fights',()=>{
@@ -167,6 +194,10 @@ test('manual Tower choice prepares P1 each floor, retains control mode and locks
   assert.equal(h.tower.mode,'manual','mode stays selected across floors');
   assert.equal(prepared.length,2);
   assert.equal(prepared[1],h.world.players[0],'next floor has a new controlled instance');
+  assert.equal(h.tower.stage,'between','manual mode waits for the player');
+  assert.equal(h.world.isPlaying,false);
+  assert.equal(h.tower.begin(),true);
+  assert.equal(h.tower.stage,'fighting');
   conclude(h,h.world.players[1]);
   assert.equal(h.tower.active,false);
   assert.equal(h.tower.setMode('auto'),true,'mode unlocked when the challenge ends');
@@ -180,4 +211,42 @@ test('manual control unavailable does not silently start an AI fight',()=>{
   assert.equal(h.tower.stage,'ready');
   assert.equal(h.tower.active,false);
   assert.match(h.el('tower-feedback').textContent,/수동 조작 모듈/);
+});
+
+test('top-level Start button resumes prepared floor without running another round setup',()=>{
+  const x=harness();
+  x.tower.begin();
+  conclude(x,x.world.players[0]);
+  assert.equal(x.tower.stage,'between');
+  assert.equal(x.tower.setMode('manual'),false,'mode stays locked during intermission');
+  assert.equal(x.el('tower-hero').disabled,true,'roster stays locked during intermission');
+  const seq=x.world.seq;
+  x.el('tower-start').listeners.click();
+  assert.equal(x.tower.stage,'fighting');
+  assert.equal(x.world.seq,seq,'waiting floor is not recreated');
+  assert.equal(x.tower.state.level,2);
+});
+test('failed intermission Start keeps the round paused and retryable',()=>{
+  const x=harness();x.tower.begin();
+  conclude(x,x.world.players[0]);
+  const existingSeq=x.world.seq;
+  x.world.togglePlay=()=>{x.world.roundStarted=true;return false;};
+  assert.equal(x.tower.begin(),false);
+  assert.equal(x.tower.stage,'between');
+  assert.equal(x.world.isPlaying,false);
+  assert.equal(x.world.seq,existingSeq);
+  assert.equal(x.el('tower-clear-overlay').hidden,false);
+  assert.match(x.el('tower-feedback').textContent,/시작 실패/);
+  x.world.togglePlay=()=>{x.world.roundStarted=true;x.world.isPlaying=true;return true;};
+  assert.equal(x.tower.begin(),true,'can retry without recreating battle');
+  assert.equal(x.tower.stage,'fighting');
+});
+test('forfeit while waiting closes the run and records cleared floors',()=>{
+  const x=harness();x.tower.begin();conclude(x,x.world.players[0]);
+  assert.equal(x.tower.stage,'between');
+  assert.equal(x.tower.forfeit(),true);
+  assert.equal(x.tower.active,false);
+  assert.equal(x.tower.stage,'lost');
+  assert.equal(x.tower.records()[0].best,1);
+  assert.equal(x.el('tower-clear-overlay').hidden,true);
 });

@@ -50,3 +50,15 @@ test('regular free-battle starts still respect betting validation',()=>{
   assert.equal(w.roundStarted,false);
   assert.ok(trace.includes('economy'));
 });
+
+test('shared free-battle Start cannot bypass paused Tower floor',()=>{
+  const {world:w,trace}=engine();
+  w.ArenaTower={active:true,stage:'between'};
+  assert.equal(w.togglePlay(),false);
+  assert.equal(w.isPlaying,false);
+  assert.equal(w.roundStarted,false);
+  assert.ok(!trace.includes('economy'),'no free-battle wager is processed');
+  assert.equal(w.togglePlay({towerBattle:true}),true,'dedicated Tower Start works');
+  assert.equal(w.roundStarted,true);
+  assert.equal(w.isPlaying,true);
+});

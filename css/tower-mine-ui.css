@@ -186,3 +186,56 @@
   #tower-manual-controls .tower-manual-skill{min-height:64px;padding:5px 3px}
   #tower-manual-controls .tower-manual-skill strong{font-size:11px}
 }
+
+/* Victory intermission overlays the prepared (paused) next-floor arena. */
+#tower-arena-slot .canvas-wrapper{position:relative}
+#tower-arena-slot .tower-clear-overlay{
+  position:absolute;z-index:18;inset:0;
+  display:flex;justify-content:center;align-items:center;
+  padding:clamp(12px,4%,24px);
+  background:rgba(9,17,30,.23);
+  pointer-events:none;
+}
+#tower-arena-slot .tower-clear-overlay[hidden]{display:none!important}
+#tower-arena-slot .tower-clear-panel{
+  width:min(100%,380px);text-align:center;
+  padding:clamp(18px,4.5vw,29px);
+  border:2px solid #e7cb91;border-radius:18px;
+  background:linear-gradient(150deg,rgba(20,33,51,.97),rgba(38,48,65,.97));
+  color:#f5f8ff;box-shadow:0 12px 38px #080e19c4;
+  pointer-events:auto;
+}
+#tower-arena-slot .tower-clear-eyebrow{
+  display:block;margin-bottom:7px;font-size:11px;letter-spacing:.18em;
+  font-weight:900;color:#e9c98d;
+}
+#tower-arena-slot .tower-clear-panel h3{
+  margin:0 0 9px;font-size:clamp(23px,5vw,34px);
+  line-height:1.23;color:#fff1cf;font-weight:900;
+}
+#tower-arena-slot .tower-clear-panel p{
+  margin:0 0 16px;font-size:12px;line-height:1.65;color:#d6e1f0;
+}
+#tower-arena-slot .tower-clear-panel button{
+  display:block;width:100%;min-height:48px;padding:11px 16px;
+  border:1px solid #f8dcab;border-radius:10px;
+  background:#deb97d;color:#231a13;font-size:14px;font-weight:900;
+  cursor:pointer;touch-action:manipulation;
+}
+#tower-arena-slot .tower-clear-panel button:hover{background:#ffdda0}
+#tower-arena-slot .tower-clear-panel button:focus-visible{
+  outline:3px solid #f9fafa;outline-offset:3px
+}
+@media(max-width:480px){
+  #tower-arena-slot .tower-clear-panel{width:min(100%,310px);padding:17px}
+  #tower-arena-slot .tower-clear-panel p{font-size:11px}
+}
+@media(prefers-reduced-motion:no-preference){
+  #tower-arena-slot .tower-clear-overlay:not([hidden]) .tower-clear-panel{
+    animation:tower-clear-enter .28s ease-out both
+  }
+  @keyframes tower-clear-enter{
+    from{opacity:0;transform:translateY(8px) scale(.98)}
+    to{opacity:1;transform:translateY(0) scale(1)}
+  }
+}
