@@ -161,6 +161,7 @@ function install(){
    +(i+1)+'F</strong>'+((i+1)%5===0?'<small>보스</small>':'<small>층</small>')+'</div>').join('')
    +'</div>'
    +'<div class="tower-scene-identity"><span id="tower-scene-name">황혼의 수련장</span><span id="tower-skill-count">2개 독립 스킬</span></div>'
+   +'<div class="tower-mode-picker"><strong>조작 방식</strong><label><input type="radio" name="tower-play-mode" value="auto" checked> 자동 전투</label><label><input type="radio" name="tower-play-mode" value="manual"> 직접 조종</label><small>직접 조종: WASD/방향키 이동 · Q/E/R/F 스킬 · 모바일 터치 지원</small></div>'
    +'<div class="tower-fighter-pick"><label for="tower-hero">출전 캐릭터'
    +'<select id="tower-hero"></select></label>'
    +'<div class="tower-enemy"><strong id="tower-enemy">훈련의 문</strong><span id="tower-enemy-info">첫 도전을 준비하세요.</span>'
@@ -173,10 +174,18 @@ function install(){
   mount.append(panel);
   const el=id=>doc.getElementById(id),hero=el('tower-hero'),message=el('tower-feedback'),
     start=el('tower-start'),pause=el('tower-pause'),abandon=el('tower-abandon');
-  let active=false,stage='ready',level=1,cleared=0,selected=null,temporary=null;
+  let active=false,stage='ready',level=1,cleared=0,selected=null,temporary=null,mode='auto';
   const pool=()=>[...CHARACTER_DEFS,...CUSTOM_DEFS];
   function selectedDef(){return pool().find(d=>d.id===hero.value)||pool()[0]||null;}
-  function current(){return {active,stage,level,cleared,boss:floor(level).boss,selected:key(selected)};}
+  function current(){return {active,stage,level,cleared,boss:floor(level).boss,selected:key(selected),mode};}
+  function setMode(next){
+    if(active)return false; // Never change player/AI ownership mid-round.
+    mode=next==='manual'?'manual':'auto';
+    for(const input of doc.querySelectorAll?.('input[name="tower-play-mode"]')||[])
+      input.checked=input.value===mode;
+    global.ArenaTowerControls?.refresh?.();
+    return true;
+  }
   function refreshHero(){
     const previous=hero.value;
     hero.replaceChildren();
@@ -229,6 +238,9 @@ function install(){
     pause.textContent=isPlaying?'⏸ 일시정지':'▶ 전투 계속';
     abandon.hidden=!active;
     hero.disabled=active;
+    for(const input of doc.querySelectorAll?.('input[name="tower-play-mode"]')||[])
+      input.disabled=active;
+    global.ArenaTowerControls?.refresh?.();
   }
   function cleanup(){
     if(temporary){delete BEHAVIORS[temporary.id];temporary=null;}
@@ -251,6 +263,10 @@ function install(){
     if(!selected||!pool().includes(selected))throw Error('출전 캐릭터를 다시 선택하세요.');
     if(!setMatchCount(2))throw Error('2인 대전 변경 실패');
     if(!reRollMatch([selected,enemy]))throw Error('대진 구성 실패');
+    if(mode==='manual'){
+      if(!global.ArenaTowerControls?.prepare?.(players[0]))
+        throw Error('수동 조작 모듈을 불러오지 못했습니다. 새로고침 후 재시도하세요.');
+    }
     // New floor, fresh fighter: no between-floor reward or stat bonus.
     const wager=el('wager-input');if(wager)wager.value='0';
     // Confirm that the actual engine has entered a live round before hiding
@@ -324,13 +340,16 @@ function install(){
   });
   abandon.addEventListener('click',forfeit);
   hero.addEventListener('change',show);
+  screen.addEventListener('change',event=>{
+    if(event.target?.name==='tower-play-mode')setMode(event.target.value);
+  });
    show();
   function paintBackground(ctx,canvas){
     if(!['fighting','lost','won'].includes(stage)||screen.dataset.battleMode==='free')return false;
     return global.ArenaTowerScenes?.paint?.(ctx,canvas.width,canvas.height,level)||false;
   }
   const api={floor,makeEnemy,read,updateRecord,records,begin,forfeit,paintBackground,
-    onBattleEnd,isTransientDef,pauseAway,refresh:show,get active(){return active;},
+    onBattleEnd,isTransientDef,pauseAway,refresh:show,setMode,get mode(){return mode;},get active(){return active;},
     get stage(){return stage;},get state(){return current();}};
   global.ArenaTower=api;return api;
 }
