@@ -110,7 +110,7 @@ test('creator remains inline and stored UI singletons are neither cloned nor rei
   assert.ok(css.includes('#screen-character #character-studio-dialog'));
   assert.ok(css.includes('position:relative!important;display:block!important'));
   assert.ok(css.includes('body.has-power-ranking{display:block!important'));
-  assert.ok(effects.includes("ArenaScreenRouter.active==='tower'"));
+  assert.ok(effects.includes("['tower','pve'].includes(globalThis.ArenaScreenRouter.active)"));
   assert.ok(router.includes("if(typeof isPlaying!=='undefined'&&isPlaying"));
   assert.ok(router.includes("where==='pve'||where==='tower'" ) || router.includes("where==='tower'||where==='pve'"));
   for(const p of ['screen-router.js','tower-challenge.js','ui-categories.js']){
