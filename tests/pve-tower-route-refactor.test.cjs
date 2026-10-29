@@ -1,0 +1,43 @@
+'use strict';
+const test=require('node:test'),assert=require('node:assert/strict');
+const fs=require('node:fs'),path=require('node:path');
+const read=p=>fs.readFileSync(path.join(__dirname,'..',p),'utf8');
+test('PvE is visible as a standalone lobby destination, never a Tower tab',()=>{
+ const router=read('js/features/screen-router.js');
+ assert.match(router,/const ROUTES=\['lobby','tower','pve','pvp'/);
+ assert.match(router,/\['pve','PvE · 자유 대전'/);
+ assert.doesNotMatch(router,/data-tower-tab="/);
+ assert.match(router,/pve\.append\(pveArena,free\)/);
+ assert.match(router,/const destination=where==='pve'\?pveArena:arenaSlot/);
+ assert.match(router,/arena\.parentElement!==destination/);
+ assert.match(router,/function towerTab\(id\)\{return go\(id==='free'\?'pve':'tower'\);\}/);
+ assert.match(router,/if\(where==='pve'&&global\.ArenaTower\?\.active\)/);
+ assert.match(router,/stopMatch\(\)/);
+});
+test('Tower only reveals critical setup; optional floor, enemy and control info are collapsible',()=>{
+ const tower=read('js/features/tower-challenge.js');
+ const styles=read('css/tower-mine-ui.css');
+ assert.match(tower,/<details class="tower-disclosure" id="tower-progress-details">/);
+ assert.match(tower,/<details class="tower-disclosure" id="tower-enemy-details">/);
+ assert.match(tower,/<details class="tower-disclosure" id="tower-help-details">/);
+ assert.doesNotMatch(tower,/<details class="tower-disclosure" id="tower-[^"]+" open/);
+ assert.match(tower,/id="tower-start"/);
+ assert.match(tower,/id="tower-pause"/);
+ assert.match(tower,/id="tower-abandon"/);
+ assert.match(tower,/message\.hidden=stage==='fighting'\|\|stage==='between'/);
+ assert.match(tower,/start\.hidden=stage==='fighting'\|\|stage==='between'/);
+ assert.match(styles,/#screen-tower details\.tower-disclosure:not\(\[open\]\)>/);
+});
+test('Shared engine appears on both PvE and Tower without duplicate buttons',()=>{
+ const css=read('css/app-shell.css');
+ const battle=read('js/features/battle-effects.js');
+ const router=read('js/features/screen-router.js');
+ const html=read('index.html');
+ assert.match(css,/#pve-arena-slot \.battle-screen/);
+ assert.match(css,/#pve-free-slot \.bf-tools/);
+ assert.match(css,/#screen-tower #tower-arena-slot \.control-panel/);
+ assert.match(battle,/\['tower','pve'\]\.includes/);
+ assert.match(router,/const arena=main\.querySelector\('\.battle-screen'\)/);
+ assert.equal((html.match(/id="arena"/g)||[]).length,1,'single original live canvas');
+ assert.equal((html.match(/id="btn-start"/g)||[]).length,1,'single original free-match controller');
+});
