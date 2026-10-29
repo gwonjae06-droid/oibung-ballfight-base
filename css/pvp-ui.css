@@ -86,7 +86,7 @@
   .pvp-input{position:sticky;bottom:env(safe-area-inset-bottom,0px);z-index:15;
     padding:9px;border-radius:11px;background:#1c3047f2}
   .pvp-pad{width:100px;height:100px}
-  .pvp-skills{grid-template-columns:repeat(2,minmax(0,1fr));max-width:265px;gap:6px}
+  .pvp-skills{grid-template-columns:repeat(min(2,var(--pvp-skill-count,4)),minmax(0,1fr));max-width:265px;gap:6px}
   .pvp-skill{min-height:53px;padding:5px 3px}
   .pvp-skill strong{font-size:10px}
   #pvp-clock{font-size:20px}
