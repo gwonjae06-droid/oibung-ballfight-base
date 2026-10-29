@@ -137,7 +137,18 @@ function snapshot(room,full=true){
    state.world={
      // Spawn events are delivered instantly via the 'fx' broadcast. Never
      // overwrite the guest's playing effect pool with a stale 600ms snapshot.
-     players:players.map(p=>encode(p,true)),
+     // Only animated objects are needed remotely. Sending all player
+     // internals (queues, caches, links) created huge packets and frame stalls.
+     visualPlayers:players.map(p=>({
+       forgeShots:encode(take(p.forgeShots,20)),
+       forgeZones:encode(take(p.forgeZones,20)),
+       forgeOrbs:encode(take(p.forgeOrbs,12)),
+       waves:encode(take(p.waves,12)),
+       projectiles:encode(take(p.projectiles,20)),
+       poisonTears:encode(take(p.poisonTears,12)),
+       forgeDash:Number(p.forgeDash)||0,
+       jumpState:p.jumpState||'ground'
+     })),
      objects:encode(take(AdvancedCombat.objects,24)),
      projectiles:encode(take(AdvancedCombat.projectiles,36)),
      effects:encode(take(AdvancedCombat.effects,24)),
@@ -150,11 +161,22 @@ function snapshot(room,full=true){
 function receive(s){
  if(!s?.players||s.players.length!==2)return;
  remote=true;targets=s.players.map(p=>({x:p.x,y:p.y}));
- if(s.world?.players?.length===2){
-   s.world.players.forEach((p,i)=>{
-     const old={x:players[i].x,y:players[i].y};
-     Object.assign(players[i],decode(p));Object.assign(players[i],old);
-   });
+ if(s.world){
+   if(s.world.visualPlayers?.length===2)
+     s.world.visualPlayers.forEach((v,i)=>{
+       const p=players[i];
+       for(const field of ['forgeShots','forgeZones','forgeOrbs','waves',
+         'projectiles','poisonTears'])
+         if(Array.isArray(v[field]))p[field]=decode(v[field]);
+       if(Number.isFinite(v.forgeDash))p.forgeDash=v.forgeDash;
+       if(typeof v.jumpState==='string')p.jumpState=v.jumpState;
+     });
+   // Read old version full-state frames only during rolling deployments.
+   else if(s.world.players?.length===2)
+     s.world.players.forEach((p,i)=>{
+       const old={x:players[i].x,y:players[i].y};
+       Object.assign(players[i],decode(p));Object.assign(players[i],old);
+     });
    for(const k of ['objects','projectiles','effects'])
      if(Array.isArray(s.world[k]))AdvancedCombat[k].splice(0,AdvancedCombat[k].length,...decode(s.world[k]));
    // Keep local VFX running; network event replay owns the remote effect pool.
