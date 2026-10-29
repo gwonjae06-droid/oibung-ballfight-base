@@ -90,7 +90,7 @@ function showMode(next,{keepTab=false}={}){
     if(!hasRolled)rollFour();
     else workspace.selectPreviewSkill?.('all');
   }else if(mode==='compose')workspace.selectPreviewSkill?.(0);
-  else if(mode==='choose')picker.querySelector('[data-studio-open]')?.focus?.({preventScroll:true});
+  else if(mode==='choose'&&dialog.open)picker.querySelector('[data-studio-open]')?.focus?.({preventScroll:true});
 }
 function renderResults(profile){
   results.replaceChildren();
