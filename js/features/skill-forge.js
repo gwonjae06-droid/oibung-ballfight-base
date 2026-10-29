@@ -128,15 +128,15 @@ function allProfile(name='만능 파이터',description='모든 능력을 사용
 }
 // A multi-theme roll draws every action from the UNION of selected families.
 // At least one action from each family is guaranteed, even for seven choices.
-function randomProfile(theme='any',rng=Math.random){
+function randomProfile(theme='any',rng=Math.random,exactCount=null){
   const selectedKeys=(Array.isArray(theme)?theme:theme==='any'?[]:[theme])
     .filter((key,index,items)=>!!THEMES[key]&&items.indexOf(key)===index);
   const selectedThemes=selectedKeys.map(key=>THEMES[key]);
   const selected=selectedThemes.length?selectedThemes[0]:pickRandom(rng,Object.values(THEMES));
   const pool=selectedThemes.length?
     [...new Set(selectedThemes.flatMap(t=>t.types).filter(type=>TYPE[type]))]:allTypes();
-  const amount=Array.isArray(theme)?Math.max(2,Math.min(4,selectedKeys.length)):
-    theme==='any'?randInt(rng,1,4):randInt(rng,3,4);
+  const amount=exactCount===4?4:(Array.isArray(theme)?Math.max(2,Math.min(4,selectedKeys.length)):
+    theme==='any'?randInt(rng,1,4):randInt(rng,3,4));
   const required=selectedKeys.slice();
   // Shuffle required families so their actions get mixed among skill slots.
   for(let i=required.length-1;i>0;i--){
