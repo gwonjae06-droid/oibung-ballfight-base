@@ -5,7 +5,8 @@
 'use strict';
 const ROOT='https://fljvwzkndydseevgnhjq.supabase.co';
 const PUBLIC_KEY='sb_publishable_thXXoScpxbYcOGNHklfj_A_14d3UKix';
-const SNAPSHOT_MS=100,FULL_MS=600,MAX_FRAME_BYTES=96*1024;
+// Keep effects fast while staying under Free-tier project-wide rate quotas.
+const SNAPSHOT_MS=120,FULL_MS=1000,MAX_FRAME_BYTES=40*1024,FX_MIN_INTERVAL=55;
 let clientPromise;
 async function client(){
  if(!clientPromise)clientPromise=import('https://esm.sh/@supabase/supabase-js@2.75.0')
@@ -21,6 +22,7 @@ class SupabasePvpTransport{
   this.closed=false;this.room=null;this.channel=null;this.poll=null;this.sim=null;
   this.readyTicker=null;this.watchdog=null;this.current=null;this.side=-1;
   this.mode=null;this.profile=null;this.lastBroadcast=0;this.lastFull=0;
+  this.lastFx=0;this.fxTimer=null;this.fxSending=false;
   this.peerReady=false;this.lastStep=0;this.lastPeer=Date.now();
   this.ticket=global.crypto?.randomUUID?.();
   if(!this.ticket){this.fail(Error('안전한 매칭 요청 ID를 생성할 수 없습니다.'));return;}
@@ -94,6 +96,13 @@ class SupabasePvpTransport{
   this.channel=this.sb.channel('oibung-pvp:'+this.room,
     {config:{private:true,broadcast:{self:false,ack:false}}});
   this.channel.on('broadcast',{event:'control'},({payload})=>this.control(payload,rule));
+  // Original 55 VFX types arrive as tiny independent packets, rather than
+  // waiting up to a second for a heavyweight world snapshot.
+  this.channel.on('broadcast',{event:'fx'},({payload})=>{
+   if(this.closed||this.side!==1||!this.current||!payload)return;
+   this.lastPeer=Date.now();
+   rule.receiveFx?.(payload.events);
+  });
   this.channel.on('broadcast',{event:'state'},({payload})=>{
    if(this.closed||this.side!==1||!payload)return;
    if(payload.type==='state'){
@@ -132,8 +141,29 @@ class SupabasePvpTransport{
    });};
    ping();this.readyTicker=global.setInterval(ping,900);
   }else{
+   rule.setFxWake?.(()=>this.scheduleFx());
    this.sim=global.setInterval(()=>this.advance(rule),33);
   }
+ }
+ scheduleFx(){
+  if(this.closed||this.done||this.side!==0||!this.connected||this.fxTimer)return;
+  const wait=Math.max(0,FX_MIN_INTERVAL-(Date.now()-this.lastFx));
+  this.fxTimer=global.setTimeout(()=>{
+   this.fxTimer=null;
+   this.flushFx();
+  },wait);
+ }
+ flushFx(){
+  if(this.closed||this.done||this.side!==0||!this.channel)return;
+  const events=this.rule?.drainFx?.(24)||[];
+  if(!events.length)return;
+  this.lastFx=Date.now();
+  // No full-state serialization here: these are the original VFX silhouettes
+  // in only a few small fields. Avoid blocking physics on network promises.
+  Promise.resolve(this.channel.send({
+   type:'broadcast',event:'fx',payload:{type:'fx',events}
+  })).catch(()=>{});
+  if(events.length>=24)this.scheduleFx();
  }
  control(message,rule){
   if(this.closed||!this.current||!message||this.done)return;
@@ -212,6 +242,9 @@ class SupabasePvpTransport{
    }
   }else{
    if(msg.type==='input')this.rule.predict?.(1,msg);
+   // The guest sees the first skill animation on keypress/tap.
+   // The host still decides whether it hits, damages, or goes on cooldown.
+   if(msg.type==='cast')this.rule.previewCast?.(1,Number(msg.slot));
    this.channel?.send({type:'broadcast',event:'control',payload:{...msg,from:1}});
   }
  }
@@ -228,6 +261,8 @@ class SupabasePvpTransport{
   if(this.poll)global.clearInterval(this.poll);
   if(this.sim)global.clearInterval(this.sim);
   if(this.readyTicker)global.clearInterval(this.readyTicker);
+  if(this.fxTimer)global.clearTimeout(this.fxTimer);
+  if(this.side===0)this.rule?.setFxWake?.(null);
   // Leave is ticket-scoped: delayed responses cannot cancel newer searches.
   const room=this.room;
   if(this.channel){
