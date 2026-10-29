@@ -13,8 +13,11 @@ async function client(){
       detectSessionInUrl:false}})).catch(e=>{clientPromise=null;throw e;});
   return clientPromise;
 }
-let rulesPromise;
-function rules(){return rulesPromise||(rulesPromise=import('../../workers/pvp-rules.mjs'));}
+function rules(){
+  return global.OibungPvpRules
+    ?Promise.resolve(global.OibungPvpRules)
+    :Promise.reject(Error('PvP 전투 엔진이 로드되지 않았습니다. 페이지를 새로고침하세요.'));
+}
 class SupabasePvpTransport{
   constructor(){
     this.readyState=0;this.onmessage=null;this.onerror=null;this.onclose=null;
