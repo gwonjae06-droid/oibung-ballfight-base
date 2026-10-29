@@ -66,7 +66,11 @@ export function normalizeProfile(raw){
       type:ABILITIES[type]?type:'shot',kind:ability.kind,
       damage:ability.damage,range:ability.range,cooldown:ability.cooldown};
   });
-  while(skills.length<4)skills.push(normalizeProfile({skills:[{name:DEFAULT[skills.length][0],type:DEFAULT[skills.length][1]}]}).skills[0]);
+  while(skills.length<4){
+    const [name,type]=DEFAULT[skills.length],ability=ABILITIES[type];
+    skills.push({name,type,kind:ability.kind,damage:ability.damage,
+      range:ability.range,cooldown:ability.cooldown});
+  }
   return {name,color,skills};
 }
 export function createRoom(profileA,profileB,mode,now=Date.now()){
