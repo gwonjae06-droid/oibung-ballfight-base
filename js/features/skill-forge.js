@@ -385,8 +385,9 @@ function advanceWorld(p,target){
     if(blocked){p.forgeShots.splice(i,1);continue;}
     // Ground-level bullets use a ground-level hit check, not the firing
     // character's current jump height. Swept contact prevents tunneling.
-    const e=enemies(p).find(e=>global.ActionRegistry.sweptCircle(
-      b.prevX,b.prevY,b.x,b.y,e.x,e.y,e.radius+8)&&hit(p,e,b.a,1,0));
+    const e=enemies(p).find(e=>(global.ActionRegistry?.sweptCircle?.(
+      b.prevX,b.prevY,b.x,b.y,e.x,e.y,e.radius+8)??
+      Math.hypot(e.x-b.x,e.y-b.y)<=e.radius+8)&&hit(p,e,b.a,1,0));
     if(e||b.life<=0||b.x<0||b.y<0||b.x>canvas.width||b.y>canvas.height)p.forgeShots.splice(i,1);
   }
   if(p.forgeZones.length>32)p.forgeZones.splice(0,p.forgeZones.length-32);
