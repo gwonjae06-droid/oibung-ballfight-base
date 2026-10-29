@@ -236,11 +236,12 @@ function install(){
   function go(where){
     if(!ROUTES.includes(where))where='lobby';
     if(where==='pve'&&global.ArenaTower?.active){
-      // A prepared Tower floor owns the shared engine until its run ends.
-      // Never silently abandon a run or replace its fighters.
+      // A prepared floor owns the shared engine until the run ends.
+      // Bring the user back to Tower with a visible explanation instead
+      // of making the lobby PvE button appear unresponsive.
       const feedback=doc.getElementById('tower-feedback');
       if(feedback){feedback.textContent='진행 중인 도전을 종료한 후 PvE로 이동할 수 있습니다.';feedback.hidden=false;}
-      return active;
+      where='tower';
     }
     if(active==='pve'&&where!=='pve'){
       // Free matches must not leave roundStarted=true or block Tower start.
