@@ -309,7 +309,7 @@ function install(){
   }
   function begin(){
     if(stage==='between'&&active){
-      if(isPlaying||roundStarted||isGameOver)return false;
+      if(isPlaying||isGameOver)return false;
       try{return startPrepared();}
       catch(e){
         message.textContent=level+'층 시작 실패 · '+(e?.message||'알 수 없는 오류')+' · 다시 시작을 눌러 주세요.';
