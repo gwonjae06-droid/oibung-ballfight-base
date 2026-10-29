@@ -239,3 +239,131 @@
     to{opacity:1;transform:translateY(0) scale(1)}
   }
 }
+
+/* Focus mode only applies while actively controlling P1 on a Tower floor.
+   The full boss sheet and setup return for the between-floor pause. */
+#screen-tower[data-manual-focus="true"]{
+  display:block;min-width:0;
+}
+#screen-tower[data-manual-focus="true"] > .screen-heading,
+#screen-tower[data-manual-focus="true"] > .screen-tabs,
+#screen-tower[data-manual-focus="true"] #tower-mode-slot{
+  display:none!important;
+}
+#screen-tower[data-manual-focus="true"] #tower-arena-slot{
+  width:min(100%,800px);
+  display:flex;flex-direction:column;gap:8px;
+  margin-inline:auto;min-width:0;
+}
+#screen-tower[data-manual-focus="true"] #tower-arena-slot .battle-screen{
+  display:block!important;
+  padding:0!important;margin:0!important;
+  border:0!important;background:transparent!important;box-shadow:none!important;
+}
+#screen-tower[data-manual-focus="true"] #tower-arena-slot .battle-screen > :not(.canvas-wrapper){
+  display:none!important;
+}
+#screen-tower[data-manual-focus="true"] #tower-arena-slot .canvas-wrapper{
+  width:100%!important;
+  max-width:760px!important;margin:0 auto!important;
+  overflow:hidden;
+  border-radius:14px;
+}
+#screen-tower[data-manual-focus="true"] #btn-stop{
+  display:none!important;
+}
+#screen-tower[data-manual-focus="true"] #tower-manual-controls{
+  width:min(100%,760px);margin:0 auto;padding:8px 12px 10px;
+  border-radius:12px;
+  background:linear-gradient(110deg,#172333,#202c3d);
+}
+#screen-tower[data-manual-focus="true"] .tower-manual-head{
+  margin-bottom:5px;
+}
+#screen-tower[data-manual-focus="true"] .tower-manual-head strong{font-size:12px}
+#screen-tower[data-manual-focus="true"] .tower-manual-head span{font-size:10px}
+#screen-tower[data-manual-focus="true"] .tower-manual-hint{
+  margin:5px 0 0;font-size:10px;
+}
+#screen-tower[data-manual-focus="true"] .tower-joystick-area{display:none}
+#screen-tower[data-manual-focus="true"] .tower-manual-abilities{
+  grid-template-columns:repeat(4,minmax(0,1fr));
+}
+#screen-tower[data-manual-focus="true"] .tower-manual-skill{
+  min-height:55px;
+}
+#tower-manual-hud{
+  width:min(100%,760px);margin:0 auto;
+  display:grid;grid-template-columns:minmax(100px,.8fr) minmax(0,2.4fr) auto;
+  align-items:center;gap:8px 12px;padding:10px 13px;
+  border:1px solid #687a8d;border-radius:12px;
+  background:linear-gradient(120deg,#243347,#111e2e);
+  color:#f4f8ff;box-shadow:0 7px 19px #0005;
+  font-variant-numeric:tabular-nums;
+}
+#tower-manual-hud[hidden]{display:none!important}
+.tower-manual-hud-title{display:grid;gap:3px;min-width:0}
+#tower-manual-floor{font-size:12px;letter-spacing:.11em;font-weight:900;color:#e8c78c}
+#tower-manual-opponent{font-size:12px;line-height:1.2;overflow-wrap:anywhere}
+.tower-manual-vitals{display:grid;grid-template-columns:1fr 1fr;gap:10px;min-width:0}
+.tower-manual-vital{min-width:0}
+.tower-manual-vital>div:first-child{display:flex;justify-content:space-between;gap:5px;flex-wrap:wrap;
+  margin-bottom:5px;font-size:10px;color:#d3e3f4}
+.tower-manual-vital strong{font-size:11px;color:#fff}
+.tower-manual-hp-track{height:9px;width:100%;overflow:hidden;border-radius:99px;
+  background:#111924;border:1px solid #597182}
+.tower-manual-hp-track span{display:block;height:100%;width:100%;
+  background:linear-gradient(90deg,#5aaf89,#a3eac3);border-radius:inherit;
+  transition:width .11s linear}
+.tower-manual-enemy .tower-manual-hp-track span{
+  background:linear-gradient(90deg,#b74459,#ff9b9e)
+}
+.tower-manual-hud-actions{display:flex;align-items:center;gap:5px}
+#tower-manual-hud button{
+  min-height:44px;padding:8px 10px;
+  border:1px solid #71889a;background:#2e4356;
+  border-radius:8px;color:#f0f5fa;font-size:11px;font-weight:800;
+  cursor:pointer;touch-action:manipulation;white-space:nowrap;
+}
+#tower-manual-hud #tower-manual-leave{
+  border-color:#b4767b;background:#4b2a35;color:#ffe4e4
+}
+#tower-manual-hud button:focus-visible{
+  outline:3px solid #f9dfae;outline-offset:2px
+}
+@media(pointer:coarse){
+  #screen-tower[data-manual-focus="true"] .tower-joystick-area{display:grid}
+  #screen-tower[data-manual-focus="true"] .tower-joystick{width:92px;height:92px}
+  #screen-tower[data-manual-focus="true"] .tower-manual-abilities{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+  #screen-tower[data-manual-focus="true"] .tower-manual-head{display:none}
+  #screen-tower[data-manual-focus="true"] .tower-manual-hint{display:none}
+  #screen-tower[data-manual-focus="true"] .tower-manual-skill{
+    min-height:46px;padding:5px 3px;gap:2px
+  }
+}
+@media(max-width:680px){
+  #tower-manual-hud{
+    grid-template-columns:minmax(0,1fr) auto;
+    gap:7px;padding:8px;
+  }
+  #tower-manual-hud .tower-manual-vitals{grid-column:1/-1;grid-row:2;gap:12px}
+  #tower-manual-hud .tower-manual-hud-actions{grid-column:2;grid-row:1}
+  #tower-manual-hud .tower-manual-hud-title{
+    display:flex;align-items:center;gap:8px;
+  }
+  #tower-manual-hud #tower-manual-opponent{font-size:11px}
+  #tower-manual-hud button{min-height:40px;padding:6px 8px;font-size:10px}
+  #screen-tower[data-manual-focus="true"] #tower-manual-controls{
+    padding:6px 8px;
+  }
+  #screen-tower[data-manual-focus="true"] .tower-manual-layout{gap:7px}
+  #screen-tower[data-manual-focus="true"] .tower-manual-skill strong{font-size:10px}
+  #screen-tower[data-manual-focus="true"] .tower-manual-skill small{font-size:9px}
+}
+@media(max-width:360px){
+  #tower-manual-hud #tower-manual-opponent{max-width:110px}
+  #tower-manual-hud button{padding:5px 6px}
+  #screen-tower[data-manual-focus="true"] .tower-manual-hud-title{gap:5px}
+}
