@@ -12,15 +12,15 @@ host.innerHTML='<section class="pvp-lobby" id="pvp-lobby">'
   +'<fieldset class="pvp-mode-list"><legend>전투 방식 · 매칭 전에 선택</legend>'
   +'<label><input type="radio" name="pvp-mode" value="auto" checked><span><strong>자동 전투</strong><small>AI가 이동·스킬을 사용합니다. 같은 자동 전투 상대만 매칭됩니다.</small></span></label>'
   +'<label><input type="radio" name="pvp-mode" value="manual"><span><strong>직접 조종</strong><small>WASD/방향키·Q/E/R/F 또는 모바일 조이스틱으로 조작합니다.</small></span></label></fieldset>'
-  +'<details class="pvp-network"><summary>온라인 서버 연결 설정</summary>'
+  +'<details class="pvp-network" hidden><summary>온라인 서버 연결 설정</summary>'
   +'<label for="pvp-server">PvP 서버 주소 (wss://)</label>'
   +'<div class="pvp-server-row"><input id="pvp-server" inputmode="url" type="url" spellcheck="false" placeholder="wss://your-worker.workers.dev">'
   +'<button type="button" id="pvp-save-server">주소 저장</button></div>'
-  +'<small>실제 온라인 매칭 서버가 배포되어 있어야 연결할 수 있습니다. 연결하지 않은 상태에서 가짜 상대를 표시하지 않습니다.</small></details>'
+  +'<small>이전 Cloudflare 서버 연결 설정(현재 Supabase 사용)</small></details>'
   +'<div class="pvp-lobby-actions"><button id="pvp-search" type="button">랜덤 매칭 시작</button>'
   +'<button id="pvp-cancel" type="button" hidden>매칭 취소</button></div>'
   +'<p class="pvp-status" id="pvp-status" role="status" aria-live="polite">자동 또는 직접 조종을 선택하세요.</p>'
-  +'<p class="pvp-balance-note">PvP 1차 버전은 고정 HP와 서버가 검증하는 축약형 스킬 규칙을 사용합니다. 도전의 탑 스킬 효과와 일부 다를 수 있으며 랭킹전은 지원하지 않습니다.</p></section>'
+  +'<p class="pvp-balance-note">Supabase 무료 베타: 로그인·매칭은 Supabase에서 검증하지만 전투 계산은 첫 번째 플레이어 기기에서 실행합니다. 승패 치트 방지와 랭킹전은 아직 지원하지 않습니다. 도전의 탑과 스킬 효과가 일부 다를 수 있습니다.</p></section>'
   +'<section class="pvp-match" id="pvp-match" hidden aria-label="실시간 온라인 PvP 전투">'
   +'<div class="pvp-match-header"><div><small id="pvp-match-type">자동 전투</small><strong id="pvp-round-state">온라인 경기</strong></div>'
   +'<span id="pvp-clock">2:00</span><button type="button" id="pvp-forfeit">경기 포기</button></div>'
@@ -153,17 +153,16 @@ function startSearch(){
   if(searching||matched)return;
   roster();
   if(!profile())return status('출전할 캐릭터가 없습니다.');
-  const url=endpoint();
-  if(!url)return status('온라인 PvP 서버가 연결되지 않았습니다. 서버 설정을 열어 배포된 wss:// 주소를 입력하세요.');
-  if(typeof global.WebSocket!=='function')return status('이 브라우저는 WebSocket을 지원하지 않습니다.');
+  if(typeof global.SupabasePvpTransport!=='function')
+    return status('Supabase PvP 연결 모듈을 불러오지 못했습니다.');
   mode=doc.querySelector('input[name="pvp-mode"]:checked')?.value==='manual'?'manual':'auto';
-  searching=true;lastServer=url;
+  searching=true;lastServer='Supabase 무료 Realtime';
   $('pvp-search').hidden=true;$('pvp-cancel').hidden=false;
   $('pvp-fighter').disabled=true;
   for(const radio of doc.querySelectorAll('input[name="pvp-mode"]'))radio.disabled=true;
-  status('온라인 서버에 연결 중…');
+  status('무료 Supabase 서버 인증 및 매칭 연결 중…');
   try{
-    socket=new global.WebSocket(url+'/match');
+    socket=new global.SupabasePvpTransport();
     const thisSocket=socket;
     socket.onmessage=e=>{if(socket===thisSocket)onMessage(e);};
     socket.onerror=()=>{if(socket===thisSocket)status('연결 실패 · 서버 배포 상태나 주소를 확인하세요.');};
