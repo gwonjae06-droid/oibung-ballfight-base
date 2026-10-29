@@ -142,6 +142,11 @@ function updateCharacter(self) {
     }
     return;
   }
+  // Only P1 in an active manual Tower fight is controlled by the player.
+  // Tower opponents and all free-battle fighters keep their original AI.
+  if(self.playerNum===1&&globalThis.ArenaTower?.active&&
+      globalThis.ArenaTower?.mode==='manual'&&
+      globalThis.ArenaTowerControls?.update?.(self,getClosestAliveEnemy(self)))return;
   const b=BEHAVIORS[self.id];
   if(b&&b.update){
     if(globalThis.ForgeExpansion&&!self.forge)globalThis.ForgeExpansion.legacy(self,()=>b.update(self,getClosestAliveEnemy(self)));
@@ -196,7 +201,7 @@ function handleCombat(pA,pB) {
   // Collisions caused by another successful hit are not bonus attacks.
   if((pA.impactSpeed||0)>4||(pB.impactSpeed||0)>4)return;
   [[pA,pB],[pB,pA]]
-    .filter(([a])=>!globalThis.ForgeExpansion?.blocked(a)&&BEHAVIORS[a.id]&&BEHAVIORS[a.id].onContact)
+    .filter(([a])=>!a.manualTower&&!globalThis.ForgeExpansion?.blocked(a)&&BEHAVIORS[a.id]&&BEHAVIORS[a.id].onContact)
     .sort((x,y)=>(BEHAVIORS[x[0].id].order||99)-(BEHAVIORS[y[0].id].order||99))
     .forEach(([a,b])=>{
       const hp=b.hp;

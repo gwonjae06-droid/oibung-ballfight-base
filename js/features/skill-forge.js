@@ -373,6 +373,57 @@ function update(p,target){
   }
   advanceWorld(p,target);
 }
+// Manual Tower mode uses the same cast queue, cooldown clocks, collision
+// and execution pipeline as an AI Forge fighter; only the cast decision differs.
+const MANUAL_PRESETS={
+  bae:[['돌진','dash',0],['충격파','wave',24],['회전베기','spinslash',23],['방어막','shield',0]],
+  oh:[['충격파','wave',25],['순간이동','blink',0],['흡혈','drain',24],['시간 정지','timestop',0]],
+  lee:[['찌르기','thrust',25],['가속','haste',0],['낙뢰','bolt',26],['방어막','shield',0]],
+  park:[['분화 점프','erupt',29],['어퍼컷','uppercut',27],['방어막','shield',0],['돌진','dash',0]],
+  choi:[['투사체','shot',24],['지속 장판','zone',22],['장벽','wall',0],['주변 폭발','nova',29]]
+};
+function enableManual(p){
+  if(!p||p.hp<=0)return false;
+  if(!p.forge){
+    const preset=MANUAL_PRESETS[p.id]||[['투사체','shot',22],['충격파','wave',24],['돌진','dash',0],['방어막','shield',0]];
+    const profile={name:p.name||'수동 파이터',color:p.themeColor||p.borderColor||'#5189cc',
+      effectColor:p.themeColor||'#5189cc',hp:p.maxHp,speed:Math.max(.6,Math.min(5,Math.hypot(p.vx||0,p.vy||0)*1.8||2.4)),
+      skills:preset.map(([name,type,damage],i)=>({name,trigger:'auto',
+        cooldown:[1.8,3.5,4.6,5.8][i],actions:[{type,damage,radius:115,speed:6,
+          duration:type==='dash'?.45:1.6,count:1,knockback:2,status:'none'}]}))};
+    p.forge=normalize(profile);
+    p.forgeQueue=[];p.forgeShots=[];p.forgeZones=[];p.forgeOrbs=[];
+    p.forgeSerial=0;p.forgeClock=0;p.forgeCursor=0;p.forgeDash=0;
+    p.forgeLastHp=p.hp;
+  }
+  // The player may use the first four abilities directly. A special
+  // all-abilities profile still exposes the first four controllable slots.
+  p.forgeTicks||=p.forge.skills.map(()=>0);
+  while(p.forgeTicks.length<p.forge.skills.length)p.forgeTicks.push(0);
+  p.forgeQueue||=[];p.forgeShots||=[];p.forgeZones||=[];p.forgeOrbs||=[];
+  p.forgeSerial||=0;p.forgeClock||=0;p.forgeLastHp=p.hp;
+  p.manualTower=true;
+  p.forgeTicks=p.forge.skills.map(s=>cooldownFrames(p,s));
+  return true;
+}
+function manualUpdate(p,target){
+  if(!p?.manualTower||p.hp<=0)return false;
+  if(p.forgeDash>0)p.forgeDash--;
+  tickSkills(p);
+  advanceWorld(p,target);
+  return true;
+}
+function manualCast(p,index,target){
+  if(!p?.manualTower||p.hp<=0)return false;
+  const i=Number(index),s=p.forge?.skills?.[i];
+  if(!Number.isInteger(i)||i<0||i>=4||!s)return false;
+  if(global.ForgeExpansion?.blocked(p))return false;
+  if(!target||target.hp<=0)return false;
+  if((p.forgeTicks[i]||0)<cooldownFrames(p,s))return false;
+  p.forgeTicks[i]=0;
+  cast(p,s,target,i);
+  return true;
+}
 // Existing projectiles, summons, cooldown-independent sequences and zones
 // must advance even when the owner is stunned, frozen or silenced.
 function advanceWorld(p,target){
@@ -701,6 +752,6 @@ function initialize(){
   const oldDraw=drawCharacter;
   drawCharacter=function(p){if(p.forge)drawFighter(p);oldDraw(p);};
 }
-global.SkillForge={THEMES,randomProfile,normalize,register,remove,list,setDraft,refreshList:()=>refreshList(),refreshEditor:()=>{refreshBasics();render();},persist,TYPE,TRIGGER,STATUS,ACTION_PARAMETERS,MOVEMENT_ONLY,supportedParameter,cooldownFrames,advanceTimers:tickSkills,advanceWorld,hit,allProfile,allSkillset,getDraft:()=>normalize(draft)};
+global.SkillForge={THEMES,randomProfile,normalize,register,remove,list,setDraft,refreshList:()=>refreshList(),refreshEditor:()=>{refreshBasics();render();},persist,TYPE,TRIGGER,STATUS,ACTION_PARAMETERS,MOVEMENT_ONLY,supportedParameter,cooldownFrames,advanceTimers:tickSkills,advanceWorld,hit,enableManual,manualUpdate,manualCast,allProfile,allSkillset,getDraft:()=>normalize(draft)};
 if(typeof document!=='undefined'&&document.querySelector('.bf-tools'))initialize();
 })(window);
