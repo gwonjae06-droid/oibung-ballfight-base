@@ -123,3 +123,66 @@
   #screen-tower .tower-challenge,
   #screen-character .block-inspector-toggle::after{transition:none!important}
 }
+
+/* Tower manual play: one mode choice, responsive in-arena controls. */
+#screen-tower .tower-mode-picker{
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  padding:12px 14px;border:1px solid #53677c;border-radius:12px;
+  background:linear-gradient(110deg,#1b2a3a,#263448);color:#e5edf8
+}
+#screen-tower .tower-mode-picker>strong{font-size:13px;margin-right:7px}
+#screen-tower .tower-mode-picker label{display:inline-flex;align-items:center;gap:6px;
+  min-height:40px;padding:8px 12px;border-radius:9px;background:#172536;
+  border:1px solid #5f7489;font-size:12px;font-weight:800;cursor:pointer}
+#screen-tower .tower-mode-picker input{accent-color:#d7bd8a;width:16px;height:16px}
+#screen-tower .tower-mode-picker label:has(input:checked){border-color:#d7bd8a;background:#3d3940;color:#ffe9bd}
+#screen-tower .tower-mode-picker label:has(input:disabled){opacity:.7;cursor:default}
+#screen-tower .tower-mode-picker small{flex-basis:100%;color:#bac9dc;font-size:11px;line-height:1.55}
+#tower-manual-controls{
+  width:min(100%,760px);margin:12px auto 0;padding:14px;
+  border:1px solid #526a83;border-radius:13px;background:#172435;color:#ecf3fc
+}
+#tower-manual-controls[hidden]{display:none!important}
+.tower-manual-head{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;
+  gap:6px 12px;margin-bottom:10px;font-size:12px}
+.tower-manual-head strong{font-size:14px;color:#f5dfb0}
+.tower-manual-head span{color:#c3d0df}
+.tower-manual-layout{display:flex;justify-content:space-between;align-items:center;gap:16px}
+.tower-joystick-area{display:grid;justify-items:center;gap:4px;flex-shrink:0}
+.tower-joystick-area small{font-size:10px;color:#bcd0df}
+.tower-joystick{
+  display:grid;place-items:center;width:114px;height:114px;
+  background:radial-gradient(circle,#465d78 10%,#243a51 70%);
+  border:2px solid #8199b1;border-radius:50%;touch-action:none;user-select:none;
+  -webkit-user-select:none;position:relative;cursor:grab
+}
+.tower-joystick::before,.tower-joystick::after{content:'';position:absolute;background:#758da6;opacity:.6}
+.tower-joystick::before{height:1px;width:75%;top:50%}
+.tower-joystick::after{width:1px;height:75%;left:50%}
+.tower-joystick-knob{width:43px;height:43px;display:block;position:relative;z-index:1;
+  border:2px solid #e4eaf3;border-radius:50%;background:#a4bad1;
+  box-shadow:0 3px 10px #0008;pointer-events:none}
+.tower-manual-abilities{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;
+  flex:1;min-width:0}
+#tower-manual-controls .tower-manual-skill{min-width:0;min-height:74px;border:1px solid #9d8b77;
+  border-radius:10px;padding:8px 5px;background:#38495c;color:#f5f8fc;
+  display:flex;flex-direction:column;gap:4px;align-items:center;justify-content:center;
+  cursor:pointer;touch-action:manipulation}
+#tower-manual-controls .tower-manual-skill kbd{color:#ffe6ae;font-weight:900;font-size:14px}
+#tower-manual-controls .tower-manual-skill strong{font-size:12px;overflow-wrap:anywhere;line-height:1.25}
+#tower-manual-controls .tower-manual-skill small{font-size:10px;color:#b6c6d9}
+#tower-manual-controls .tower-manual-skill[data-ready="true"]{border-color:#e1be7f;background:#405b60}
+#tower-manual-controls .tower-manual-skill:disabled{opacity:.72;cursor:not-allowed}
+#tower-manual-controls .tower-manual-skill:focus-visible{outline:3px solid #ffe1a5;outline-offset:2px}
+.tower-manual-hint{font-size:11px;color:#c2cfdb;margin:10px 0 0;line-height:1.5}
+@media(max-width:680px){
+  #screen-tower .tower-mode-picker{padding:10px;gap:7px}
+  #screen-tower .tower-mode-picker label{flex:1;justify-content:center}
+  #tower-manual-controls{padding:10px}
+  .tower-manual-head span{font-size:10px}
+  .tower-manual-layout{gap:9px}
+  .tower-joystick{width:100px;height:100px}
+  .tower-manual-abilities{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+  #tower-manual-controls .tower-manual-skill{min-height:64px;padding:5px 3px}
+  #tower-manual-controls .tower-manual-skill strong{font-size:11px}
+}
