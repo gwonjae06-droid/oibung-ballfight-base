@@ -24,7 +24,7 @@ host.innerHTML='<section class="pvp-lobby" id="pvp-lobby">'
   +'<section class="pvp-match" id="pvp-match" hidden aria-label="실시간 온라인 PvP 전투">'
   +'<div class="pvp-match-header"><div><small id="pvp-match-type">자동 전투</small><strong id="pvp-round-state">온라인 경기</strong></div>'
   +'<span id="pvp-clock">2:00</span><button type="button" id="pvp-forfeit">경기 포기</button></div>'
-  +'<div class="pvp-vitals"><div><span id="pvp-name-0">Player 1</span><div class="pvp-hp"><i id="pvp-hp-0"></i></div>'
+  +'<div class="pvp-vitals" hidden aria-hidden="true"><div><span id="pvp-name-0">Player 1</span><div class="pvp-hp"><i id="pvp-hp-0"></i></div>'
   +'<small id="pvp-hp-text-0">240/240</small></div>'
   +'<div><span id="pvp-name-1">Player 2</span><div class="pvp-hp pvp-hp-foe"><i id="pvp-hp-1"></i></div>'
   +'<small id="pvp-hp-text-1">240/240</small></div></div>'
@@ -42,6 +42,7 @@ let fxClock=0;
 const pad=$('pvp-pad'),knob=$('pvp-stick');
 let socket=null,searching=false,matched=false,mode='auto',side=0,latest=null,view=null,
   frame=null,sendLoop=null,active=true,pointer=null,touchX=0,touchY=0,lastServer='';
+let lastSentX=NaN,lastSentY=NaN,lastInputAt=0;
 function status(text){$('pvp-status').textContent=text;}
 function savedServer(){
   try{return global.localStorage?.getItem('oibung-pvp-server')||'';}catch(_){return '';}
@@ -76,6 +77,7 @@ function profile(){
 function clearInput(){
   keys.clear();touchX=touchY=0;pointer=null;
   if(knob)knob.style.transform='translate(0px,0px)';
+  if(matched&&mode==='manual')pushDirection(true);
 }
 function send(msg){
   if(socket?.readyState!==1)return false;
@@ -85,6 +87,7 @@ function cleanup(){
   if(sendLoop){global.clearInterval(sendLoop);sendLoop=null;}
   if(frame!==null&&global.cancelAnimationFrame)global.cancelAnimationFrame(frame);
   frame=null;clearInput();
+  lastSentX=NaN;lastSentY=NaN;lastInputAt=0;
 }
 function closeConnection(message=''){
   if(socket){
@@ -212,9 +215,22 @@ function direction(){
   const length=Math.hypot(x,y);
   return {type:'input',x:length>1?x/length:x,y:length>1?y/length:y};
 }
+function pushDirection(force=false){
+  if(!matched||mode!=='manual')return;
+  const input=direction(),now=Date.now();
+  const changed=input.x!==lastSentX||input.y!==lastSentY;
+  // Immediate changes keep keyboard movement responsive; a small regular
+  // heartbeat prevents stale input without flooding Supabase Free messages.
+  if(!force&&!changed&&now-lastInputAt<220)return;
+  if(send(input)){
+    lastSentX=input.x;lastSentY=input.y;lastInputAt=now;
+  }
+}
 function startSending(){
   if(sendLoop)global.clearInterval(sendLoop);
-  sendLoop=global.setInterval(()=>{if(matched&&mode==='manual')send(direction());},66);
+  lastSentX=NaN;lastSentY=NaN;lastInputAt=0;
+  pushDirection(true);
+  sendLoop=global.setInterval(()=>{if(matched&&mode==='manual')pushDirection();},100);
 }
 function inputKey(event,down){
   if(!matched||mode!=='manual'||global.ArenaScreenRouter?.active!=='pvp')return;
@@ -223,6 +239,7 @@ function inputKey(event,down){
   const key=/^Key[A-Z]$/.test(event.code||'')?event.code.slice(3).toLowerCase():String(event.key||'').toLowerCase();
   if(['w','a','s','d','arrowup','arrowleft','arrowdown','arrowright'].includes(key)){
     if(down)keys.add(key);else keys.delete(key);
+    pushDirection();
     event.preventDefault?.();
   }
   const i=HOTKEYS.indexOf(key);
@@ -241,6 +258,7 @@ function point(e){
   const dx=e.clientX-mx,dy=e.clientY-my,m=Math.hypot(dx,dy)||1;
   const x=dx*Math.min(1,cap/m),y=dy*Math.min(1,cap/m);
   touchX=x/cap;touchY=y/cap;
+  pushDirection();
   knob.style.transform='translate('+x.toFixed(1)+'px,'+y.toFixed(1)+'px)';
 }
 pad.addEventListener('pointerdown',e=>{
@@ -249,6 +267,7 @@ pad.addEventListener('pointerdown',e=>{
 });
 pad.addEventListener('pointermove',e=>{if(e.pointerId===pointer){point(e);e.preventDefault?.();}});
 function release(e){if(e.pointerId===pointer){pointer=null;touchX=touchY=0;
+  pushDirection(true);
   knob.style.transform='translate(0px,0px)';}}
 pad.addEventListener('pointerup',release);pad.addEventListener('pointercancel',release);
 pad.addEventListener('lostpointercapture',release);
