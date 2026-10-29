@@ -182,7 +182,7 @@ function startSearch(){
     socket.onclose=()=>{
       if(socket!==thisSocket)return;
       const wasFighting=matched;
-      socket=null;closeConnection(wasFighting?'서버 연결이 끊겼습니다. 전적은 저장되지 않습니다.':'연결이 종료됐습니다. 서버 주소를 확인하세요.');
+      socket=null;closeConnection(thisSocket.lastError|| (wasFighting?'서버 연결이 끊겼습니다. 전적은 저장되지 않습니다.':'연결이 종료됐습니다. 서버 주소를 확인하세요.'));
     };
   }catch(e){closeConnection('연결을 시작할 수 없습니다. 서버 주소를 확인하세요.');}
 }

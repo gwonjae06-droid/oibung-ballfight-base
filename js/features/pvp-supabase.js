@@ -59,6 +59,7 @@ class SupabasePvpTransport{
     if(this.poll){global.clearInterval(this.poll);this.poll=null;}
     this.room=data.room;this.side=data.side;
     const rule=await rules();
+    if(this.closed)return;
     this.current=rule.createRoom(rule.normalizeProfile(data.fighter_a),
       rule.normalizeProfile(data.fighter_b),data.mode,Date.now(),
       [data.mode_a||data.mode,data.mode_b||data.mode]);
@@ -69,20 +70,26 @@ class SupabasePvpTransport{
     this.channel.on('broadcast',{event:'state'},({payload})=>{
       if(this.side!==1)return;
       if(payload?.type==='state'){
-        if(this.readyTicker){global.clearInterval(this.readyTicker);this.readyTicker=null;}
+        this.lastPeer=Date.now();
         if(payload.seq<= (this.receivedSeq||0))return;
         this.receivedSeq=payload.seq;rule.receive(payload);
+        if(payload.finished){this.done=true;global.clearInterval(this.readyTicker);global.clearInterval(this.watchdog);}
         this.emit(payload);
       }
-      if(payload?.type==='result')this.emit(payload);
+      if(payload?.type==='result'){this.done=true;global.clearInterval(this.readyTicker);global.clearInterval(this.watchdog);this.emit(payload);}
     });
     await new Promise((resolve,reject)=>{
       this.channel.subscribe(status=>{
-        if(status==='SUBSCRIBED')resolve();
-        else if(['CHANNEL_ERROR','TIMED_OUT','CLOSED'].includes(status))reject(Error('실시간 게임 채널에 접속하지 못했습니다.'));
+        if(status==='SUBSCRIBED'){this.connected=true;resolve();}
+        else this.connected=false;
+        if(['CHANNEL_ERROR','TIMED_OUT','CLOSED'].includes(status))reject(Error('실시간 게임 채널에 접속하지 못했습니다.'));
       });
     });
     if(this.closed)return;
+    this.lastPeer=Date.now();
+    this.watchdog=global.setInterval(()=>{
+      if(!this.done&&Date.now()-this.lastPeer>20000)this.fail(Error("상대 연결이 20초 동안 응답하지 않습니다. 다시 매칭해 주세요."));
+    },1000);
     this.emit({type:'matched',you:this.side,mode:data.mode,room:this.room});
     if(this.side===1){
       // Reannounce readiness until the first snapshot, avoiding a race when
@@ -98,7 +105,9 @@ class SupabasePvpTransport{
   control(message,rule){
     if(this.closed||!this.current||!message)return;
     if(message.type==='ready'){
-      if(this.side===0&&message.from===1&&!this.peerReady){
+      if(this.side===0&&message.from===1){
+        this.lastPeer=Date.now();
+        if(this.peerReady)return;
         this.peerReady=true;this.lastStep=Date.now();this.current.started=this.lastStep;
       }
       return;
@@ -115,6 +124,7 @@ class SupabasePvpTransport{
   advance(rule){
     if(this.closed||!this.current||this.done||(!this.peerReady&&!this.current.ended))return;
     const now=Date.now();
+    if(!this.current.ended&&(!this.connected||now-this.lastPeer>3000)){this.lastStep=now;return;}
     // Use elapsed time, substepped for collision stability. Never advance
     // cooldowns by wall time while movement advances only one delayed tick.
     let remaining=Math.min(250,Math.max(0,now-this.lastStep));
@@ -123,12 +133,16 @@ class SupabasePvpTransport{
       rule.step(this.current,ms/1000,now-remaining);
     }
     this.lastStep=now;
-    // 10 broadcasts per second: preserve ability events between packets.
+    // Bound state traffic; the renderer interpolates between complete snapshots.
     if(!this.current.ended&&now-this.lastBroadcast<125)return;
     this.lastBroadcast=now;
     const snap=rule.snapshot(this.current,now);snap.seq=(this.sequence=(this.sequence||0)+1);
     this.emit(snap);
-    this.channel?.send({type:'broadcast',event:'state',payload:snap});
+    if(!this.sending||snap.finished){
+      this.sending=true;
+      Promise.resolve(this.channel?.send({type:"broadcast",event:"state",payload:snap}))
+        .catch(()=>{}).finally(()=>{this.sending=false;});
+    }
     if(snap.finished){
       this.done=true;
       const result={type:'result',winner:snap.winner};
@@ -158,12 +172,14 @@ class SupabasePvpTransport{
   }
   fail(error){
     if(this.closed)return;
+    this.lastError=error?.message||"연결 오류";
     this.emit({type:'error',message:'Supabase 연결 실패: '+(error?.message||'알 수 없는 오류')});
     this.close();
   }
   close(){
     if(this.closed)return;
     this.closed=true;this.readyState=3;
+    if(this.watchdog)global.clearInterval(this.watchdog);
     if(this.poll)global.clearInterval(this.poll);
     if(this.sim)global.clearInterval(this.sim);
     if(this.readyTicker)global.clearInterval(this.readyTicker);

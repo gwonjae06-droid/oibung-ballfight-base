@@ -16,7 +16,7 @@ const baseDraw=drawCharacter;
 drawCharacter=p=>{if(p.forge)SkillForge.drawFighter(p);baseDraw(p);};
 global.ArenaTower={paintBackground:(c,s)=>ArenaTowerScenes.paint(c,s.width,s.height,1)};
 function createRoom(a,b,mode,now,modes){
- AdvancedCombat.reset();SkillVisuals.clear();CUSTOM_DEFS.length=0;
+ AdvancedCombat.reset();SkillVisuals.clear();CUSTOM_DEFS.forEach(d=>delete BEHAVIORS[d.id]);CUSTOM_DEFS.length=0;
  const defs=[a,b].map(raw=>{
   if(raw.skills){const id=SkillForge.register(raw);return CUSTOM_DEFS.find(d=>d.id===id);}
   const def=CHARACTER_DEFS.find(d=>d.id===raw.id);if(!def)throw Error('Unknown fighter');return def;
@@ -28,7 +28,7 @@ function createRoom(a,b,mode,now,modes){
 }
 function setInput(room,i,msg,now=Date.now()){
  const p=players[i];if(!p?.onlineManual||room.ended)return false;
- let x=Number(msg.x)||0,y=Number(msg.y)||0,n=Math.max(1,Math.hypot(x,y));
+ let x=Number.isFinite(Number(msg.x))?Number(msg.x):0,y=Number.isFinite(Number(msg.y))?Number(msg.y):0,n=Math.max(1,Math.hypot(x,y));
  p.inputX=x/n;p.inputY=y/n;p.inputAt=now;return true;
 }
 function cast(room,i,slot){return !room.ended&&!!players[i]?.onlineManual&&SkillForge.manualCast(players[i],slot,getClosestAliveEnemy(players[i]));}
