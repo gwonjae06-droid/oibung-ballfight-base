@@ -33,6 +33,58 @@ const ABILITIES=[
   [['운석 낙하','meteor'],['별비','starfall'],['행성 궤도','orbit'],['성운 번개','bolt'],['성운 연쇄 낙뢰','chain']],
   [['공허의 블랙홀','blackhole'],['심연의 별비','starfall'],['공허 장막','shield'],['중력 시간왜곡','timeburst'],['공허 소환수','summon'],['심연 폭발','nova']]
 ];
+// Actual combat semantics; names alone do not explain whether a skill attacks.
+const SKILL_DETAILS={
+  shot:'대상을 향해 직선 투사체를 발사합니다. 실제 탄환이 몸에 닿아야 피해가 적용됩니다.',
+  shield:'지속 시간 동안 직접 공격을 막는 보호막을 사용합니다. 피해를 주는 스킬이 아닙니다.',
+  wave:'대상 주변에 충격파를 발생시켜 범위 안의 적을 공격합니다.',
+  dash:'상대 방향으로 돌진해 거리를 좁힙니다. 돌진 자체로는 피해를 주지 않습니다.',
+  uppercut:'전방의 짧은 사거리에서 준비 동작 후 주먹으로 공격하고 상대를 띄웁니다.',
+  slash:'전방을 검으로 베며, 실제 칼날이 지나가는 범위에만 피해를 줍니다.',
+  haste:'일정 시간 자신의 이동 속도를 60% 높입니다. 직접 피해는 없습니다.',
+  nova:'자신을 중심으로 폭발을 일으켜 주변 적을 공격합니다.',
+  zone:'대상 위치에 지속 장판을 만듭니다. 생성 순간과 이후 주기적으로 범위 피해를 줍니다.',
+  fortify:'일정 시간 받는 직접 공격 피해를 45% 줄입니다. 완전 무적은 아닙니다.',
+  spinslash:'자신 주변을 회전하며 근접 공격합니다. 공격 범위에 들어와야 맞습니다.',
+  erupt:'도약한 뒤 착지하며 주변 지면에 충격을 줍니다.',
+  wall:'상대와 자신의 사이에 장애물을 설치합니다. 투사체를 막지만 직접 피해를 주지 않습니다.',
+  drain:'사거리 안의 적에게 피해를 주고 실제로 뺏은 체력의 50%를 회복합니다.',
+  trap:'바닥에 함정을 설치합니다. 설치 후 적이 닿으면 발동합니다.',
+  regen:'지속 시간 동안 0.5초마다 체력을 조금씩 회복합니다. 직접 공격은 아닙니다.',
+  dung:'중독 폭탄 투사체를 발사해 명중한 적을 둔화시키고 지속 피해를 줍니다.',
+  homing:'대상을 추적하는 투사체를 발사합니다. 직접 명중해야 피해가 발생합니다.',
+  pierce:'적을 관통하는 투사체를 발사하며, 대상 하나당 한 번만 피해를 줍니다.',
+  arcshot:'포물선으로 날아가 표시된 지점에 착지할 때 폭발합니다.',
+  retreat:'적에게서 멀어지도록 후퇴합니다. 이동 자체로는 피해가 없습니다.',
+  beam:'대상 방향으로 직선 광선을 발사하며 광선 경로에 있는 적을 공격합니다.',
+  timestop:'범위 안 적의 이동과 스킬 사용을 일시 정지시킵니다. 직접 피해는 없습니다.',
+  timeburst:'일정 시간 자신의 스킬 충전 속도를 2배로 높입니다. 직접 피해는 없습니다.',
+  blink:'대상 근처로 순간이동합니다. 순간이동 자체로는 피해가 없습니다.',
+  rewind:'자신의 체력과 위치를 일정 시간 전 상태로 복원합니다.',
+  meteor:'지면에 떨어지는 운석을 생성합니다. 낙하 지점에서 실제 착지할 때 범위 피해를 줍니다.',
+  starfall:'대상 주변에 여러 개의 별을 차례로 떨어뜨립니다. 각 착지 지점에서 피해를 줍니다.',
+  orbit:'자신 주변에 회전하는 구체를 생성합니다. 구체와 실제로 닿을 때 피해가 발생합니다.',
+  bolt:'대상 주변에 낙뢰 위치를 예고하고 잠시 뒤 범위 피해를 줍니다.',
+  chain:'사거리 안의 적에게 연쇄 낙뢰를 가합니다. 최대 타격 수는 스킬의 개수 설정을 따릅니다.',
+  blackhole:'대상 위치에 중력장을 생성해 주변 적을 끌어당기고 주기적으로 피해를 줍니다.',
+  summon:'상대를 추적하며 접촉 공격하는 소환수를 만듭니다.'
+};
+const CONDITION_TEXT={auto:'주기 발동',damaged:'피격 시',lowhp:'체력 조건',contact:'접촉 시'};
+const STATUS_TEXT={fire:'화상 · 지속 피해',poison:'중독 · 지속 피해',ice:'둔화'};
+const NO_DIRECT_DAMAGE=new Set(['dash','shield','haste','fortify','wall','regen','retreat','timestop','timeburst','blink','rewind']);
+function skillDetail(skill){
+  const a=skill.actions[0],condition=skill.trigger==='lowhp'?'HP '+skill.threshold+'% 이하':(CONDITION_TEXT[skill.trigger]||skill.trigger);
+  const tags=[condition,'쿨타임 '+skill.cooldown.toFixed(2)+'초'];
+  if(!NO_DIRECT_DAMAGE.has(a.type))tags.push('기본 위력 '+a.damage);
+  else tags.push('직접 피해 없음');
+  if(['shot','homing','pierce','dung','arcshot','starfall','orbit','chain','bolt','zone','nova','wave','beam','blackhole','trap','erupt','wall'].includes(a.type))
+    tags.push('설정 범위 '+a.radius);
+  if(a.count>1)tags.push('개수 '+a.count);
+  if(a.status&&a.status!=='none')tags.push(STATUS_TEXT[a.status]||a.status);
+  if(['shield','haste','fortify','regen','timeburst','rewind','timestop','zone','blackhole','orbit','summon','wall'].includes(a.type))
+    tags.push('지속 '+a.duration.toFixed(1)+'초');
+  return {name:skill.name,type:a.type,description:SKILL_DETAILS[a.type]||'스킬 동작을 실행합니다.',condition,tags};
+}
 const cap=(v,min,max)=>Math.max(min,Math.min(max,Number(v)||0));
 function floor(n){
   const number=Math.round(cap(n,1,FINISH));
@@ -60,7 +112,7 @@ function makeEnemy(n){
       radius:type==='starfall'||type==='blackhole'?155:112,
       speed:type==='dash'?8:5,
       duration:type==='dash'?0.5:type==='starfall'?2.5:1.7,
-      count:type==='starfall'?5:1,
+      count:type==='starfall'?5:type==='chain'?3:1,
       status:(f.number===4&&['nova','zone','shot'].includes(type))?'fire':
         f.number===6&&['zone','trap','drain','dung'].includes(type)?'poison':'none'
     });
@@ -164,12 +216,21 @@ function install(){
     el('tower-skill-count').textContent=f.skillCount+'개 독립 스킬 · 주기 발동 '+f.autoSkillCount+'개';
     const skillHost=el('tower-enemy-skills');
     skillHost.replaceChildren();
-    for(const entry of f.skills){
-      const badge=doc.createElement('span');
-      badge.className='tower-enemy-skill';
-      badge.textContent=entry.label;
-      badge.title=entry.label+' · '+(global.SkillForge?.TYPE?.[entry.type]||entry.type);
-      skillHost.append(badge);
+    // Use the same generated enemy profile that is registered for combat:
+    // displayed cooldowns, triggers, damage and statuses are never invented.
+    for(const ability of makeEnemy(level).skills){
+      const info=skillDetail(ability);
+      const card=doc.createElement('details');
+      card.className='tower-enemy-skill';
+      const summary=doc.createElement('summary');
+      const name=doc.createElement('strong');name.textContent=info.name;
+      const condition=doc.createElement('small');condition.textContent=info.condition+' · '+ability.cooldown.toFixed(2)+'초';
+      summary.append(name,condition);
+      const body=doc.createElement('div');body.className='tower-enemy-skill-body';
+      const explanation=doc.createElement('p');explanation.textContent=info.description;
+      const metadata=doc.createElement('p');metadata.className='tower-enemy-skill-meta';
+      metadata.textContent=info.tags.join(' · ');
+      body.append(explanation,metadata);card.append(summary,body);skillHost.append(card);
     }
     for(let i=1;i<=FINISH;i++){
       const chip=el('tower-chip-'+i);
@@ -291,6 +352,6 @@ function install(){
     get stage(){return stage;},get state(){return current();}};
   global.ArenaTower=api;return api;
 }
-global.ArenaTowerModel={floor,makeEnemy,read,updateRecord,key};
+global.ArenaTowerModel={floor,makeEnemy,read,updateRecord,key,skillDetail};
 if(typeof document!=='undefined')install();
 })(window);
