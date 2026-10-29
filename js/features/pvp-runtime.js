@@ -4,7 +4,46 @@
 updateUI=()=>{};syncStopButton=()=>{};
 global.settleRound=()=>{};
 let current=null,accumulator=0,remote=false,targets=null,lastPaint=0;
-let steer=null;
+let steer=null,fxOutbox=[],fxSequence=0,remoteFxSequence=0,preview=null,fxFrameCarry=0;
+let fxWake=null;
+function setFxWake(fn){fxWake=typeof fn==='function'?fn:null;}
+function captureFx(effect,owner){
+  if(remote||!current||current.ended)return;
+  const src=players.indexOf(owner);
+  if(fxOutbox.length>=128)fxOutbox.shift();
+  fxOutbox.push({
+    id:++fxSequence,owner:src,follow:!!effect.source,
+    type:effect.type,kind:effect.kind,x:effect.x,y:effect.y,
+    angle:effect.angle,radius:effect.radius,color:effect.color,
+    life:effect.life,scale:effect.scale
+  });
+  fxWake?.();
+}
+function drainFx(max=24){return fxOutbox.splice(0,Math.min(24,Math.max(1,max)));}
+// Called as soon as a remote effect event arrives, not on the next
+// infrequent world snapshot. All 55 authored visual types use their original renderer.
+function receiveFx(events){
+  if(!Array.isArray(events))return 0;
+  remote=true;
+  let count=0;
+  for(const e of events.slice(0,24)){
+    if(!Number.isInteger(e?.id)||e.id<=remoteFxSequence)continue;
+    remoteFxSequence=e.id;
+    // An optimistic local manual cast was already drawn at keydown.
+    if(preview&&e.kind==='cast'&&e.owner===1&&e.type===preview.type&&
+      Date.now()-preview.time<650){preview=null;continue;}
+    if(SkillVisuals.replay(e,players))count++;
+  }
+  return count;
+}
+function previewCast(index,slot){
+  if(index!==1||!remote||!current||current.ended)return false;
+  const p=players[index],action=p?.forge?.skills?.[slot]?.actions?.[0];
+  if(!p?.onlineManual||!action)return false;
+  if(!SkillVisuals.cast(p,action,players[0]))return false;
+  preview={type:action.type,time:Date.now()};
+  return true;
+}
 const baseUpdate=updateCharacter;
 updateCharacter=function(p){
  if(!p.onlineManual)return baseUpdate(p);
@@ -18,7 +57,24 @@ updateCharacter=function(p){
 };
 const baseDraw=drawCharacter;
 drawCharacter=p=>{if(p.forge)SkillForge.drawFighter(p);baseDraw(p);};
-global.ArenaTower={paintBackground:(c,s)=>ArenaTowerScenes.paint(c,s.width,s.height,1)};
+// Cache the detailed Tower scene at its native canvas resolution.
+let stageCache=null,stageWidth=0,stageHeight=0;
+global.ArenaTower={paintBackground:(c,s)=>{
+ if((!stageCache||stageWidth!==s.width||stageHeight!==s.height)&&
+    typeof document.createElement==='function'){
+   const cached=document.createElement('canvas');
+   cached.width=s.width;cached.height=s.height;
+   const cachedCtx=cached.getContext?.('2d');
+   if(cachedCtx){
+     ArenaTowerScenes.paint(cachedCtx,s.width,s.height,1);
+     stageCache=cached;stageWidth=s.width;stageHeight=s.height;
+   }
+ }
+ if(stageCache&&typeof c.drawImage==='function'){
+   c.drawImage(stageCache,0,0);return true;
+ }
+ return ArenaTowerScenes.paint(c,s.width,s.height,1);
+}};
 function createRoom(a,b,mode,now,modes){
  AdvancedCombat.reset();SkillVisuals.clear();CUSTOM_DEFS.forEach(d=>delete BEHAVIORS[d.id]);CUSTOM_DEFS.length=0;
  const defs=[a,b].map(raw=>{
@@ -32,7 +88,10 @@ function createRoom(a,b,mode,now,modes){
   if(p.onlineManual)SkillForge.enableManual(p);
  });
  remote=false;targets=null;steer=null;lastPaint=0;accumulator=0;
- current={players,started:now,elapsed:0,ended:false,winner:null,modes,pending:[]};return current;
+ fxOutbox=[];fxSequence=0;remoteFxSequence=0;preview=null;fxFrameCarry=0;
+ current={players,started:now,elapsed:0,ended:false,winner:null,modes,pending:[]};
+ SkillVisuals.setSpawnListener(captureFx);
+ return current;
 }
 function setInput(room,i,msg,now=Date.now()){
  const p=players[i];if(!p?.onlineManual||room.ended)return false;
@@ -76,8 +135,20 @@ function snapshot(room,full=true){
  if(full){
    const take=(a,n)=>Array.isArray(a)?a.slice(-n):[];
    state.world={
-     skillEffects:encode(take(SkillVisuals.exportEffects(),24)),
-     players:players.map(p=>encode(p,true)),
+     // Spawn events are delivered instantly via the 'fx' broadcast. Never
+     // overwrite the guest's playing effect pool with a stale 600ms snapshot.
+     // Only animated objects are needed remotely. Sending all player
+     // internals (queues, caches, links) created huge packets and frame stalls.
+     visualPlayers:players.map(p=>({
+       forgeShots:encode(take(p.forgeShots,20)),
+       forgeZones:encode(take(p.forgeZones,20)),
+       forgeOrbs:encode(take(p.forgeOrbs,12)),
+       waves:encode(take(p.waves,12)),
+       projectiles:encode(take(p.projectiles,20)),
+       poisonTears:encode(take(p.poisonTears,12)),
+       forgeDash:Number(p.forgeDash)||0,
+       jumpState:p.jumpState||'ground'
+     })),
      objects:encode(take(AdvancedCombat.objects,24)),
      projectiles:encode(take(AdvancedCombat.projectiles,36)),
      effects:encode(take(AdvancedCombat.effects,24)),
@@ -90,14 +161,25 @@ function snapshot(room,full=true){
 function receive(s){
  if(!s?.players||s.players.length!==2)return;
  remote=true;targets=s.players.map(p=>({x:p.x,y:p.y}));
- if(s.world?.players?.length===2){
-   s.world.players.forEach((p,i)=>{
-     const old={x:players[i].x,y:players[i].y};
-     Object.assign(players[i],decode(p));Object.assign(players[i],old);
-   });
+ if(s.world){
+   if(s.world.visualPlayers?.length===2)
+     s.world.visualPlayers.forEach((v,i)=>{
+       const p=players[i];
+       for(const field of ['forgeShots','forgeZones','forgeOrbs','waves',
+         'projectiles','poisonTears'])
+         if(Array.isArray(v[field]))p[field]=decode(v[field]);
+       if(Number.isFinite(v.forgeDash))p.forgeDash=v.forgeDash;
+       if(typeof v.jumpState==='string')p.jumpState=v.jumpState;
+     });
+   // Read old version full-state frames only during rolling deployments.
+   else if(s.world.players?.length===2)
+     s.world.players.forEach((p,i)=>{
+       const old={x:players[i].x,y:players[i].y};
+       Object.assign(players[i],decode(p));Object.assign(players[i],old);
+     });
    for(const k of ['objects','projectiles','effects'])
      if(Array.isArray(s.world[k]))AdvancedCombat[k].splice(0,AdvancedCombat[k].length,...decode(s.world[k]));
-   if(s.world.skillEffects)SkillVisuals.importEffects(decode(s.world.skillEffects));
+   // Keep local VFX running; network event replay owns the remote effect pool.
    if(s.world.floatingTexts)floatingTexts=decode(s.world.floatingTexts);
    if(s.world.shockwaves)shockwaves=decode(s.world.shockwaves);
  }
@@ -115,6 +197,14 @@ function predict(side,msg){
 function paint(){
  const now=Date.now(),dt=Math.min(40,Math.max(0,now-(lastPaint||now)));
  const alpha=1-Math.exp(-dt/85);lastPaint=now;
+ if(remote){
+   fxFrameCarry+=dt;
+   // The guest does not run physics. Still advance *visual animation frames*
+   // at 60Hz so replayed slash, beam, particles, and shockwaves actually move.
+   const frames=Math.min(3,Math.floor(fxFrameCarry/(1000/60)));
+   for(let i=0;i<frames;i++)SkillVisuals.tick();
+   fxFrameCarry=Math.max(0,fxFrameCarry-frames*1000/60);
+ }
  if(remote&&targets)players.forEach((p,i)=>{
    if(steer?.side===i&&p.hp>0){
      const speed=Math.max(.6,Math.min(5,Number(p.forge?.speed)||2.4));
@@ -141,5 +231,6 @@ function paint(){
  });
 }
 
-global.PvpRuntime={createRoom,setInput,cast,step,snapshot,receive,predict,paint};
+global.PvpRuntime={createRoom,setInput,cast,step,snapshot,receive,receiveFx,
+  drainFx,setFxWake,previewCast,predict,paint};
 })(window);

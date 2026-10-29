@@ -83,9 +83,9 @@ test('ticketed cancellation cannot delete a new matchmaking attempt',async()=>{
 test('remote input is coalesced and scenes send 10Hz light frames plus 2Hz visual frames',()=>{
  const net=fs.readFileSync('js/features/pvp-supabase.js','utf8');
  const ui=fs.readFileSync('js/features/pvp-online.js','utf8');
- assert.match(net,/SNAPSHOT_MS=100,FULL_MS=600/);
+ assert.match(net,/SNAPSHOT_MS=120,FULL_MS=1000/);
  assert.match(net,/rule\.snapshot\(this\.current,full\)/);
- assert.match(net,/MAX_FRAME_BYTES=96\*1024/);
+ assert.match(net,/MAX_FRAME_BYTES=40\*1024/);
  assert.match(ui,/function pushDirection\(force=false\)/);
  assert.match(ui,/pushDirection\(\);/);
  assert.match(ui,/class="pvp-vitals" hidden/);
