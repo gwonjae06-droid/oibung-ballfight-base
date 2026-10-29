@@ -87,6 +87,10 @@
   };
   draw=function(){
     oldDraw();if(isGameOver)return;
+    // Match post-render particles/skill effects to the manual camera used
+    // by core/render.js. Do not advance the camera a second time.
+    ctx.save();
+    window.ArenaTowerControls?.applyView?.(ctx);
     if(window.BattleFX)BattleFX.draw(ctx,players);
     window.SkillVisuals?.draw(ctx);
     ctx.save();ctx.globalCompositeOperation='source-over';
@@ -96,6 +100,7 @@
       if(s.bolt){ctx.beginPath();ctx.moveTo(s.x-10,s.y-160);ctx.lineTo(s.x+8,s.y-90);ctx.lineTo(s.x-7,s.y-55);ctx.lineTo(s.x,s.y);ctx.strokeStyle=s.c;ctx.lineWidth=5;ctx.stroke();}
       else{const r=s.r*(1-s.life/20);ring(s.x,s.y,r,s.c,Math.max(1,s.life/4));ring(s.x,s.y,r*0.65,'#fff',1);}
     });ctx.restore();
+    ctx.restore();
   };
   // Fixed-step simulation: 2x doubles updates, not expensive canvas paints.
   gameLoop=function(time){

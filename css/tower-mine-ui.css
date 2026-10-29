@@ -367,3 +367,113 @@
   #tower-manual-hud button{padding:5px 6px}
   #screen-tower[data-manual-focus="true"] .tower-manual-hud-title{gap:5px}
 }
+
+
+/* Immersive manual Tower play. Maximise the actual rendered arena while
+   keeping two-thumb controls pinned to the safe bottom of touch screens. */
+#screen-tower[data-manual-focus="true"]{
+  animation:none!important;transform:none!important;
+  overscroll-behavior-y:contain
+}
+#screen-tower[data-manual-focus="true"] #tower-arena-slot{
+  width:min(100%,1000px);max-width:1000px
+}
+#screen-tower[data-manual-focus="true"] #tower-arena-slot .canvas-wrapper{
+  max-width:min(100%,920px)!important
+}
+#screen-tower[data-manual-focus="true"] #tower-manual-hud{
+  max-width:920px;width:100%
+}
+#screen-tower[data-manual-focus="true"] #tower-manual-controls{
+  max-width:920px;width:100%
+}
+#tower-manual-controls .tower-manual-skill{
+  position:relative;overflow:hidden;
+  -webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;
+  transition:filter .12s ease,transform .12s ease,background .15s ease
+}
+#tower-manual-controls .tower-manual-skill:active{
+  filter:brightness(1.25);transform:scale(.95)
+}
+#tower-manual-controls .tower-manual-skill[data-ready="true"]{
+  border-color:#f5cf8a;background:linear-gradient(145deg,#41647a,#355c58)
+}
+#tower-manual-controls .tower-manual-skill[data-ready="false"]{
+  background:linear-gradient(145deg,#30394a,#283344)
+}
+#tower-manual-controls .tower-manual-skill:disabled{opacity:.8}
+#tower-manual-controls .tower-joystick{box-shadow:0 5px 20px #08182991,inset 0 0 18px #badbf522}
+#tower-manual-controls .tower-joystick-knob{
+  background:radial-gradient(circle at 34% 25%,#e0f3ff,#8cadcc 72%);
+  box-shadow:0 3px 13px #000a,0 0 0 3px #c9e3fb26
+}
+@media(max-width:800px) and (pointer:coarse){
+  body:has(#screen-tower[data-manual-focus="true"]) #container.main-container{
+    width:100%!important;max-width:none!important;padding:0!important;
+    margin:0!important
+  }
+  #screen-tower[data-manual-focus="true"]{width:100%;overflow:visible}
+  #screen-tower[data-manual-focus="true"] #tower-arena-slot{
+    width:100%;max-width:none;margin:0;gap:0;
+    padding:0 0 calc(142px + env(safe-area-inset-bottom,0px))
+  }
+  #screen-tower[data-manual-focus="true"] #tower-arena-slot .battle-screen{
+    border-radius:0!important
+  }
+  #screen-tower[data-manual-focus="true"] #tower-arena-slot .canvas-wrapper{
+    width:100%!important;max-width:none!important;margin:0!important;
+    border-left:0!important;border-right:0!important;
+    border-radius:0!important;box-shadow:none!important
+  }
+  #screen-tower[data-manual-focus="true"] #tower-manual-hud{
+    position:sticky;top:0;z-index:25;max-width:none;width:100%;
+    border-left:0;border-right:0;border-radius:0;padding:7px 10px;
+    background:rgba(19,32,47,.97);backdrop-filter:blur(8px)
+  }
+  #screen-tower[data-manual-focus="true"] #tower-manual-controls{
+    position:fixed!important;bottom:0;left:0;right:0;z-index:90;
+    width:100%;max-width:none;margin:0!important;
+    border-left:0;border-right:0;border-bottom:0;
+    border-radius:17px 17px 0 0;
+    padding:9px max(12px,env(safe-area-inset-left,0px))
+      calc(10px + env(safe-area-inset-bottom,0px))
+      max(12px,env(safe-area-inset-right,0px));
+    background:linear-gradient(145deg,rgba(18,34,51,.97),rgba(25,38,58,.98));
+    box-shadow:0 -10px 30px #07121ccc;
+    touch-action:none;
+  }
+  #screen-tower[data-manual-focus="true"] .tower-manual-layout{
+    justify-content:space-between;gap:10px;align-items:center;
+  }
+  #screen-tower[data-manual-focus="true"] .tower-joystick-area{
+    display:grid;min-width:104px;
+  }
+  #screen-tower[data-manual-focus="true"] .tower-joystick{
+    width:clamp(102px,27vw,132px);height:clamp(102px,27vw,132px);
+    border:2px solid #aac7e0
+  }
+  #screen-tower[data-manual-focus="true"] .tower-manual-abilities{
+    display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:7px;flex:1;max-width:310px;
+  }
+  #screen-tower[data-manual-focus="true"] .tower-manual-skill{
+    min-height:52px!important;padding:6px 5px!important;
+    border-radius:12px;touch-action:none
+  }
+  #screen-tower[data-manual-focus="true"] .tower-manual-skill kbd{font-size:12px}
+  #screen-tower[data-manual-focus="true"] .tower-manual-skill strong{font-size:11px}
+  #screen-tower[data-manual-focus="true"] .tower-manual-skill small{font-size:10px}
+  #screen-tower[data-manual-focus="true"] .tower-manual-hint,
+  #screen-tower[data-manual-focus="true"] .tower-manual-head{display:none}
+}
+@media(max-width:340px) and (pointer:coarse){
+  #screen-tower[data-manual-focus="true"] .tower-joystick-area{min-width:88px}
+  #screen-tower[data-manual-focus="true"] .tower-joystick{
+    width:94px;height:94px
+  }
+  #screen-tower[data-manual-focus="true"] .tower-manual-abilities{gap:5px}
+  #screen-tower[data-manual-focus="true"] .tower-manual-skill strong{font-size:10px}
+}
+@media(prefers-reduced-motion:reduce){
+  #tower-manual-controls .tower-manual-skill{transition:none}
+}
