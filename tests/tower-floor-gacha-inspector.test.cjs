@@ -110,3 +110,35 @@ test('action inspector uses native collapsed details and keeps selection and edi
   assert.match(block,/else if\(el\.dataset\.edit==='param'\)/);
   assert.match(read('index.html'),/css\/tower-mine-ui\.css/);
 });
+
+test('all ten floors disclose every actual skill trigger, cooldown, effects and power',()=>{
+  const w=world(),model=w.ArenaTowerModel;
+  for(let n=1;n<=10;n++){
+    const foe=model.makeEnemy(n),floor=model.floor(n);
+    assert.equal(foe.skills.length,floor.skillCount);
+    for(const s of foe.skills){
+      const info=model.skillDetail(s),action=s.actions[0];
+      assert.equal(info.name,s.name);
+      assert.ok(info.description.length>=15,n+'F '+s.name);
+      assert.ok(info.tags.includes('쿨타임 '+s.cooldown.toFixed(2)+'초'));
+      assert.ok(info.tags.includes('기본 위력 '+action.damage)||
+        info.tags.includes('직접 피해 없음'));
+      assert.ok(info.condition);
+      if(action.status==='fire')assert.ok(info.tags.includes('화상 · 지속 피해'));
+      if(action.status==='poison')assert.ok(info.tags.includes('중독 · 지속 피해'));
+      if(s.trigger==='lowhp')assert.match(info.condition,/HP 70% 이하/);
+    }
+  }
+  assert.equal(model.makeEnemy(9).skills[4].actions[0].count,3,
+    'chain lightning should chain to multiple targets, not be a 1-hit label');
+  const shield=model.skillDetail(model.makeEnemy(1).skills[1]);
+  assert.ok(shield.tags.includes('직접 피해 없음'));
+});
+test('Tower skill sheet uses expandable real-data cards rather than name badges',()=>{
+  const src=read('js/features/tower-challenge.js'),css=read('css/tower-mine-ui.css');
+  assert.match(src,/for\(const ability of makeEnemy\(level\)\.skills\)/);
+  assert.match(src,/doc\.createElement\('details'\)/);
+  assert.match(src,/doc\.createElement\('summary'\)/);
+  assert.match(src,/metadata\.textContent=info\.tags\.join/);
+  assert.match(css,/\.tower-enemy-skill summary:focus-visible/);
+});
