@@ -123,27 +123,3 @@
   #screen-tower .tower-challenge,
   #screen-character .block-inspector-toggle::after{transition:none!important}
 }
-
-/* Tower-only animation-speed control: mounted over the existing battle canvas. */
-#tower-arena-slot .canvas-wrapper{position:relative}
-#tower-arena-slot .tower-speed-control{
-  position:absolute;z-index:15;right:clamp(8px,2vw,16px);top:clamp(8px,2vw,16px);
-  display:inline-flex;align-items:center;justify-content:center;
-  min-width:76px;min-height:42px;padding:8px 13px;
-  border:1px solid rgba(218,236,255,.7);border-radius:12px;
-  color:#f7fbff;background:rgba(12,23,41,.73);
-  box-shadow:0 6px 18px rgba(0,0,0,.3);
-  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
-  font:800 15px/1.2 "Noto Sans KR",system-ui,sans-serif;
-  cursor:pointer;touch-action:manipulation;
-}
-#tower-arena-slot .tower-speed-control:hover{background:rgba(31,54,80,.9)}
-#tower-arena-slot .tower-speed-control:focus-visible{
-  outline:3px solid #f0dfad;outline-offset:2px
-}
-#tower-arena-slot .tower-speed-control[hidden]{display:none!important}
-@media(max-width:600px){
-  #tower-arena-slot .tower-speed-control{
-    min-width:64px;min-height:40px;padding:7px 10px;font-size:13px
-  }
-}
