@@ -250,3 +250,38 @@ test('forfeit while waiting closes the run and records cleared floors',()=>{
   assert.equal(x.tower.records()[0].best,1);
   assert.equal(x.el('tower-clear-overlay').hidden,true);
 });
+
+test('manual gameplay collapses extra info, then restores it when the run ends',()=>{
+  const h=harness();
+  const details=h.el('tower-intel');
+  assert.ok(details,'optional enemy intel is preserved');
+  assert.equal(h.tower.setMode('manual'),true);
+  h.world.ArenaTowerControls={prepare(){return true;},refresh(){}};
+  assert.equal(h.tower.begin(),true);
+  assert.equal(h.el('screen-tower').dataset.manualFocus,'true');
+  assert.equal(h.el('screen-tower').dataset.towerStage,'fighting');
+  assert.equal(details.open,false,'enemy skill details do not dominate manual gameplay');
+  conclude(h,h.world.players[0]);
+  assert.equal(h.tower.stage,'between');
+  assert.equal(h.el('screen-tower').dataset.manualFocus,'true');
+  assert.equal(h.el('screen-tower').dataset.towerStage,'between');
+  assert.equal(details.open,false);
+  assert.equal(h.el('tower-clear-overlay').hidden,false);
+  assert.equal(h.world.isPlaying,false,'no input or AI advances on the cleared floor');
+  assert.equal(h.tower.begin(),true,'the player explicitly begins the next floor');
+  assert.equal(h.tower.stage,'fighting');
+  conclude(h,h.world.players[1]);
+  assert.equal(h.el('screen-tower').dataset.manualFocus,'false');
+  assert.equal(details.open,true,'full information returns after a run');
+});
+test('auto Tower intermission stays full-featured and also requires Next Start',()=>{
+  const h=harness();h.tower.begin();
+  conclude(h,h.world.players[0]);
+  assert.equal(h.tower.stage,'between');
+  assert.equal(h.el('screen-tower').dataset.manualFocus,'false');
+  assert.equal(h.el('tower-clear-overlay').hidden,false);
+  assert.equal(h.world.isPlaying,false);
+  assert.equal(h.world.roundStarted,false);
+  h.el('tower-next-start').listeners.click();
+  assert.equal(h.world.isPlaying,true);
+});
