@@ -482,3 +482,16 @@ WebSocket이 허용됩니다. 개발 중에는
 `node --test tests/*.test.cjs`는 게임 전체 회귀 검사를 수행합니다.
 실제 인터넷에서 서로 다른 두 기기의 네트워크 지연/조작감은 별도
 현장 검증이 필요합니다.
+
+
+## Supabase 무료 플랜 PvP 전환 (2026-10-29)
+PvP 로비에서 자동 전투/직접 조종을 선택하고 Supabase Auth 익명 로그인 →
+PostgreSQL 원자적 FIFO 매칭 → 참여자만 접속 가능한 Realtime 채널로 경기를 진행합니다.
+
+- Supabase 프로젝트: `fljvwzkndydseevgnhjq` (서울, 무료 플랜).
+- 배포 전 `supabase/pvp_free.sql` 스키마/함수와 채널 정책을 해당 프로젝트에 적용해야 합니다.
+- Supabase Dashboard → Authentication → Providers에서 **익명 로그인 활성화**가 필요합니다.
+- `js/features/pvp-supabase.js`의 public publishable key는 공개 가능한 클라이언트 키입니다. 비밀 키는 넣지 않습니다.
+- 이 설계는 **무료 베타**로, 매칭은 Postgres에서 검증하지만 실제 전투는 호스트 브라우저에서 계산됩니다. 치트 방지/공정 승패 확정이 필요한 랭크전에 사용하면 안 됩니다.
+- 사용자 2명 이상, 정상 익명 인증·RLS·방송 수신/이동·스킬·포기까지 실제 브라우저 테스트가 필요합니다.
+- 이전 Cloudflare 코드는 이력으로 보관하되 실제 PvP 화면의 백엔드는 Supabase로 전환합니다.
