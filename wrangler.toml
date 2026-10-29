@@ -1,0 +1,14 @@
+name = "oibung-arena-pvp"
+main = "workers/pvp-worker.mjs"
+compatibility_date = "2026-10-29"
+
+[[durable_objects.bindings]]
+name = "MATCH_HUB"
+class_name = "MatchHub"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["MatchHub"]
+
+# Configure the public Worker URL from the game's PvP settings. Never commit
+# a Cloudflare API token. Use 'npx wrangler deploy' after authentication.

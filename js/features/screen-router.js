@@ -3,11 +3,11 @@
  * Screen switching neither clones widgets nor reloads the document. */
 (function(global){
 'use strict';
-const ROUTES=['lobby','tower','character','ranking','mine','stock'];
-const NAMES={lobby:'메인 로비',tower:'도전의 탑',character:'캐릭터 설계',
+const ROUTES=['lobby','tower','pvp','character','ranking','mine','stock'];
+const NAMES={lobby:'메인 로비',tower:'도전의 탑',pvp:'온라인 PvP',character:'캐릭터 설계',
  ranking:'캐릭터 랭킹',mine:'광산',stock:'주식'};
-const ICONS={tower:'⚔',character:'✦',ranking:'★',mine:'⛏',stock:'▥'};
-const DECKS={tower:'10개 층 · 층별 전술 · 보스와의 결전',character:'설계 · 조합 · 시연 · 저장 — 나만의 전투 방식을 완성하세요',
+const ICONS={tower:'⚔',pvp:'⚡',character:'✦',ranking:'★',mine:'⛏',stock:'▥'};
+const DECKS={tower:'10개 층 · 층별 전술 · 보스와의 결전',pvp:'자동 또는 직접 조종 선택 → 같은 모드 1:1 랜덤 매칭',character:'설계 · 조합 · 시연 · 저장 — 나만의 전투 방식을 완성하세요',
  ranking:'공유 파이터 분석과 내 도전 기록',mine:'터치 채굴로 G를 모으고 가챠에서 꾸미기 수집',stock:'다섯 가상 종목의 흐름을 읽는 모의 투자'};
 function install(){
   const doc=global.document,main=doc?.getElementById('container');
@@ -48,6 +48,7 @@ function install(){
   lobby.append(hero);
   const cards=node('div','lobby-cards');
   cards.innerHTML=[
+   ['pvp','온라인 PvP','자동 또는 직접 조종을 고른 뒤 다른 플레이어와 매칭하세요.','1:1 랜덤 매칭 · 온라인 서버 필요'],
    ['character','캐릭터 설계','블록으로 스킬을 만들고 외형을 꾸며 보세요.','스킬 코드 · 미리보기 · 가챠'],
    ['ranking','캐릭터 랭킹','공유 파이터와 내 탑 기록을 확인하세요.','파워랭킹 · 기록 · 공유'],
    ['mine','포인트 광산','G를 채굴하고 가챠로 꾸미기 아이템을 모으세요.','터치 채굴 · 단차 · 10연차'],
@@ -253,6 +254,7 @@ function install(){
       global.dispatchEvent?.(new global.Event('studio:close'));
     }
     active=where;
+    global.ArenaPvp?.onRoute?.(where==='pvp');
     for(const [id,page] of Object.entries(screens)){
       page.hidden=id!==where;
       page.setAttribute('aria-hidden',String(id!==where));
