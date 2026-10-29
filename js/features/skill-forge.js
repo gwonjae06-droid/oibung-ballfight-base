@@ -64,7 +64,7 @@ const clean=(v,n)=>String(v==null?'':v).replace(/[<>]/g,'').slice(0,n).trim();
 const color=(c)=>/^#[0-9a-f]{6}$/i.test(c)?c:'#a78bfa';
 const stage=()=>({type:'shot',pattern:'fan',target:'nearest',damage:18,radius:120,count:5,speed:5,duration:1.5,status:'none',knockback:2,delay:0});
 const skill=()=>({name:'새 스킬',trigger:'auto',cooldown:3,threshold:40,actions:[stage()]});
-function normalize(value){
+function normalize(value,{towerEnemy=false}={}){
   if(!value||typeof value!=='object'||Array.isArray(value))throw Error('올바른 설정을 입력하세요.');
   if(!Array.isArray(value.skills)||value.skills.length<1)throw Error('스킬을 한 개 이상 추가하세요.');
   return {
@@ -73,7 +73,8 @@ function normalize(value){
     color:color(value.color),effectColor:color(value.effectColor||value.color),hp:Math.round(number(value.hp,140,500,250)),
     speed:number(value.speed,.6,5,1.8),
     allAbilities:value.allAbilities===true,
-    skills:value.skills.slice(0,4).map((s,i)=>{
+    // Only transient Tower enemies may exceed the four-skill player limit.
+    skills:value.skills.slice(0,towerEnemy?6:4).map((s,i)=>{
       if(!Array.isArray(s.actions)||!s.actions.length)throw Error((i+1)+'번 스킬에 동작이 없습니다.');
       return {name:clean(s.name,18)||'스킬 '+(i+1),
         trigger:TRIGGER[s.trigger]?s.trigger:'auto',
@@ -460,9 +461,9 @@ function drawFighter(p){
   p.forgeOrbs.forEach(o=>{for(let i=0;i<o.a.count;i++){const t=o.phase+i*2*Math.PI/o.a.count,r=o.a.radius*.75;ctx.globalAlpha=.9;ctx.beginPath();ctx.arc(p.x+Math.cos(t)*r,p.y+Math.sin(t)*r,8,0,2*Math.PI);ctx.fill();}});
   ctx.restore();
 }
-function register(value){
-  if(CUSTOM_DEFS.length>=6)throw Error('캐릭터는 최대 6명까지 만들 수 있습니다.');
-  const profile=normalize(value),id='forge_'+(++sequence);
+function register(value,{towerEnemy=false}={}){
+  if(CUSTOM_DEFS.length>=6&&!towerEnemy)throw Error('캐릭터는 최대 6명까지 만들 수 있습니다.');
+  const profile=normalize(value,{towerEnemy}),id='forge_'+(++sequence);
   if(!profile.artKey)profile.artKey='art'+Date.now().toString(36)+Math.random().toString(36).slice(2,9);
   const runtime=profile.allAbilities?{...profile,skills:allSkillset()}:profile;
   const def={id,name:profile.name,forgeData:profile,createInstance(n){
