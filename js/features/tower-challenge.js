@@ -17,20 +17,21 @@ const FLOOR_RULES=[
   ['공허의 지배자','블랙홀과 별비 · 최종 보스','blackhole']
 ];
 // Floor identity is visible in BOTH the pre-battle panel and the live Canvas.
-// The first two floors teach the player with 2 independently timed skills.
-// From floor 3 onward each opponent equips exactly four independent skills.
+// Floors 1–2 use 2 skills, floors 3–4 use 4, floors 6–9 use 5.
+// Both bosses (5F and 10F) use 6 independent skills. On floors 5+,
+// at least 3 skills are periodic and the rest react to battle conditions.
 const THEMES=['dojo','tidal','wind','ember','iron','venom','scope','clock','astral','void'];
 const ABILITIES=[
   [['견습 사격','shot'],['입문 방호','shield']],
   [['파도 충격','wave'],['해류의 화살','shot']],
   [['바람 돌진','dash'],['공중 어퍼컷','uppercut'],['휘몰아치는 참격','slash'],['질풍 가속','haste']],
   [['화염 폭발','nova'],['용암 지대','zone'],['불꽃 탄환','shot'],['열기 방호','shield']],
-  [['강철 어퍼컷','uppercut'],['철갑 방패','shield'],['불굴의 갑옷','fortify'],['철륜 회전베기','spinslash']],
-  [['맹독 장판','zone'],['흡수의 늪','drain'],['포자 함정','trap'],['늪지 재생','regen']],
-  [['추적 사격','homing'],['관통탄','pierce'],['곡사탄','arcshot'],['조준 거리 확보','retreat']],
-  [['시간 정지','timestop'],['시간 가속','timeburst'],['순간이동','blink'],['시간 되감기','rewind']],
-  [['운석 낙하','meteor'],['별비','starfall'],['행성 궤도','orbit'],['성운 번개','bolt']],
-  [['공허의 블랙홀','blackhole'],['심연의 별비','starfall'],['공허 장막','shield'],['중력 시간왜곡','timeburst']]
+  [['강철 어퍼컷','uppercut'],['철갑 방패','shield'],['불굴의 갑옷','fortify'],['철륜 회전베기','spinslash'],['강철 붕괴','erupt'],['요새 장벽','wall']],
+  [['맹독 장판','zone'],['흡수의 늪','drain'],['포자 함정','trap'],['늪지 재생','regen'],['맹독 포자탄','dung']],
+  [['추적 사격','homing'],['관통탄','pierce'],['곡사탄','arcshot'],['조준 거리 확보','retreat'],['집중 광선','beam']],
+  [['시간 정지','timestop'],['시간 가속','timeburst'],['순간이동','blink'],['시간 되감기','rewind'],['시계 바늘 충격파','wave']],
+  [['운석 낙하','meteor'],['별비','starfall'],['행성 궤도','orbit'],['성운 번개','bolt'],['성운 연쇄 낙뢰','chain']],
+  [['공허의 블랙홀','blackhole'],['심연의 별비','starfall'],['공허 장막','shield'],['중력 시간왜곡','timeburst'],['공허 소환수','summon'],['심연 폭발','nova']]
 ];
 const cap=(v,min,max)=>Math.max(min,Math.min(max,Number(v)||0));
 function floor(n){
@@ -39,10 +40,12 @@ function floor(n){
   return {number,name,description,main,boss,scene:THEMES[number-1],
     skills:ABILITIES[number-1].map(([label,type])=>({label,type})),
     skillCount:ABILITIES[number-1].length,
-    hp:Math.min(500,180+number*19+(boss?80:0)),
-    speed:Math.min(4.5,1.15+number*.20),
-    damage:Math.min(65,12+number*3+(boss?7:0)),
-    cooldown:Math.max(.75,3.3-number*.17)};
+    autoSkillCount:number>=5?(boss?4:3):ABILITIES[number-1].length,
+    difficulty:'매우 어려움',
+    hp:Math.min(500,200+number*24+(boss?140:0)),
+    speed:Math.min(4.7,1.25+number*.24),
+    damage:Math.min(90,Math.round(18+number*3.8+(boss?12:0))),
+    cooldown:Number(Math.max(.8,3.1-number*.21-(boss?.25:0)).toFixed(2))};
 }
 function action(type,damage,extra={}){
   return {type,pattern:'direct',target:'nearest',damage,radius:112,count:1,
@@ -59,10 +62,11 @@ function makeEnemy(n){
       duration:type==='dash'?0.5:type==='starfall'?2.5:1.7,
       count:type==='starfall'?5:1,
       status:(f.number===4&&['nova','zone','shot'].includes(type))?'fire':
-        f.number===6&&['zone','trap','drain'].includes(type)?'poison':'none'
+        f.number===6&&['zone','trap','drain','dung'].includes(type)?'poison':'none'
     });
-    return {name,cooldown:Number((f.cooldown+i*.55+(isSupport?.7:0)).toFixed(2)),
-      trigger:'auto',threshold:40,actions:[attack]};
+    return {name,cooldown:Number((f.cooldown+i*.32+(isSupport?.55:0)).toFixed(2)),
+      trigger:f.number>=5&&i>=f.autoSkillCount?(i%2?'lowhp':'damaged'):'auto',
+      threshold:70,actions:[attack]};
   });
   return {name:f.name,color:f.boss?'#7f5cce':'#b26b73',
     effectColor:f.boss?'#9457e2':'#d96c6e',
@@ -140,13 +144,13 @@ function install(){
     refreshHero();
     const f=floor(level),best=read(global.localStorage).records[key(selectedDef())]?.best||0;
     el('tower-floor').textContent=level+' / '+FINISH+'F';
-    el('tower-rule').textContent=f.description;
+    el('tower-rule').textContent=f.difficulty+' · '+f.description;
     el('tower-enemy').textContent=(f.boss?'👑 ':'')+f.name;
-    el('tower-enemy-info').textContent=f.hp+' HP · 이동 '+f.speed.toFixed(1)+' · '+f.damage+' 기본 공격력';
+    el('tower-enemy-info').textContent=f.difficulty+' · '+f.hp+' HP · 이동 '+f.speed.toFixed(1)+' · '+f.damage+' 기본 공격력';
     el('tower-best').textContent='최고 기록 '+best+'F (내 브라우저)';
     screen.dataset.towerTheme=f.scene;
     el('tower-scene-name').textContent=global.ArenaTowerScenes?.SCENES[level-1]?.name||f.name;
-    el('tower-skill-count').textContent=f.skillCount+'개 독립 스킬';
+    el('tower-skill-count').textContent=f.skillCount+'개 독립 스킬 · 주기 발동 '+f.autoSkillCount+'개';
     const skillHost=el('tower-enemy-skills');
     skillHost.replaceChildren();
     for(const entry of f.skills){
@@ -188,7 +192,7 @@ function install(){
     // instance/behavior used by saved custom characters. Immediately detach
     // the transient definition from CUSTOM_DEFS so it never appears as a
     // saved/shared character or changes the user's roster.
-    const id=global.SkillForge.register(makeEnemy(level));
+    const id=global.SkillForge.register(makeEnemy(level),{towerEnemy:true});
     const i=CUSTOM_DEFS.findIndex(d=>d.id===id);
     if(i<0)throw Error('적 캐릭터 생성 실패');
     const def=CUSTOM_DEFS.splice(i,1)[0];

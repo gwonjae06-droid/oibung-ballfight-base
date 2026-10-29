@@ -74,7 +74,7 @@ test('router creates one lobby and exactly five separate destinations from exist
 });
 test('tower uses original 2-person combat engine with transient real Forge enemies, not fake wins',()=>{
   const engine=read('js/core/engine.js'),src=read('js/features/tower-challenge.js');
-  assert.ok(src.includes('global.SkillForge.register(makeEnemy(level))'));
+  assert.ok(src.includes('global.SkillForge.register(makeEnemy(level),{towerEnemy:true})'));
   assert.ok(src.includes('CUSTOM_DEFS.splice(i,1)[0]'));
   assert.ok(src.includes('setMatchCount(2)'));
   assert.ok(src.includes('reRollMatch([selected,enemy])'));

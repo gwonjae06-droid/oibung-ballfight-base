@@ -9,32 +9,38 @@ function world(){
     vm.runInContext(read(script),h,{filename:script});
   return h;
 }
-test('every floor has a unique named concept and exactly 2/4 independent skills as requested',()=>{
+test('each floor has the requested 2/4/5/6 real skills and very hard difficulty',()=>{
   const h=world(),model=h.ArenaTowerModel,scenes=h.ArenaTowerScenes.SCENES;
   const ids=[],names=[];
   for(let i=1;i<=10;i++){
     const floor=model.floor(i),foe=model.makeEnemy(i);
-    const expected=i<3?2:4;
+    const expected=i<3?2:i<5?4:i%5===0?6:5;
     assert.equal(floor.skillCount,expected,'floor '+i+' description');
     assert.equal(floor.skills.length,expected,'floor '+i+' metadata');
     assert.equal(foe.skills.length,expected,'floor '+i+' live fighter');
     assert.equal(floor.scene,scenes[i-1].id);
+    assert.equal(floor.difficulty,'매우 어려움');
     ids.push(floor.scene);names.push(scenes[i-1].name);
     const registry=Array.from(foe.skills,s=>s.actions[0].type);
     assert.equal(new Set(registry).size,expected,'floor '+i+' uses varied moves');
     for(const skill of foe.skills){
       assert.equal(skill.actions.length,1,'one real action per independently timed skill');
-      assert.equal(skill.trigger,'auto');
+      assert.ok(['auto','lowhp','damaged'].includes(skill.trigger));
       assert.ok(skill.cooldown>0);
       assert.ok(h.ActionRegistry.get(skill.actions[0].type),'action exists in registry');
     }
-    const normalized=h.SkillForge.normalize(foe);
-    assert.equal(normalized.skills.length,expected,'SkillForge retains all skills');
+    const normalized=h.SkillForge.normalize(foe,{towerEnemy:true});
+    assert.equal(normalized.skills.length,expected,'trusted tower enemy retains all skills');
+    const auto=foe.skills.filter(s=>s.trigger==='auto').length;
+    assert.equal(auto,floor.autoSkillCount,'metadata shows actual number of periodic skills');
+    assert.ok(i<5||auto>=3,'5F+ needs at least three periodic skills');
+    if(i>=5)assert.ok(foe.skills.some(s=>s.trigger!=='auto'),'late floors have conditional skills too');
   }
   assert.equal(new Set(ids).size,10);
   assert.equal(new Set(names).size,10);
-  assert.equal(model.makeEnemy(5).skills.length,4);
-  assert.equal(model.makeEnemy(10).skills.length,4);
+  assert.equal(model.makeEnemy(5).skills.length,6);
+  assert.equal(model.makeEnemy(10).skills.length,6);
+  for(let n=6;n<=9;n++)assert.equal(model.makeEnemy(n).skills.length,5);
 });
 test('early tutorial skills, later mobility, poison, time and cosmic bosses keep their mechanical identities',()=>{
   const h=world(),m=h.ArenaTowerModel;
