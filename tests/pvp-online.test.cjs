@@ -103,3 +103,35 @@ test('MatchHub cancellation, drop and malicious messages never create fake match
   hub.webSocketMessage(a,JSON.stringify({type:'queue',mode:'superuser',profile:{}}));
   assert.ok(a.sent.some(x=>x.type==='error'));
 });
+
+test('PvP waiting users survive Durable Object hibernation with mode and FIFO queue intact',async()=>{
+  const {MatchHub}=await load('workers/pvp-worker.mjs');
+  const make=()=>({sent:[],attachment:null,
+    send(s){this.sent.push(JSON.parse(s));},
+    serializeAttachment(data){this.attachment=structuredClone(data);},
+    deserializeAttachment(){return this.attachment;},
+    close(){}});
+  const a=make(),b=make(),c=make(),d=make();
+  const first=new MatchHub({acceptWebSocket(){},getWebSockets(){return []}},{});
+  for(const socket of [a,b])first.clients.set(socket,{mode:null,room:null,slot:-1,lastPacket:0,packets:0});
+  first.webSocketMessage(a,JSON.stringify({type:'queue',mode:'manual',profile:{name:'A'}}));
+  first.webSocketMessage(b,JSON.stringify({type:'queue',mode:'auto',profile:{name:'B'}}));
+  assert.equal(a.attachment.mode,'manual');
+  assert.equal(b.attachment.mode,'auto');
+  const woke=new MatchHub({acceptWebSocket(){},getWebSockets(){return [a,b]}},{});
+  assert.equal(woke.waiting.manual.length,1);
+  assert.equal(woke.waiting.auto.length,1);
+  for(const socket of [c,d])woke.clients.set(socket,{mode:null,room:null,slot:-1,lastPacket:0,packets:0});
+  woke.webSocketMessage(c,JSON.stringify({type:'queue',mode:'manual',profile:{name:'C'}}));
+  assert.equal(woke.rooms.size,1);
+  assert.equal(woke.waiting.manual.length,0);
+  assert.ok(a.sent.some(s=>s.type==='matched'&&s.you===0),'earlier waiting user receives match');
+  assert.equal(woke.waiting.auto.length,1,'different-mode waiter remains queued');
+  woke.webSocketMessage(c,JSON.stringify({type:'forfeit'}));
+  assert.equal(a.attachment.mode,null,'finished room clears preserved state');
+  woke.webSocketMessage(d,JSON.stringify({type:'queue',mode:'auto',profile:{name:'D'}}));
+  assert.ok(b.sent.some(s=>s.type==='matched'&&s.you===0));
+  woke.webSocketMessage(d,JSON.stringify({type:'forfeit'}));
+  woke.tick();
+  assert.equal(woke.interval,null);
+});
