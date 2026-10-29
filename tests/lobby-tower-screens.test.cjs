@@ -83,11 +83,13 @@ test('tower uses original 2-person combat engine with transient real Forge enemi
   assert.ok(engine.includes('globalThis.ArenaTower?.onBattleEnd?.(finalAlive.length===1?finalAlive[0]:null)'));
   assert.ok(engine.includes("globalThis.ArenaTower?.onBattleEnd?.(null,'stopped')"));
   assert.ok(src.includes("winner.playerNum!==1"));
-  assert.ok(src.includes('chooseReward'));
-  assert.ok(src.includes('saveEconomyState()'));
+  assert.ok(!src.includes('chooseReward'),'reward selection is gone');
+  assert.ok(!src.includes('tower-rewards'),'no reward panel is created');
+  assert.ok(!src.includes("bonus.hp")&&!src.includes("bonus.speed"),'no per-floor stat boost');
+  assert.ok(src.includes('level++;')&&src.includes('startFight();'),'clear advances directly');
   assert.ok(src.includes("return {active,stage,level,cleared"));
-  assert.ok(src.includes("p.maxHp+=bonus.hp"));
-  assert.ok(src.includes("bonus.speed"));
+  assert.ok(src.includes("speedButton.id='tower-speed'"));
+  assert.ok(src.includes("setSpeed(speed%3+1)"));
 });
 test('creator remains inline and stored UI singletons are neither cloned nor reinitialized',()=>{
   const router=read('js/features/screen-router.js');
