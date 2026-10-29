@@ -219,6 +219,9 @@ class SupabasePvpTransport{
     .catch(()=>{}).finally(()=>{this.sending=false;});
   }
   if(snap.finished){
+   // Always deliver the final slash/explosion before closing the room.
+   if(this.fxTimer){global.clearTimeout(this.fxTimer);this.fxTimer=null;}
+   this.flushFx();
    this.done=true;
    const result={type:'result',winner:snap.winner};
    this.emit(result);
