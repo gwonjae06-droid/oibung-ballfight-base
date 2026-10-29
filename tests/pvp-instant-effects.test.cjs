@@ -37,7 +37,7 @@ test('guest visual engine replays original skill artwork without importing stale
  const host=world(),guest=world(),a=host.PvpRuntime,b=guest.PvpRuntime;
  const room=a.createRoom(hero,hero,'manual',1000,['manual','manual']);
  b.createRoom(hero,hero,'manual',1000,['manual','manual']);
- b.receive(JSON.parse(JSON.stringify(a.snapshot(room,false)));
+ b.receive(JSON.parse(JSON.stringify(a.snapshot(room,false))));
  assert.equal(a.cast(room,0,0),true);
  const events=JSON.parse(JSON.stringify(a.drainFx(24)));
  assert.ok(b.receiveFx(events)>0,'guest renders VFX before any full-state packet');
