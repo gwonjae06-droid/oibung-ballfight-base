@@ -34,7 +34,7 @@ test('PvP client supports mobile independent pointers and leaves Tower engine un
   assert.match(pvp,/pointer=\s*e\.pointerId/);
   assert.match(pvp,/touchAt=Date\.now\(\)/);
   assert.match(pvp,/send\(\{type:'cast',slot:i\}\)/);
-  assert.match(pvp,/send\(direction\(\)\)/);
+  assert.match(pvp,/pushDirection\(\)/);
   assert.ok(!read('js/core/engine.js').includes('ArenaPvp'),'main combat remains offline');
 });
 
