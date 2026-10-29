@@ -221,6 +221,7 @@ function pushDirection(force=false){
   const changed=input.x!==lastSentX||input.y!==lastSentY;
   // Immediate changes keep keyboard movement responsive; a small regular
   // heartbeat prevents stale input without flooding Supabase Free messages.
+  if(!force&&changed&&now-lastInputAt<34)return;
   if(!force&&!changed&&now-lastInputAt<220)return;
   if(send(input)){
     lastSentX=input.x;lastSentY=input.y;lastInputAt=now;
@@ -230,7 +231,7 @@ function startSending(){
   if(sendLoop)global.clearInterval(sendLoop);
   lastSentX=NaN;lastSentY=NaN;lastInputAt=0;
   pushDirection(true);
-  sendLoop=global.setInterval(()=>{if(matched&&mode==='manual')pushDirection();},100);
+  sendLoop=global.setInterval(()=>{if(matched&&mode==='manual')pushDirection();},50);
 }
 function inputKey(event,down){
   if(!matched||mode!=='manual'||global.ArenaScreenRouter?.active!=='pvp')return;
@@ -239,7 +240,7 @@ function inputKey(event,down){
   const key=/^Key[A-Z]$/.test(event.code||'')?event.code.slice(3).toLowerCase():String(event.key||'').toLowerCase();
   if(['w','a','s','d','arrowup','arrowleft','arrowdown','arrowright'].includes(key)){
     if(down)keys.add(key);else keys.delete(key);
-    pushDirection();
+    pushDirection(true);
     event.preventDefault?.();
   }
   const i=HOTKEYS.indexOf(key);

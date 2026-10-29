@@ -85,7 +85,10 @@ p.poisonTears.forEach(b=>{ctx.save();const g=ctx.createRadialGradient(b.x-2,b.y-
 });
 globalThis.AdvancedCombat?.draw(ctx);
 globalThis.CosmeticArcade?.drawUnder?.(ctx,players);
-players.forEach(drawCharacter);
+players.forEach(p=>{
+  if(globalThis.ArenaMotion?.drawFighter)ArenaMotion.drawFighter(ctx,p,drawCharacter);
+  else drawCharacter(p);
+});
 globalThis.CosmeticArcade?.drawOver?.(ctx,players);
 globalThis.ImpactPhysics?.draw?.(ctx);
 particles.forEach(p=>{ctx.beginPath();ctx.arc(p.x,p.y,p.radius,0,Math.PI*2);ctx.fillStyle=arenaEffectColor(p.color);ctx.globalAlpha=p.alpha;ctx.fill();ctx.globalAlpha=1;});

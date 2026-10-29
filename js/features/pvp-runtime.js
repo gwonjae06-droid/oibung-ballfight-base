@@ -4,6 +4,7 @@
 updateUI=()=>{};syncStopButton=()=>{};
 global.settleRound=()=>{};
 let current=null,accumulator=0,remote=false,targets=null,lastPaint=0;
+let lastSimAt=0,lastSnapshotAt=0,lastSteerAt=0,lastStateSeq=-1;
 let steer=null,fxOutbox=[],fxSequence=0,remoteFxSequence=0,preview=null,fxFrameCarry=0;
 let fxWake=null;
 function setFxWake(fn){fxWake=typeof fn==='function'?fn:null;}
@@ -88,6 +89,8 @@ function createRoom(a,b,mode,now,modes){
   if(p.onlineManual)SkillForge.enableManual(p);
  });
  remote=false;targets=null;steer=null;lastPaint=0;accumulator=0;
+ lastSimAt=0;lastSnapshotAt=0;lastSteerAt=0;lastStateSeq=-1;
+ global.ArenaMotion?.reset?.(players);
  fxOutbox=[];fxSequence=0;remoteFxSequence=0;preview=null;fxFrameCarry=0;
  current={players,started:now,elapsed:0,ended:false,winner:null,modes,pending:[]};
  SkillVisuals.setSpawnListener(captureFx);
@@ -103,8 +106,10 @@ function step(room,dt,now){
  if(room.ended)return;accumulator+=dt;
  while(accumulator>=1/60&&!isGameOver){
   players.forEach(p=>{if(p.onlineManual&&now-(p.inputAt||0)>700)p.inputX=p.inputY=0;});
+  global.ArenaMotion?.capture?.(players);
   update();SkillVisuals.tick();accumulator-=1/60;room.elapsed+=1/60;
  }
+ lastSimAt=Date.now();
  if(isGameOver||room.elapsed>=120){room.ended=true;isPlaying=false;isGameOver=true;
   room.winner=players[0].hp===players[1].hp?-1:players[0].hp>players[1].hp?0:1;}
 }
@@ -160,7 +165,12 @@ function snapshot(room,full=true){
 }
 function receive(s){
  if(!s?.players||s.players.length!==2)return;
- remote=true;targets=s.players.map(p=>({x:p.x,y:p.y}));
+ if(Number.isFinite(s.seq)){
+   if(s.seq<=lastStateSeq)return;
+   lastStateSeq=s.seq;
+ }
+ remote=true;lastSnapshotAt=Date.now();
+ targets=s.players.map(p=>({x:p.x,y:p.y}));
  if(s.world){
    if(s.world.visualPlayers?.length===2)
      s.world.visualPlayers.forEach((v,i)=>{
@@ -192,36 +202,62 @@ function predict(side,msg){
  if(!remote||!current||current.ended||side!==1||!players[side]?.onlineManual)return;
  const x=Math.max(-1,Math.min(1,Number(msg.x)||0));
  const y=Math.max(-1,Math.min(1,Number(msg.y)||0));
- const n=Math.max(1,Math.hypot(x,y));steer={side,x:x/n,y:y/n};
+ const n=Math.max(1,Math.hypot(x,y)),nextX=x/n,nextY=y/n;
+ if(!steer||Math.abs(steer.x-nextX)+Math.abs(steer.y-nextY)>.001)
+   lastSteerAt=Date.now();
+ steer={side,x:nextX,y:nextY};
 }
 function paint(){
- const now=Date.now(),dt=Math.min(40,Math.max(0,now-(lastPaint||now)));
- const alpha=1-Math.exp(-dt/85);lastPaint=now;
- if(remote){
+ const now=Date.now(),dt=Math.min(55,Math.max(0,now-(lastPaint||now)));
+ const alpha=1-Math.exp(-dt/100);lastPaint=now;
+ if(!remote){
+   // Host simulation ticks at ~30Hz; interpolate entities at display Hz.
+   const elapsed=lastSimAt?Math.min(80,now-lastSimAt):0;
+   global.ArenaMotion?.setAlpha?.(Math.min(1,(accumulator*1000+elapsed)/(1000/60)));
+ }else{
+   global.ArenaMotion?.setAlpha?.(1);
    fxFrameCarry+=dt;
-   // The guest does not run physics. Still advance *visual animation frames*
-   // at 60Hz so replayed slash, beam, particles, and shockwaves actually move.
    const frames=Math.min(3,Math.floor(fxFrameCarry/(1000/60)));
    for(let i=0;i<frames;i++)SkillVisuals.tick();
    fxFrameCarry=Math.max(0,fxFrameCarry-frames*1000/60);
  }
  if(remote&&targets)players.forEach((p,i)=>{
-   if(steer?.side===i&&p.hp>0){
+   const local=steer?.side===i&&p.hp>0;
+   const moving=local&&Math.hypot(steer.x,steer.y)>.001;
+   // Predict local movement immediately; never chase an old server sample.
+   if(moving){
      const speed=Math.max(.6,Math.min(5,Number(p.forge?.speed)||2.4));
-     p.x=Math.max(p.radius||28,Math.min(canvas.width-(p.radius||28),
-       p.x+steer.x*speed*dt/(1000/60)));
-     p.y=Math.max(p.radius||28,Math.min(canvas.height-(p.radius||28),
-       p.y+steer.y*speed*dt/(1000/60)));
+     p.x+=steer.x*speed*dt/(1000/60);
+     p.y+=steer.y*speed*dt/(1000/60);
+     if(lastSnapshotAt&&now-lastSnapshotAt<350){
+       const age=Math.max(0,Math.min(180,now-lastSnapshotAt+50));
+       const predictedX=targets[i].x+steer.x*speed*age/(1000/60);
+       const predictedY=targets[i].y+steer.y*speed*age/(1000/60);
+       const error=Math.hypot(predictedX-p.x,predictedY-p.y);
+       // Gently correct real drift due to hits/collisions or slow effects.
+       if(error>48){
+         const correction=(1-Math.exp(-dt/240))*Math.min(1,(error-48)/64);
+         p.x+=(predictedX-p.x)*correction;
+         p.y+=(predictedY-p.y)*correction;
+       }
+     }
+   }else if(!local||lastSnapshotAt>=lastSteerAt){
+     // Wait for a post-release snapshot before correcting stopped movement.
+     p.x+=(targets[i].x-p.x)*alpha;
+     p.y+=(targets[i].y-p.y)*alpha;
    }
-   p.x+=(targets[i].x-p.x)*alpha;p.y+=(targets[i].y-p.y)*alpha;
+   const r=p.radius||28;
+   p.x=Math.max(r,Math.min(canvas.width-r,p.x));
+   p.y=Math.max(r,Math.min(canvas.height-r,p.y));
  });
  draw();SkillVisuals.draw(ctx);
  // Individual HP bar tracks each fighter on the original arena canvas.
  players.forEach((p,i)=>{
    if(!p||p.hp<=0)return;
    const w=76,h=9,rad=Number(p.radius)||30;
-   const x=Math.max(2,Math.min(canvas.width-w-2,p.x-w/2));
-   const y=Math.max(4,p.y-rad-27);
+   const pos=!remote?(global.ArenaMotion?.position?.(p)||p):p;
+   const x=Math.max(2,Math.min(canvas.width-w-2,pos.x-w/2));
+   const y=Math.max(4,pos.y-rad-27);
    const ratio=Math.min(1,Math.max(0,p.hp/Math.max(1,p.maxHp)));
    ctx.save();ctx.fillStyle='#18202bdc';ctx.fillRect(x-2,y-2,w+4,h+4);
    ctx.fillStyle='#2b3545';ctx.fillRect(x,y,w,h);

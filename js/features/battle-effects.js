@@ -115,12 +115,14 @@
       acc+=delta*multiplier;
       let steps=0;
       while(acc+0.000001>=step&&steps<10){
+        window.ArenaMotion?.capture?.(players);
         update();acc=Math.max(0,acc-step);steps++;
         if(isGameOver){acc=0;break;}
       }
       if(steps>=10)acc=0;
     }else acc=0;
     if(globalThis.AdvancedCombat){AdvancedCombat.setAlpha(isPlaying&&!isGameOver?Math.min(1,acc/(1000/60)):1);AdvancedCombat.setReduced(gentle.checked);}
+    window.ArenaMotion?.setAlpha?.(isPlaying&&!isGameOver?acc/(1000/60):1);
     window.SkillVisuals?.setReduced(gentle.checked);
     window.ImpactPhysics?.setReduced?.(gentle.checked);
     window.ArenaResolution?.sync?.();

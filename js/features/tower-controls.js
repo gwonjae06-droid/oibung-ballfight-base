@@ -42,7 +42,8 @@ hudEl('tower-manual-leave')?.addEventListener('click',()=>{
   tower()?.forfeit?.();refresh();
 });
 const keys=new Set(),buttons=[],HOTKEYS=['Q','E','R','F'];
-let owner=null,pointer=null,touchX=0,touchY=0,frame=0;
+let owner=null,pointer=null,touchX=0,touchY=0,frame=0,stickRect=null;
+let cameraAt=0,viewZoom=null;
 let lastView=null,viewX=null,viewY=null,lastHp=null;
 for(let i=0;i<4;i++){
   const button=doc.createElement('button');
@@ -74,24 +75,31 @@ function running(){
     typeof isGameOver!=='undefined'&&!isGameOver;
 }
 function resetInput(){
-  keys.clear();pointer=null;touchX=0;touchY=0;
+  keys.clear();pointer=null;touchX=0;touchY=0;stickRect=null;
   if(knob)knob.style.transform='translate(0px,0px)';
 }
 // Gentle camera tracking enlarges the playable world without changing its
 // coordinates, collisions, or arena dimensions. Effects use the same view.
 function camera(width,height){
-  if(!visible()||!owner)return lastView=null;
+  if(!visible()||!owner){cameraAt=0;viewZoom=null;return lastView=null;}
   const enemy=typeof players!=='undefined'?players.find(p=>p!==owner&&p.hp>0):null;
-  const distance=enemy?Math.hypot(enemy.x-owner.x,enemy.y-owner.y):width;
-  const zoom=Math.max(1.08,Math.min(1.20,1.27-distance/1700));
-  const halfW=width/(zoom*2),halfH=height/(zoom*2);
-  const targetX=owner.x*.66+(enemy?.x??owner.x)*.34;
-  const targetY=owner.y*.66+(enemy?.y??owner.y)*.34;
+  const hero=global.ArenaMotion?.position?.(owner)||owner;
+  const foe=enemy?(global.ArenaMotion?.position?.(enemy)||enemy):hero;
+  const distance=enemy?Math.hypot(foe.x-hero.x,foe.y-hero.y):width;
+  const targetZoom=Math.max(1.08,Math.min(1.20,1.27-distance/1700));
+  const now=global.performance?.now?.()??Date.now();
+  const dt=cameraAt?Math.max(0,Math.min(80,now-cameraAt)):16.67;
+  cameraAt=now;
+  const blend=1-Math.exp(-dt/105);
+  viewZoom=viewZoom===null?targetZoom:viewZoom+(targetZoom-viewZoom)*blend;
+  const halfW=width/(viewZoom*2),halfH=height/(viewZoom*2);
+  const targetX=hero.x*.66+foe.x*.34;
+  const targetY=hero.y*.66+foe.y*.34;
   const x=Math.max(halfW,Math.min(width-halfW,targetX));
   const y=Math.max(halfH,Math.min(height-halfH,targetY));
-  viewX=viewX===null?x:viewX+(x-viewX)*.14;
-  viewY=viewY===null?y:viewY+(y-viewY)*.14;
-  return lastView={zoom,x:viewX,y:viewY,width,height};
+  viewX=viewX===null?x:viewX+(x-viewX)*blend;
+  viewY=viewY===null?y:viewY+(y-viewY)*blend;
+  return lastView={zoom:viewZoom,x:viewX,y:viewY,width,height};
 }
 function applyView(ctx,view=lastView){
   if(!view)return;
@@ -103,7 +111,7 @@ function refresh(){
   const active=visible();
   controls.hidden=!active;
   hud.hidden=!active;
-  if(!active){resetInput();lastHp=null;lastView=null;viewX=null;viewY=null;return;}
+  if(!active){resetInput();lastHp=null;lastView=null;viewX=null;viewY=null;viewZoom=null;cameraAt=0;return;}
   if(!running())resetInput();
   const p=typeof players!=='undefined'?players[0]:null;
   if(!p?.manualTower)return;
@@ -141,7 +149,7 @@ function refresh(){
   }
 }
 function prepare(p){
-  resetInput();owner=null;frame=0;viewX=null;viewY=null;lastView=null;lastHp=null;
+  resetInput();owner=null;frame=0;viewX=null;viewY=null;viewZoom=null;cameraAt=0;lastView=null;lastHp=null;
   if(!global.SkillForge?.enableManual?.(p))return false;
   owner=p;return true;
 }
@@ -192,7 +200,7 @@ global.addEventListener?.('keyup',e=>inputKey(e,false));
 global.addEventListener?.('blur',resetInput);
 doc.addEventListener?.('visibilitychange',()=>{if(doc.hidden)resetInput();});
 function point(e){
-  const rect=stick.getBoundingClientRect(),cx=rect.left+rect.width/2,cy=rect.top+rect.height/2;
+  const rect=stickRect||stick.getBoundingClientRect(),cx=rect.left+rect.width/2,cy=rect.top+rect.height/2;
   const max=Math.max(1,Math.min(rect.width,rect.height)*.34),dx=e.clientX-cx,dy=e.clientY-cy;
   const distance=Math.hypot(dx,dy),scale=distance>max?max/distance:1;
   const x=dx*scale,y=dy*scale;
@@ -202,12 +210,12 @@ function point(e){
 }
 stick.addEventListener('pointerdown',e=>{
   if(!running()||pointer!==null)return;
-  pointer=e.pointerId;stick.setPointerCapture?.(pointer);point(e);e.preventDefault?.();
+  pointer=e.pointerId;stickRect=stick.getBoundingClientRect();stick.setPointerCapture?.(pointer);point(e);e.preventDefault?.();
 });
 stick.addEventListener('pointermove',e=>{if(e.pointerId===pointer){point(e);e.preventDefault?.();}});
 function end(e){
   if(e.pointerId!==pointer)return;
-  pointer=null;touchX=0;touchY=0;knob.style.transform='translate(0px,0px)';
+  pointer=null;stickRect=null;touchX=0;touchY=0;knob.style.transform='translate(0px,0px)';
 }
 stick.addEventListener('pointerup',end);
 stick.addEventListener('pointercancel',end);
