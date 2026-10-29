@@ -142,6 +142,11 @@ function updateCharacter(self) {
     }
     return;
   }
+  // Only P1 in an active manual Tower fight is controlled by the player.
+  // Tower opponents and all free-battle fighters keep their original AI.
+  if(self.playerNum===1&&globalThis.ArenaTower?.active&&
+      globalThis.ArenaTower?.mode==='manual'&&
+      globalThis.ArenaTowerControls?.update?.(self,getClosestAliveEnemy(self)))return;
   const b=BEHAVIORS[self.id];
   if(b&&b.update){
     if(globalThis.ForgeExpansion&&!self.forge)globalThis.ForgeExpansion.legacy(self,()=>b.update(self,getClosestAliveEnemy(self)));
