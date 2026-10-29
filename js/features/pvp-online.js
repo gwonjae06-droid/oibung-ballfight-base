@@ -230,7 +230,7 @@ function startSending(){
   if(sendLoop)global.clearInterval(sendLoop);
   lastSentX=NaN;lastSentY=NaN;lastInputAt=0;
   pushDirection(true);
-  sendLoop=global.setInterval(()=>{if(matched&&mode==='manual')send(direction()),pushDirection();},100);
+  sendLoop=global.setInterval(()=>{if(matched&&mode==='manual')pushDirection();},100);
 }
 function inputKey(event,down){
   if(!matched||mode!=='manual'||global.ArenaScreenRouter?.active!=='pvp')return;
