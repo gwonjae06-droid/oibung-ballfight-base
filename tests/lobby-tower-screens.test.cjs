@@ -86,7 +86,10 @@ test('tower uses original 2-person combat engine with transient real Forge enemi
   assert.ok(!src.includes('chooseReward'),'reward selection is gone');
   assert.ok(!src.includes('tower-rewards'),'no reward panel is created');
   assert.ok(!src.includes("bonus.hp")&&!src.includes("bonus.speed"),'no per-floor stat boost');
-  assert.ok(src.includes('level++;')&&src.includes('startFight();'),'clear advances directly');
+  assert.ok(src.includes('level++;')&&src.includes('prepareFight();'),'win prepares the next floor');
+  assert.ok(src.includes("stage='between'"),'next floor waits for a Start press');
+  assert.ok(src.includes("clearOverlay.hidden=stage!=='between'"),'victory banner is visible during intermission');
+  assert.ok(src.includes("nextStart?.addEventListener('click',begin)"),'overlay Start begins prepared battle');
   assert.ok(src.includes("return {active,stage,level,cleared"));
   assert.ok(!src.includes("tower-speed"),'Tower must not create a second speed widget');
   assert.ok(!src.includes('setSpeed('),'Tower must not own a separate speed state');
