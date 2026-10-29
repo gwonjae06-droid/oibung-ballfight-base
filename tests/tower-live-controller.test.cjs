@@ -250,3 +250,26 @@ test('forfeit while waiting closes the run and records cleared floors',()=>{
   assert.equal(x.tower.records()[0].best,1);
   assert.equal(x.el('tower-clear-overlay').hidden,true);
 });
+
+test('manual focus hides optional Tower setup only in battle and restores between floors',()=>{
+  const h=harness();
+  const screen=h.el('screen-tower');
+  h.world.ArenaTowerControls={prepare(){return true;},refresh(){}};
+  assert.equal(screen.dataset.manualFocus,'false','setup remains visible before entering');
+  h.tower.setMode('manual');
+  assert.equal(screen.dataset.manualFocus,'false');
+  assert.equal(h.tower.begin(),true);
+  assert.equal(screen.dataset.manualFocus,'true','only live manual control focuses the arena');
+  conclude(h,h.world.players[0]);
+  assert.equal(h.tower.stage,'between');
+  assert.equal(screen.dataset.manualFocus,'false','clear returns full floor and enemy information');
+  assert.equal(screen.dataset.towerPhase,'between');
+  assert.equal(h.el('tower-clear-overlay').hidden,false);
+  assert.equal(h.tower.begin(),true);
+  assert.equal(screen.dataset.manualFocus,'true','next explicit start refocuses combat');
+  conclude(h,h.world.players[1]);
+  assert.equal(screen.dataset.manualFocus,'false','defeat restores all setup controls');
+  assert.equal(h.tower.setMode('auto'),true);
+  assert.equal(h.tower.begin(),true);
+  assert.equal(screen.dataset.manualFocus,'false','AI battles preserve the full old layout');
+});
