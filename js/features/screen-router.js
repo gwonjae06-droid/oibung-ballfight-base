@@ -270,7 +270,14 @@ function install(){
     global.scrollTo?.({top:0,behavior:'instant'});
     return where;
   }
-  function showArena(){doc.querySelector('.battle-screen')?.scrollIntoView?.({block:'start',behavior:'smooth'});}
+  function showArena(){
+    // In manual play scroll to the compact HP strip, not past it to the
+    // canvas. This keeps touch buttons close to the visible playfield.
+    const manual=global.ArenaTower?.active&&global.ArenaTower?.mode==='manual';
+    const target=(manual?doc.getElementById('tower-arena-slot'):null)||
+      doc.querySelector('.battle-screen');
+    target?.scrollIntoView?.({block:'start',behavior:'smooth'});
+  }
   mount.addEventListener('click',event=>{
     const b=event.target.closest('[data-screen],[data-tower-tab],[data-character-tab],[data-ranking-tab],[data-mine-tab]');
     if(!b||!mount.contains(b))return;
