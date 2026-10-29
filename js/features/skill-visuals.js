@@ -326,7 +326,7 @@ function add(kind,p,type,action,target,location){
   effects.push(entry);
   // PvP's isolated iframe listens for newly generated VFX so it can send
   // tiny, immediate events. Other game modes leave the listener unset.
-  if(spawnListener)spawnListener(entry);
+  if(spawnListener)spawnListener(entry,p);
   return true;
 }
 function cast(p,action,target){
