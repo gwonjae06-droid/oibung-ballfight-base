@@ -69,7 +69,7 @@ test('responsive HUD and input accessibility are preserved', () => {
 });
 
 test('game scripts are loaded in dependency order', () => {
-  const scripts = [...html.matchAll(/<script src="([^"]+)"/g)].map(match => match[1]);
+  const scripts = [...html.matchAll(/<script src="([^"]+)"/g)].map(match => match[1].split('?')[0]);
   assert.ok(scripts.indexOf('js/core/state.js') < scripts.indexOf('js/core/engine.js'));
   assert.ok(scripts.indexOf('js/core/engine.js') < scripts.indexOf('js/main.js'));
   assert.ok(scripts.indexOf('js/main.js') < scripts.indexOf('js/features/skill-forge.js'));
