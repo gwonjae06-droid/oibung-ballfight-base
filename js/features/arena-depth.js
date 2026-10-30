@@ -7,6 +7,39 @@
 'use strict';
 const clamp=(v,a,b)=>Math.min(b,Math.max(a,v));
 const cached=new Map(), MAX_CACHE=4;
+// A modest downward tilt (~27° off straight overhead). Keep this a single
+// constant: ground, shadows, fighters, projectiles and PvP effects share it.
+const VIEW_Y=0.89;
+function screenPoint(x,y,canvas){
+ const h=Number(canvas?.height)||500;
+ return {x,y:(1-VIEW_Y)*h*.5+VIEW_Y*y};
+}
+function applyView(ctx,canvas){
+ const h=Number(canvas?.height)||500;
+ ctx.translate(0,h*(1-VIEW_Y)*.5);
+ ctx.scale(1,VIEW_Y);
+}
+function spriteScale(p,canvas){
+ const h=Math.max(1,Number(canvas?.height)||500);
+ // The nearer row appears only slightly larger; silhouettes stay legible.
+ return clamp(1+(Number(p?.y||0)/h-.5)*.105,.948,1.052);
+}
+function paintBackdrop(ctx,canvas,tower=false){
+ const w=Number(canvas?.width)||500,h=Number(canvas?.height)||500;
+ const band=h*(1-VIEW_Y)*.5;
+ ctx.save();
+ // The far boundary and the visible front thickness explain the angle
+ // without introducing a large horizon or obscuring active combat.
+ const back=ctx.createLinearGradient(0,0,0,band+2);
+ if(tower){back.addColorStop(0,'#0d1825');back.addColorStop(1,'#314052');}
+ else{back.addColorStop(0,'#a7b7c3');back.addColorStop(1,'#d3e0e7');}
+ ctx.fillStyle=back;ctx.fillRect(0,0,w,band+2);
+ const apron=ctx.createLinearGradient(0,h-band-2,0,h);
+ if(tower){apron.addColorStop(0,'#4d5967');apron.addColorStop(.18,'#273444');apron.addColorStop(1,'#17212d');}
+ else{apron.addColorStop(0,'#c4d5df');apron.addColorStop(.18,'#8a9eac');apron.addColorStop(1,'#607888');}
+ ctx.fillStyle=apron;ctx.fillRect(0,h-band-2,w,band+2);
+ ctx.restore();
+}
 function line(c,x,y,xx,yy,color,width=1){
  c.beginPath();c.moveTo(x,y);c.lineTo(xx,yy);c.strokeStyle=color;c.lineWidth=width;c.stroke();
 }
@@ -117,5 +150,6 @@ function lightSurface(ctx,r){
  ctx.fillStyle=shade;ctx.fillRect(-r,-r,r*2,r*2);
  ctx.restore();
 }
-global.ArenaDepth=Object.freeze({paintFloor,shadow,underlay,lightSurface});
+global.ArenaDepth=Object.freeze({VIEW_Y,screenPoint,applyView,spriteScale,
+  paintBackdrop,paintFloor,shadow,underlay,lightSurface});
 })(typeof window!=='undefined'?window:globalThis);

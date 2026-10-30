@@ -341,14 +341,22 @@ function paint(){
    p.x=Math.max(r,Math.min(canvas.width-r,p.x));
    p.y=Math.max(r,Math.min(canvas.height-r,p.y));
  });
- draw();SkillVisuals.draw(ctx);global.ArenaTelegraph?.draw?.(ctx,players);
- // Individual HP bar tracks each fighter on the original arena canvas.
+ draw();
+ // The instant PvP artwork is replayed outside core draw(); it must inherit
+ // the same camera projection or lasers and target markers drift vertically.
+ ctx.save();global.ArenaDepth?.applyView?.(ctx,canvas);
+ SkillVisuals.draw(ctx);global.ArenaTelegraph?.draw?.(ctx,players);
+ ctx.restore();
+ // HP bars are screen-space UI, anchored to projected airborne fighter positions.
  players.forEach((p,i)=>{
    if(!p||p.hp<=0)return;
    const w=76,h=9,rad=Number(p.radius)||30;
    const pos=!remote?(global.ArenaMotion?.position?.(p)||p):p;
-   const x=Math.max(2,Math.min(canvas.width-w-2,pos.x-w/2));
-   const y=Math.max(4,pos.y-rad-27);
+   const height=global.AdvancedCombat?.visibleHeight?.(p)||0;
+   const screen=global.ArenaDepth?.screenPoint?.(pos.x,pos.y-height,canvas)||
+     {x:pos.x,y:pos.y-height};
+   const x=Math.max(2,Math.min(canvas.width-w-2,screen.x-w/2));
+   const y=Math.max(4,screen.y-rad-27);
    const ratio=Math.min(1,Math.max(0,p.hp/Math.max(1,p.maxHp)));
    ctx.save();ctx.fillStyle='#18202bdc';ctx.fillRect(x-2,y-2,w+4,h+4);
    ctx.fillStyle='#2b3545';ctx.fillRect(x,y,w,h);

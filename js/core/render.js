@@ -23,7 +23,8 @@ if(!p.forge)globalThis.ForgeExpansion?.draw(p);
 const img=p.getImage(),radius=p.radius,dead=p.hp<=0;
 const z=globalThis.AdvancedCombat?.visibleHeight(p) ?? (p.jumpHeight||0);
 const pose=globalThis.AdvancedCombat?.pose(p)||{sx:1,sy:1,tilt:0};
-const scale=globalThis.AdvancedCombat?.size(p) ?? (1+Math.max(0,z)/140);
+const scale=(globalThis.AdvancedCombat?.size(p) ?? (1+Math.max(0,z)/140))*
+  (globalThis.ArenaDepth?.spriteScale?.(p,canvas)||1);
 const offset=-z;
 // Manual Tower fighter: a subtle ground reticle and motion trail make it
 // instantly clear which character the player is steering, even in an effect storm.
@@ -52,7 +53,9 @@ if(Math.abs(z)>1){
 if(p.id==='choi'&&p.suneungState==='success'&&!dead){ctx.save();ctx.beginPath();ctx.arc(p.x,p.y,radius+12+Math.sin(p.bullChargePulse)*4,0,Math.PI*2);ctx.strokeStyle='rgba(244,63,94,0.7)';ctx.lineWidth=4;ctx.shadowColor='#e11d48';ctx.shadowBlur=12;ctx.stroke();ctx.restore();}
 globalThis.ArenaCharge?.draw?.(p,ctx);
 const chargeJitter=globalThis.ArenaCharge?.jitter?.(p)||{x:0,y:0};
-ctx.save();ctx.translate(p.x+chargeJitter.x,p.y+offset+chargeJitter.y);ctx.scale(scale*pose.sx,scale*pose.sy);ctx.rotate(pose.tilt);if(dead)ctx.globalAlpha=0.3;if(z<0)ctx.globalAlpha*=.32;
+ctx.save();ctx.translate(p.x+chargeJitter.x,p.y+offset+chargeJitter.y);
+ctx.scale(scale*pose.sx,scale*pose.sy/(globalThis.ArenaDepth?.VIEW_Y||1));
+ctx.rotate(pose.tilt);if(dead)ctx.globalAlpha=0.3;if(z<0)ctx.globalAlpha*=.32;
 globalThis.ArenaDepth?.underlay?.(ctx,p,radius);
 ctx.save();ctx.beginPath();ctx.arc(0,0,radius,0,Math.PI*2);ctx.clip();
 if(img&&img.complete&&img.naturalWidth!==0)ctx.drawImage(img,-radius,-radius,radius*2,radius*2);
@@ -80,10 +83,17 @@ ctx.fillStyle='#fff';ctx.textAlign='center';ctx.textBaseline='middle';
 ctx.fillText(name,labelX,labelY-4);ctx.restore();
 }
 function draw(){
-ctx.save();ctx.clearRect(0,0,canvas.width,canvas.height);ctx.fillStyle='#fff';ctx.fillRect(0,0,canvas.width,canvas.height);
-// One world transform for scenery, fighters, hazards, and ALL skill effects.
+ctx.save();ctx.clearRect(0,0,canvas.width,canvas.height);
+const isTower=globalThis.ArenaTower?.active&&
+   globalThis.ArenaScreenRouter?.active==='tower';
+ctx.fillStyle=isTower?'#263443':'#cbd9e1';
+ctx.fillRect(0,0,canvas.width,canvas.height);
+globalThis.ArenaDepth?.paintBackdrop?.(ctx,canvas,isTower);
+// A single mild world projection for scenery, fighters, hits and all VFX.
+// Physics x/y and z never change; 2D overlay labels stay outside this transform.
 const manualCamera=globalThis.ArenaTowerControls?.camera?.(canvas.width,canvas.height);
 if(manualCamera)globalThis.ArenaTowerControls?.applyView?.(ctx,manualCamera);
+globalThis.ArenaDepth?.applyView?.(ctx,canvas);
 if(screenShake>0.5){const x=(Math.random()-0.5)*screenShake,y=(Math.random()-0.5)*screenShake;ctx.translate(x,y);}
 const painted=globalThis.ArenaTower?.paintBackground?.(ctx,canvas)===true;
 globalThis.ArenaDepth?.paintFloor?.(ctx,canvas,painted);
