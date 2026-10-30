@@ -74,3 +74,12 @@ test('guest uses one-shot casts with legacy host and ACK protocol after version 
  assert.equal(h.packets.length,2);
  assert.ok(Number.isInteger(h.packets[1].payload.eventId));
 });
+
+test('stale rooms are closed without deleting match history or touching active games',()=>{
+ const sql=fs.readFileSync('supabase/pvp_reliability_v3.sql','utf8');
+ assert.match(sql,/where ended_at is null and created_at<now\(\)-interval '6 minutes'/);
+ assert.match(sql,/create or replace function public\.oibung_pvp_join_v2/);
+ assert.match(sql,/pg_advisory_xact_lock\(719826,1\)/);
+ assert.match(sql,/ticket_a=p_ticket/);
+ assert.match(sql,/ticket_b=p_ticket/);
+});
