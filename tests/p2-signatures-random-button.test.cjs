@@ -110,8 +110,8 @@ test('primary random button only prepares unsaved skill combinations',()=>{
   assert.ok(scripts.indexOf('js/features/skill-visuals.js')<
     scripts.indexOf('js/features/natural-forge.js'));
   assert.ok(battle.includes('window.SkillVisuals?.tick()'));
-  assert.ok(battle.includes('window.SkillVisuals?.draw(ctx)'));
-  assert.ok(battle.includes('window.SkillVisuals?.clear()'));
+  assert.ok(battle.includes('window.SkillVisuals?.draw?.(worldCtx)'), 'draw skill VFX in the shared world transform');
+  assert.ok(battle.includes('window.SkillVisuals?.clear?.()'), 'clear VFX when the roster changes');
 });
 
 test('full-random and family-selected generation are separate visible options',()=>{
