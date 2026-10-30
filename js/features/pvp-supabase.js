@@ -60,7 +60,7 @@ class SupabasePvpTransport{
  }
  async queue(message){
   if(this.mode||this.closed)return;
-  this.mode=message.mode;this.profile=message.profile;
+  this.mode='auto';this.profile=message.profile;
   this.queueTimer=global.setTimeout(()=>this.fail(Error('매칭 대기가 2분을 넘었습니다. 다시 시도해 주세요.')),120000);
   const {data,error}=await this.sb.rpc('oibung_pvp_join_v2',
    {p_mode:this.mode,p_fighter:this.profile,p_ticket:this.ticket});

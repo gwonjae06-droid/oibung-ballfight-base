@@ -130,15 +130,15 @@ test('tower waits indefinitely for the player, then runs only player skills befo
  a.stop();assert.equal(a.phase,'idle');
 });
 
-test('sequential mode requires protocol 2 from both peers before matchmaking',()=>{
+test('auto-only matchmaking SQL excludes both retired control modes',()=>{
  const read=p=>fs.readFileSync(p,'utf8');
- const sql=read('supabase/pvp_blitz_turn_v2.sql');
- assert.match(sql,/p_mode='blitz' and p_fighter->>'bp' is distinct from '2'/);
- assert.match(sql,/mode='blitz' and fighter->>'bp'='2'/);
- assert.match(read('js/features/pvp-original-engine.js'),/v:2,bp:2,id:d\.id/);
- assert.match(read('js/features/pvp-original-engine.js'),/pvp-runtime\.html\?v=pvp-turn2/);
+ const sql=read('supabase/pvp_auto_only_v1.sql');
+ assert.match(sql,/p_mode <> 'auto'/);
+ assert.match(sql,/mode='auto'/);
+ assert.match(sql,/values\('auto','auto','auto'/);
+ assert.doesNotMatch(read('js/features/pvp-online.js'),/name="pvp-mode"|blitz|manual/);
+ assert.match(read('js/features/pvp-supabase.js'),/this\.mode='auto'/);
 });
-
 test('online battle loads the shared auto AI with cache-busted scripts',()=>{
  const html=fs.readFileSync('index.html','utf8');
  const frame=fs.readFileSync('pvp-runtime.html','utf8');
