@@ -72,6 +72,27 @@ function paint(ctx,realm,level,width=500,height=500,frame=0){
    ctx.font='bold '+Math.round(r*.47)+'px system-ui';
    ctx.fillText(theme.symbol,n.x,n.y-4);ctx.globalAlpha=1;
  }
+ // Realm architecture painted behind combatants, without changing collision.
+ ctx.save();ctx.lineWidth=2;ctx.globalAlpha=.68;
+ for(let i=0;i<platforms.length;i++){
+  const n=platforms[i],rad=n.r;
+  ctx.strokeStyle=theme.rim;
+  if(realm==='time'){
+   for(let k=0;k<16;k++){const a=k*Math.PI/8;ctx.beginPath();ctx.moveTo(n.x+Math.cos(a)*rad*.65,n.y+Math.sin(a)*rad*.42);ctx.lineTo(n.x+Math.cos(a)*rad*.85,n.y+Math.sin(a)*rad*.54);ctx.stroke();}
+  }else if(realm==='space'){
+   ctx.beginPath();ctx.ellipse(n.x,n.y,rad*.75,rad*.19,-.38,0,PI*2);ctx.stroke();
+   ctx.beginPath();ctx.ellipse(n.x,n.y,rad*.35,rad*.53,.55,0,PI*2);ctx.stroke();
+  }else if(realm==='fire'){
+   for(let k=-2;k<=2;k++){ctx.beginPath();ctx.moveTo(n.x+k*rad*.25,n.y-rad*.34);ctx.lineTo(n.x+(k+.22)*rad*.25,n.y+rad*.35);ctx.stroke();}
+  }else if(realm==='storm'){
+   for(let k=-2;k<=2;k++){const x=n.x+k*rad*.32;ctx.beginPath();ctx.moveTo(x,n.y-rad*.3);ctx.lineTo(x+rad*.12,n.y);ctx.lineTo(x-rad*.02,n.y+rad*.28);ctx.stroke();}
+  }else if(realm==='ice'){
+   for(let k=0;k<6;k++){const a=k*PI/3;ctx.beginPath();ctx.moveTo(n.x,n.y);ctx.lineTo(n.x+Math.cos(a)*rad*.66,n.y+Math.sin(a)*rad*.42);ctx.stroke();}
+  }else if(realm==='forest'){
+   for(let k=0;k<5;k++){const a=k*PI*2/5;ctx.beginPath();ctx.ellipse(n.x+Math.cos(a)*rad*.45,n.y+Math.sin(a)*rad*.27,rad*.28,rad*.12,a,0,PI*2);ctx.stroke();}
+  }
+ }
+ ctx.restore();
  // Connecting slopes between islands ensure that a moving AI never gets stuck.
  ctx.lineCap='round';ctx.lineWidth=Math.max(11,Math.min(width,height)*.048);
  ctx.strokeStyle=theme.side;ctx.globalAlpha=.67;
