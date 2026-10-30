@@ -386,8 +386,11 @@ function draw(ctx){
     ctx.beginPath();ctx.arc(g.x,g.y,g.r,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.restore();
   }
   for(const e of effects){
-    const x=e.source?e.source.x:e.x;
-    const y=e.source?e.source.y-(global.AdvancedCombat?.height?.(e.source)||0):e.y;
+    // Character-bound effects use the SAME interpolation as their owner.
+    // AoE attacks with fixed hit locations remain in world coordinates.
+    const pos=e.source?(global.ArenaMotion?.position?.(e.source)||e.source):null;
+    const x=pos?pos.x:e.x;
+    const y=pos?pos.y-(global.AdvancedCombat?.height?.(e.source)||0):e.y;
     const t=e.age/e.life,fade=clamp(Math.min(1,t*7,(1-t)*4),0,1);
     ctx.save();ctx.translate(x,y);ctx.rotate(e.angle);
     ctx.globalAlpha=fade*(e.family==='wave'?.65:e.family==='explosion'?.9:.82);

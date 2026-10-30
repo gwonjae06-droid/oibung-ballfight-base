@@ -185,7 +185,9 @@ test('mobile layout pins two-thumb controls below expanded arena, and renderer s
   const effects=fs.readFileSync(path.join(__dirname,'../js/features/battle-effects.js'),'utf8');
   assert.match(renderer,/ArenaTowerControls\?\.camera\?\./);
   assert.match(renderer,/ArenaTowerControls\?\.applyView\?\./);
-  assert.match(effects,/ArenaTowerControls\?\.applyView\?\./);
+  assert.match(renderer,/ArenaFXLayer\?\.draw\?\./);
+  assert.doesNotMatch(effects,/ArenaTowerControls\?\.applyView\?\./,
+    'secondary effects must share the main world camera and screenshake');
   assert.match(renderer,/p\.manualTower&&p\.hp>0/);
 });
 

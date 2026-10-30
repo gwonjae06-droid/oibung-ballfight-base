@@ -2,6 +2,12 @@
 const arenaColorCache=new Map();
 function arenaEffectColor(value){
   const input=String(value||'#475569');
+  // Tower battlefields are dark: don't darken effects for the white PvE canvas.
+  // The cache below belongs to the white-background palette only.
+  if(globalThis.ArenaTower?.active&&globalThis.ArenaScreenRouter?.active==='tower'){
+    if(/^#[0-9a-f]{3,8}$/i.test(input)||/^rgba?\(/i.test(input))return input;
+    return '#b9d9ed';
+  }
   if(arenaColorCache.has(input))return arenaColorCache.get(input);
   let hex=input.replace(/^#([0-9a-f])([0-9a-f])([0-9a-f])$/i,'#$1$1$2$2$3$3');
   let rgb=/^#[0-9a-f]{6}$/i.test(hex)?[1,3,5].map(i=>parseInt(hex.slice(i,i+2),16)):null;
@@ -72,10 +78,12 @@ ctx.fillStyle='#fff';ctx.textAlign='center';ctx.textBaseline='middle';
 ctx.fillText(name,labelX,labelY-4);ctx.restore();
 }
 function draw(){
-ctx.save();ctx.clearRect(0,0,canvas.width,canvas.height);ctx.fillStyle='#fff';ctx.fillRect(0,0,canvas.width,canvas.height);globalThis.ArenaTower?.paintBackground?.(ctx,canvas);
+ctx.save();ctx.clearRect(0,0,canvas.width,canvas.height);ctx.fillStyle='#fff';ctx.fillRect(0,0,canvas.width,canvas.height);
+// One world transform for scenery, fighters, hazards, and ALL skill effects.
 const manualCamera=globalThis.ArenaTowerControls?.camera?.(canvas.width,canvas.height);
 if(manualCamera)globalThis.ArenaTowerControls?.applyView?.(ctx,manualCamera);
 if(screenShake>0.5){const x=(Math.random()-0.5)*screenShake,y=(Math.random()-0.5)*screenShake;ctx.translate(x,y);}
+globalThis.ArenaTower?.paintBackground?.(ctx,canvas);
 shockwaves.forEach(w=>{ctx.beginPath();ctx.arc(w.x,w.y,w.radius,0,Math.PI*2);ctx.strokeStyle=`rgba(4,120,87,${w.alpha})`;ctx.lineWidth=6;ctx.stroke();ctx.beginPath();ctx.arc(w.x,w.y,w.radius*0.7,0,Math.PI*2);ctx.fillStyle=`rgba(5,150,105,${w.alpha*0.2})`;ctx.fill();});
 players.forEach(p=>{
 if(p.id==='bae'&&p.waves)p.waves.forEach(w=>{ctx.beginPath();ctx.arc(w.x,w.y,w.currentRadius,0,Math.PI*2);ctx.strokeStyle=`rgba(234,88,12,${w.alpha})`;ctx.lineWidth=3;ctx.stroke();ctx.beginPath();ctx.arc(w.x,w.y,w.currentRadius*0.85,0,Math.PI*2);ctx.fillStyle=`rgba(249,115,22,${w.alpha*0.12})`;ctx.fill();});
@@ -92,6 +100,9 @@ players.forEach(p=>{
 });
 globalThis.CosmeticArcade?.drawOver?.(ctx,players);
 globalThis.ImpactPhysics?.draw?.(ctx);
+// Render secondary VFX before world transform is restored. The effect layer
+// never applies a second camera or a different random screenshake.
+globalThis.ArenaFXLayer?.draw?.(ctx);
 particles.forEach(p=>{ctx.beginPath();ctx.arc(p.x,p.y,p.radius,0,Math.PI*2);ctx.fillStyle=arenaEffectColor(p.color);ctx.globalAlpha=p.alpha;ctx.fill();ctx.globalAlpha=1;});
 floatingTexts.forEach(f=>{ctx.save();
   ctx.font=`900 ${Math.min(22,Math.max(15,f.size))}px "Noto Sans KR",system-ui,sans-serif`;

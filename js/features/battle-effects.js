@@ -22,9 +22,15 @@
     if(sparks.length>240)sparks.splice(0,sparks.length-240);
   }
   const oldUpdate=update,oldDraw=draw,oldCharacter=drawCharacter;
+  function syncRoster(){
+    if(roster===players)return;
+    roster=players;sparks=[];pulses=[];
+    window.BattleFX?.clear?.();window.SkillVisuals?.clear?.();
+    window.ArenaMotion?.reset?.(players);
+  }
   update=function(){
+    syncRoster();
     if(!isPlaying||isGameOver){oldUpdate();return;}
-    if(roster!==players){roster=players;sparks=[];pulses=[];if(window.BattleFX)BattleFX.clear();window.SkillVisuals?.clear();}
     frame++;
     sparks.forEach(s=>{s.x+=s.vx;s.y+=s.vy;s.vx*=0.91;s.vy*=0.91;s.life--;});sparks=sparks.filter(s=>s.life>0);
     pulses.forEach(s=>s.life--);pulses=pulses.filter(s=>s.life>0);
@@ -77,31 +83,33 @@
       if(p.bfRage>0){ring(p.x,p.y,p.radius+8+Math.sin(frame)*2,'#fb7185',4);}
       ctx.restore();
     }
-    if(globalThis.AdvancedCombat){
+    // ArenaMotion.drawFighter has already interpolated x/y. Applying
+    // AdvancedCombat.visual here as well doubled the offset, separating
+    // fighters from casts, projectiles and their collision positions.
+    if(!window.ArenaMotion&&globalThis.AdvancedCombat){
       const v=AdvancedCombat.visual(p);
-      ctx.save();
-      ctx.translate(v.x-p.x,v.y-p.y);
-      oldCharacter(p);
-      ctx.restore();
+      ctx.save();ctx.translate(v.x-p.x,v.y-p.y);
+      oldCharacter(p);ctx.restore();
     }else oldCharacter(p);
   };
-  draw=function(){
-    oldDraw();if(isGameOver)return;
-    // Match post-render particles/skill effects to the manual camera used
-    // by core/render.js. Do not advance the camera a second time.
-    ctx.save();
-    window.ArenaTowerControls?.applyView?.(ctx);
-    if(window.BattleFX)BattleFX.draw(ctx,players);
-    window.SkillVisuals?.draw(ctx);
-    ctx.save();ctx.globalCompositeOperation='source-over';
-    sparks.forEach(s=>{ctx.globalAlpha=s.life/s.max;ctx.strokeStyle=s.c;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(s.x,s.y);ctx.lineTo(s.x-s.vx*2,s.y-s.vy*2);ctx.stroke();});
+  // This callback is called inside core/render's world transform, before it
+  // restores the camera. No independent camera, shake, or overlay pass.
+  window.ArenaFXLayer={draw(worldCtx){
+    if(isGameOver)return;
+    worldCtx.save();
+    window.BattleFX?.draw?.(worldCtx,players);
+    window.SkillVisuals?.draw?.(worldCtx);
+    worldCtx.globalCompositeOperation='source-over';
+    sparks.forEach(s=>{worldCtx.save();worldCtx.globalAlpha=s.life/s.max;worldCtx.strokeStyle=s.c;worldCtx.lineWidth=2;worldCtx.beginPath();worldCtx.moveTo(s.x,s.y);worldCtx.lineTo(s.x-s.vx*2,s.y-s.vy*2);worldCtx.stroke();worldCtx.restore();});
     pulses.forEach(s=>{
-      ctx.globalAlpha=Math.min(1,s.life/12);ctx.shadowColor=s.c;ctx.shadowBlur=gentle.checked?0:5;
-      if(s.bolt){ctx.beginPath();ctx.moveTo(s.x-10,s.y-160);ctx.lineTo(s.x+8,s.y-90);ctx.lineTo(s.x-7,s.y-55);ctx.lineTo(s.x,s.y);ctx.strokeStyle=s.c;ctx.lineWidth=5;ctx.stroke();}
+      worldCtx.save();worldCtx.globalAlpha=Math.min(1,s.life/12);worldCtx.shadowColor=s.c;worldCtx.shadowBlur=gentle.checked?0:5;
+      if(s.bolt){worldCtx.beginPath();worldCtx.moveTo(s.x-10,s.y-160);worldCtx.lineTo(s.x+8,s.y-90);worldCtx.lineTo(s.x-7,s.y-55);worldCtx.lineTo(s.x,s.y);worldCtx.strokeStyle=s.c;worldCtx.lineWidth=5;worldCtx.stroke();}
       else{const r=s.r*(1-s.life/20);ring(s.x,s.y,r,s.c,Math.max(1,s.life/4));ring(s.x,s.y,r*0.65,'#fff',1);}
-    });ctx.restore();
-    ctx.restore();
-  };
+      worldCtx.restore();
+    });
+    worldCtx.restore();
+  }};
+  draw=function(){syncRoster();oldDraw();};
   // Fixed-step simulation: 2x doubles updates, not expensive canvas paints.
   gameLoop=function(time){
     if(!Number.isFinite(time)){requestAnimationFrame(gameLoop);return;}

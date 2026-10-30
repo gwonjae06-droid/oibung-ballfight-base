@@ -525,7 +525,7 @@ function install(){
     return painted;
   }
   function tickEncounter(){if(active&&stage==='fighting')encounter?.step();}
-  function drawEncounter(ctx){if(active&&stage==='fighting'){encounter?.draw(ctx,realm()?.color);global.ArenaTowerAtmosphere?.particles?.(ctx,canvas.width,canvas.height,realmId,encounter?.tick||0);}}
+  function drawEncounter(ctx){if(active&&stage==='fighting'){global.ArenaTowerAtmosphere?.particles?.(ctx,canvas.width,canvas.height,realmId,encounter?.tick||0);encounter?.draw(ctx,realm()?.color);}}
   const api={selectRealm,openSelection,chooseBlessing,tickEncounter,drawEncounter,get encounter(){return encounter;},floor,makeEnemy,read,updateRecord,records,begin,forfeit,paintBackground,
     onBattleEnd,isTransientDef,pauseAway,refresh:show,setMode,get mode(){return mode;},get active(){return active;},
     get stage(){return stage;},get view(){return active?'interior':view;},get state(){return current();}};
