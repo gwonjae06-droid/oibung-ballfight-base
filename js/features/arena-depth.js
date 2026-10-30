@@ -7,9 +7,9 @@
 'use strict';
 const clamp=(v,a,b)=>Math.min(b,Math.max(a,v));
 const cached=new Map(), MAX_CACHE=4;
-// A modest downward tilt (~27° off straight overhead). Keep this a single
+// A clearly angled but still readable top-down view (~42° off overhead). Keep this a single
 // constant: ground, shadows, fighters, projectiles and PvP effects share it.
-const VIEW_Y=0.89;
+const VIEW_Y=0.74;
 function screenPoint(x,y,canvas){
  const h=Number(canvas?.height)||500;
  return {x,y:(1-VIEW_Y)*h*.5+VIEW_Y*y};

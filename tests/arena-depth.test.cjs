@@ -140,16 +140,16 @@ test('shadow pass precedes height-aware stable painter sorting, without reorderi
  assert.match(render,/visibleHeight\?\.\(a\)/);
 });
 
-test('slightly lowered camera view projects top and bottom toward a subtle horizon',()=>{
+test('noticeably lowered camera view shows greater floor depth without distorting coordinates',()=>{
  const {w}=depthWorld();
  const h=600,view=w.ArenaDepth.VIEW_Y;
- assert.ok(view>.85&&view<.94,'mild angle, not an isometric camera');
+ assert.ok(view>.70&&view<.79,'stronger 2.5D angle but still a top-down camera');
  const far=w.ArenaDepth.screenPoint(200,0,{height:h});
  const middle=w.ArenaDepth.screenPoint(200,h/2,{height:h});
  const near=w.ArenaDepth.screenPoint(200,h,{height:h});
  assert.equal(middle.y,h/2);
- assert.ok(far.y>0&&far.y<h*.09);
- assert.ok(near.y<h&&near.y>h*.91);
+ assert.ok(far.y>h*.10&&far.y<h*.16);
+ assert.ok(near.y<h*.90&&near.y>h*.84);
  assert.equal(near.y-far.y,h*view);
  assert.equal(far.x,200,'horizontal hit position is unchanged');
 });
@@ -193,7 +193,7 @@ test('PvP overlay, telegraph and character HP bars use exactly the same projecti
  const bar=rt.indexOf('ArenaDepth?.screenPoint?.',restore);
  assert.ok(start>0&&camera>start&&fx>camera&&restore>fx&&bar>restore);
  const html=read('index.html'),frame=read('pvp-runtime.html');
- assert.match(html,/arena-depth\.js\?v=tilt1/);
- assert.match(frame,/arena-depth\.js\?v=tilt1/);
- assert.match(html,/pvp-original-engine\.js\?v=tilt1/);
+ assert.match(html,/arena-depth\.js\?v=tilt2/);
+ assert.match(frame,/arena-depth\.js\?v=tilt2/);
+ assert.match(html,/pvp-original-engine\.js\?v=tilt2/);
 });
