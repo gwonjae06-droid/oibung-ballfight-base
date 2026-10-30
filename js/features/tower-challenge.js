@@ -173,7 +173,8 @@ function install(){
    +'<div class="tower-enemy"><small>상대</small><strong id="tower-enemy">훈련의 문</strong></div></div>'
    +'<div class="tower-mode-picker"><strong>전투 방식</strong>'
    +'<label><input type="radio" name="tower-play-mode" value="auto" checked> 자동 전투</label>'
-   +'<label><input type="radio" name="tower-play-mode" value="manual"> 직접 조종</label></div>'
+   +'<label><input type="radio" name="tower-play-mode" value="manual"> 클래식 조종</label>'
+   +'<label><input type="radio" name="tower-play-mode" value="blitz"> ⚡ 블리츠 배틀</label></div>'
    +'<div class="tower-buttons"><button id="tower-start" type="button">1층 시작</button>'
    +'<button id="tower-pause" type="button" hidden>⏸ 일시정지</button>'
    +'<button id="tower-abandon" type="button" hidden>도전 포기</button></div>'
@@ -265,7 +266,7 @@ function install(){
   });
   function setMode(next){
     if(active)return false; // Never change player/AI ownership mid-round.
-    mode=next==='manual'?'manual':'auto';
+    mode=['auto','manual','blitz'].includes(next)?next:'auto';
     for(const input of doc.querySelectorAll?.('input[name="tower-play-mode"]')||[])
       input.checked=input.value===mode;
     global.ArenaTowerControls?.refresh?.();
@@ -284,7 +285,7 @@ function install(){
     refreshHero();
     // Only the live manual battle uses the distraction-free layout. Clearing,
     // preparing, losing and free matches show the full Tower controls again.
-    screen.dataset.manualFocus=String(active&&mode==='manual'&&stage==='fighting');
+    screen.dataset.manualFocus=String(active&&(mode==='manual'||mode==='blitz')&&stage==='fighting');
     screen.dataset.towerPhase=stage;
     screen.dataset.towerView=active?'interior':view;
     screen.dataset.towerRealm=realmId;
@@ -374,6 +375,7 @@ function install(){
     for(const input of doc.querySelectorAll?.('input[name="tower-play-mode"]')||[])
       input.disabled=active;
     global.ArenaTowerControls?.refresh?.();
+    global.ArenaBlitzTower?.refresh?.();
   }
   function cleanup(){
     if(temporary){delete BEHAVIORS[temporary.id];temporary=null;}
@@ -399,7 +401,7 @@ function install(){
     if(!reRollMatch([selected,enemy]))throw Error('대진 구성 실패');
     if(realms){
       global.SkillForge.enableManual(players[0]);
-      players[0].manualTower=mode==='manual';players[0].towerHero=true;
+      players[0].manualTower=mode==='manual'||mode==='blitz';players[0].towerHero=true;
       realms.apply(players[0],realmId,blessings);
       players[1].towerPatternBoss=level%5===0;
       encounter=global.ArenaEncounter?.create({realm:realmId,level,width:canvas.width,height:canvas.height,
@@ -413,6 +415,8 @@ function install(){
       if(!global.ArenaTowerControls?.prepare?.(players[0]))
         throw Error('수동 조작 모듈을 불러오지 못했습니다. 새로고침 후 재시도하세요.');
     }
+    if(mode==='blitz'&&!global.ArenaBlitzTower?.prepare?.(players[0],players[1]))
+      throw Error('블리츠 전투 모듈을 불러오지 못했습니다. 새로고침해 주세요.');
     // Fresh combatants; run-local blessings were applied above.
     // reRollMatch leaves isPlaying=false, roundStarted=false, isGameOver=false.
     const wager=el('wager-input');if(wager)wager.value='0';
@@ -423,6 +427,7 @@ function install(){
     if(!isPlaying)togglePlay({towerBattle:true});
     if(!isPlaying||!roundStarted)throw Error('전투 엔진이 시작되지 않았습니다. 자유 대전 상태를 초기화하고 다시 시도해 주세요.');
     stage='fighting';
+    if(mode==='blitz')global.ArenaBlitzTower?.start?.();
     message.textContent='';
     show();
     // The focused manual HUD must remain visible when starting a new floor;
@@ -461,6 +466,7 @@ function install(){
   }
   function onBattleEnd(winner,reason){
     if(!active||stage!=='fighting')return false;
+    global.ArenaBlitzTower?.stop?.();
     if(reason==='stopped'||!winner||winner.playerNum!==1){
       const old=selected;active=false;stage='lost';
       updateRecord(global.localStorage,old,cleared,false);cleanup();
@@ -493,6 +499,7 @@ function install(){
   }
   function forfeit(){
     if(!active)return false;
+    global.ArenaBlitzTower?.stop?.();
     if(stage==='fighting'&&roundStarted&&!isGameOver){stopMatch();return true;}
     active=false;stage='lost';updateRecord(global.localStorage,selected,cleared,false);
     cleanup();message.textContent='도전을 포기했습니다. '+cleared+'층까지의 기록을 저장했습니다.';show();return true;
@@ -524,7 +531,7 @@ function install(){
     global.ArenaTowerAtmosphere?.paint?.(ctx,canvas.width,canvas.height,realmId,level);
     return painted;
   }
-  function tickEncounter(){if(active&&stage==='fighting')encounter?.step();}
+  function tickEncounter(){if(active&&stage==='fighting'&&(mode!=='blitz'||global.ArenaBlitzTower?.phase==='execute'))encounter?.step();}
   function drawEncounter(ctx){if(active&&stage==='fighting'){global.ArenaTowerAtmosphere?.particles?.(ctx,canvas.width,canvas.height,realmId,encounter?.tick||0);encounter?.draw(ctx,realm()?.color);}}
   const api={selectRealm,openSelection,chooseBlessing,tickEncounter,drawEncounter,get encounter(){return encounter;},floor,makeEnemy,read,updateRecord,records,begin,forfeit,paintBackground,
     onBattleEnd,isTransientDef,pauseAway,refresh:show,setMode,get mode(){return mode;},get active(){return active;},

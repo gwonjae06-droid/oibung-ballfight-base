@@ -1,0 +1,14 @@
+/* Blitz tower actions: compact tactical HUD for mobile and desktop. */
+#tower-arena-slot [hidden]{display:none!important}
+.tower-blitz{border:1px solid #746b8a;border-radius:15px;background:linear-gradient(130deg,#24344a,#141f2f);color:#f5f7ff;
+ padding:clamp(12px,2.5vw,19px);display:grid;gap:10px;margin:8px 0 14px}
+.tower-blitz-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;color:#f7d898}
+.tower-blitz-head span{font-size:12px;font-variant-numeric:tabular-nums;color:#f4e8cf}
+#tower-blitz-vitals{font-size:13px;color:#dceafa}
+.tower-blitz-fields{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+.tower-blitz-fields label{font-size:12px;color:#ccdaeb;display:grid;gap:5px}
+.tower-blitz-fields select{width:100%;min-width:0;min-height:44px;border:1px solid #7c94b0;border-radius:9px;background:#1a2b41;color:#fff;padding:7px}
+#tower-blitz-lock{min-height:48px;background:#e1bd81;border:1px solid #fae4af;border-radius:10px;color:#1c2835;font-weight:900;font-size:15px}
+#tower-blitz-lock:disabled{opacity:.65;cursor:default}
+#tower-blitz-message{margin:0;font-size:12px;line-height:1.5;color:#d5e4f6}
+@media(max-width:680px){.tower-blitz-fields{grid-template-columns:repeat(2,minmax(0,1fr))}.tower-blitz-fields label:first-child{grid-column:1/-1}}

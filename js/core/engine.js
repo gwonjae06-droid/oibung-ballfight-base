@@ -147,6 +147,8 @@ function updateCharacter(self) {
   }
   // Only P1 in an active manual Tower fight is controlled by the player.
   // Tower opponents and all free-battle fighters keep their original AI.
+  if(globalThis.ArenaTower?.active&&globalThis.ArenaTower?.mode==='blitz'&&
+      globalThis.ArenaBlitzTower?.update?.(self,getClosestAliveEnemy(self)))return;
   if(self.playerNum===1&&globalThis.ArenaTower?.active&&
       globalThis.ArenaTower?.mode==='manual'&&
       globalThis.ArenaTowerControls?.update?.(self,getClosestAliveEnemy(self)))return;
@@ -219,6 +221,8 @@ function handleCombat(pA,pB) {
 }
 function update() {
   if(!isPlaying||isGameOver)return;
+  if(globalThis.ArenaTower?.active&&globalThis.ArenaTower?.mode==='blitz'&&
+     globalThis.ArenaBlitzTower?.beforeStep?.()===false)return;
   players.forEach(p=>{
     if(p.movementOnlyFrames>0)p.movementOnlyFrames--;
     globalThis.ForgeExpansion?.tick(p);
