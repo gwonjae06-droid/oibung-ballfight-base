@@ -97,7 +97,7 @@ test('manual controls are scoped to Tower and appear after the arena',()=>{
   assert.equal(h.el('tower-manual-abilities').children.length,4);
   assert.ok(h.el('tower-arena-slot').children.includes(h.el('tower-manual-controls')));
   const html=fs.readFileSync(path.join(__dirname,'../index.html'),'utf8');
-  assert.match(html,/js\/features\/tower-controls\.js/);
+  assert.doesNotMatch(html,/js\/features\/tower-controls\.js/);
   assert.ok(!html.includes('id="tower-speed"'));
 });
 

@@ -78,13 +78,14 @@ test('legacy modes stay untouched; Blitz snapshot publishes turn without private
  assert.equal(state.blitz.round,1);
  assert.equal('resolved' in state.blitz,false,'opponent planned skills are not revealed');
 });
-test('network, lobby and tower expose alternating turns',()=>{
- const read=p=>fs.readFileSync(p,'utf8');
- assert.match(read('js/features/pvp-online.js'),/latest\.blitz\.turn!==side/);
- assert.match(read('js/features/pvp-online.js'),/내 턴/);
- assert.match(read('js/features/pvp-supabase.js'),/blitz\.deadline=this\.lastStep\+10000/);
- assert.match(read('js/features/tower-challenge.js'),/tower-play-mode" value="blitz"/);
- assert.match(read('pvp-runtime.html'),/pvp-runtime\.js\?v=pvp-turn1/);
+test('retired manual and Blitz features are not loaded by the playable game',()=>{
+ const read=p=>fs.readFileSync(p,'utf8'),html=read('index.html'),ui=read('js/features/pvp-online.js');
+ const tower=read('js/features/tower-challenge.js');
+ assert.doesNotMatch(html,/tower-controls\.js|tower-blitz\.js|blitz-ui\.css/);
+ assert.doesNotMatch(ui,/pvp-blitz|pvp-pad|name="pvp-mode"/);
+ assert.match(ui,/mode='auto'/);
+ assert.match(tower,/tower-auto-notice/);
+ assert.doesNotMatch(tower,/tower-play-mode" value="manual"/);
 });
 function towerWorld(){
  const elements=new Map(),slot={append(){}},ui={hidden:false,setAttribute(){},innerHTML:''};
@@ -138,8 +139,10 @@ test('sequential mode requires protocol 2 from both peers before matchmaking',()
  assert.match(read('js/features/pvp-original-engine.js'),/pvp-runtime\.html\?v=pvp-turn2/);
 });
 
-test('fresh turn-based loader is forced by an explicit version in the main HTML',()=>{
+test('online battle loads the shared auto AI with cache-busted scripts',()=>{
  const html=fs.readFileSync('index.html','utf8');
- assert.match(html,/pvp-original-engine\.js\?v=pvp-turn2/);
- assert.match(html,/pvp-online\.js\?v=pvp-turn1/);
+ const frame=fs.readFileSync('pvp-runtime.html','utf8');
+ assert.match(html,/pvp-original-engine\.js\?v=autofocus1/);
+ assert.match(html,/arena-auto-ai\.js\?v=autofocus1/);
+ assert.match(frame,/arena-auto-ai\.js\?v=autofocus1/);
 });

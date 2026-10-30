@@ -187,40 +187,30 @@ test('Tower uses the shared speed selector and waits between floors',()=>{
   assert.equal(x.tower.stage,'fighting');
 });
 
-test('manual Tower choice prepares P1 each floor, retains control mode and locks it during fights',()=>{
-  const h=harness(),prepared=[];
-  h.world.ArenaTowerControls={prepare(p){prepared.push(p);return true;},refresh(){}};
-  assert.equal(h.tower.mode,'auto','existing runs default to automatic');
-  assert.equal(h.tower.setMode('manual'),true);
-  assert.equal(h.tower.mode,'manual');
-  assert.equal(h.tower.begin(),true);
-  assert.equal(prepared.length,1);
-  assert.equal(prepared[0],h.world.players[0],'only first player is manually prepared');
-  assert.equal(h.tower.setMode('auto'),false,'mode cannot change during an active run');
-  conclude(h,h.world.players[0]);
-  assert.equal(h.tower.state.level,2);
-  assert.equal(h.tower.mode,'manual','mode stays selected across floors');
-  assert.equal(prepared.length,2);
-  assert.equal(prepared[1],h.world.players[0],'next floor has a new controlled instance');
-  assert.equal(h.tower.stage,'between','manual mode waits for the player');
-  assert.equal(h.world.isPlaying,false);
-  assert.equal(h.tower.begin(),true);
-  assert.equal(h.tower.stage,'fighting');
-  conclude(h,h.world.players[1]);
-  assert.equal(h.tower.active,false);
-  assert.equal(h.tower.setMode('auto'),true,'mode unlocked when the challenge ends');
-  assert.equal(h.tower.begin(),true);
-  assert.equal(prepared.length,2,'automatic run must not prepare manual input');
+test('automatic Tower preserves authored skills and rejects retired controls',()=>{
+ const h=harness(true);
+ assert.equal(h.tower.mode,'auto');
+ assert.equal(h.tower.setMode('manual'),false);
+ assert.equal(h.tower.setMode('blitz'),false);
+ assert.equal(h.tower.selectRealm('fire'),true);
+ assert.equal(h.tower.begin(),true);
+ assert.equal(h.world.players[0].manualTower,false,'AI owns actions');
+ assert.ok(h.world.players[0].forge?.skills?.length,'builtin gains authored kit');
+ conclude(h,h.world.players[0]);
+ assert.equal(h.tower.state.level,2);
+ assert.equal(h.tower.stage,'between');
+ assert.equal(h.tower.begin(),true);
+ assert.equal(h.tower.stage,'fighting');
+ assert.equal(h.world.players[0].manualTower,false);
 });
-test('manual control unavailable does not silently start an AI fight',()=>{
-  const h=harness();
-  assert.equal(h.tower.setMode('manual'),true);
-  assert.equal(h.tower.begin(),false);
-  assert.equal(h.tower.stage,'ready');
-  assert.equal(h.tower.active,false);
-  assert.match(h.el('tower-feedback').textContent,/수동 조작 모듈/);
+test('automatic Tower starts without either retired input module',()=>{
+ const h=harness();
+ assert.equal(h.world.ArenaTowerControls,undefined);
+ assert.equal(h.world.ArenaBlitzTower,undefined);
+ assert.equal(h.tower.begin(),true);
+ assert.equal(h.tower.stage,'fighting');
+ assert.equal(h.tower.active,true);
 });
-
 test('top-level Start button resumes prepared floor without running another round setup',()=>{
   const x=harness();
   x.tower.begin();
@@ -259,27 +249,19 @@ test('forfeit while waiting closes the run and records cleared floors',()=>{
   assert.equal(x.el('tower-clear-overlay').hidden,true);
 });
 
-test('manual focus hides optional Tower setup only in battle and restores between floors',()=>{
-  const h=harness();
-  const screen=h.el('screen-tower');
-  h.world.ArenaTowerControls={prepare(){return true;},refresh(){}};
-  assert.equal(screen.dataset.manualFocus,'false','setup remains visible before entering');
-  h.tower.setMode('manual');
-  assert.equal(screen.dataset.manualFocus,'false');
-  assert.equal(h.tower.begin(),true);
-  assert.equal(screen.dataset.manualFocus,'true','only live manual control focuses the arena');
-  conclude(h,h.world.players[0]);
-  assert.equal(h.tower.stage,'between');
-  assert.equal(screen.dataset.manualFocus,'false','clear returns full floor and enemy information');
-  assert.equal(screen.dataset.towerPhase,'between');
-  assert.equal(h.el('tower-clear-overlay').hidden,false);
-  assert.equal(h.tower.begin(),true);
-  assert.equal(screen.dataset.manualFocus,'true','next explicit start refocuses combat');
-  conclude(h,h.world.players[1]);
-  assert.equal(screen.dataset.manualFocus,'false','defeat restores all setup controls');
-  assert.equal(h.tower.setMode('auto'),true);
-  assert.equal(h.tower.begin(),true);
-  assert.equal(screen.dataset.manualFocus,'false','AI battles preserve the full old layout');
+test('automatic Tower keeps normal HUD across floor transitions',()=>{
+ const h=harness(),screen=h.el('screen-tower');
+ assert.equal(screen.dataset.manualFocus,'false');
+ assert.equal(h.tower.begin(),true);
+ assert.equal(screen.dataset.manualFocus,'false');
+ conclude(h,h.world.players[0]);
+ assert.equal(h.tower.stage,'between');
+ assert.equal(screen.dataset.manualFocus,'false');
+ assert.equal(h.el('tower-clear-overlay').hidden,false);
+ assert.equal(h.tower.begin(),true);
+ assert.equal(screen.dataset.manualFocus,'false');
+ conclude(h,h.world.players[1]);
+ assert.equal(screen.dataset.manualFocus,'false');
 });
 
 for(const realm of ['time','space','fire','storm','ice','forest'])test(realm+' ten-floor flow: encounter, blessings, isolation, records and cleanup',()=>{
