@@ -23,22 +23,37 @@ function floor(base,id){
  f.name=f.boss?r.bosses[f.number===10?1:0]:(ENEMIES[r.id]||ENEMIES.time)[f.number<=4?f.number-1:f.number-2]+' · '+f.number+'층';
  f.description=f.boss?r.pattern+' · HP 50% 이하 2페이즈':r.terrain+' · '+r.hint;
  f.scene=r.id;f.realm=r.id;f.difficulty=f.boss?'특수 보스':'테마 도전';
- // Higher floors require sustained damage and awareness; patterns remain telegraphed.
-  f.hp=190+f.number*26+(f.boss?170:0);f.damage=15+f.number*3;f.speed=1.35+f.number*.14;
-  f.cooldown=Math.max(1.1,2.6-f.number*.12);
+ // Every realm changes actual combat statistics, not only colors.
+ const balance={
+  time:{hp:1,damage:.85,speed:1.1,cooldown:.62},
+  space:{hp:1.12,damage:1.05,speed:.95,cooldown:.85},
+  fire:{hp:.9,damage:1.75,speed:1.06,cooldown:.82},
+  storm:{hp:.83,damage:1.02,speed:2.25,cooldown:.58},
+  ice:{hp:1.9,damage:.84,speed:.75,cooldown:.88},
+  forest:{hp:1.18,damage:.9,speed:.93,cooldown:.65}
+ }[r.id];
+ f.hp=Math.round((190+f.number*26+(f.boss?170:0))*balance.hp);
+ f.damage=Math.round((15+f.number*3)*balance.damage);
+ f.speed=Math.min(5,(1.35+f.number*.14)*balance.speed);
+ f.cooldown=Math.max(.45,(2.6-f.number*.12)*balance.cooldown);
+ f.description+=(r.id==='storm'?' · 초고속 전투':r.id==='ice'?' · 높은 방어와 빙결':r.id==='forest'?' · 독과 소환수':r.id==='fire'?' · 치명적 화염 공격':r.id==='time'?' · 시간 능력 연속 발동':' · 중력과 별의 폭격');
+
  return f;
 }
 const LOADOUTS={
- time:[['시침 투사','shot'],['초침 가속','haste'],['되감기 충격','wave'],['시간 도약','blink'],['과거의 잔영','rewind'],['정지의 장막','timestop']],
- space:[['항성 추적탄','homing'],['중력 보호막','shield'],['사건 지평선','blackhole'],['회전 위성','orbit'],['별의 낙하','starfall'],['성운 낙뢰','bolt']],
- fire:[['잿불 투사체','shot'],['용암 폭발','nova'],['분화구','zone'],['화염 유성','meteor'],['화염 돌진','dash'],['불꽃 회오리','spinslash']],
- storm:[['청뢰 낙하','bolt'],['폭풍 가속','haste'],['낙뢰 연쇄','chain'],['뇌광 돌진','dash'],['폭풍 광선','beam'],['뇌운 소용돌이','orbit']],
- ice:[['빙창 관통','pierce'],['서리 방벽','shield'],['눈보라 파동','wave'],['얼음 함정','trap'],['동토 결계','zone'],['빙결 궤도','orbit']],
- forest:[['독가시 탄환','dung'],['세계수 재생','regen'],['덩굴 함정','trap'],['숲의 수호수','summon'],['생명 흡수','drain'],['가시 지대','zone']]
+ time:[['초침 폭주','timeburst'],['시간의 족쇄','timestop'],['회귀의 방','rewind'],['시간 도약','blink'],['역행 파동','wave'],['반복되는 순간','timeburst']],
+ space:[['특이점 생성','blackhole'],['유성우 폭격','starfall'],['위성 공전','orbit'],['중력장 압축','blackhole'],['우주 운석','meteor'],['성운 추적','homing']],
+ fire:[['지옥불 폭발','nova'],['용암 범람','zone'],['열화 유성','meteor'],['화염탄 폭격','shot'],['분화 폭발','erupt'],['태양 화염','starfall']],
+ storm:[['섬광 질주','haste'],['뇌신의 돌진','dash'],['천둥 연쇄','chain'],['벼락 낙하','bolt'],['폭풍 광선','beam'],['뇌전 궤도','orbit']],
+ ice:[['영구 동토','fortify'],['빙정 방벽','shield'],['서리 봉쇄','zone'],['얼어붙은 사슬','trap'],['빙창 관통','pierce'],['냉기 충격','wave']],
+ forest:[['맹독 포자','dung'],['독성 수호수','summon'],['수호수 증식','summon'],['독가시 장판','zone'],['흡혈 덩굴','drain'],['포자 군단','summon']]
 };
 function enemyLoadout(id,level){
  const n=level<=2?2:level<=4?4:level<=7?5:6;
- return (LOADOUTS[id]||LOADOUTS.time).slice(0,n).map(a=>[...a]);
+ const load=LOADOUTS[id]||LOADOUTS.time;
+ // Alternate opening skills between floors, without losing realm identity.
+ const shift=(level-1)%Math.min(3,load.length);
+ return Array.from({length:n},(_,i)=>[...load[(i+shift)%load.length]]);
 }
 function choices(id,owned=[],random=Math.random){
  const r=get(id),all=[
