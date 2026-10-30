@@ -139,3 +139,61 @@ test('shadow pass precedes height-aware stable painter sorting, without reorderi
  assert.match(render,/const depthOrder=players\.slice\(\)\.sort/);
  assert.match(render,/visibleHeight\?\.\(a\)/);
 });
+
+test('slightly lowered camera view projects top and bottom toward a subtle horizon',()=>{
+ const {w}=depthWorld();
+ const h=600,view=w.ArenaDepth.VIEW_Y;
+ assert.ok(view>.85&&view<.94,'mild angle, not an isometric camera');
+ const far=w.ArenaDepth.screenPoint(200,0,{height:h});
+ const middle=w.ArenaDepth.screenPoint(200,h/2,{height:h});
+ const near=w.ArenaDepth.screenPoint(200,h,{height:h});
+ assert.equal(middle.y,h/2);
+ assert.ok(far.y>0&&far.y<h*.09);
+ assert.ok(near.y<h&&near.y>h*.91);
+ assert.equal(near.y-far.y,h*view);
+ assert.equal(far.x,200,'horizontal hit position is unchanged');
+});
+test('2.5D camera has a single shared world transform and preserves save/restore',()=>{
+ const {w}=depthWorld(),transforms=[];
+ const c=new Proxy({}, {get:(o,k)=>k==='translate'?((...args)=>transforms.push(['translate',...args])):
+   k==='scale'?((...args)=>transforms.push(['scale',...args])):()=>{},
+   set:(o,k,v)=>(o[k]=v,true)});
+ w.ArenaDepth.applyView(c,{width:780,height:520});
+ assert.deepEqual(transforms,[['translate',0,520*(1-w.ArenaDepth.VIEW_Y)/2],
+  ['scale',1,w.ArenaDepth.VIEW_Y]]);
+ const src=read('js/core/render.js');
+ assert.ok(src.indexOf('ArenaDepth?.paintBackdrop')<src.indexOf('ArenaDepth?.applyView'));
+ assert.ok(src.indexOf('ArenaDepth?.applyView')<src.indexOf('ArenaDepth?.paintFloor'));
+ assert.ok(src.indexOf('ArenaDepth?.applyView')<src.indexOf('AdvancedCombat?.draw(ctx)'));
+ assert.match(src,/scale\*pose\.sy\/\(globalThis\.ArenaDepth\?\.VIEW_Y\|\|1\)/,
+   'character silhouette stays upright when floor is tilted');
+});
+test('nearer 2.5D sprites are a little larger, without altering collision size',()=>{
+ const {w}=depthWorld();
+ const a={x:120,y:55,radius:26},b={x:120,y:440,radius:26};
+ const far=w.ArenaDepth.spriteScale(a,{height:500}),near=w.ArenaDepth.spriteScale(b,{height:500});
+ assert.ok(far<1&&near>1);
+ assert.ok(near-far<.11,'perspective must be restrained');
+ assert.equal(a.radius,26);assert.equal(b.radius,26);
+});
+test('camera floor framing is lightweight and adapts to tower and default arena',()=>{
+ const {w,ctx,calls}=depthWorld();
+ const game={width:700,height:480};
+ w.ArenaDepth.paintBackdrop(ctx,game,false);
+ w.ArenaDepth.paintBackdrop(ctx,game,true);
+ assert.ok(calls.gradient>=4);
+ assert.equal(calls.saves,calls.restores);
+});
+test('PvP overlay, telegraph and character HP bars use exactly the same projection',()=>{
+ const rt=read('js/features/pvp-runtime.js');
+ const start=rt.indexOf('draw();\n // The instant PvP artwork');
+ const camera=rt.indexOf('ArenaDepth?.applyView?.(ctx,canvas)',start);
+ const fx=rt.indexOf('SkillVisuals.draw(ctx)',camera);
+ const restore=rt.indexOf('ctx.restore()',fx);
+ const bar=rt.indexOf('ArenaDepth?.screenPoint?.',restore);
+ assert.ok(start>0&&camera>start&&fx>camera&&restore>fx&&bar>restore);
+ const html=read('index.html'),frame=read('pvp-runtime.html');
+ assert.match(html,/arena-depth\.js\?v=tilt1/);
+ assert.match(frame,/arena-depth\.js\?v=tilt1/);
+ assert.match(html,/pvp-original-engine\.js\?v=tilt1/);
+});
