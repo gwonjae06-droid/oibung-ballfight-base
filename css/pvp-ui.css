@@ -92,3 +92,18 @@
   #pvp-clock{font-size:20px}
 }
 @media(prefers-reduced-motion:reduce){.pvp-hp i{transition:none}}
+
+
+/* Blitz battle controls: compact, touch-accessible, no continuous movement. */
+.pvp-mode-list{grid-template-columns:repeat(3,minmax(0,1fr))}
+.pvp-blitz{border:1px solid #8b7b5e;background:#23324a;border-radius:13px;padding:12px;display:grid;gap:10px}
+.pvp-blitz-heading{display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap}
+.pvp-blitz-heading strong{color:#f7dfa5}
+.pvp-blitz-heading span{font-size:12px;color:#d5e5fb;font-variant-numeric:tabular-nums}
+.pvp-blitz-choices{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.pvp-blitz-choices label{display:grid;gap:5px;color:#d5e4f5;font-size:12px}
+.pvp-blitz-choices select{min-width:0;min-height:44px;width:100%;border:1px solid #8196ac;border-radius:9px;padding:6px;color:#fff;background:#192738;font-size:13px}
+#pvp-blitz-lock{border:1px solid #f6d79d;border-radius:11px;background:#dbb675;color:#1b2737;min-height:48px;font-weight:900;font-size:15px}
+#pvp-blitz-lock:disabled{opacity:.55;cursor:default}
+#pvp-blitz-note{margin:0;font-size:12px;line-height:1.6;color:#dbe5f3}
+@media(max-width:700px){.pvp-mode-list{grid-template-columns:1fr}.pvp-mode-list label{min-height:0;padding:12px}.pvp-blitz-choices{grid-template-columns:1fr 1fr}.pvp-blitz-choices label:first-child{grid-column:1/-1}}
