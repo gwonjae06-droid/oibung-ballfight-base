@@ -183,7 +183,7 @@ test('mobile layout stays stable and renderer uses one projective camera for eff
  assert.match(css,/\.tower-manual-skill\{[\s\S]*?touch-action:none/);
  const render=fs.readFileSync(path.join(__dirname,'../js/core/render.js'),'utf8');
  const effects=fs.readFileSync(path.join(__dirname,'../js/features/battle-effects.js'),'utf8');
- assert.match(render,/ArenaDepth\?\.layer\?\.\(canvas,'world'\)/);
+ assert.match(render,/depth\?\.layer\?\.\(canvas,'world'\)/);
  assert.match(render,/ArenaFXLayer\?\.draw\?\.\(worldCtx\)/);
  assert.match(render,/projectWorld\?\.\(ctx,layer\.canvas,canvas\)/);
  assert.doesNotMatch(effects,/ArenaTowerControls\?\.applyView\?\./);

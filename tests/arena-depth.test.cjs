@@ -120,7 +120,7 @@ test('lightweight network snapshots only include height when airborne; remote us
 });
 test('floor and VFX share projected ground coordinates before upright fighters',()=>{
  const render=read('js/core/render.js');
- const floor=render.indexOf('ArenaDepth?.paintFloor'),objects=render.indexOf('AdvancedCombat?.draw(worldCtx)');
+ const floor=render.indexOf('depth?.paintFloor?.(worldCtx,canvas,painted)'),objects=render.indexOf('AdvancedCombat?.draw(worldCtx)');
  const fx=render.indexOf('ArenaFXLayer?.draw?.(worldCtx)'),projection=render.indexOf('projectWorld?.(ctx,layer.canvas,canvas)');
  const actor=render.indexOf('ArenaMotion.drawFighter(ctx,p,drawCharacter)');
  assert.ok(floor>0&&floor<objects&&objects<fx&&fx<projection&&projection<actor);
