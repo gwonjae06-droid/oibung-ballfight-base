@@ -174,7 +174,7 @@ function install(){
    +'<div class="tower-mode-picker"><strong>전투 방식</strong>'
    +'<label><input type="radio" name="tower-play-mode" value="auto" checked> 자동 전투</label>'
    +'<label><input type="radio" name="tower-play-mode" value="manual"> 클래식 조종</label>'
-   +'<label><input type="radio" name="tower-play-mode" value="blitz"> ⚡ 블리츠 배틀</label></div>'
+   +'<label><input type="radio" name="tower-play-mode" value="blitz"> ⚡ 블리츠 턴제</label></div>'
    +'<div class="tower-buttons"><button id="tower-start" type="button">1층 시작</button>'
    +'<button id="tower-pause" type="button" hidden>⏸ 일시정지</button>'
    +'<button id="tower-abandon" type="button" hidden>도전 포기</button></div>'
