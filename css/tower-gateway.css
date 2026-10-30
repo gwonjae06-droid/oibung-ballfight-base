@@ -1,0 +1,144 @@
+/* Interactive panorama: six real towers rather than six feature cards.
+   This file intentionally loads AFTER tower-realms.css. */
+#screen-tower .tower-realm-selector.tower-realm-selector {
+  position:relative;
+  margin:0 auto 22px;
+  padding:0;
+  max-width:1540px;
+  width:100%;
+  background:transparent;
+  border:0;
+  border-radius:0;
+  overflow:visible;
+  color:#f5eefb;
+}
+#screen-tower .tower-panorama-scroll {
+  overflow-x:auto;overflow-y:hidden;
+  width:100%;
+  border-radius:14px;
+  overscroll-behavior-inline:contain;
+  scrollbar-width:thin;
+  scrollbar-color:#9587be #171324;
+  -webkit-overflow-scrolling:touch;
+  background:#101026;
+  box-shadow:0 18px 50px #0008,0 0 0 1px #ad9eaf4a;
+}
+#screen-tower .tower-panorama-scroll:focus-visible{outline:3px solid #f7cb79;outline-offset:3px}
+#screen-tower .tower-panorama-world{
+  position:relative;isolation:isolate;
+  width:100%;min-width:950px;
+  aspect-ratio:16/9;
+  overflow:hidden;
+  background:radial-gradient(ellipse at 46% 48%,#393160,#121329 75%);
+}
+#screen-tower .tower-panorama-world:after{
+  content:"";position:absolute;inset:0;pointer-events:none;z-index:2;
+  background:linear-gradient(180deg,#0a0a18a0 0%,transparent 22%,transparent 65%,#08091465 100%);
+}
+#screen-tower .tower-panorama-art{
+  width:100%;height:100%;display:block;
+  pointer-events:none;user-select:none;object-fit:fill;
+}
+#screen-tower .tower-realm-heading{
+  pointer-events:none;
+  position:absolute;top:2.6%;left:50%;z-index:3;
+  transform:translateX(-50%);text-align:center;
+  min-width:320px;padding:9px 25px 12px;
+  border-top:1px solid #f4d9a0a6;border-bottom:1px solid #f4d9a098;
+  background:radial-gradient(ellipse,#10101fa8,#10101f28 78%,transparent);
+  text-shadow:0 2px 12px #000,0 1px 4px #000;
+}
+#screen-tower .tower-realm-heading span{
+  font:600 10px/1.2 system-ui;letter-spacing:.32em;color:#edd4aa;
+}
+#screen-tower .tower-realm-heading h2{
+  margin:1px 0 0;
+  font:bold clamp(28px,3.7vw,55px)/1.14 Georgia,"Noto Serif KR",serif;
+  letter-spacing:.14em;color:#fff1d5;
+  text-shadow:0 0 14px #c9956466,0 2px 8px #000;
+}
+#screen-tower .tower-realm-heading p{margin:4px 0 0;font-size:12px;color:#f0e0c6}
+#screen-tower .tower-panorama-targets.tower-realm-grid{
+  position:absolute;z-index:4;top:13%;bottom:8%;left:0;right:0;
+  display:grid;grid-template-columns:repeat(6,minmax(0,1fr));
+  gap:0;margin:0;
+}
+#screen-tower .tower-panorama-targets .tower-realm-card{
+  all:unset;
+  position:relative;min-width:0;min-height:0;
+  display:flex;align-items:flex-end;justify-content:center;
+  box-sizing:border-box;cursor:pointer;
+  border-left:1px solid #ffffff0d;
+  color:#fff;
+  -webkit-tap-highlight-color:transparent;
+  transition:background .2s ease,filter .2s ease;
+}
+#screen-tower .tower-panorama-targets .tower-realm-card:first-child{border-left:0}
+#screen-tower .tower-panorama-targets .tower-realm-card:after{display:none}
+#screen-tower .tower-panorama-targets .tower-realm-card:hover,
+#screen-tower .tower-panorama-targets .tower-realm-card:focus-visible{
+  background:linear-gradient(180deg,transparent 20%,color-mix(in srgb,var(--realm-color) 15%,transparent) 55%,#0c0b1c45);
+  box-shadow:inset 0 0 0 2px var(--realm-color),inset 0 0 42px color-mix(in srgb,var(--realm-color) 28%,transparent);
+}
+#screen-tower .tower-panorama-targets .tower-realm-card:focus-visible{outline:3px solid #ffedd0;outline-offset:-4px}
+#screen-tower .tower-panorama-targets .tower-realm-card:active{background:color-mix(in srgb,var(--realm-color) 22%,transparent)}
+#screen-tower .tower-panorama-targets .tower-realm-card[aria-pressed="true"]:not(:hover){box-shadow:none;border-color:#ffffff0d}
+#screen-tower .tower-panorama-targets .tower-realm-card .tower-realm-card-caption{
+  all:unset;
+  position:relative;
+  width:calc(100% - 12px);
+  min-height:56px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+  box-sizing:border-box;
+  padding:9px 5px 7px;margin-bottom:2.5%;
+  text-align:center;
+  border:1.5px solid color-mix(in srgb,var(--realm-color) 80%,#f4d8aa);
+  border-radius:5px;
+  background:linear-gradient(135deg,#0d0d19e8,#161224e9);
+  box-shadow:0 0 14px #000b,inset 0 1px 9px color-mix(in srgb,var(--realm-color) 16%,transparent);
+  transition:transform .22s ease,box-shadow .22s ease;
+}
+#screen-tower .tower-panorama-targets .tower-realm-card:hover .tower-realm-card-caption,
+#screen-tower .tower-panorama-targets .tower-realm-card:focus-visible .tower-realm-card-caption{
+  transform:translateY(-7px);
+  box-shadow:0 0 25px color-mix(in srgb,var(--realm-color) 55%,transparent),inset 0 1px 10px #fff2;
+}
+#screen-tower .tower-panorama-targets .tower-realm-icon{
+  font-size:24px;line-height:1.05;color:var(--realm-color);filter:drop-shadow(0 0 6px var(--realm-color));
+}
+#screen-tower .tower-panorama-targets .tower-realm-card strong{
+  display:block;
+  font:bold clamp(15px,1.7vw,24px)/1.25 Georgia,"Noto Serif KR",serif;
+  letter-spacing:-.025em;color:#fff8f3;
+  text-shadow:0 2px 5px #000;
+}
+#screen-tower .tower-panorama-targets .tower-realm-card small{
+  font:600 11px/1.2 system-ui;color:#c9c6d2;margin:0;letter-spacing:.03em;
+}
+#screen-tower .tower-panorama-swipe {
+  margin:10px 7px 18px;
+  text-align:center;
+  font-size:13px;line-height:1.5;color:#ccd5e7;
+}
+#screen-tower .tower-gateway-description{display:none}
+#screen-tower .tower-panorama-swipe span{display:none}
+#screen-tower .ancient-unlock{max-width:820px;margin:8px auto 0}
+@media(max-width:860px){
+  #screen-tower .tower-panorama-world{min-width:1080px}
+  #screen-tower .tower-realm-heading h2{font-size:40px}
+  #screen-tower .tower-panorama-targets .tower-realm-card strong{font-size:19px}
+  #screen-tower .tower-panorama-swipe span{display:inline}
+}
+@media(max-width:560px){
+  #screen-tower .tower-panorama-scroll{border-radius:8px}
+  #screen-tower .tower-panorama-world{min-width:960px}
+  #screen-tower .tower-realm-heading h2{font-size:36px}
+  #screen-tower .tower-panorama-targets .tower-realm-card .tower-realm-card-caption{min-height:63px}
+  #screen-tower .tower-panorama-targets .tower-realm-card strong{font-size:17px}
+  #screen-tower .tower-panorama-targets .tower-realm-icon{font-size:20px}
+  #screen-tower .tower-panorama-swipe{font-size:12px}
+}
+@media(prefers-reduced-motion:reduce){
+  #screen-tower .tower-panorama-targets .tower-realm-card,
+  #screen-tower .tower-panorama-targets .tower-realm-card .tower-realm-card-caption{transition:none}
+}
