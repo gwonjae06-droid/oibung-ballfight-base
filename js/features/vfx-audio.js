@@ -197,6 +197,7 @@
     ctx.save();
     ctx.globalCompositeOperation='source-over';
     for(const f of fx){
+      const paintEffect=ctx=>{
       const k=1-f.age/f.life;
       ctx.save();ctx.globalAlpha=clamp(k,0,1);
       ctx.strokeStyle=f.color;ctx.fillStyle=f.color;
@@ -276,7 +277,10 @@
         ctx.setLineDash([]);ctx.beginPath();ctx.moveTo(f.x-14,f.y);
         ctx.lineTo(f.x+14,f.y);ctx.moveTo(f.x,f.y-14);ctx.lineTo(f.x,f.y+14);ctx.stroke();
       }
-      ctx.restore();
+      ctx.restore();};
+      if(['spark','flash','beam','sweep','bolt','shield','heal'].includes(f.kind)&&global.ArenaDepth?.air)
+        global.ArenaDepth.air(ctx,f,0,paintEffect,f.kind==='bolt'?14:0);
+      else paintEffect(ctx);
     }
     ctx.restore();
     // Small ability chips hug fighters; damage text stays numeric and transient.

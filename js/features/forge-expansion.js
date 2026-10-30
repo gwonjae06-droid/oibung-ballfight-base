@@ -190,38 +190,43 @@ function update(p,api){
     if(b.life<=0)extras.splice(i,1);
   }
 }
-function draw(p){
+function draw(p,renderCtx){
+  const ink=renderCtx||ctx;
   if(p.hp<=0)return;
-  ctx.save();ctx.strokeStyle=global.arenaEffectColor?.(p.forge?.color||p.themeColor)||(p.forge?.color||p.themeColor||'#684f83');ctx.lineWidth=2.5;ctx.fillStyle=ctx.strokeStyle;
+  ink.save();ink.strokeStyle=global.arenaEffectColor?.(p.forge?.color||p.themeColor)||(p.forge?.color||p.themeColor||'#684f83');ink.lineWidth=2.5;ink.fillStyle=ink.strokeStyle;
   for(const b of p.forgeExtras||[]){
-    ctx.save();const area=['meteor','mine','blackhole','lifebloom'].includes(b.kind);
+    ink.save();const area=['meteor','mine','blackhole','lifebloom'].includes(b.kind);
     if(b.kind==='meteor'){
       // The same speed-derived descent timeline drives both the animation and
       // the impact/damage in update(): no ground explosion until landing.
       const t=Math.max(0,Math.min(1,b.age/(b.flight||45)));
       const fall=1-(1-t)*(1-t);
       const height=190*(1-fall),rockX=b.x-42*(1-t),rockY=b.y-height;
-      ctx.strokeStyle='#9b5d3a';ctx.lineWidth=2;
-      ctx.fillStyle='rgba(45,49,56,.13)';
-      ctx.beginPath();ctx.arc(b.x,b.y,b.a.radius,0,Math.PI*2);ctx.fill();ctx.stroke();
-      ctx.fillStyle='rgba(34,41,48,.24)';
-      ctx.beginPath();ctx.ellipse(b.x,b.y,19+15*t,6+4*t,0,0,Math.PI*2);ctx.fill();
-      ctx.save();ctx.lineCap='round';
+      ink.strokeStyle='#9b5d3a';ink.lineWidth=2;
+      ink.fillStyle='rgba(45,49,56,.13)';
+      ink.beginPath();ink.arc(b.x,b.y,b.a.radius,0,Math.PI*2);ink.fill();ink.stroke();
+      ink.fillStyle='rgba(34,41,48,.24)';
+      ink.beginPath();ink.ellipse(b.x,b.y,19+15*t,6+4*t,0,0,Math.PI*2);ink.fill();
+      const paintMeteor=ink=>{
+      ink.save();ink.lineCap='round';
       const trail=1-t;
-      ctx.strokeStyle='#d6803f';ctx.lineWidth=10*trail+2;
-      ctx.beginPath();ctx.moveTo(rockX-65*trail,rockY-90*trail);
-      ctx.lineTo(rockX,rockY);ctx.stroke();
-      ctx.strokeStyle='#f5c170';ctx.lineWidth=3*trail+1;
-      ctx.beginPath();ctx.moveTo(rockX-50*trail,rockY-65*trail);
-      ctx.lineTo(rockX,rockY);ctx.stroke();
-      ctx.translate(rockX,rockY);ctx.rotate(b.age*.07);
-      ctx.fillStyle='#796250';ctx.strokeStyle='#3a3632';ctx.lineWidth=3;
-      ctx.beginPath();ctx.moveTo(-23,-11);ctx.lineTo(-8,-26);ctx.lineTo(18,-16);
-      ctx.lineTo(27,8);ctx.lineTo(6,23);ctx.lineTo(-23,16);ctx.closePath();
-      ctx.fill();ctx.stroke();
-      ctx.strokeStyle='#b69c7f';ctx.lineWidth=2;
-      ctx.beginPath();ctx.moveTo(-15,-6);ctx.lineTo(-3,-15);ctx.lineTo(9,-11);
-      ctx.moveTo(6,4);ctx.lineTo(19,9);ctx.stroke();ctx.restore();
+      ink.strokeStyle='#d6803f';ink.lineWidth=10*trail+2;
+      ink.beginPath();ink.moveTo(rockX-65*trail,rockY-90*trail);
+      ink.lineTo(rockX,rockY);ink.stroke();
+      ink.strokeStyle='#f5c170';ink.lineWidth=3*trail+1;
+      ink.beginPath();ink.moveTo(rockX-50*trail,rockY-65*trail);
+      ink.lineTo(rockX,rockY);ink.stroke();
+      ink.translate(rockX,rockY);ink.rotate(b.age*.07);
+      ink.fillStyle='#796250';ink.strokeStyle='#3a3632';ink.lineWidth=3;
+      ink.beginPath();ink.moveTo(-23,-11);ink.lineTo(-8,-26);ink.lineTo(18,-16);
+      ink.lineTo(27,8);ink.lineTo(6,23);ink.lineTo(-23,16);ink.closePath();
+      ink.fill();ink.stroke();
+      ink.strokeStyle='#b69c7f';ink.lineWidth=2;
+      ink.beginPath();ink.moveTo(-15,-6);ink.lineTo(-3,-15);ink.lineTo(9,-11);
+      ink.moveTo(6,4);ink.lineTo(19,9);ink.stroke();ink.restore();
+      };
+      if(global.ArenaDepth?.air)global.ArenaDepth.air(ink,{x:rockX,y:b.y},height,paintMeteor);
+      else paintMeteor(ink);
     }else if(b.kind==='starfall'){
       // Height, sky streak and shadow derive from one fall progress.
       if(b.age>=b.delay){
@@ -229,91 +234,98 @@ function draw(p){
         const height=(1-t)*118;
         const sx=b.x-36*(1-t),sy=b.y-height;
         const flicker=1+Math.sin((b.age+b.x)*.25)*.08;
-        ctx.globalAlpha=.22;ctx.fillStyle='#424a55';
-        ctx.beginPath();ctx.ellipse(b.x,b.y,8+t*10,3+t*4,0,0,Math.PI*2);ctx.fill();
-        ctx.globalAlpha=1;ctx.strokeStyle='#456eaf';
-        ctx.lineWidth=4.5;ctx.lineCap='round';
-        ctx.beginPath();ctx.moveTo(sx-29*(1-t),sy-34*(1-t));
-        ctx.lineTo(sx,sy);ctx.stroke();
-        ctx.strokeStyle='rgba(158,199,241,.8)';ctx.lineWidth=2;
-        ctx.beginPath();ctx.moveTo(sx-17*(1-t),sy-22*(1-t));
-        ctx.lineTo(sx,sy);ctx.stroke();
-        ctx.fillStyle='#f3db82';ctx.strokeStyle='#3d6088';ctx.lineWidth=1.5;
-        ctx.beginPath();
+        ink.globalAlpha=.22;ink.fillStyle='#424a55';
+        ink.beginPath();ink.ellipse(b.x,b.y,8+t*10,3+t*4,0,0,Math.PI*2);ink.fill();
+        const paintStar=ink=>{
+        ink.save();ink.globalAlpha=1;ink.strokeStyle='#456eaf';
+        ink.lineWidth=4.5;ink.lineCap='round';
+        ink.beginPath();ink.moveTo(sx-29*(1-t),sy-34*(1-t));
+        ink.lineTo(sx,sy);ink.stroke();
+        ink.strokeStyle='rgba(158,199,241,.8)';ink.lineWidth=2;
+        ink.beginPath();ink.moveTo(sx-17*(1-t),sy-22*(1-t));
+        ink.lineTo(sx,sy);ink.stroke();
+        ink.fillStyle='#f3db82';ink.strokeStyle='#3d6088';ink.lineWidth=1.5;
+        ink.beginPath();
         for(let k=0;k<10;k++){
           const a=-Math.PI/2+k*Math.PI/5,r=(k%2?5:11)*flicker;
           const px=sx+Math.cos(a)*r,py=sy+Math.sin(a)*r;
-          if(k===0)ctx.moveTo(px,py);else ctx.lineTo(px,py);
+          if(k===0)ink.moveTo(px,py);else ink.lineTo(px,py);
         }
-        ctx.closePath();ctx.fill();ctx.stroke();
+        ink.closePath();ink.fill();ink.stroke();ink.restore();
+        };
+        if(global.ArenaDepth?.air)global.ArenaDepth.air(ink,{x:sx,y:b.y},height,paintStar);
+        else paintStar(ink);
       }
     }else if(b.kind==='dung'){
-      ctx.fillStyle='#713f12';ctx.beginPath();ctx.arc(b.x,b.y,10,0,Math.PI*2);ctx.fill();ctx.font='16px sans-serif';ctx.fillText('💩',b.x-8,b.y+5);
+      const paintDung=ink=>{ink.save();ink.translate(0,-12);ink.fillStyle='#713f12';ink.beginPath();ink.arc(b.x,b.y,10,0,Math.PI*2);ink.fill();ink.font='16px sans-serif';ink.fillText('💩',b.x-8,b.y+5);ink.restore();};
+      if(global.ArenaDepth?.air)global.ArenaDepth.air(ink,b,0,paintDung,10);else paintDung(ink);
     }else if(['homing','pierce','boomerang'].includes(b.kind)){
       // Silhouettes follow velocity: guided dart, piercing spear, returning arc.
+      const paintShot=ink=>{
       const face=Math.atan2(b.vy||0,b.vx||1);
-      ctx.save();ctx.translate(b.x,b.y);ctx.rotate(face);
-      ctx.globalAlpha=.3;ctx.lineWidth=3.5;ctx.lineCap='round';
-      ctx.beginPath();ctx.moveTo(-25,0);ctx.lineTo(-6,0);ctx.stroke();
-      ctx.globalAlpha=1;ctx.strokeStyle='#29364b';ctx.lineWidth=2;
-      ctx.fillStyle=b.kind==='homing'?'#50a3bc':b.kind==='pierce'?'#aa7484':'#7a83c1';
-      ctx.beginPath();
+      ink.save();ink.translate(b.x,b.y-12);ink.rotate(face);
+      ink.globalAlpha=.3;ink.lineWidth=3.5;ink.lineCap='round';
+      ink.beginPath();ink.moveTo(-25,0);ink.lineTo(-6,0);ink.stroke();
+      ink.globalAlpha=1;ink.strokeStyle='#29364b';ink.lineWidth=2;
+      ink.fillStyle=b.kind==='homing'?'#50a3bc':b.kind==='pierce'?'#aa7484':'#7a83c1';
+      ink.beginPath();
       if(b.kind==='homing'){
-        ctx.moveTo(12,0);ctx.lineTo(-4,-7);ctx.lineTo(-1,0);ctx.lineTo(-4,7);
+        ink.moveTo(12,0);ink.lineTo(-4,-7);ink.lineTo(-1,0);ink.lineTo(-4,7);
       }else if(b.kind==='pierce'){
-        ctx.moveTo(19,0);ctx.lineTo(-5,-4);ctx.lineTo(-13,0);ctx.lineTo(-5,4);
+        ink.moveTo(19,0);ink.lineTo(-5,-4);ink.lineTo(-13,0);ink.lineTo(-5,4);
       }else{
-        ctx.moveTo(9,-11);ctx.lineTo(-11,-11);ctx.lineTo(-2,-3);
-        ctx.lineTo(-2,3);ctx.lineTo(-11,11);ctx.lineTo(9,11);
-        ctx.lineTo(2,3);ctx.lineTo(2,-3);
+        ink.moveTo(9,-11);ink.lineTo(-11,-11);ink.lineTo(-2,-3);
+        ink.lineTo(-2,3);ink.lineTo(-11,11);ink.lineTo(9,11);
+        ink.lineTo(2,3);ink.lineTo(2,-3);
       }
-      ctx.closePath();ctx.fill();ctx.stroke();
-      ctx.restore();
+      ink.closePath();ink.fill();ink.stroke();
+      ink.restore();};
+      if(global.ArenaDepth?.air)global.ArenaDepth.air(ink,b,0,paintShot,10);else paintShot(ink);
     }else if(b.kind==='blackhole'){
       const t=b.age*.065,r=b.a.radius;
-      ctx.strokeStyle='#615693';ctx.lineWidth=2;
+      ink.strokeStyle='#615693';ink.lineWidth=2;
       for(let i=0;i<3;i++){
-        ctx.beginPath();
+        ink.beginPath();
         for(let k=0;k<=20;k++){
           const a=t+i*Math.PI*2/3+k*.18,d=r*(.9-k/26);
           const x=b.x+Math.cos(a)*d,y=b.y+Math.sin(a)*d;
-          if(k===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);
+          if(k===0)ink.moveTo(x,y);else ink.lineTo(x,y);
         }
-        ctx.stroke();
+        ink.stroke();
       }
-      ctx.fillStyle='#302f54';ctx.beginPath();ctx.arc(b.x,b.y,13,0,Math.PI*2);ctx.fill();
+      ink.fillStyle='#302f54';ink.beginPath();ink.arc(b.x,b.y,13,0,Math.PI*2);ink.fill();
     }else if(b.kind==='lifebloom'){
       const r=b.a.radius,t=b.age*.03;
-      ctx.strokeStyle='#238063';ctx.lineWidth=2;
-      ctx.beginPath();ctx.arc(b.x,b.y,r,0,Math.PI*2);ctx.stroke();
+      ink.strokeStyle='#238063';ink.lineWidth=2;
+      ink.beginPath();ink.arc(b.x,b.y,r,0,Math.PI*2);ink.stroke();
       for(let i=0;i<6;i++){
         const a=i*Math.PI/3+t;
-        ctx.beginPath();ctx.ellipse(b.x+Math.cos(a)*12,b.y+Math.sin(a)*12,6,12,a,0,Math.PI*2);
-        ctx.stroke();
+        ink.beginPath();ink.ellipse(b.x+Math.cos(a)*12,b.y+Math.sin(a)*12,6,12,a,0,Math.PI*2);
+        ink.stroke();
       }
-      ctx.fillStyle='#30956e';ctx.beginPath();ctx.arc(b.x,b.y,6,0,Math.PI*2);ctx.fill();
+      ink.fillStyle='#30956e';ink.beginPath();ink.arc(b.x,b.y,6,0,Math.PI*2);ink.fill();
     }else if(b.kind==='mine'){
-      ctx.strokeStyle='#9a603e';ctx.setLineDash([5,5]);
+      ink.strokeStyle='#9a603e';ink.setLineDash([5,5]);
       // Danger ring is the actual proximity trigger and blast radius.
-      ctx.beginPath();ctx.arc(b.x,b.y,b.a.radius,0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);
-      ctx.fillStyle='#9a603e';ctx.beginPath();ctx.arc(b.x,b.y,10,0,Math.PI*2);ctx.fill();
-      ctx.strokeStyle='#fff';ctx.beginPath();ctx.moveTo(b.x-4,b.y);ctx.lineTo(b.x+4,b.y);ctx.stroke();
+      ink.beginPath();ink.arc(b.x,b.y,b.a.radius,0,Math.PI*2);ink.stroke();ink.setLineDash([]);
+      ink.fillStyle='#9a603e';ink.beginPath();ink.arc(b.x,b.y,10,0,Math.PI*2);ink.fill();
+      ink.strokeStyle='#fff';ink.beginPath();ink.moveTo(b.x-4,b.y);ink.lineTo(b.x+4,b.y);ink.stroke();
     }else if(area){
       // Meteor's entire damage region must be shown during its warning.
       const r=b.a.radius;
-      ctx.beginPath();ctx.arc(b.x,b.y,r,0,Math.PI*2);ctx.stroke();
+      ink.beginPath();ink.arc(b.x,b.y,r,0,Math.PI*2);ink.stroke();
 
     }else{
-      ctx.beginPath();ctx.arc(b.x,b.y,7,0,Math.PI*2);ctx.fill();ctx.stroke();
+      ink.beginPath();ink.arc(b.x,b.y,7,0,Math.PI*2);ink.fill();ink.stroke();
     }
-    ctx.restore();
+    ink.restore();
   }
-  if(p.forgePhase){ctx.setLineDash([5,4]);ctx.beginPath();ctx.ellipse(p.x,p.y+8,p.radius+6,12,0,0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);}
+  if(p.forgePhase){ink.setLineDash([5,4]);ink.beginPath();ink.ellipse(p.x,p.y+8,p.radius+6,12,0,0,Math.PI*2);ink.stroke();ink.setLineDash([]);}
 
-  ctx.font='11px sans-serif';ctx.textAlign='center';
+  ink.font='11px sans-serif';ink.textAlign='center';
   const names=Object.keys(p.forgeEffects||{}).map(k=>STATUSES[k]||TYPES[k]).filter(Boolean);
-  if(names.length)ctx.fillText(names.slice(0,3).join(' · '),p.x,p.y+p.radius+16);
-  ctx.restore();
+  if(names.length)ink.fillText(names.slice(0,3).join(' · '),p.x,p.y+p.radius+16);
+  ink.restore();
 }
 global.ForgeExpansion={revive,active,TYPES,STATUSES,DESCRIPTIONS,STATUS_HELP,applyStatus,damageScale,legacy,heal,tick,movement,blocked,execute,update,draw};
 })(window);

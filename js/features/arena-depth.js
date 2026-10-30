@@ -31,6 +31,37 @@ function elevatedPoint(p,z,canvas){
  const at=screenPoint(p.x,p.y,canvas);
  return {x:at.x,y:at.y-(Number(z)||0)*spriteScale(p,canvas)};
 }
+// Frame-local air painters share the fighter depth order. No simulation data
+// is written: callers retain ground coordinates and supply visual altitude.
+let airFrame=null;
+function beginAir(canvas){airFrame={canvas,items:[]};}
+function air(ctx,p,z,paint,radius=0){
+ if(!airFrame){paint(ctx);return;}
+ const point={x:p.x,y:p.y},height=Number(z)||0;
+ if(radius>0){
+  ctx.save();ctx.globalAlpha=.18;ctx.fillStyle='#142638';
+  ctx.beginPath();ctx.ellipse(point.x,point.y, radius*(1+Math.max(0,height)*.003),
+    radius*.48,0,0,Math.PI*2);ctx.fill();ctx.restore();
+ }
+ const frame=airFrame;
+ frame.items.push({depth:point.y-height*.28,paint(target){
+  const at=elevatedPoint(point,height,frame.canvas),s=spriteScale(point,frame.canvas);
+  target.save();target.translate(at.x,at.y);target.scale(s,s);
+  target.translate(-point.x,-point.y+height);
+  try{paint(target);}finally{target.restore();}
+ }});
+}
+function finishAir(){const items=airFrame?.items||[];airFrame=null;return items;}
+
+function floatingBall(ctx,p,color,radius=p.radius||7,z=Number(p.z)||12){
+ const paint=c=>{
+  c.save();const y=p.y-z;
+  const light=c.createRadialGradient(p.x-radius*.3,y-radius*.35,0,p.x,y,radius);
+  light.addColorStop(0,'#fff');light.addColorStop(.35,color);light.addColorStop(1,'#26364b');
+  c.fillStyle=light;c.beginPath();c.arc(p.x,y,radius,0,Math.PI*2);c.fill();c.restore();
+ };
+ air(ctx,p,z,paint,radius);
+}
 function applyView(ctx,canvas){
  // The whole canvas must NOT be crushed along y. Each ground row instead
  // receives its own x-width and screen y through projectWorld().
@@ -198,8 +229,12 @@ function shadow(ctx,p,z){
 }
 function underlay(ctx,p,r){
  if(!ctx||!p||p.hp<=0)return;
- ctx.save();ctx.beginPath();ctx.arc(0,4.4,r,0,Math.PI*2);
- ctx.fillStyle='rgba(12,24,36,.57)';ctx.fill();
+ ctx.save();
+ const side=ctx.createLinearGradient(0,-r*.2,0,r*1.05);
+ side.addColorStop(0,p.themeColor||p.borderColor||'#546777');
+ side.addColorStop(1,'#14202d');
+ ctx.beginPath();ctx.ellipse(0,r*.19,r,r*.84,0,0,Math.PI*2);
+ ctx.fillStyle=side;ctx.fill();
  ctx.strokeStyle='rgba(244,250,255,.30)';ctx.lineWidth=1.3;
  ctx.beginPath();ctx.arc(0,0,r+1,-2.65,-.48);ctx.stroke();
  ctx.restore();
@@ -207,13 +242,16 @@ function underlay(ctx,p,r){
 function lightSurface(ctx,r){
  // Semi-transparent directional relief works for both photos and builtins.
  ctx.save();
- const shade=ctx.createLinearGradient(-r,-r,r*.58,r);
- shade.addColorStop(0,'rgba(255,255,255,.23)');
- shade.addColorStop(.43,'rgba(255,255,255,.025)');
- shade.addColorStop(1,'rgba(14,25,37,.20)');
+ const shade=ctx.createRadialGradient(-r*.34,-r*.42,r*.06,0,0,r*1.12);
+ shade.addColorStop(0,'rgba(255,255,255,.65)');
+ shade.addColorStop(.38,'rgba(255,255,255,.12)');
+ shade.addColorStop(.72,'rgba(14,25,37,.12)');
+ shade.addColorStop(1,'rgba(8,17,29,.64)');
  ctx.fillStyle=shade;ctx.fillRect(-r,-r,r*2,r*2);
+ ctx.beginPath();ctx.ellipse(-r*.28,-r*.48,r*.24,r*.105,-.35,0,Math.PI*2);
+ ctx.fillStyle='rgba(255,255,255,.55)';ctx.fill();
  ctx.restore();
 }
 global.ArenaDepth=Object.freeze({VIEW_Y,screenPoint,elevatedPoint,applyView,spriteScale,
-  layer,projectWorld,paintBackdrop,paintFloor,shadow,underlay,lightSurface});
+  beginAir,air,finishAir,floatingBall,layer,projectWorld,paintBackdrop,paintFloor,shadow,underlay,lightSurface});
 })(typeof window!=='undefined'?window:globalThis);

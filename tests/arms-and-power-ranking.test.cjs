@@ -14,32 +14,32 @@ function visuals(){
   return {world,fx:world.SkillVisuals,calls,ctx};
 }
 const fighter=()=>({x:100,y:100,radius:28,hp:250,forge:{effectColor:'#aabbdd'},borderColor:'#0088dd'});
-test('fist arm rests between attacks and disappears after 180 simulated frames (3s)',()=>{
+test('stone rim rests between attacks and disappears after 180 simulated frames (3s)',()=>{
   const {fx,calls,ctx}=visuals(),a=fighter(),b={x:140,y:100};
   assert.equal(fx.ARM_IDLE_FRAMES,180);
   fx.contact(a,b);
   fx.drawAction(ctx,a,0);
-  assert.ok(calls.some(v=>v[0]==='quadraticCurveTo'),'arm should be visible when used');
+  assert.ok(calls.some(v=>v[0]==='arc'),'rim response should be visible when used');
   for(let i=0;i<179;i++)fx.tick();
   calls.length=0;fx.drawAction(ctx,a,0);
-  assert.ok(calls.some(v=>v[0]==='quadraticCurveTo'),'resting arm is still visible before 3s');
+  assert.ok(calls.some(v=>v[0]==='arc'),'resting rim response is still visible before 3s');
   fx.tick();calls.length=0;fx.drawAction(ctx,a,0);
-  assert.ok(!calls.some(v=>v[0]==='quadraticCurveTo'),'idle arm hides after 3s');
+  assert.ok(!calls.some(v=>v[0]==='arc'),'idle rim response hides after 3s');
 });
-test('each new real arm action resets three-second idle timer',()=>{
+test('each new real rim response action resets three-second idle timer',()=>{
   const {fx,ctx,calls}=visuals(),p=fighter();
   fx.cast(p,{type:'shot',radius:90},{x:150,y:100});
   for(let i=0;i<170;i++)fx.tick();
   fx.cast(p,{type:'uppercut',radius:60},{x:150,y:100});
   for(let i=0;i<90;i++)fx.tick();
   calls.length=0;fx.drawAction(ctx,p);
-  assert.ok(calls.some(c=>c[0]==='quadraticCurveTo'),'new action keeps arm visible');
+  assert.ok(calls.some(c=>c[0]==='arc'),'new action keeps rim response visible');
   for(let i=0;i<90;i++)fx.tick();
   calls.length=0;fx.drawAction(ctx,p);
-  assert.ok(!calls.some(c=>c[0]==='quadraticCurveTo'),'arm expires relative to latest use');
+  assert.ok(!calls.some(c=>c[0]==='arc'),'rim response expires relative to latest use');
   fx.cast(p,{type:'uppercut'},{x:150,y:100});fx.clear();
   calls.length=0;fx.drawAction(ctx,p);
-  assert.equal(calls.filter(c=>c[0]==='quadraticCurveTo').length,0,'round reset clears arm state');
+  assert.equal(calls.filter(c=>c[0]==='arc').length,0,'round reset clears rim response state');
 });
 function rankWorld(){
   const world={window:null,console,Math,SkillForge:{

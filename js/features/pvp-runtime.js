@@ -16,7 +16,7 @@ function captureFx(effect,owner){
     id:++fxSequence,owner:src,follow:!!effect.source,
     type:effect.type,kind:effect.kind,x:effect.x,y:effect.y,
     angle:effect.angle,radius:effect.radius,color:effect.color,
-    life:effect.life,scale:effect.scale
+    life:effect.life,scale:effect.scale,z:effect.z||0
   });
   fxWake?.();
 }
@@ -59,11 +59,15 @@ updateCharacter=function(p){
 const baseDraw=drawCharacter;
 drawCharacter=p=>{
   if(p.forge){
-    if(global.ArenaDepth?.layer?.(canvas,'world'))global.ForgeExpansion?.draw(p);
-    else SkillForge.drawFighter(p);
+    if(!global.ArenaDepth?.layer?.(canvas,'world'))SkillForge.drawFighter(p);
   }
   baseDraw(p);
 };
+// Both peers use core/render's ground pass and depth-sorted air queue.
+global.ArenaFXLayer={draw(painter){
+ SkillVisuals.draw(painter);
+ global.ArenaTelegraph?.draw?.(painter,players);
+}};
 // Cache the detailed Tower scene at its native canvas resolution.
 let stageCache=null,stageWidth=0,stageHeight=0;
 global.ArenaTower={paintBackground:(c,s)=>{
@@ -348,18 +352,6 @@ function paint(){
    p.y=Math.max(r,Math.min(canvas.height-r,p.y));
  });
  draw();
- // The guest has a separate instant FX pool. Project it using the same
- // depth mapping as the host world, not an obsolete flat affine scale.
- const painter=global.ArenaDepth?.layer?.(canvas,'instantfx');
- if(painter){
-   painter.ctx.clearRect(0,0,canvas.width,canvas.height);
-   SkillVisuals.draw(painter.ctx);
-   global.ArenaTelegraph?.draw?.(painter.ctx,players);
-   global.ArenaDepth?.projectWorld?.(ctx,painter.canvas,canvas);
- }else{
-   SkillVisuals.draw(ctx);
-   global.ArenaTelegraph?.draw?.(ctx,players);
- }
  // HP bars are screen-space UI, anchored to projected airborne fighter positions.
  players.forEach((p,i)=>{
    if(!p||p.hp<=0)return;

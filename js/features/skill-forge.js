@@ -507,7 +507,7 @@ function contact(p,e){
 function drawFighter(p,renderCtx){
   const ink=renderCtx||ctx;
   if(!p.forge||p.hp<=0)return;
-  if(!renderCtx)global.ForgeExpansion?.draw(p);
+
   const c=global.arenaEffectColor?.((p.forge.effectColor||p.forge.color))||(p.forge.effectColor||p.forge.color);ink.save();ink.globalCompositeOperation='source-over';
   ink.shadowColor=c;ink.shadowBlur=3;ink.fillStyle=c;ink.strokeStyle=c;
   p.forgeShots.forEach(b=>{
@@ -515,14 +515,10 @@ function drawFighter(p,renderCtx){
     const x=global.AdvancedCombat?.blend(b.prevX,b.x)??b.x;
     const groundY=global.AdvancedCombat?.blend(b.prevY,b.y)??b.y;
     const height=Math.max(0,Number(b.z)||0);
-    const y=groundY-height;
+    const y=groundY-height-12;
     ink.save();
-    if(height>9){
-      ink.globalAlpha=Math.max(.10,.25-height*.0006);
-      ink.fillStyle='rgba(21,29,41,.37)';
-      ink.beginPath();ink.ellipse(x+height*.055,groundY+3,9+height*.06,4+height*.025,0,0,Math.PI*2);ink.fill();
-      ink.fillStyle=c;
-    }
+    const paintShot=ink=>{
+    ink.save();ink.strokeStyle=c;
     ink.globalAlpha=.28;ink.lineWidth=b.a?.charged?8:4;ink.lineCap='round';
     ink.beginPath();ink.moveTo(x-b.vx*3,y-b.vy*3);ink.lineTo(x,y);ink.stroke();
     ink.globalAlpha=1;ink.translate(x,y);ink.rotate(heading);
@@ -544,9 +540,20 @@ function drawFighter(p,renderCtx){
     ink.strokeStyle='#fff';ink.lineWidth=1.4;ink.beginPath();
     ink.moveTo(-4,-2);ink.lineTo(8,0);ink.stroke();
     ink.restore();
+    };
+    if(global.ArenaDepth?.air)global.ArenaDepth.air(ink,{x,y:groundY},height+12,paintShot,9);
+    else paintShot(ink);
+    ink.restore();
   });
   p.forgeZones.forEach(z=>{ink.globalAlpha=z.type==='bolt'?.9:.65;ink.lineWidth=2;ink.setLineDash([6,5]);ink.beginPath();ink.arc(z.x,z.y,z.type==='bolt'?z.a.radius*.4:(z.r??z.a.radius),0,2*Math.PI);ink.stroke();ink.setLineDash([]);});
-  p.forgeOrbs.forEach(o=>{for(let i=0;i<o.a.count;i++){const t=o.phase+i*2*Math.PI/o.a.count,r=o.a.radius*.75;ink.globalAlpha=.9;ink.beginPath();ink.arc(p.x+Math.cos(t)*r,p.y+Math.sin(t)*r,8,0,2*Math.PI);ink.fill();}});
+  p.forgeOrbs.forEach(o=>{for(let i=0;i<o.a.count;i++){
+    const t=o.phase+i*2*Math.PI/o.a.count,r=o.a.radius*.75;
+    const at={x:p.x+Math.cos(t)*r,y:p.y+Math.sin(t)*r};
+    const z=(global.AdvancedCombat?.visibleHeight?.(p)||0)+12;
+    const paintOrb=ink=>{ink.save();ink.globalAlpha=.9;ink.fillStyle=c;
+      ink.beginPath();ink.arc(at.x,at.y-z,8,0,2*Math.PI);ink.fill();ink.restore();};
+    if(global.ArenaDepth?.air)global.ArenaDepth.air(ink,at,z,paintOrb,8);else paintOrb(ink);
+  }});
   ink.restore();
 }
 function register(value,{towerEnemy=false}={}){
@@ -790,8 +797,7 @@ function initialize(){
   const oldDraw=drawCharacter;
   drawCharacter=function(p){
     if(p.forge){
-      if(global.ArenaDepth?.layer?.(canvas,'world'))global.ForgeExpansion?.draw(p);
-      else drawFighter(p); // canvas-only fallback
+      if(!global.ArenaDepth?.layer?.(canvas,'world'))drawFighter(p); // canvas-only fallback
     }
     oldDraw(p);
   };

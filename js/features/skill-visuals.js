@@ -162,37 +162,11 @@ function contact(p,target){
 }
 function drawAction(c,p,z=0){
   const a=poses.get(p);if(!a||a.age>=ARM_IDLE_FRAMES||!p||p.hp<=0)return;
-  const fist=a.type==='punch'||a.type==='uppercut'||a.type==='aircombo';
-  const ranged=FAMILIES.projectile.has(a.type);
-  if(!fist&&!ranged)return;
-  const attacking=a.age<a.life,t=Math.min(1,a.age/a.life);
-  const extension=!attacking?0:a.type==='uppercut'?
-    clamp((t-.25)*5,0,1)*(1-clamp((t-.72)*4,0,1)):
-    clamp(t*7,0,1)*(1-clamp((t-.55)*3,0,1));
-  const radius=p.radius||28,arm=radius*(.35+1.25*extension);
-  // After the attack the arm rests at the side until 3 seconds of inactivity.
-  const theta=!attacking?Math.PI*.48:a.type==='uppercut'?a.angle-(Math.PI*.52)*extension:a.angle;
-  const cx=p.x,cy=p.y-z,ux=Math.cos(theta),uy=Math.sin(theta);
-  const shoulderX=cx+ux*radius*.42,shoulderY=cy+uy*radius*.42;
-  const handX=shoulderX+ux*arm,handY=shoulderY+uy*arm;
-  c.save();c.globalCompositeOperation='source-over';
-  if(!attacking&&a.age>ARM_IDLE_FRAMES-18)c.globalAlpha*=Math.max(0,(ARM_IDLE_FRAMES-a.age)/18);
-  c.lineCap='round';c.lineJoin='round';
-  c.strokeStyle='#202b34';c.lineWidth=Math.max(7,radius*.37);
-  c.beginPath();c.moveTo(shoulderX,shoulderY);
-  c.quadraticCurveTo(shoulderX+ux*arm*.5-uy*3,shoulderY+uy*arm*.5+ux*3,handX,handY);c.stroke();
-  c.strokeStyle=a.color;c.lineWidth=Math.max(4,radius*.25);c.stroke();
-  c.fillStyle='#f3e2c5';c.strokeStyle='#23313b';c.lineWidth=2.3;
-  c.beginPath();c.arc(handX,handY,Math.max(5,radius*.22),0,Math.PI*2);c.fill();c.stroke();
-  if(attacking&&fist&&extension>.35&&!low){
-    // The sweeping white arc follows the hand; it is not a hit indicator.
-    c.strokeStyle='rgba(245,177,85,.85)';c.lineWidth=2.3;
-    c.beginPath();c.arc(handX-ux*8,handY-uy*8,radius*.27,theta-1.2,theta+.45);c.stroke();
-  }
-  if(attacking&&ranged&&t<.34){
-    const flash=(1-t/.34)*10;
-    c.fillStyle='#fff9df';c.beginPath();c.arc(handX+ux*6,handY+uy*6,flash,0,Math.PI*2);c.fill();
-  }
+  const t=Math.min(1,a.age/a.life),pulse=a.age<a.life?Math.sin(t*Math.PI):0;
+  const radius=(p.radius||28)*(1.04+pulse*.45);
+  c.save();c.strokeStyle=a.color;c.lineWidth=2+pulse*3;
+  c.globalAlpha=(a.age<a.life?.85:.18)*Math.min(1,(ARM_IDLE_FRAMES-a.age)/18);
+  c.beginPath();c.arc(p.x,p.y-z,radius,a.angle-.52,a.angle+.52);c.stroke();
   c.restore();
 }
 function renderFamily(c,e){
@@ -301,7 +275,7 @@ function renderFamily(c,e){
 }
 function detonate(p,type,x,y,radius=90){
   if(!Number.isFinite(x)||!Number.isFinite(y))return false;
-  const success=add('impact',p,type,{radius},null,{x,y});
+  const success=add('impact',p,type,{radius},null,{x,y,z:0});
   if(success&&FAMILIES.explosion.has(type))global.BattleFX?.sound?.('blast',.62);
   else if(success&&FAMILIES.cosmos.has(type))global.BattleFX?.sound?.('cosmos',.36);
   return success;
@@ -317,7 +291,7 @@ function add(kind,p,type,action,target,location){
   const family=familyOf(type);
   const duration=kind==='impact'?(family==='explosion'?26:19):family==='time'?48:
     family==='cosmos'?50:kind==='cast'?27:30;
-  const entry={type,family,kind,x,y,angle,age:0,life:duration,radius:clamp(action?.radius||80,20,300),
+  const entry={type,family,kind,x,y,z:location?.z??(targeted?0:(global.AdvancedCombat?.height?.(p)||0)),angle,age:0,life:duration,radius:clamp(action?.radius||80,20,300),
     color:global.arenaEffectColor?.(p.forge?.effectColor||p.effectColor||catalog[type][1])||p.forge?.effectColor||p.effectColor||catalog[type][1],
     source:kind==='cast'&&!targeted&&!['wave','explosion'].includes(family)?p:null,
     scale:clamp((action?.radius||130)/130,.78,1.2),
@@ -347,7 +321,7 @@ function cast(p,action,target){
 function impact(p,e,action){
   if(!action?.type||!catalog[action.type]||!e)return false;
   const height=global.AdvancedCombat?.height?.(e)||0;
-  const success=add('impact',p,action.type,action,e,{x:e.x,y:e.y-height});
+  const success=add('impact',p,action.type,action,e,{x:e.x,y:e.y,z:height});
   const registration=global.ActionRegistry?.get(action.type);
   if(success&&registration&&!registration.legacy)global.BattleFX?.sound?.(registration.audio.impact,.42);
   return success;
@@ -390,7 +364,17 @@ function draw(ctx){
     // AoE attacks with fixed hit locations remain in world coordinates.
     const pos=e.source?(global.ArenaMotion?.position?.(e.source)||e.source):null;
     const x=pos?pos.x:e.x;
-    const y=pos?pos.y-(global.AdvancedCombat?.height?.(e.source)||0):e.y;
+    const groundY=pos?pos.y:e.y;
+    const z=pos?(global.AdvancedCombat?.visibleHeight?.(e.source)||0):(e.z||0);
+    const ground=e.kind==='cast'&&['wave','movement','explosion'].includes(e.family);
+    const lift=ground?0:z+(e.family==='explosion'?18:12);
+    const y=groundY-lift;
+    if(e.family==='explosion'&&e.kind==='impact'){
+      ctx.save();ctx.strokeStyle=e.color;ctx.globalAlpha=Math.max(0,1-e.age/e.life)*.42;
+      ctx.lineWidth=2;ctx.beginPath();ctx.arc(x,groundY,e.radius*(.15+.65*e.age/e.life),0,Math.PI*2);ctx.stroke();ctx.restore();
+    }
+    const paintEffect=ctx=>{
+    ctx.save();ctx.globalCompositeOperation='source-over';
     const t=e.age/e.life,fade=clamp(Math.min(1,t*7,(1-t)*4),0,1);
     ctx.save();ctx.translate(x,y);ctx.rotate(e.angle);
     ctx.globalAlpha=fade*(e.family==='wave'?.65:e.family==='explosion'?.9:.82);
@@ -408,7 +392,11 @@ function draw(ctx){
       ctx.globalAlpha*=.55;ctx.strokeStyle=e.color;ctx.lineWidth=2;
       drawMotif(ctx,e.type,e.age,e.life);ctx.restore();
     }
-    ctx.restore();
+    ctx.restore();ctx.restore();
+    };
+    if(!ground&&global.ArenaDepth?.air)
+      global.ArenaDepth.air(ctx,{x,y:groundY},lift,paintEffect,Math.min(30,e.radius*.25));
+    else paintEffect(ctx);
   }
   ctx.restore();
 }
@@ -436,6 +424,7 @@ function replay(event,fighters=[]){
   const safe={
     type:event.type,kind:event.kind,family:familyOf(event.type),
     x:finite(event.x,source?.x||0),y:finite(event.y,source?.y||0),
+    z:clamp(finite(event.z,0),-100,600),
     angle:finite(event.angle,0),radius:clamp(finite(event.radius,80),20,300),
     color:typeof event.color==='string'&&/^#[0-9a-f]{3,8}$/i.test(event.color)?
       event.color:catalog[event.type][1],

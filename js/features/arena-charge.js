@@ -46,6 +46,15 @@ function jitter(p){
  return {x:Math.sin(s.ticks*2.27)*(.65+progress*2.4),
    y:Math.cos(s.ticks*2.93)*(.65+progress*2.4)};
 }
+function drawGround(p,ctx){
+ const s=p?.forgeCharge;if(!s||p.hp<=0)return;
+ const v=g.ArenaMotion?.position?.(p)||p;
+ const progress=s.phase==='charging'?1-s.ticks/Math.max(1,s.total):1;
+ ctx.save();ctx.strokeStyle=p.forge?.effectColor||p.themeColor||'#8bc7ef';
+ ctx.globalAlpha=.3+progress*.35;ctx.lineWidth=2+progress*2;
+ ctx.beginPath();ctx.arc(v.x,v.y,(p.radius||28)+10+progress*13,0,Math.PI*2);ctx.stroke();
+ ctx.restore();
+}
 function draw(p,ctx){
  const s=p?.forgeCharge;
  if(!s||p.hp<=0||!ctx)return;
@@ -54,7 +63,7 @@ function draw(p,ctx){
    s.phase==='release'?24-s.flash:s.total+300-(s.expires||0);
  const progress=s.phase==='charging'?1-s.ticks/Math.max(1,s.total):1;
  const c=p.forge?.effectColor||p.themeColor||'#8bc7ef';
- const x=p.x,y=p.y-(g.AdvancedCombat?.height?.(p)||0);
+ const x=p.x,y=p.y-(g.AdvancedCombat?.visibleHeight?.(p)||0);
  ctx.save();ctx.strokeStyle=c;ctx.fillStyle=c;
  ctx.lineWidth=s.phase==='release'?4.5:1.8+progress*2;
  ctx.globalAlpha=s.phase==='release'?Math.max(.05,s.flash/24):.45+progress*.4;
@@ -76,7 +85,7 @@ function draw(p,ctx){
  }
  ctx.restore();
 }
-g.ArenaCharge=Object.freeze({start,tick,consume,jitter,draw,framesOf,power,force,ATTACK});
+g.ArenaCharge=Object.freeze({start,tick,consume,jitter,draw,drawGround,framesOf,power,force,ATTACK});
 g.ActionRegistry?.register({
  id:'charge',label:'차징 · 힘 모으기',category:'special',parameters:['duration'],
  executor:'custom',family:'cosmos',physics:'none',offense:false,

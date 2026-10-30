@@ -181,15 +181,14 @@ test('camera floor framing is lightweight and adapts to tower and default arena'
  assert.equal(calls.saves,calls.restores);
 });
 test('PvP instant effects and health bars use matching perspective projection',()=>{
- const rt=read('js/features/pvp-runtime.js');
- const start=rt.indexOf("draw();\n // The guest has a separate instant FX pool");
- const effects=rt.indexOf('SkillVisuals.draw(painter.ctx)',start);
- const project=rt.indexOf('projectWorld?.(ctx,painter.canvas,canvas)',effects);
- const hp=rt.indexOf('ArenaDepth?.elevatedPoint?.',project);
- assert.ok(start>0&&effects>start&&project>effects&&hp>project);
+ const rt=read('js/features/pvp-runtime.js').replace(/\r/g,'');
+ assert.match(rt,/ArenaFXLayer=\{draw\(painter\)/);
+ assert.match(rt,/SkillVisuals.draw\(painter\)/);
+ assert.ok(!rt.includes("layer?.(canvas,'instantfx')"),'remote FX share fighter occlusion and screen shake');
+ assert.match(rt,/ArenaDepth\?\.elevatedPoint\?\./);
  for(const html of [read('index.html'),read('pvp-runtime.html')])
-  assert.match(html,/arena-depth\.js\?v=persp1/);
- assert.match(read('index.html'),/pvp-original-engine\.js\?v=persp1/);
+  assert.match(html,/arena-depth\.js\?v=stone25d1/);
+ assert.match(read('index.html'),/pvp-original-engine\.js\?v=stone25d1/);
 });
 test('airborne figures project vertically without moving their physics footprint',()=>{
  const {w}=depthWorld(),arena={width:500,height:500};

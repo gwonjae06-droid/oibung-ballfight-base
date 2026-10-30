@@ -108,9 +108,10 @@ function add(kind,x,y,opt={}){
     follow:opt.follow||null,offsetZ:opt.offsetZ||0};
   effects.push(e);return e;
 }
-function mark(kind,x,y,r=65,col='#516170',life=22,angle=0){
-  return add(kind,x,y,{r,col,life,angle,
+function mark(kind,x,y,r=65,col='#516170',life=22,angle=0,z=0){
+  const effect=add(kind,x,y,{r,col,life,angle,
     stage:['burst','slash','cut','stab','cleave'].includes(kind)?'impact':'telegraph'});
+  effect.z=z;return effect;
 }
 function reset(){objects.length=0;projectiles.length=0;effects.length=0;alpha=1;}
 function pushObject(o){if(objects.length>=MAX_OBJECTS)objects.shift();objects.push(o);return o;}
@@ -425,7 +426,7 @@ function updateProjectiles(api){
         if(segmentDistance(b.prevX,b.prevY,b.x,b.y,e.x,e.y)>(e.radius||0)+6)continue;
         if(strike(shooter,e,b.a,api,0,.62)){
           mark('stab',e.x,e.y-groundHeight(e),Math.min(28,e.radius||25),color(p),15,
-            Math.atan2(b.ty-b.startY,b.tx-b.startX));
+            Math.atan2(b.ty-b.startY,b.tx-b.startX),groundHeight(e));
           collided=true;break;
         }
       }
@@ -454,7 +455,7 @@ function updateProjectiles(api){
         if(strike(p,e,b.a,api,0,.5)){
           b.life=0;
           mark('stab',e.x,e.y-groundHeight(e),Math.max(24,e.radius),color(p),15,
-            Math.atan2(b.ty-b.startY,b.tx-b.startX));
+            Math.atan2(b.ty-b.startY,b.tx-b.startX),groundHeight(e));
           break;
         }
       }
@@ -497,7 +498,7 @@ function stepObjects(api){
               e.invincible=Math.min(e.invincible||0,7);
             }
             launch(e,9);
-            mark('cleave',e.x,e.y-groundHeight(e),42,color(p),17,o.face);
+            mark('cleave',e.x,e.y-groundHeight(e),42,color(p),17,o.face,groundHeight(e));
             add('ring',e.x,e.y,{r:34,col:color(p),life:15,stage:'impact'});
           }
         }
@@ -565,10 +566,10 @@ function stepObjects(api){
             const hit=api.hit?.(anchor,e,o.a,.68,0);
             if(hit){
               const face=Math.atan2(e.y-o.y,e.x-o.x);
-              mark('slash',e.x,e.y-groundHeight(e),26,color(p),14,face);
+              mark('slash',e.x,e.y-groundHeight(e),26,color(p),14,face,groundHeight(e));
               o.vx-=Math.cos(face)*2.5;o.vy-=Math.sin(face)*2.5;
               mark('stab',e.x,e.y-groundHeight(e),Math.min(28,e.radius||25),
-                color(p),14,face);
+                color(p),14,face,groundHeight(e));
             }
           }
           o.next=o.age+(o.kind==='turret'?35:25);
@@ -606,7 +607,7 @@ function shape(ctx,e){
   ctx.save();
   if(e.follow){
     const pos=visual(e.follow);
-    ctx.translate(pos.x-e.x,pos.y-pos.z-e.y);
+    ctx.translate(pos.x-e.x,pos.y-(e.stage==='impact'?pos.z:0)-e.y);
   }
   ctx.lineCap='round';ctx.lineJoin='round';
   ctx.strokeStyle=col;ctx.lineWidth=active?Math.max(1.5,3.8*tOut):1.8;
@@ -731,6 +732,7 @@ function draw(ctx){
     const y=attacker?attacker.y-attacker.z:lerp(Number.isFinite(o.prevY)?o.prevY:o.y,o.y,alpha);
     const enter=o.kind==='melee'?1:easeOut(cap(age/14,0,1)),
       leave=cap(o.life/15,0,1);
+    const paintObject=ctx=>{
     ctx.save();ctx.translate(x,y);ctx.scale(Math.max(.08,enter),Math.max(.08,enter));
     ctx.globalAlpha=Math.min(1,leave);
     ctx.strokeStyle=col;ctx.fillStyle='rgba(63,74,88,.1)';
@@ -845,21 +847,21 @@ function draw(ctx){
       ctx.font='600 10px "Noto Sans KR",system-ui';ctx.textAlign='center';
       ctx.fillText(o.kind==='summon'?'추적수 · '+Math.ceil(o.life/60)+'s':Math.ceil(o.life/60)+'s',0,o.r+18);
     }
-    ctx.restore();
+    ctx.restore();};
+    if(o.kind!=='trap'&&global.ArenaDepth?.air){
+      const z=attacker?attacker.z:0;
+      global.ArenaDepth.air(ctx,{x,y:y+z},z,paintObject,o.r||18);
+    }else paintObject(ctx);
   }
   for(const b of projectiles){
     const p=ownerOf(b);if(!p)continue;
     const x=lerp(Number.isFinite(b.prevX)?b.prevX:b.x,b.x,alpha);
     const y=lerp(Number.isFinite(b.prevY)?b.prevY:b.y,b.y,alpha);
     const height=lerp(b.prevHeight||0,b.height||0,alpha);
-    const dy=y-height,col=color(p);
+    const dy=y-height-12,col=color(p);
     const direction=Math.atan2(b.ty-b.startY,b.tx-b.startX);
+    const paintProjectile=ctx=>{
     ctx.save();ctx.lineCap='round';ctx.lineJoin='round';
-    if(height>2){
-      // A cast shadow with the projectile's exact ground footprint.
-      ctx.fillStyle='rgba(33,40,47,.2)';ctx.beginPath();
-      ctx.ellipse(x,y,9+height*.075,4+height*.025,0,0,Math.PI*2);ctx.fill();
-    }
     if(b.trail?.length){
       const path=[{x,y:dy},...b.trail].slice(0,reduced?4:9);
       for(let i=1;i<path.length;i++){
@@ -913,8 +915,16 @@ function draw(ctx){
       ctx.font='600 10px "Noto Sans KR",system-ui';ctx.textAlign='center';
       ctx.fillText(label,x,dy-19);ctx.restore();
     }
+      };
+    if(global.ArenaDepth?.air)global.ArenaDepth.air(ctx,{x,y},height+12,paintProjectile,10);
+    else paintProjectile(ctx);
   }
-  for(const e of effects)shape(ctx,e);
+  for(const e of effects){
+    if(e.stage==='impact'&&global.ArenaDepth?.air){
+      const z=e.z||0;
+      global.ArenaDepth.air(ctx,{x:e.x,y:e.y+z},z,c=>shape(c,e),Math.min(24,e.r*.4));
+    }else shape(ctx,e);
+  }
   ctx.restore();
 }
 function activeLine(t){return Math.max(1,8*Math.sin(Math.PI*cap(t,0,1)));}

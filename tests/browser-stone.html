@@ -1,0 +1,22 @@
+<!doctype html><meta charset="utf-8"><title>Stone / 2.5D render QA</title>
+<style>body{background:#18232e;color:white;font:16px system-ui;margin:20px}iframe{border:0;width:600px;height:600px}button{padding:12px;margin:5px}#result{white-space:pre-wrap}</style>
+<h1>Stone / 2.5D render QA</h1><p>Original PvP engine · stationary visual fixture · no network required</p>
+<button id="scene">Charge, airborne shot, meteor, explosion</button><button id="run">Run original auto combat</button>
+<div id="result">Loading</div><iframe id="game" src="../pvp-runtime.html"></iframe>
+<script>
+const frame=document.getElementById('game');let room,w,live=false,last=0;
+const profile={name:'청옥',hp:500,speed:2,color:'#208e8b',skills:[{name:'연사',trigger:'auto',cooldown:.5,actions:[{type:'shot',damage:12,radius:160,speed:8,count:2}]},{name:'운석',trigger:'auto',cooldown:2,actions:[{type:'meteor',damage:22,radius:65,speed:7,count:1}]}]};
+function scene(){live=false;room=w.PvpRuntime.createRoom(profile,{...profile,name:'홍옥',color:'#cf3762'},'auto',1000,['auto','auto']);
+ const a=room.players[0],b=room.players[1];a.x=145;a.y=300;b.x=345;b.y=355;b.z=38;
+ w.ArenaCharge.start(a,{duration:1});a.forgeCharge.ticks=18;
+ a.forgeShots=[{x:250,y:290,z:65,prevX:250,prevY:290,vx:7,vy:0,a:{status:'fire'}}];
+ a.forgeExtras=[{kind:'meteor',x:340,y:180,age:17,flight:45,a:{radius:48}}];
+ w.SkillVisuals.detonate(a,'meteor',180,155,55);
+ w.SkillVisuals.exportEffects().at(-1).age=11;
+ w.PvpRuntime.paint();document.getElementById('result').textContent='PASS · shared engine painted stone, charge, airborne projectile, meteor and blast';}
+frame.onload=()=>{w=frame.contentWindow;scene();};
+document.getElementById('scene').onclick=scene;
+document.getElementById('run').onclick=()=>{room=w.PvpRuntime.createRoom(profile,{...profile,name:'홍옥',color:'#cf3762'},'auto',1000,['auto','auto']);live=true;last=0;requestAnimationFrame(step);};
+function step(t){if(!live)return;if(!last)last=t;w.PvpRuntime.step(room,1/60,1000+t);w.PvpRuntime.paint();document.getElementById('result').textContent='Auto combat · HP '+room.players.map(p=>Math.round(p.hp)).join(' / ');last=t;if(!room.ended)requestAnimationFrame(step);}
+window.addEventListener('error',e=>document.getElementById('result').textContent='FAIL '+e.message);
+</script>

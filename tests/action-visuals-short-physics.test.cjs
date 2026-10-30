@@ -22,9 +22,9 @@ function setup(){
     borderColor:'#87654b',forge:{effectColor:'#7c48bd'}});
   return {w,fx:w.SkillVisuals,imp:w.ImpactPhysics,ctx,calls,actor};
 }
-test('legacy 2D actor fallback is flat while player image, wardrobe and HiDPI remain untouched',()=>{
+test('stone actor keeps photo and custom color compatibility while player image, wardrobe and HiDPI remain untouched',()=>{
   const s=read('js/core/render.js');
-  assert.ok(s.includes('Original clean, flat 2D silhouette'));
+  assert.ok(s.includes('ctx.scale(1,.83)'));
   assert.ok(!s.includes('const surface=ctx.createRadialGradient'));
   assert.ok(s.includes('drawBorder?.(ctx,p,radius)'));
   assert.ok(s.includes('ctx.drawImage(img,-radius,-radius'));
@@ -100,8 +100,8 @@ test('fist pose follows the caster, and a successful legacy hit can animate a pu
   fx.contact(p,target);
   for(let i=0;i<7;i++)fx.tick();
   fx.drawAction(ctx,p);
-  assert.ok(calls.some(c=>c[0]==='quadraticCurveTo'),'arm must have actual articulated segment');
-  assert.ok(calls.some(c=>c[0]==='arc'),'drawn hand must be visible');
+  assert.ok(calls.some(c=>c[0]==='arc'),'stone emits a directional energy arc');
+  assert.ok(!calls.some(c=>c[0]==='quadraticCurveTo'),'no anatomical arm is rendered');
 });
 test('explosions run through three visual phases without three damage events',()=>{
   const {fx,ctx,actor,calls}=setup(),p=actor('a',150,150),e=actor('b',200,150);
