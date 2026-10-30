@@ -136,7 +136,8 @@ test('all ten floors disclose every actual skill trigger, cooldown, effects and 
 });
 test('Tower skill sheet uses expandable real-data cards rather than name badges',()=>{
   const src=read('js/features/tower-challenge.js'),css=read('css/tower-mine-ui.css');
-  assert.match(src,/for\(const ability of makeEnemy\(level\)\.skills\)/);
+  assert.match(src,/for\(const ability of \(realms&&f\.boss\?\[\]:makeEnemy\(level\)\.skills\)\)/);
+  assert.match(src,/패턴 전투 · 2페이즈/);
   assert.match(src,/doc\.createElement\('details'\)/);
   assert.match(src,/doc\.createElement\('summary'\)/);
   assert.match(src,/metadata\.textContent=info\.tags\.join/);

@@ -7,7 +7,7 @@ const ROUTES=['lobby','tower','pve','pvp','character','ranking','mine','stock'];
 const NAMES={lobby:'메인 로비',tower:'도전의 탑',pve:'PvE · 자유 대전',pvp:'온라인 PvP',character:'캐릭터 설계',
  ranking:'캐릭터 랭킹',mine:'광산',stock:'주식'};
 const ICONS={tower:'⚔',pve:'🎯',pvp:'⚡',character:'✦',ranking:'★',mine:'⛏',stock:'▥'};
-const DECKS={tower:'10층까지 순서대로 도전',pve:'자유롭게 캐릭터를 골라 AI 전투를 즐기세요',pvp:'온라인 1:1 랜덤 매칭',character:'설계 · 조합 · 시연 · 저장 — 나만의 전투 방식을 완성하세요',
+const DECKS={tower:'6개 테마 · 각 10층 · 고유 지형과 기연',pve:'자유롭게 캐릭터를 골라 AI 전투를 즐기세요',pvp:'온라인 1:1 랜덤 매칭',character:'설계 · 조합 · 시연 · 저장 — 나만의 전투 방식을 완성하세요',
  ranking:'공유 파이터 분석과 내 도전 기록',mine:'터치 채굴로 G를 모으고 가챠에서 꾸미기 수집',stock:'다섯 가상 종목의 흐름을 읽는 모의 투자'};
 function install(){
   const doc=global.document,main=doc?.getElementById('container');
@@ -42,7 +42,7 @@ function install(){
   hero.innerHTML='<div class="lobby-hero-main"><span class="eyebrow">OIBUNG ARENA / CHALLENGE</span>'
    +'<h2>내 파이터로<br><em>도전의 탑</em>을 정복하라!</h2>'
    +'<p>스킬을 직접 설계하고 전투를 거듭해 최고 층을 갱신하세요.</p>'
-   +'<div class="lobby-tower-stats"><span><b>10F</b><small>최종 목표</small></span><span><b>2</b><small>주요 보스</small></span><span><b>∞</b><small>재도전</small></span></div>'
+   +'<div class="lobby-tower-stats"><span><b>10F</b><small>최종 목표</small></span><span><b>12</b><small>특수 보스</small></span><span><b>6</b><small>테마 탑</small></span></div>'
    +'<button type="button" data-screen="tower" class="lobby-featured-button">도전의 탑 입장 <span aria-hidden="true">→</span></button></div>'
    +'<div class="lobby-hero-art" aria-hidden="true"><div class="lobby-hero-orbit"><div class="lobby-hero-ball">오</div></div><span>THE TOWER</span></div>';
   lobby.append(hero);

@@ -150,6 +150,10 @@ function updateCharacter(self) {
   if(self.playerNum===1&&globalThis.ArenaTower?.active&&
       globalThis.ArenaTower?.mode==='manual'&&
       globalThis.ArenaTowerControls?.update?.(self,getClosestAliveEnemy(self)))return;
+  if(globalThis.ArenaTower?.active&&self.towerPatternBoss){self.vx=0;self.vy=0;return;}
+  if(globalThis.ArenaTower?.active&&self.towerHero&&self.forge){
+    globalThis.SkillForge?.autoUpdate?.(self,getClosestAliveEnemy(self));return;
+  }
   const b=BEHAVIORS[self.id];
   if(b&&b.update){
     if(globalThis.ForgeExpansion&&!self.forge)globalThis.ForgeExpansion.legacy(self,()=>b.update(self,getClosestAliveEnemy(self)));
@@ -274,6 +278,7 @@ function update() {
       return true;
     }
   });
+  globalThis.ArenaTower?.tickEncounter?.();
   const alive=players.filter(p=>p.hp>0);
   for(let i=0;i<alive.length;i++)for(let j=i+1;j<alive.length;j++)handleCombat(alive[i],alive[j]);
   for(let i=shockwaves.length-1;i>=0;i--){const sw=shockwaves[i];sw.radius+=5.5;sw.alpha-=0.03;if(sw.alpha<=0||sw.radius>=sw.maxRadius)shockwaves.splice(i,1);}

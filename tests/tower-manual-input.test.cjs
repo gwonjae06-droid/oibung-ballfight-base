@@ -188,3 +188,22 @@ test('mobile layout pins two-thumb controls below expanded arena, and renderer s
   assert.match(effects,/ArenaTowerControls\?\.applyView\?\./);
   assert.match(renderer,/p\.manualTower&&p\.hp>0/);
 });
+
+test('dash uses physical Korean-IME keys, bounded speed, cooldown and paused guards',()=>{
+ const h=setup();keyboard(h,'ㅇ','keydown',{code:'KeyD'});
+ assert.equal(h.controller.dash(),true);assert.equal(h.fighter.vx,11);assert.equal(h.fighter.vy,0);
+ assert.equal(h.controller.dash(),false);assert.equal(h.controller.dashCooldown,180);
+ assert.equal(h.fighter.invincible,12);assert.ok(h.fighter.movementOnlyFrames>0);
+ h.w.isPlaying=false;h.controller.update(h.fighter,h.opponent);assert.equal(h.controller.dashCooldown,180);
+ assert.equal(h.controller.dash(),false);h.w.isPlaying=true;
+ for(let i=0;i<180;i++)h.controller.update(h.fighter,h.opponent);
+ assert.equal(h.controller.dashCooldown,0);
+ keyboard(h,' ','keydown',{code:'Space'});assert.equal(h.controller.dashCooldown,180);
+ h.controller.prepare(h.fighter);assert.equal(h.controller.dashCooldown,0);
+});
+test('touch dash can fire while another pointer holds the joystick, without synthetic duplicate',()=>{
+ const h=setup();h.el('tower-joystick').listeners.pointerdown({pointerId:8,clientX:15,clientY:50,preventDefault(){}});
+ h.el('tower-dash').listeners.pointerdown({pointerType:'touch',pointerId:9,preventDefault(){}});
+ assert.ok(h.fighter.vx<0);assert.equal(h.controller.input.pointer,8);
+ h.el('tower-dash').listeners.click();assert.equal(h.controller.dashCooldown,180);
+});

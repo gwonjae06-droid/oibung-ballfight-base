@@ -1,0 +1,55 @@
+/* Immutable content and run-local blessings. No storage or DOM dependencies. */
+(function(g){
+'use strict';
+const REALMS=[
+ {id:'time',name:'시간의 탑',icon:'◷',color:'#f5ce78',scene:8,subtitle:'멈춘 시계의 성채',terrain:'시간 균열',hint:'노란 원의 카운트다운이 끝나기 전에 이탈하세요. 균열 안에서는 스킬 충전이 절반 속도로 진행됩니다.',bosses:['분침의 감시자','영겁의 시계공'],pattern:'시계 바늘',blessing:'시간의 잔향'},
+ {id:'space',name:'우주의 탑',icon:'✧',color:'#c8aaff',scene:9,subtitle:'무중력의 별자리',terrain:'중력 우물',hint:'보라색 중력장이 켜지면 중심으로 끌립니다. 바깥으로 이동해 벗어나세요.',bosses:['궤도의 파수꾼','사건의 지평선'],pattern:'공전 고리',blessing:'별의 파편'},
+ {id:'fire',name:'화염의 탑',icon:'♨',color:'#ffad72',scene:4,subtitle:'흑요석 아래의 심장',terrain:'용암 분출',hint:'주황색 균열은 예고 후 분출합니다. 원 밖으로 이동하면 피해를 피합니다.',bosses:['잿불의 기사','불멸의 화산왕'],pattern:'용암 십자',blessing:'잿불 각인'},
+ {id:'storm',name:'폭풍의 탑',icon:'ϟ',color:'#8ce7f3',scene:3,subtitle:'구름 위 뇌명의 첨탑',terrain:'돌풍 통로',hint:'화살표 방향으로 돌풍이 밀어냅니다. 띠 밖으로 이동해 낙뢰를 피하세요.',bosses:['뇌운의 사냥꾼','천둥의 군주'],pattern:'번개 격자',blessing:'폭풍의 박동'},
+ {id:'ice',name:'빙결의 탑',icon:'❄',color:'#bcecff',scene:2,subtitle:'푸른 결정의 성소',terrain:'서리 결정',hint:'푸른 원이 켜지면 서리가 이동을 늦춥니다. 얼기 전에 안전한 바닥으로 이동하세요.',bosses:['서리의 수호자','백야의 여왕'],pattern:'서리 봉쇄',blessing:'빙정의 숨결'},
+ {id:'forest',name:'숲의 탑',icon:'♧',color:'#b5e992',scene:6,subtitle:'고대 뿌리의 미궁',terrain:'가시 덩굴',hint:'초록색 뿌리가 자라기 전에 이탈하세요. 가시 원에서는 피해와 약한 둔화가 적용됩니다.',bosses:['가시의 문지기','태고의 세계수'],pattern:'뿌리 포위',blessing:'세계수의 씨앗'}
+].map(x=>Object.freeze({...x,bosses:Object.freeze(x.bosses)}));
+const get=id=>REALMS.find(r=>r.id===id)||REALMS[0];
+function floor(base,id){
+ const r=get(id),f={...base};
+ f.name=f.boss?r.bosses[f.number===10?1:0]:r.subtitle+' · '+f.number+'층';
+ f.description=f.boss?r.pattern+' · HP 50% 이하 2페이즈':r.terrain+' · '+r.hint;
+ f.scene=r.id;f.realm=r.id;f.difficulty=f.boss?'특수 보스':'테마 도전';
+ // Normal floors stay approachable; boss strength comes from readable patterns.
+ f.hp=150+f.number*18+(f.boss?130:0);f.damage=12+f.number*2;f.speed=1.2+f.number*.12;
+ return f;
+}
+function choices(id,owned=[],random=Math.random){
+ const r=get(id),all=[
+  {id:'echo',name:r.blessing,description:'공격 스킬 위력 +18%. 이 도전에서만 적용.'},
+  {id:'haste',name:'찰나의 깨달음',description:'모든 스킬 쿨다운 15% 감소. 최대 2회 중첩.'},
+  {id:'reach',name:'펼쳐진 경계',description:'공격 스킬 범위 +15%. 최대 2회 중첩.'},
+  {id:'element',name:'속성 각성',description:({time:'공격에 빙결 둔화',space:'공격 범위 +25%',fire:'공격에 화상',storm:'투사체 속도 +35%',ice:'공격에 빙결 둔화',forest:'공격에 중독'})[r.id]+' 효과를 부여.'},
+  {id:'vital',name:'생명의 샘',description:'매 층 최대 체력 +20%. 최대 2회 중첩.'}
+ ].filter(x=>owned.filter(v=>v===x.id).length<(x.id==='element'?1:2));
+ for(let i=all.length-1;i>0;i--){const j=Math.floor(random()*(i+1));[all[i],all[j]]=[all[j],all[i]];}
+ return all.slice(0,3);
+}
+function apply(p,id,blessings){
+ // Forge instances can share their saved definition: detach before any edit.
+ if(p.forge)p.forge=JSON.parse(JSON.stringify(p.forge));
+ for(const b of blessings){
+  if(b==='vital'){p.maxHp=Math.round(p.maxHp*1.2);p.hp=p.maxHp;}
+  for(const s of p.forge?.skills||[]){
+   if(b==='haste')s.cooldown=Math.max(.35,s.cooldown*.85);
+   for(const a of s.actions||[]){
+    if(!(a.damage>0))continue;
+    if(b==='echo')a.damage=Math.round(a.damage*1.18);
+    if(b==='reach')a.radius=Math.min(200,(a.radius||60)*1.15);
+    if(b==='element'){
+     if(['time','ice'].includes(id))a.status='ice';
+     if(id==='fire')a.status='fire';if(id==='forest')a.status='poison';
+     if(id==='space')a.radius=Math.min(200,(a.radius||60)*1.25);
+     if(id==='storm')a.speed=Math.min(12,(a.speed||5)*1.35);
+    }
+   }
+  }
+ }
+}
+g.ArenaTowerRealms={REALMS:Object.freeze(REALMS),get,floor,choices,apply};
+})(globalThis);

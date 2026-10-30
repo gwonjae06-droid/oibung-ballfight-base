@@ -4,6 +4,9 @@
 (function(global){
 'use strict';
 const KEY='oibung-tower-v1',FINISH=10;
+let realmId='time';
+const realms=global.ArenaTowerRealms;
+const realm=()=>realms?.get(realmId);
 const FLOOR_RULES=[
   ['훈련의 문','기본 투사체를 사용하는 상대','shot'],
   ['파동 회랑','넓은 범위의 충격파','wave'],
@@ -89,7 +92,7 @@ const cap=(v,min,max)=>Math.max(min,Math.min(max,Number(v)||0));
 function floor(n){
   const number=Math.round(cap(n,1,FINISH));
   const [name,description,main]=FLOOR_RULES[number-1],boss=number%5===0;
-  return {number,name,description,main,boss,scene:THEMES[number-1],
+  const result={number,name,description,main,boss,scene:THEMES[number-1],
     skills:ABILITIES[number-1].map(([label,type])=>({label,type})),
     skillCount:ABILITIES[number-1].length,
     autoSkillCount:number>=5?(boss?4:3):ABILITIES[number-1].length,
@@ -98,6 +101,7 @@ function floor(n){
     speed:Math.min(4.7,1.25+number*.24),
     damage:Math.min(90,Math.round(18+number*3.8+(boss?12:0))),
     cooldown:Number(Math.max(.8,3.1-number*.21-(boss?.25:0)).toFixed(2))};
+  return realms?realms.floor(result,realmId):result;
 }
 function action(type,damage,extra={}){
   return {type,pattern:'direct',target:'nearest',damage,radius:112,count:1,
@@ -105,7 +109,14 @@ function action(type,damage,extra={}){
 }
 function makeEnemy(n){
   const f=floor(n);
-  const skills=ABILITIES[f.number-1].map(([name,type],i)=>{
+  const themedSkills=f.boss?[[realm()?.pattern||'방호','shield']]:[
+    [(realm()?.name||'탑')+' 탄환',({time:'shot',space:'homing',fire:'arcshot',storm:'bolt',ice:'pierce',forest:'dung'})[realmId]],
+    ['속성 방호','shield'],
+    ...(f.number>=3?[['전술 이동',realmId==='fire'||realmId==='forest'?'dash':'retreat']]:[]),
+    ...(f.number>=6?[['속성 궤도','orbit']]:[]),
+    ...(f.number>=8?[['고층 포격','arcshot']]:[])
+  ];
+  const skills=(realms?themedSkills:ABILITIES[f.number-1]).map(([name,type],i)=>{
     const isMovement=['dash','blink','retreat'].includes(type);
     const isSupport=['shield','fortify','haste','regen','rewind','timestop','timeburst'].includes(type);
     const attack=action(type,isMovement||isSupport?0:Math.round(f.damage*(i===0?1:.7)),{
@@ -113,14 +124,14 @@ function makeEnemy(n){
       speed:type==='dash'?8:5,
       duration:type==='dash'?0.5:type==='starfall'?2.5:1.7,
       count:type==='starfall'?5:type==='chain'?3:1,
-      status:(f.number===4&&['nova','zone','shot'].includes(type))?'fire':
+      status:realms?({fire:'fire',ice:'ice',forest:'poison'})[realmId]||'none':(f.number===4&&['nova','zone','shot'].includes(type))?'fire':
         f.number===6&&['zone','trap','drain','dung'].includes(type)?'poison':'none'
     });
     return {name,cooldown:Number((f.cooldown+i*.32+(isSupport?.55:0)).toFixed(2)),
       trigger:f.number>=5&&i>=f.autoSkillCount?(i%2?'lowhp':'damaged'):'auto',
       threshold:70,actions:[attack]};
   });
-  return {name:f.name,color:f.boss?'#7f5cce':'#b26b73',
+  return {name:f.name,color:realm()?.color||(f.boss?'#7f5cce':'#b26b73'),
     effectColor:f.boss?'#9457e2':'#d96c6e',
     hp:f.hp,speed:f.speed,skills};
 }
@@ -135,12 +146,13 @@ function key(def){
   const v=def?.forgeData?.artKey||def?.id||'';
   return String(v).replace(/[^a-z0-9_-]/ig,'').slice(0,60)||'unknown';
 }
+function recordKey(who){return realms?realmId+'_'+key(who):key(who);}
 function updateRecord(store,who,cleared,won=false){
-  const v=read(store),id=key(who),old=v.records[id]||{};
-  v.records[id]={name:String(who?.name||'파이터').slice(0,30),
+  const v=read(store),id=recordKey(who),old=v.records[id]||{};
+  v.records[id]={name:(realm()?realm().name+' · ':'')+String(who?.name||'파이터').slice(0,30),
     best:Math.max(cap(old.best,0,FINISH),cap(cleared,0,FINISH)),
-    attempts:Math.floor(cap(old.attempts,0,1000000))+(won?0:1),
-    victories:Math.floor(cap(old.victories,0,1000000))+(won?1:0)};
+    attempts:Math.floor(cap(old.attempts,0,1000000))+(realms?(!won||cleared===FINISH?1:0):(won?0:1)),
+    victories:Math.floor(cap(old.victories,0,1000000))+(won&&(!realms||cleared===FINISH)?1:0)};
   v.last={id,cleared:Math.floor(cap(cleared,0,FINISH)),at:Date.now()};
   try{store?.setItem(KEY,JSON.stringify(v));}catch(_){}
   return v.records[id];
@@ -184,9 +196,17 @@ function install(){
    +'</details>'
    +'<details class="tower-disclosure" id="tower-help-details">'
    +'<summary>조작 방법</summary>'
-   +'<div class="tower-disclosure-body">직접 조종: WASD/방향키로 이동 · Q/E/R/F로 스킬 사용 · 모바일에서는 터치 조작</div>'
+   +'<div class="tower-disclosure-body">직접 조종: WASD/방향키 이동 · Q/E/R/F 스킬 · Space/Shift 대시(3초 쿨다운, 0.2초 회피) · 모바일은 조이스틱과 대시 버튼. 기연은 이 도전에서만 적용되며, 포기하거나 종료하면 사라집니다.</div>'
    +'</details></div>';
   mount.append(panel);
+  let selector=null;
+  if(realms){
+    selector=doc.createElement('section');selector.className='tower-realm-selector';
+    selector.setAttribute('aria-label','도전할 탑 선택');
+    selector.innerHTML='<div class="tower-realm-heading"><span>SIX REALMS</span><h2>어느 탑에 도전할까요?</h2><p>각 10층 · 5/10층 특수 보스 · 도전 전용 기연</p></div><div class="tower-realm-grid">'+realms.REALMS.map(r=>'<button type="button" data-realm="'+r.id+'" class="tower-realm-card" style="--realm-color:'+r.color+'"><span class="tower-realm-icon" aria-hidden="true">'+r.icon+'</span><strong>'+r.name+'</strong><small>'+r.subtitle+'</small><span>'+r.terrain+'</span></button>').join('')+'</div><p id="tower-realm-hint"></p>';
+    mount.prepend(selector);
+    selector.addEventListener('click',e=>{const id=e.target.closest?.('[data-realm]')?.dataset.realm;if(id)selectRealm(id);});
+  }
   const el=id=>doc.getElementById(id),hero=el('tower-hero'),message=el('tower-feedback'),
     start=el('tower-start'),pause=el('tower-pause'),abandon=el('tower-abandon');
   // Between floors the new opponents are already built, but the game engine
@@ -200,13 +220,29 @@ function install(){
     +'<span class="tower-clear-eyebrow">FLOOR CLEARED</span>'
     +'<h3 id="tower-clear-title">층 클리어!</h3>'
     +'<p id="tower-clear-next">다음 층이 준비됐습니다.</p>'
+    +'<div id="tower-blessing-choices" class="tower-blessing-choices"></div>'
     +'<button id="tower-next-start" type="button">다음 층 시작</button></div>';
   doc.querySelector?.('#tower-arena-slot .canvas-wrapper')?.append(clearOverlay);
   const nextStart=el('tower-next-start');
   let active=false,stage='ready',level=1,cleared=0,selected=null,temporary=null,mode='auto';
+  let blessings=[],offers=[],encounter=null;
   const pool=()=>[...CHARACTER_DEFS,...CUSTOM_DEFS];
   function selectedDef(){return pool().find(d=>d.id===hero.value)||pool()[0]||null;}
-  function current(){return {active,stage,level,cleared,boss:floor(level).boss,selected:key(selected),mode};}
+  function current(){return {active,stage,level,cleared,boss:floor(level).boss,selected:key(selected),mode,realm:realmId,blessings:[...blessings],offers:offers.map(x=>({...x}))};}
+  function selectRealm(id){
+    if(active||!realms?.REALMS.some(r=>r.id===id))return false;
+    realmId=id;stage='ready';level=1;cleared=0;blessings=[];offers=[];encounter=null;
+    message.textContent='';show();return true;
+  }
+  function chooseBlessing(id){
+    if(stage!=='between'||!offers.some(x=>x.id===id))return false;
+    blessings.push(id);offers=[];
+    realms.apply(players[0],realmId,[id]);
+    show();return true;
+  }
+  el('tower-blessing-choices')?.addEventListener('click',e=>{
+    const id=e.target.closest?.('[data-blessing]')?.dataset.blessing;if(id)chooseBlessing(id);
+  });
   function setMode(next){
     if(active)return false; // Never change player/AI ownership mid-round.
     mode=next==='manual'?'manual':'auto';
@@ -230,21 +266,35 @@ function install(){
     // preparing, losing and free matches show the full Tower controls again.
     screen.dataset.manualFocus=String(active&&mode==='manual'&&stage==='fighting');
     screen.dataset.towerPhase=stage;
-    const f=floor(level),best=read(global.localStorage).records[key(selectedDef())]?.best||0;
+    if(selector){
+      selector.hidden=active;
+      for(const button of selector.querySelectorAll('[data-realm]'))button.setAttribute('aria-pressed',String(button.dataset.realm===realmId));
+      el('tower-realm-hint').textContent=realm().name+' · '+realm().hint;
+      screen.style.setProperty('--realm-color',realm().color);
+    }
+    const choiceHost=el('tower-blessing-choices');
+    if(choiceHost)choiceHost.innerHTML=offers.length?'<strong>기연을 만났습니다 · 하나를 선택하세요</strong>'+offers.map(o=>'<button type="button" data-blessing="'+o.id+'"><b>'+o.name+'</b><small>'+o.description+'</small></button>').join(''):'';
+    nextStart.disabled=offers.length>0;
+    const f=floor(level),best=read(global.localStorage).records[recordKey(selectedDef())]?.best||0;
     el('tower-floor').textContent=level+' / '+FINISH+'F';
-    el('tower-rule').textContent=f.difficulty+' · '+f.description;
+    el('tower-rule').textContent=(realm()?realm().name+' · ':'')+f.difficulty+' · '+f.description+(blessings.length?' · 기연 '+blessings.length+'개 적용':'');
     el('tower-enemy').textContent=(f.boss?'👑 ':'')+f.name;
-    el('tower-enemy-info').textContent='체력 '+f.hp+' · 공격 '+f.damage+' · 이동 '+f.speed.toFixed(1);
+    el('tower-enemy-info').textContent=realms&&f.boss?'체력 '+f.hp+' · 패턴 기본 피해 '+(20+level*2)+' · 고정형 보스':'체력 '+f.hp+' · 공격 '+f.damage+' · 이동 '+f.speed.toFixed(1);
     el('tower-best').textContent='최고 '+best+'F';
     el('tower-progress-label').textContent=cleared+' / '+FINISH+' 완료';
     screen.dataset.towerTheme=f.scene;
-    el('tower-scene-name').textContent=global.ArenaTowerScenes?.SCENES[level-1]?.name||f.name;
-    el('tower-skill-count').textContent=f.skillCount+'개 스킬';
+    el('tower-scene-name').textContent=realm()?.subtitle||global.ArenaTowerScenes?.SCENES[level-1]?.name||f.name;
+    el('tower-skill-count').textContent=realms&&f.boss?'패턴 전투 · 2페이즈':makeEnemy(level).skills.length+'개 스킬';
     const skillHost=el('tower-enemy-skills');
     skillHost.replaceChildren();
     // Use the same generated enemy profile that is registered for combat:
     // displayed cooldowns, triggers, damage and statuses are never invented.
-    for(const ability of makeEnemy(level).skills){
+    if(realms&&f.boss){
+      const info=doc.createElement('p');
+      info.textContent=realm().pattern+' · 점선 영역이 고정된 뒤 최소 1.3초 후 공격합니다. HP 50% 이하에서 공격 간격이 짧아지고, 10층에서는 추가 연속 패턴이 발동합니다. 보스층에는 일반 지형 공격이 없습니다.';
+      skillHost.append(info);
+    }
+    for(const ability of (realms&&f.boss?[]:makeEnemy(level).skills)){
       const info=skillDetail(ability);
       const card=doc.createElement('details');
       card.className='tower-enemy-skill';
@@ -302,15 +352,28 @@ function install(){
     return def;
   }
   function prepareFight(){
+    encounter=null;
     const enemy=buildEnemy();
     if(!selected||!pool().includes(selected))throw Error('출전 캐릭터를 다시 선택하세요.');
     if(!setMatchCount(2))throw Error('2인 대전 변경 실패');
     if(!reRollMatch([selected,enemy]))throw Error('대진 구성 실패');
+    if(realms){
+      global.SkillForge.enableManual(players[0]);
+      players[0].manualTower=mode==='manual';players[0].towerHero=true;
+      realms.apply(players[0],realmId,blessings);
+      players[1].towerPatternBoss=level%5===0;
+      encounter=global.ArenaEncounter?.create({realm:realmId,level,width:canvas.width,height:canvas.height,
+        hero:players[0],boss:players[1],damage(p,amount){
+          if(p.invincible>0)return false;
+          return global.SkillForge.hit(p===players[0]?players[1]:players[0],p,
+            {type:'wave',damage:amount,radius:0,knockback:0,status:'none',duration:0},1);
+        }});
+    }
     if(mode==='manual'){
       if(!global.ArenaTowerControls?.prepare?.(players[0]))
         throw Error('수동 조작 모듈을 불러오지 못했습니다. 새로고침 후 재시도하세요.');
     }
-    // New floor, fresh fighter: no between-floor reward or stat bonus.
+    // Fresh combatants; run-local blessings were applied above.
     // reRollMatch leaves isPlaying=false, roundStarted=false, isGameOver=false.
     const wager=el('wager-input');if(wager)wager.value='0';
   }
@@ -335,6 +398,7 @@ function install(){
   }
   function begin(){
     if(stage==='between'&&active){
+      if(offers.length)return false;
       if(isPlaying||isGameOver)return false;
       try{return startPrepared();}
       catch(e){
@@ -346,6 +410,7 @@ function install(){
     const who=selectedDef();
     if(!who){message.textContent='캐릭터가 없습니다. 캐릭터 설계에서 먼저 만들어 주세요.';return false;}
     if(roundStarted&&!isGameOver){message.textContent='진행 중인 자유 대전을 먼저 종료해 주세요.';return false;}
+    blessings=[];offers=[];encounter=null;
     message.textContent='';selected=who;active=true;stage='ready';level=1;cleared=0;
     try{startFight();return true;}
     catch(e){
@@ -375,6 +440,7 @@ function install(){
     try{
       prepareFight();
       stage='between';
+      if(realms&&[2,4,7].includes(cleared))offers=realms.choices(realmId,blessings);
       message.textContent='✓ '+cleared+'층 클리어! '+level+'층이 준비됐습니다. 시작 버튼을 눌러 진행하세요.';
       show();global.ArenaScreenRouter?.refresh?.();
       return true;
@@ -414,9 +480,11 @@ function install(){
   function paintBackground(ctx,canvas){
     if(!['fighting','between','lost','won'].includes(stage)||
        global.ArenaScreenRouter?.active!=='tower')return false;
-    return global.ArenaTowerScenes?.paint?.(ctx,canvas.width,canvas.height,level)||false;
+    return global.ArenaTowerScenes?.paint?.(ctx,canvas.width,canvas.height,realm()?.scene||level)||false;
   }
-  const api={floor,makeEnemy,read,updateRecord,records,begin,forfeit,paintBackground,
+  function tickEncounter(){if(active&&stage==='fighting')encounter?.step();}
+  function drawEncounter(ctx){if(active&&stage==='fighting')encounter?.draw(ctx,realm()?.color);}
+  const api={selectRealm,chooseBlessing,tickEncounter,drawEncounter,get encounter(){return encounter;},floor,makeEnemy,read,updateRecord,records,begin,forfeit,paintBackground,
     onBattleEnd,isTransientDef,pauseAway,refresh:show,setMode,get mode(){return mode;},get active(){return active;},
     get stage(){return stage;},get state(){return current();}};
   global.ArenaTower=api;return api;

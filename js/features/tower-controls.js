@@ -9,7 +9,7 @@ controls.id='tower-manual-controls';
 controls.className='tower-manual-controls';
 controls.hidden=true;
 controls.setAttribute('aria-label','도전의 탑 직접 조종');
-controls.innerHTML='<div class="tower-manual-head"><strong>직접 조종</strong><span>PC: WASD/방향키 이동 · Q/E/R/F 스킬</span></div>'
+controls.innerHTML='<div class="tower-manual-head"><strong>직접 조종</strong><span>PC: WASD/방향키 이동 · Q/E/R/F 스킬 · Space/Shift 대시</span></div>'
   +'<div class="tower-manual-layout">'
   +'<div class="tower-joystick-area"><div class="tower-joystick" id="tower-joystick" role="application" aria-label="모바일 방향 조이스틱">'
   +'<span class="tower-joystick-knob" id="tower-joystick-knob" aria-hidden="true"></span></div><small>이동</small></div>'
@@ -42,6 +42,24 @@ hudEl('tower-manual-leave')?.addEventListener('click',()=>{
   tower()?.forfeit?.();refresh();
 });
 const keys=new Set(),buttons=[],HOTKEYS=['Q','E','R','F'];
+const dashButton=doc.createElement('button');dashButton.type='button';dashButton.id='tower-dash';dashButton.className='tower-dash';
+dashButton.textContent='대시 · Space / Shift';controls.append(dashButton);
+let lastDashPointer=-Infinity,dashCooldown=0,dashFrames=0,dashX=0,dashY=1,lastX=0,lastY=1;
+dashButton.addEventListener('pointerdown',e=>{if(e.pointerType==='touch'||e.pointerType==='pen'){e.preventDefault?.();lastDashPointer=Date.now();dash();}});
+dashButton.addEventListener('click',()=>{if(Date.now()-lastDashPointer>650)dash();});
+function direction(){
+ const x=Number(keys.has('d')||keys.has('arrowright'))-Number(keys.has('a')||keys.has('arrowleft'))+touchX;
+ const y=Number(keys.has('s')||keys.has('arrowdown'))-Number(keys.has('w')||keys.has('arrowup'))+touchY;
+ const length=Math.hypot(x,y);return length>.1?{x:x/length,y:y/length}:null;
+}
+function dash(){
+ if(!running()||!owner||owner.hp<=0||dashCooldown>0||global.ForgeExpansion?.blocked(owner))return false;
+ const d=direction()||{x:lastX,y:lastY};dashX=d.x;dashY=d.y;
+ dashFrames=12;dashCooldown=180;owner.invincible=Math.max(owner.invincible||0,12);
+ owner.movementOnlyFrames=Math.max(owner.movementOnlyFrames||0,13);
+ owner.vx=dashX*11;owner.vy=dashY*11;
+ hint.textContent='회피 대시 · 3초 뒤 재사용';refresh();return true;
+}
 let owner=null,pointer=null,touchX=0,touchY=0,frame=0,stickRect=null;
 let cameraAt=0,viewZoom=null;
 let lastView=null,viewX=null,viewY=null,lastHp=null;
@@ -117,6 +135,9 @@ function refresh(){
   if(!p?.manualTower)return;
   const blocked=!!global.ForgeExpansion?.blocked(p);
   const live=running();
+  dashButton.disabled=!live||blocked||dashCooldown>0;
+  dashButton.textContent=dashCooldown>0?'대시 · '+(dashCooldown/60).toFixed(1)+'초':'대시 · Space / Shift';
+  dashButton.setAttribute('aria-label',dashButton.textContent);
   const enemy=typeof players!=='undefined'?players[1]:null;
   const stage=tower()?.state,level=stage?.level||1;
   hudEl('tower-manual-floor').textContent=level+' / 10F';
@@ -149,7 +170,7 @@ function refresh(){
   }
 }
 function prepare(p){
-  resetInput();owner=null;frame=0;viewX=null;viewY=null;viewZoom=null;cameraAt=0;lastView=null;lastHp=null;
+  resetInput();dashCooldown=0;dashFrames=0;lastX=0;lastY=1;owner=null;frame=0;viewX=null;viewY=null;viewZoom=null;cameraAt=0;lastView=null;lastHp=null;
   if(!global.SkillForge?.enableManual?.(p))return false;
   owner=p;return true;
 }
@@ -170,12 +191,15 @@ function cast(i){
 }
 function update(p,target){
   if(!running()||p!==owner||!p.manualTower)return false;
+  if(dashCooldown>0)dashCooldown--;
   const horizontal=Number(keys.has('d')||keys.has('arrowright'))-Number(keys.has('a')||keys.has('arrowleft'));
   const vertical=Number(keys.has('s')||keys.has('arrowdown'))-Number(keys.has('w')||keys.has('arrowup'));
   let dx=horizontal+touchX,dy=vertical+touchY;
   const length=Math.hypot(dx,dy);
   if(length>1){dx/=length;dy/=length;}
-  if((p.forgeDash||0)<=0){
+  if(length>.1){lastX=dx/Math.hypot(dx,dy);lastY=dy/Math.hypot(dx,dy);}
+  if(dashFrames>0){dashFrames--;p.vx=dashX*11;p.vy=dashY*11;}
+  else if((p.forgeDash||0)<=0){
     const speed=Math.min(5,Math.max(.6,Number(p.forge?.speed)||2.2))*(p.speedMultiplier||1);
     p.vx=dx*speed;p.vy=dy*speed;
   }
@@ -184,9 +208,11 @@ function update(p,target){
   return true;
 }
 function inputKey(e,pressed){
-  const key=String(e.key||'').toLowerCase();
+  const code=String(e.code||'');
+  const key=(/^Key[A-Z]$/.test(code)?code.slice(3):code.startsWith('Arrow')?code:String(e.key||'')).toLowerCase();
   if(!visible())return;
   if(e.ctrlKey||e.altKey||e.metaKey||e.target?.closest?.('input,textarea,select,[contenteditable="true"]'))return;
+  if(code==='Space'||code==='ShiftLeft'||code==='ShiftRight'||key===' '||key==='shift'){if(pressed&&!e.repeat)dash();e.preventDefault?.();return;}
   if(['w','a','s','d','arrowup','arrowdown','arrowleft','arrowright'].includes(key)){
     if(pressed)keys.add(key);else keys.delete(key);
     e.preventDefault?.();
@@ -220,7 +246,7 @@ function end(e){
 stick.addEventListener('pointerup',end);
 stick.addEventListener('pointercancel',end);
 stick.addEventListener('lostpointercapture',end);
-global.ArenaTowerControls={prepare,update,cast,refresh,resetInput,camera,applyView,
+global.ArenaTowerControls={prepare,update,cast,dash,get dashCooldown(){return dashCooldown;},refresh,resetInput,camera,applyView,
   get view(){return lastView;},get owner(){return owner;},
   get input(){return {touchX,touchY,keys:[...keys],pointer};}};
 refresh();

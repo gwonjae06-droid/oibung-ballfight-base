@@ -1,0 +1,63 @@
+<!doctype html><html lang="ko"><meta charset="utf-8"><title>Tower browser integration QA</title>
+<style>body{font:14px system-ui;background:#101724;color:#eee;margin:16px}button,select{padding:10px;margin:4px}iframe{width:100%;height:850px;border:1px solid #64748b}pre{white-space:pre-wrap}</style>
+<body><h1>탑 브라우저 통합 검사</h1><p>별도 테스트 페이지입니다. 아래 검사는 전투 결과를 강제로 만들어 60개 층의 연결·저장 격리를 검사합니다. 자연 플레이 난이도 검사를 대신하지 않습니다.</p>
+<button id="run">60층 통합 검사 실행</button><select id="realm"><option value="time">시간</option><option value="space">우주</option><option value="fire">화염</option><option value="storm">폭풍</option><option value="ice">빙결</option><option value="forest">숲</option></select>
+<button id="auto">자동전투 실전 진행 검사</button><button id="boss">10층 보스 미리보기</button><pre id="result" role="status">준비 중</pre><iframe id="game" src="../index.html" title="실제 게임"></iframe>
+<script>
+const frame=document.getElementById('game'),output=document.getElementById('result');
+let errors=[];frame.addEventListener('load',()=>{frame.contentWindow.addEventListener('error',e=>errors.push(e.message));output.textContent='준비 완료';});
+const assert=(v,m)=>{if(!v)throw Error(m);};
+function access(){
+ const w=frame.contentWindow;
+ w.document.getElementById('arena-welcome-confirm')?.click();
+ w.ArenaTower.forfeit();
+ w.ArenaScreenRouter.go('tower');
+ return w;
+}
+function clear(w){w.eval('players[1].hp=0;isPlaying=true;update();');}
+function choose(w){const o=w.ArenaTower.state.offers[0];if(o)assert(w.ArenaTower.chooseBlessing(o.id),'기연 선택');}
+document.getElementById('run').onclick=()=>{
+ try{
+  const w=access(),t=w.ArenaTower,original=w.eval('JSON.stringify([...CHARACTER_DEFS,...CUSTOM_DEFS].map(d=>({id:d.id,profile:d.forgeData})))');
+  const logs=[];
+  for(const r of w.ArenaTowerRealms.REALMS){
+   assert(t.selectRealm(r.id),'탑 선택');t.setMode('manual');assert(t.begin(),'도전 시작');
+   assert(w.ArenaTowerControls.dash(),'대시');assert(!w.ArenaTowerControls.dash(),'쿨다운 재사용 방지');
+   for(let n=1;n<=10;n++){
+    assert(t.state.level===n,'층 번호');assert(!!t.encounter,'전투 모듈');
+    w.eval('isPlaying=false');const before=t.encounter.tick;w.update();assert(t.encounter.tick===before,'정지 시 시간 고정');
+    w.eval('isPlaying=true');for(let i=0;i<105;i++)w.update();
+    if(n%5===0){assert(t.encounter.zones.length>0,'보스 예고');w.eval('players[1].hp=players[1].maxHp*.45');w.update();assert(t.encounter.phase===2,'2페이즈');}
+    w.draw();clear(w);
+    if(n<10){assert(t.stage==='between','층 사이 대기');choose(w);assert(t.begin(),'다음 층');}
+   }
+   assert(t.stage==='won','완주');assert(t.state.blessings.length===3,'기연 3회');
+   assert(original===w.eval('JSON.stringify([...CHARACTER_DEFS,...CUSTOM_DEFS].map(d=>({id:d.id,profile:d.forgeData})))'),'원본 캐릭터 보존');
+   logs.push(r.name+': 10층 / 대시 / 일시정지 / 기연 / 보스 2페이즈 / 원본 격리 PASS');
+  }
+  assert(errors.length===0,errors.join('\n'));output.textContent=logs.join('\n')+'\n60층 PASS · 브라우저 오류 0';
+ }catch(e){output.textContent='FAIL: '+e.stack;}
+};
+document.getElementById('auto').onclick=()=>{
+ try{const w=access(),t=w.ArenaTower;const logs=[];
+ for(const r of w.ArenaTowerRealms.REALMS){
+  t.selectRealm(r.id);t.setMode('auto');assert(t.begin(),'자동 시작');let frames=0;
+  while(t.active&&frames<72000){
+   if(t.stage==='between'){choose(w);assert(t.begin(),'자동 다음 층');}
+   w.update();frames++;
+  }
+  assert(!t.active,'1200초 안에 전투 종료 필요');
+  logs.push(r.name+': '+t.state.cleared+'층 / '+t.stage+' / '+(frames/60).toFixed(1)+'초');
+ }
+ output.textContent=logs.join('\n')+'\n자동전투 검사 완료 (승패/체력 조작 없음)';
+ }catch(e){output.textContent='FAIL: '+e.stack;}
+};
+document.getElementById('boss').onclick=()=>{
+ try{
+  const w=access(),t=w.ArenaTower;t.selectRealm(document.getElementById('realm').value);t.setMode('manual');assert(t.begin(),'시작');
+  for(let n=1;n<10;n++){clear(w);choose(w);assert(t.begin(),'다음 층');}
+  w.eval('players[0].hp=players[0].maxHp=9999');
+  output.textContent=t.floor(10).name+' 실제 패턴 실행 중';
+ }catch(e){output.textContent='FAIL: '+e.stack;}
+};
+</script></body></html>

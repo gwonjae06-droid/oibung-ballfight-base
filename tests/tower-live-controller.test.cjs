@@ -7,10 +7,10 @@ function conclude(x,winner){
   x.world.isGameOver=true;x.world.isPlaying=false;
   return x.tower.onBattleEnd(winner);
 }
-function harness(){
+function harness(themed=false){
   const nodes=new Map();
   class Element{
-    constructor(name='div'){this.tagName=name;this.listeners={};this.children=[];this.hidden=false;this.value='';this.dataset={};}
+    constructor(name='div'){this.tagName=name;this.listeners={};this.children=[];this.hidden=false;this.value='';this.dataset={};this.style={setProperty(){}};}
     set id(value){this._id=value;nodes.set(value,this);}
     get id(){return this._id;}
     set innerHTML(value){
@@ -19,6 +19,8 @@ function harness(){
     }
     get innerHTML(){return this._html||'';}
     append(...children){this.children.push(...children);}
+    prepend(...children){this.children.unshift(...children);}
+    querySelectorAll(){return [];}
     replaceChildren(...children){this.children=children;
       if(children[0]?.value)this.value=children[0].value;}
     addEventListener(name,callback){this.listeners[name]=callback;}
@@ -48,6 +50,7 @@ function harness(){
       world.CUSTOM_DEFS.push(def);world.BEHAVIORS[id]={update(){},onContact(){}};
       return id;
     }},
+    canvas:{width:500,height:500},
     seq:0,coins:1000,players:[],isPlaying:false,isGameOver:false,roundStarted:false,
     roundSettled:false,
     setMatchCount(n){world.matchCount=n;return true;},
@@ -72,6 +75,11 @@ function harness(){
     world.roundStarted=false;world.isGameOver=false;world.isPlaying=false;
     return true;
   };
+  if(themed){
+    for(const name of ['tower-realms','tower-encounters'])vm.runInContext(fs.readFileSync(path.join(__dirname,'../js/features/'+name+'.js'),'utf8'),world);
+    world.SkillForge.enableManual=p=>{p.forge||={skills:[{name:'공격',cooldown:2,actions:[{damage:20,radius:100}]}]};p.manualTower=true;return true;};
+    world.SkillForge.hit=(a,p,action)=>{p.hp-=action.damage;return true;};
+  }
   vm.runInContext(src,world,{filename:'tower-challenge.js'});
   const tower=world.ArenaTower,el=id=>nodes.get(id);
   return {world,tower,el,saved,canvasWrap};
@@ -272,4 +280,30 @@ test('manual focus hides optional Tower setup only in battle and restores betwee
   assert.equal(h.tower.setMode('auto'),true);
   assert.equal(h.tower.begin(),true);
   assert.equal(screen.dataset.manualFocus,'false','AI battles preserve the full old layout');
+});
+
+for(const realm of ['time','space','fire','storm','ice','forest'])test(realm+' ten-floor flow: encounter, blessings, isolation, records and cleanup',()=>{
+ const x=harness(true);assert.equal(x.tower.selectRealm(realm),true);assert.equal(x.tower.begin(),true);
+ for(let floor=1;floor<=10;floor++){
+   assert.equal(x.tower.state.level,floor);assert.ok(x.tower.encounter);
+   assert.equal(x.tower.encounter.isBoss,floor%5===0);
+   assert.equal(x.tower.selectRealm('ice'),false,'cannot change realm during a run');
+   conclude(x,x.world.players[0]);
+   if(floor<10){
+     if([2,4,7].includes(floor)){
+       assert.equal(x.tower.state.offers.length,3);assert.equal(x.tower.begin(),false);
+       const offer=x.tower.state.offers[0].id;
+       assert.equal(x.tower.chooseBlessing('invalid'),false);
+       assert.equal(x.tower.chooseBlessing(offer),true);
+       assert.equal(x.tower.chooseBlessing(offer),false,'cannot apply twice');
+     }
+     assert.equal(x.tower.begin(),true);
+   }
+ }
+ assert.equal(x.tower.stage,'won');assert.equal(x.tower.state.blessings.length,3);
+ assert.equal(x.world.CUSTOM_DEFS.length,0);assert.equal(Object.keys(x.world.BEHAVIORS).length,0);
+ assert.equal(x.world.coins,1000);assert.equal(x.tower.records()[0].best,10);
+ assert.equal(x.tower.selectRealm(realm==='ice'?'time':'ice'),true);
+ assert.equal(x.tower.begin(),true);assert.equal(x.tower.state.blessings.length,0);
+ assert.equal(x.world.players[0].maxHp,220);assert.equal(x.world.players[0].forge.skills[0].actions[0].damage,20);
 });

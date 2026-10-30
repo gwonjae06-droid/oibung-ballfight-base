@@ -1,0 +1,47 @@
+.tower-realm-selector { margin: 0 0 24px; color: #e9edf8; padding: clamp(16px,3vw,28px); background: #111828; border-radius: 20px; border: 1px solid #344159; }
+.tower-realm-selector[hidden] { display:none; }
+.tower-realm-heading span { font-size: 11px; letter-spacing: .22em; color: #b1bed4; }
+.tower-realm-heading h2 { font-size: clamp(22px,4vw,30px); margin: 8px 0; }
+.tower-realm-heading p,.tower-realm-selector>p { color:#bdc9dc; line-height:1.6; font-size:13px; }
+.tower-realm-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; margin:20px 0; }
+.tower-realm-card { display:flex; flex-direction:column; align-items:flex-start; gap:8px; min-width:0; padding:20px 16px; color:#eff4ff; background:radial-gradient(ellipse at 100% 0,color-mix(in srgb,var(--realm-color) 18%,transparent),transparent 75%),#192337; border:1px solid #3a4760; border-radius:14px; cursor:pointer; text-align:left; }
+.tower-realm-card:hover,.tower-realm-card[aria-pressed=true] { border-color:var(--realm-color); box-shadow:inset 0 0 0 1px var(--realm-color); }
+.tower-realm-card:focus-visible,.tower-dash:focus-visible { outline:3px solid #7fb8ff; outline-offset:3px; }
+.tower-realm-icon { font-size:36px; line-height:1.2; color:var(--realm-color); }
+.tower-realm-card strong { font-size:18px; }
+.tower-realm-card small { color:#b8c5db; font-size:12px; }
+.tower-realm-card>span:last-child { color:var(--realm-color); font-size:12px; margin-top:8px; }
+#screen-tower .tower-challenge { border-top:3px solid var(--realm-color,#f5ce78); }
+.tower-dash { min-height:48px; width:100%; margin-top:10px; touch-action:none; border:1px solid #386ca6; background:#203f64; color:#fff; border-radius:10px; font-weight:800; cursor:pointer; }
+.tower-dash:disabled { opacity:.6; cursor:default; }
+.tower-blessing-choices { display:grid; gap:8px; margin:12px 0; text-align:left; }
+.tower-blessing-choices:empty { display:none; }
+.tower-blessing-choices>strong { color:#f5ce78; font-size:14px; }
+.tower-blessing-choices button { display:grid; gap:5px; text-align:left; padding:12px; border-radius:10px; background:#233047; color:#fff; border:1px solid #647891; cursor:pointer; min-height:56px; }
+.tower-blessing-choices button:hover { border-color:#f5ce78; }
+.tower-blessing-choices small { font-size:12px; font-weight:400; line-height:1.4; color:#d2dded; }
+#tower-clear-overlay { overflow:auto; padding:12px; }
+#tower-clear-overlay .tower-clear-panel { max-height:100%; overflow:auto; }
+@media(max-width:600px) { .tower-realm-grid { grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; } .tower-realm-card { padding:14px 12px; } .tower-realm-card strong { font-size:16px; } }
+@media(max-width:360px) { .tower-realm-grid { grid-template-columns:1fr; } }
+@media(prefers-reduced-motion:reduce) { .tower-realm-card { transition:none; } }
+
+/* Reserve room for the extra dash row instead of covering the battlefield. */
+#screen-tower[data-manual-focus="true"] #tower-arena-slot .canvas-wrapper {
+  width:min(100%,740px,max(220px,calc(100svh - 300px)))!important;
+}
+@media(max-width:800px) {
+  #screen-tower[data-manual-focus="true"] .tower-joystick-area {display:grid;}
+  #screen-tower[data-manual-focus="true"] .tower-manual-abilities {grid-template-columns:repeat(2,minmax(0,1fr));}
+  #screen-tower[data-manual-focus="true"] .tower-manual-head span {display:none;}
+  #screen-tower[data-manual-focus="true"] #tower-arena-slot .canvas-wrapper {width:min(100%,max(180px,calc(100svh - 310px)))!important;}
+}
+@media(max-width:800px) and (pointer:coarse) {
+  #screen-tower[data-manual-focus="true"] #tower-arena-slot {padding-bottom:calc(210px + env(safe-area-inset-bottom,0px));}
+}
+#tower-arena-slot .tower-blessing-choices button {display:grid;background:#233047;color:#fff;border-color:#647891;}
+#tower-arena-slot .tower-blessing-choices button:hover {background:#334761;border-color:#f5ce78;}
+
+#screen-tower[data-manual-focus="true"] #tower-manual-hud {order:0;}
+#screen-tower[data-manual-focus="true"] #tower-arena-slot>.battle-screen {order:1;}
+#screen-tower[data-manual-focus="true"] #tower-manual-controls {order:2;}
