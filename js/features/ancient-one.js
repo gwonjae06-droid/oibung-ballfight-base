@@ -7,26 +7,26 @@ function create({width:w,height:h,hero,boss,damage}){
  let tick=0,turn=0,phase=1,upcoming=80,serial=0;
  const zones=[], clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
  const C=(x,y,r)=>({shape:'circle',x,y,r}),R=(x,y,inner,r)=>({shape:'ring',x,y,inner,r}),L=(x,y,a,w=45)=>({shape:'line',x,y,a,w,len:Math.hypot(w,h)*1.5});
- function add(s,label,delay=90,life=26,power=260){zones.push({...s,id:++serial,label,born:tick,fire:tick+delay,end:tick+delay+life,power,hit:false});}
+ function add(s,label,delay=90,life=26,power=200){zones.push({...s,id:++serial,label,born:tick,fire:tick+delay,end:tick+delay+life,power,hit:false});}
  function pattern(){
   const x=clamp(hero.x,35,w-35),y=clamp(hero.y,50,h-35),cx=w/2,cy=h/2,mode=turn++%names.length,fast=phase===3,d=fast?52:phase===2?72:100;
   switch(mode){
    case 0:add(C(x,y,74),names[mode],d,34);break;
    case 1:add(L(cx,cy,0,48),names[mode],d);add(L(cx,cy,Math.PI/2,48),'교차 압살',d+46);break;
    case 2:for(let i=0;i<4;i++)add(L(i%2?cx:i?cx:cx,cy,i%2?0:Math.PI/2,36),names[mode],d+i*40,20);break;
-   case 3:add(C(x,y,48),names[mode],d+45,32,420);add(R(cx,cy,115,173),'시선의 잔향',d+100);break;
+   case 3:add(C(x,y,48),names[mode],d+45,32,200);add(R(cx,cy,115,173),'시선의 잔향',d+100);break;
    case 4:add(R(cx,cy,75,145),names[mode],d);add(C(cx,cy,69),'중심 붕괴',d+53);break;
    case 5:add(L(cx,cy,Math.PI/4,52),names[mode],d);add(L(cx,cy,-Math.PI/4,52),'공간 반전',d+54);break;
    case 6:for(let i=0;i<3;i++)add(C(clamp(x+(i-1)*95,40,w-40),y,57),names[mode],d+i*45);break;
-   case 7:add(R(x,y,62,125),names[mode],d,40);add(C(x,y,55),'열린 심연',d+64,24,350);break;
+   case 7:add(R(x,y,62,125),names[mode],d,40);add(C(x,y,55),'열린 심연',d+64,24,200);break;
    case 8:add(C(w-x,h-y,70),names[mode],d);add(C(x,y,65),'역인과',d+60);break;
    case 9:for(let i=0;i<5;i++)add(C(clamp(x+Math.sin(i*2)*105,34,w-34),clamp(y+Math.cos(i*3)*90,45,h-34),43),names[mode],d+i*32);break;
    case 10:add(R(cx,cy,30,100),names[mode],d);add(R(cx,cy,115,210),'심장의 두 번째 박동',d+64);break;
-   case 11:add(L(cx,cy,Math.atan2(y-cy,x-cx),88),names[mode],d+95,60,650);break;
+   case 11:add(L(cx,cy,Math.atan2(y-cy,x-cx),88),names[mode],d+95,60,200);break;
    case 12:for(let i=0;i<4;i++)add(L(cx,cy,Math.PI*i/4,38),names[mode],d+i*43);break;
    case 13:add(L(x,cy,Math.PI/2,55),names[mode],d);add(L(cx,y,0,55),'절단선의 메아리',d+64);break;
-   case 14:add(R(cx,cy,68,220),names[mode],d,35,370);break;
-   case 15:add(C(x,y,65),names[mode],d+110,40,900);add(R(cx,cy,100,180),'심판의 여진',d+150,35,400);break;
+   case 14:add(R(cx,cy,68,220),names[mode],d,35,200);break;
+   case 15:add(C(x,y,65),names[mode],d+110,40,200);add(R(cx,cy,100,180),'심판의 여진',d+150,35,200);break;
   }
  }
  function step(){
@@ -58,7 +58,7 @@ function create({width:w,height:h,hero,boss,damage}){
    else{ctx.arc(0,0,z.r,0,Math.PI*2);if(z.shape==='ring')ctx.arc(0,0,z.inner,0,Math.PI*2,true);}
    ctx.fillStyle=live?'#f5386977':'#ab5aff28';ctx.strokeStyle=live?'#fff2db':'#ee93ff';ctx.lineWidth=live?4:2;ctx.setLineDash(live?[]:[7,6]);ctx.fill();ctx.stroke();ctx.restore();
    ctx.fillStyle='#fff';ctx.strokeStyle='#180d26';ctx.lineWidth=4;ctx.font='bold 12px sans-serif';ctx.textAlign='center';
-   const label=live?'즉사급 공격!':z.label+' '+(remain/60).toFixed(1)+'초';
+   const label=live?'강력한 공격 · 200 HP!':z.label+' '+(remain/60).toFixed(1)+'초';
    ctx.strokeText(label,clamp(z.x,84,w-84),clamp(z.y,25,h-20));ctx.fillText(label,clamp(z.x,84,w-84),clamp(z.y,25,h-20));
   }
   ctx.textAlign='center';ctx.font='bold 15px sans-serif';ctx.fillStyle='#ffe3ff';
