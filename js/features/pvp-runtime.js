@@ -210,6 +210,8 @@ function snapshot(room,full=true){
     submitted:b.plans.map(Boolean)}}:{}),
   players:players.map((p,i)=>({x:p.x,y:p.y,hp:p.hp,maxHp:p.maxHp,name:p.name,
    color:p.themeColor,mode:room.modes[i],
+   charge:p.forgeCharge?{phase:p.forgeCharge.phase,ticks:p.forgeCharge.ticks,total:p.forgeCharge.total,
+     expires:p.forgeCharge.expires,flash:p.forgeCharge.flash}:null,
    skills:p.forge?.skills.slice(0,4).map(s=>({name:s.name}))||[],
    cooldowns:p.forge?.skills.slice(0,4).map((s,j)=>
      Math.max(0,(SkillForge.cooldownFrames(p,s)-(p.forgeTicks[j]||0))/60))||[]}))};
@@ -271,6 +273,7 @@ function receive(s){
  }
  s.players.forEach((p,i)=>{
    players[i].hp=p.hp;players[i].maxHp=p.maxHp;
+   players[i].forgeCharge=p.charge||null;
  });
  isGameOver=!!s.finished;isPlaying=!isGameOver;
 }

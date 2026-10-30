@@ -225,7 +225,9 @@ function cast(p,s,target,index){
     const a=s.actions[step];
     const requested=Math.max(0,Math.round(a.delay*60));
     const lead=transitionLead[s.actions[Math.max(0,step-1)].type]||6;
-    start=step===0?requested:a.link==='with'?start:
+    start=step>0&&s.actions[step-1].type==='charge'?
+      Math.max(requested,start+(global.ArenaCharge?.framesOf?.(s.actions[step-1])||60)+2):
+      step===0?requested:a.link==='with'?start:
       a.link==='after'?Math.max(requested,start+Math.max(24,lead)):
       Math.max(requested,start+lead);
     p.forgeQueue.push({remaining:start,step,castId,skillIndex:index,
@@ -271,6 +273,7 @@ function tickQueue(p,target){
   }
 }
 function execute(p,a,target) {
+  a=global.ArenaCharge?.consume?.(p,a)||a;
   // Keep target-selector semantics consistent across all three engines.
   const selected=global.AbilityAtlas?.choose?.(p,enemies(p),a.target)||target;
   target=selected;
@@ -429,6 +432,7 @@ function manualCast(p,index,target){
 // Existing projectiles, summons, cooldown-independent sequences and zones
 // must advance even when the owner is stunned, frozen or silenced.
 function advanceWorld(p,target){
+  global.ArenaCharge?.tick?.(p);
   global.ForgeExpansion?.update(p,{hit,enemies});
   tickQueue(p,target);
   for(let i=p.forgeShots.length-1;i>=0;i--){
@@ -492,7 +496,7 @@ function drawFighter(p){
     const x=global.AdvancedCombat?.blend(b.prevX,b.x)??b.x;
     const y=global.AdvancedCombat?.blend(b.prevY,b.y)??b.y;
     ctx.save();
-    ctx.globalAlpha=.28;ctx.lineWidth=4;ctx.lineCap='round';
+    ctx.globalAlpha=.28;ctx.lineWidth=b.a?.charged?8:4;ctx.lineCap='round';
     ctx.beginPath();ctx.moveTo(x-b.vx*3,y-b.vy*3);ctx.lineTo(x,y);ctx.stroke();
     ctx.globalAlpha=1;ctx.translate(x,y);ctx.rotate(heading);
     ctx.strokeStyle='#253344';ctx.fillStyle=c;ctx.lineWidth=2;
