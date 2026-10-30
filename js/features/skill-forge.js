@@ -208,6 +208,7 @@ function hit(p,e,action,multiplier=1,attackZ) {
   global.ForgeExpansion?.applyStatus(p,e,action);
   if(action.knockback>0&&!global.ImpactPhysics){const dx=e.x-p.x,dy=e.y-p.y,dist=Math.hypot(dx,dy)||1;e.vx+=dx/dist*action.knockback;e.vy+=dy/dist*action.knockback;}
   global.SkillVisuals?.impact(p,e,action); // Only after damage/status actually connects.
+  if(d>0&&action.charged)global.SkillVisuals?.impact?.(p,e,{type:'charge',radius:90,damage:d});
   return true;
 }
 /* Each skill owns its cooldown and its own cast sequence.
@@ -255,6 +256,11 @@ function tickQueue(p,target){
     if(q.remaining>0)q.remaining--;
     if(q.remaining>0){i++;continue;}
     if(blocked){i++;continue;} // keep the action pending instead of dropping it
+    // Across separate skills, attacks also wait until charging completes.
+    // Movement/support blocks remain independent and can play during windup.
+    if(p.forgeCharge?.phase==='charging'&&global.ArenaCharge?.ATTACK?.has(q.a.type)){
+      i++;continue;
+    }
     if(q.waitApex){
       const z=global.AdvancedCombat?.height(p)||0;
       const pose=p.jumpMotion?.phase||p.jumpState;
