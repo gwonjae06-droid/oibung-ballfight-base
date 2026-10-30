@@ -116,27 +116,52 @@
     worldCtx.restore();
   }};
   draw=function(){syncRoster();oldDraw();};
-  // Fixed-step simulation: 2x doubles updates, not expensive canvas paints.
+  // All speeds run the SAME fixed 60 Hz physics and independent skill clocks.
+  // Only one world render per animation frame. High-speed modes batch HUD writes
+  // and have a strict CPU budget so the browser can still receive input.
+  const allowedSpeeds=new Set([1,2,3,10,100]);
+  let deferUI=false;
+  const selectedSpeed=()=>{
+    const value=Number(speed.value);
+    return allowedSpeeds.has(value)?value:1;
+  };
+  window.ArenaSpeedControl={
+    get multiplier(){return selectedSpeed();},
+    get deferUI(){return deferUI;}
+  };
   gameLoop=function(time){
     if(!Number.isFinite(time)){requestAnimationFrame(gameLoop);return;}
     if(last===null)last=time;
     const delta=Math.min(100,Math.max(0,time-last));last=time;
+    const step=1000/60;
     if(isPlaying&&!isGameOver){
-      const step=1000/60;
-      // One speed selector drives every match, including the Tower.
-      // Clamp values so invalid DOM changes cannot multiply the physics rate.
-      const multiplier=Math.max(1,Math.min(3,Math.round(Number(speed.value)||1)));
-      acc+=delta*multiplier;
+      const multiplier=selectedSpeed();
+      // Do not try to catch up indefinitely after a tab stalls or a heavy
+      // 100x fight: preserve real physics steps but lower effective speed.
+      acc=Math.min(acc+delta*multiplier,step*(multiplier>=100?300:multiplier>=10?70:10));
+      const maxSteps=multiplier>=100?300:multiplier>=10?70:10;
+      const budget=multiplier>=100?10:multiplier>=10?12:Infinity;
+      const clock=()=>globalThis.performance?.now?.()??Date.now();
+      const started=clock();
       let steps=0;
-      while(acc+0.000001>=step&&steps<10){
+      deferUI=multiplier>=10;
+      while(acc+0.000001>=step&&steps<maxSteps){
+        if(steps>0&&clock()-started>=budget)break;
         window.ArenaMotion?.capture?.(players);
         update();acc=Math.max(0,acc-step);steps++;
-        if(isGameOver){acc=0;break;}
+        if(isGameOver||!isPlaying){acc=0;break;}
       }
-      if(steps>=10)acc=0;
-    }else acc=0;
-    if(globalThis.AdvancedCombat){AdvancedCombat.setAlpha(isPlaying&&!isGameOver?Math.min(1,acc/(1000/60)):1);AdvancedCombat.setReduced(gentle.checked);}
-    window.ArenaMotion?.setAlpha?.(isPlaying&&!isGameOver?acc/(1000/60):1);
+      deferUI=false;
+      // Core engine skips costly updateUI() calls inside fast-forward ticks.
+      // Refresh HUD exactly once for this rendered frame instead.
+      if(multiplier>=10&&steps&&typeof updateUI==='function')updateUI();
+      // A slow device cannot guarantee 100x wall-clock speed. Avoid building
+      // an unbounded backlog that makes the application stop responding.
+      if(steps>=maxSteps)acc=Math.min(acc,step*2);
+    }else{acc=0;deferUI=false;}
+    const alpha=isPlaying&&!isGameOver?Math.min(1,acc/step):1;
+    if(globalThis.AdvancedCombat){AdvancedCombat.setAlpha(alpha);AdvancedCombat.setReduced(gentle.checked);}
+    window.ArenaMotion?.setAlpha?.(alpha);
     window.SkillVisuals?.setReduced(gentle.checked);
     window.ImpactPhysics?.setReduced?.(gentle.checked);
     window.ArenaResolution?.sync?.();
