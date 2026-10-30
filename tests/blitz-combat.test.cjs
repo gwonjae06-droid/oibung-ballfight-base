@@ -18,8 +18,9 @@ const fighter={name:'Blitz Test',hp:300,speed:2.4,color:'#58aaff',skills:[
 test('both participants lock choices then execute simultaneously with authored skills',()=>{
  const r=world(),start=Date.now(),room=r.createRoom(fighter,fighter,'manual',start,['blitz','blitz']);
  assert.equal(room.blitz.phase,'plan');assert.equal(room.players[0].onlineManual,true);
- const x=room.players[0].x;r.step(room,1/60,start+1000);
+ const x=room.players[0].x,y=room.players[0].y;r.step(room,1/60,start+1000);
  assert.equal(room.players[0].x,x,'planning freezes physics and cooldown clocks');
+ assert.equal(room.players[0].y,y,'planning freezes vertical movement too');
  assert.equal(r.submitPlan(room,0,{round:1,move:'approach',slots:[0,1]},start+1100),true);
  assert.equal(r.submitPlan(room,0,{round:1,move:'retreat',slots:[1]},start+1100),false,'one decision per round');
  assert.equal(r.submitPlan(room,1,{round:1,move:'approach',slots:[0]},start+1200),true);
@@ -28,7 +29,7 @@ test('both participants lock choices then execute simultaneously with authored s
  assert.equal(room.blitz.resolved[0].slots.length,2);
  assert.ok(room.players[0].forgeTicks[0]<60,'first skill actually cast through Forge');
  for(let i=0;i<70;i++)r.step(room,1/60,start+1250+i*17);
- assert.ok(room.players[0].x!==x,'character moves during execution');
+ assert.ok(Math.hypot(room.players[0].x-x,room.players[0].y-y)>1,'character moves during execution');
  r.step(room,1/60,start+3000);
  assert.equal(room.blitz.phase,'plan');
  assert.equal(room.blitz.round,2);
@@ -70,4 +71,44 @@ test('frontend and SQL opt into the mode while legacy clients remain compatible'
  assert.match(sql,/p_fighter->>'bp'='1'/);
  assert.match(tower,/tower-play-mode" value="blitz"/);
  assert.match(iframe,/pvp-runtime\.js\?v=pvp-blitz2/);
+});
+
+test('tower blitz execution uses the Forge API, waits during planning, and keeps two-skill chain',()=>{
+ const els=new Map(),slot={append(){}};
+ const ui={hidden:false,setAttribute(){},className:'',innerHTML:''};
+ const select=(value)=>({value,options:[],disabled:false,replaceChildren(){this.options=[];},
+   append(option){this.options.push(option);}});
+ for(const id of ['tower-blitz-first','tower-blitz-second'])els.set(id,select('-1'));
+ els.set('tower-blitz-move',select('approach'));
+ for(const id of ['tower-blitz-lock','tower-blitz-clock','tower-blitz-message','tower-blitz-vitals'])
+  els.set(id,{textContent:'',disabled:false,addEventListener(){}});
+ const doc={getElementById:id=>id==='tower-arena-slot'?slot:els.get(id),
+  createElement:tag=>tag==='section'?ui:{value:'',textContent:'',disabled:false}};
+ const casts=[];
+ const world={window:null,document:doc,Date,Math,Number,console,
+  SkillForge:{enableManual:p=>{p.manualTower=true;return true;},cooldownFrames:()=>30,
+   manualCast:(p,index)=>{casts.push([p.name,index]);return true;},manualUpdate:()=>true},
+  ArenaTower:{active:true,mode:'blitz',stage:'fighting'},
+  ArenaScreenRouter:{active:'tower',activeTowerTab:'tower'},
+  isPlaying:true,isGameOver:false};
+ world.window=world;vm.createContext(world);
+ vm.runInContext(fs.readFileSync('js/features/tower-blitz.js','utf8'),world);
+ const api=world.ArenaBlitzTower;
+ const make=name=>({name,hp:200,maxHp:200,x:name==='hero'?100:400,y:200,
+   vx:0,vy:0,forge:{speed:2.4,skills:[{name:'A'},{name:'B'}]},forgeTicks:[30,30]});
+ const hero=make('hero'),foe=make('foe');
+ assert.equal(api.prepare(hero,foe),true);
+ assert.equal(api.start(),true);
+ assert.equal(api.beforeStep(),false,'planning does not advance gameplay');
+ const first=els.get('tower-blitz-first'),second=els.get('tower-blitz-second');
+ first.value='0';second.value='1';
+ assert.equal(api.choose(),true);
+ assert.equal(api.beforeStep(),true);
+ assert.equal(api.phase,'execute');
+ api.update(hero,foe);assert.ok(hero.vx>0);
+ for(let i=0;i<95;i++)api.beforeStep();
+ assert.equal(api.phase,'plan');
+ assert.ok(casts.some(c=>c[0]==='hero'&&c[1]===0));
+ assert.ok(casts.some(c=>c[0]==='hero'&&c[1]===1));
+ api.stop();assert.equal(api.phase,'idle');
 });
