@@ -210,7 +210,8 @@ function snapshot(room,full=true){
     submitted:b.plans.map(Boolean)}}:{}),
   players:players.map((p,i)=>({x:p.x,y:p.y,hp:p.hp,maxHp:p.maxHp,name:p.name,
    color:p.themeColor,mode:room.modes[i],
-   previews:global.ArenaTelegraph?.preview?.(p)||[],
+   ...(global.ArenaTelegraph?.preview?.(p)?.length?
+     {previews:global.ArenaTelegraph.preview(p)}:{}),
    charge:p.forgeCharge?{phase:p.forgeCharge.phase,ticks:p.forgeCharge.ticks,total:p.forgeCharge.total,
      expires:p.forgeCharge.expires,flash:p.forgeCharge.flash}:null,
    skills:p.forge?.skills.slice(0,4).map(s=>({name:s.name}))||[],

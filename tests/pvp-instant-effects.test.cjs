@@ -24,8 +24,10 @@ test('authored skill effects are captured on execution and carried in small imme
  let wake=0;
  r.setFxWake(()=>wake++);
  assert.equal(r.cast(room,0,0),true);
- // ManualCast queues the action; it actually spawns on the next 60Hz tick.
+ // Real skill starts only after its visible 11-frame preparation.
  r.step(room,1/60,1020);
+ assert.equal(r.drainFx(24).length,0,'preparation does not falsely emit cast VFX');
+ for(let i=1;i<=16;i++)r.step(room,1/60,1020+i*17);
  const events=JSON.parse(JSON.stringify(r.drainFx(24)));
  assert.ok(events.length>0,'first slash is generated immediately on skill execution');
  assert.ok(wake>0,'transport is notified without waiting for a game state frame');
@@ -41,7 +43,7 @@ test('guest visual engine replays original skill artwork without importing stale
  b.createRoom(hero,hero,'manual',1000,['manual','manual']);
  b.receive(JSON.parse(JSON.stringify(a.snapshot(room,false))));
  assert.equal(a.cast(room,0,0),true);
- a.step(room,1/60,1020);
+ for(let i=0;i<=16;i++)a.step(room,1/60,1020+i*17);
  const events=JSON.parse(JSON.stringify(a.drainFx(24)));
  assert.ok(b.receiveFx(events)>0,'guest renders VFX before any full-state packet');
  assert.equal(guest.SkillVisuals.exportEffects()[0].type,'slash');
