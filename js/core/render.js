@@ -61,10 +61,12 @@ if(img&&img.complete&&img.naturalWidth!==0)ctx.drawImage(img,-radius,-radius,rad
 else{
   // Custom color remains beneath the translucent domed lighting.
   ctx.fillStyle=p.themeColor||p.borderColor||'#546777';ctx.fill();
-  ctx.fillStyle='#fff';ctx.strokeStyle='rgba(14,22,29,.68)';ctx.lineWidth=1.9;
-  ctx.font='800 '+Math.round(radius*.65)+'px "Noto Sans KR",system-ui,sans-serif';
-  ctx.textAlign='center';ctx.textBaseline='middle';
-  ctx.strokeText(p.name[0],0,0);ctx.fillText(p.name[0],0,0);
+  if(!globalThis.ArenaTowerArt?.draw?.(ctx,p,radius)){
+    ctx.fillStyle='#fff';ctx.strokeStyle='rgba(14,22,29,.68)';ctx.lineWidth=1.9;
+    ctx.font='800 '+Math.round(radius*.65)+'px "Noto Sans KR",system-ui,sans-serif';
+    ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.strokeText(p.name[0],0,0);ctx.fillText(p.name[0],0,0);
+  }
 }
 globalThis.ArenaDepth?.lightSurface?.(ctx,radius);
 ctx.restore();ctx.save();ctx.beginPath();ctx.ellipse(0,0,radius,radius*.83,0,0,Math.PI*2);ctx.lineWidth=globalThis.CosmeticArcade?.borderColor?.(p)?5:4;ctx.strokeStyle=globalThis.CosmeticArcade?.borderColor?.(p)||'#000';ctx.shadowColor=ctx.strokeStyle;ctx.shadowBlur=globalThis.CosmeticArcade?.borderGlow?.(p)||0;ctx.globalAlpha=1;ctx.shadowBlur=0;ctx.setLineDash([]);ctx.stroke();ctx.restore();ctx.save();ctx.scale(1,.83);globalThis.CosmeticArcade?.drawBorder?.(ctx,p,radius);ctx.restore();ctx.restore();
@@ -131,7 +133,12 @@ players.forEach(p=>{
 // Separate ground-footprint pass: shadows never darken another fighter's face.
 players.forEach(p=>{
   const altitude=globalThis.AdvancedCombat?.visibleHeight?.(p)??(p.jumpHeight||0);
-  const paintShadow=()=>globalThis.ArenaDepth?.shadow?.(worldCtx,p,altitude);
+  const paintShadow=()=>{
+    worldCtx.save();const tier=Number(p.towerGroundZ)||0;
+    worldCtx.translate(0,-tier);
+    globalThis.ArenaDepth?.shadow?.(worldCtx,p,Math.max(0,altitude-tier));
+    worldCtx.restore();
+  };
   if(globalThis.ArenaMotion?.drawFighter)ArenaMotion.drawFighter(worldCtx,p,paintShadow);
   else paintShadow();
 });

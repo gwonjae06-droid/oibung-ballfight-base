@@ -150,6 +150,7 @@ function create({realm,level,width=500,height=500,hero,boss,damage}){
    ctx.strokeStyle=live?'#ffede6':color;ctx.lineWidth=live?4:warning<35?3:2;
    ctx.setLineDash(live?[]:[7,5]);ctx.stroke();ctx.setLineDash([]);
    ctx.restore();
+   g.ArenaTowerPattern3D?.draw?.(ctx,z,realm,tick,width,height);
    const y=clamp(z.y,24,height-18),x=clamp(z.x,90,width-90);
    ctx.font='bold 13px system-ui';ctx.textAlign='center';ctx.lineWidth=3;ctx.strokeStyle='#101520';ctx.fillStyle='#ffffff';
    const label=live?'위험!':z.label+' '+(warning/60).toFixed(1)+'s';

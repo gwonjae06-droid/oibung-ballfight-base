@@ -363,6 +363,7 @@ function install(){
     // Automatic combat has no movement or turn-selection controls.
   }
   function cleanup(){
+    global.ArenaTowerTerrain?.clear?.(typeof players!=='undefined'?players:[]);
     if(temporary){delete BEHAVIORS[temporary.id];temporary=null;}
   }
   function buildEnemy(){
@@ -391,11 +392,19 @@ function install(){
       players[0].manualTower=false;players[0].towerHero=true;
       realms.apply(players[0],realmId,blessings);
       players[1].towerPatternBoss=level%5===0;
+      players[1].towerRealm=realmId;
+      players[1].towerEnemyType=(level<=4?level-1:level-2)%3;
+      players[1].towerBossTier=level===10?2:level===5?1:0;
+      players[1].towerLevel=level;
+      global.ArenaTowerTerrain?.step?.(realmId,level,players,canvas.width,canvas.height,0);
       encounter=global.ArenaEncounter?.create({realm:realmId,level,width:canvas.width,height:canvas.height,
         hero:players[0],boss:players[1],damage(p,amount){
-          if(p.invincible>0)return false;
+          // Ground-only zones are avoidable by jumping; platform tier
+          // does not make a grounded fighter mysteriously invulnerable.
+          if(p.invincible>0||(p.z||p.jumpHeight||0)>38)return false;
           return global.SkillForge.hit(p===players[0]?players[1]:players[0],p,
-            {type:'wave',damage:amount,radius:0,knockback:0,status:'none',duration:0},1);
+            {type:'wave',damage:amount,radius:0,knockback:0,status:'none',duration:0},
+            1,global.AdvancedCombat?.height?.(p));
         }});
     }
     // Fresh combatants; run-local blessings were applied above.
@@ -500,9 +509,13 @@ function install(){
        global.ArenaScreenRouter?.active!=='tower')return false;
     const painted=global.ArenaTowerScenes?.paint?.(ctx,canvas.width,canvas.height,realm()?.scene||level)||false;
     global.ArenaTowerAtmosphere?.paint?.(ctx,canvas.width,canvas.height,realmId,level);
+    global.ArenaTowerTerrain?.paint?.(ctx,realmId,level,canvas.width,canvas.height,encounter?.tick||0);
     return painted;
   }
-  function tickEncounter(){if(active&&stage==='fighting')encounter?.step();}
+  function tickEncounter(){if(active&&stage==='fighting'){
+    encounter?.step();
+    global.ArenaTowerTerrain?.step?.(realmId,level,players,canvas.width,canvas.height,encounter?.tick||0);
+  }}
   function drawEncounter(ctx){if(active&&stage==='fighting'){global.ArenaTowerAtmosphere?.particles?.(ctx,canvas.width,canvas.height,realmId,encounter?.tick||0);encounter?.draw(ctx,realm()?.color);}}
   const api={selectRealm,openSelection,chooseBlessing,tickEncounter,drawEncounter,get encounter(){return encounter;},floor,makeEnemy,read,updateRecord,records,begin,forfeit,paintBackground,
     onBattleEnd,isTransientDef,pauseAway,refresh:show,setMode,get mode(){return mode;},get active(){return active;},

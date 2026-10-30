@@ -56,7 +56,9 @@ function visual(p){
     y:lerp(s.prev.y,s.now.y,alpha),
     z:lerp(s.prev.z,s.now.z,alpha)};
 }
-function visibleHeight(p){return visual(p).z;}
+function terrainElevation(p){return Math.max(0,Number(p?.towerGroundZ)||0);}
+function absoluteHeight(p){return groundHeight(p)+terrainElevation(p);}
+function visibleHeight(p){return visual(p).z+terrainElevation(p);}
 function pose(p){
   if((p.uppercutWindup||0)>0){
     const progress=1-(p.uppercutWindup/9);
@@ -94,8 +96,8 @@ function ensure(p){
 function canHit(source,target,attackZ){
   if(!target||target.hp<=0)return false;
   if(source===target)return false;
-  const a=Number.isFinite(attackZ)?attackZ:groundHeight(source);
-  const z=groundHeight(target);
+  const a=Number.isFinite(attackZ)?attackZ:absoluteHeight(source);
+  const z=absoluteHeight(target);
   // Two fighters have to occupy compatible vertical layers.
   return Math.abs(a-z)<=Math.max(30,26*(target.bodyScale||1));
 }
@@ -929,6 +931,6 @@ function draw(ctx){
 }
 function activeLine(t){return Math.max(1,8*Math.sin(Math.PI*cap(t,0,1)));}
 global.AdvancedCombat={TYPES,TYPE_NAMES,DESCRIPTIONS,objects,projectiles,effects,
-  height:groundHeight,visibleHeight,visual,pose,setAlpha,setReduced,blend,size,renderY,canHit,
+  height:absoluteHeight,visibleHeight,visual,pose,setAlpha,setReduced,blend,size,renderY,canHit,
   launch,execute,tick,draw,reset,mark,ensure,blockSegment};
 })(window);
