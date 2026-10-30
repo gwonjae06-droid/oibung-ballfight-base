@@ -194,7 +194,8 @@ function hit(p,e,action,multiplier=1,attackZ) {
   if(!e||e===p||e.hp<=0||e.invincible>0)return false;
   if(global.AdvancedCombat&&!AdvancedCombat.canHit(p,e,attackZ))return false;
   if(!global.AdvancedCombat&&e.jumpState&&e.jumpState!=='ground')return false;
-  const d=Math.round((action.damage||0)*multiplier*(global.ForgeExpansion?.damageScale(p,e)||1));
+  const d=Math.round((action.damage||0)*multiplier*(global.ForgeExpansion?.damageScale(p,e)||1)*
+  (global.ArenaBalance?.factorOf?.(p)??1));
   if(d){const tint=p.forge?.effectColor||p.forge?.color||p.themeColor||'#58687a';e.hp=Math.max(0,e.hp-d);e.invincible=12;createHitParticles(e.x,e.y,tint,d>=25?22:14);addFloatingText('-'+d,e.x,e.y-30,tint,17);global.ImpactPhysics?.hit?.(p,e,d,{knockback:action.knockback||0,color:tint,type:action.type});}
   if(action.status==='ice'){e.slowTimer=Math.max(e.slowTimer||0,90);e.slowMultiplier=.5;}
   if(action.status==='fire'||action.status==='poison'){
@@ -526,7 +527,7 @@ function register(value,{towerEnemy=false}={}){
     return {id,name:profile.name,playerNum:n,x:0,y:0,vx:1.1,vy:.9,radius:34,
       hp:profile.hp,maxHp:profile.hp,invincible:0,slowTimer:0,slowMultiplier:1,
       borderColor:profile.color,themeColor:profile.color,tagColor:profile.color,effectColor:profile.effectColor,
-      jumpState:'ground',forge:runtime,forgeLastHp:profile.hp,forgeDash:0,
+      jumpState:'ground',forge:runtime,towerEnemy:!!towerEnemy,forgeLastHp:profile.hp,forgeDash:0,
       forgeDashAction:null,forgeTicks:runtime.skills.map((s,i)=>{
         const cd=Math.round(s.cooldown*60);
         return profile.allAbilities?Math.max(0,cd-((i*13+23)%Math.max(1,cd))):
