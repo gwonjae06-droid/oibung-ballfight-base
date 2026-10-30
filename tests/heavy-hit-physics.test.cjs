@@ -79,7 +79,7 @@ test('all five classic fighters, high-level attacks, and aftershock wire to the 
   const engine=read('js/core/engine.js');
   assert.ok(engine.includes('ImpactPhysics?.integrate?.(p)'));
   assert.ok(engine.includes('ImpactPhysics?.hit?.(attacker,defender,value'));
-  assert.ok(read('js/core/render.js').includes('ImpactPhysics?.draw?.(ctx)'));
+  assert.ok(read('js/core/render.js').includes('ImpactPhysics?.draw?.(worldCtx)'));
   const html=read('index.html');
   assert.ok(html.indexOf('js/features/impact-physics.js')<html.indexOf('js/characters/bae.js'),
     'physics must be loaded before the original character damage handlers');

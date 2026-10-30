@@ -174,21 +174,20 @@ test('manual tracking camera enlarges characters but does not alter physics posi
   h.tower.mode='auto';
   assert.equal(h.controller.camera(500,500),null,'no zoom in automatic fight');
 });
-test('mobile layout pins two-thumb controls below expanded arena, and renderer shares one camera',()=>{
-  const css=fs.readFileSync(path.join(__dirname,'../css/tower-mine-ui.css'),'utf8');
-  assert.match(css,/max-width:800px\) and \(pointer:coarse\)/);
-  assert.match(css,/position:fixed!important;bottom:0;left:0;right:0/);
-  assert.match(css,/env\(safe-area-inset-bottom,0px\)/);
-  assert.match(css,/canvas-wrapper\{[\s\S]*?max-width:none!important/);
-  assert.match(css,/\.tower-manual-skill\{[\s\S]*?touch-action:none/);
-  const renderer=fs.readFileSync(path.join(__dirname,'../js/core/render.js'),'utf8');
-  const effects=fs.readFileSync(path.join(__dirname,'../js/features/battle-effects.js'),'utf8');
-  assert.match(renderer,/ArenaTowerControls\?\.camera\?\./);
-  assert.match(renderer,/ArenaTowerControls\?\.applyView\?\./);
-  assert.match(renderer,/ArenaFXLayer\?\.draw\?\./);
-  assert.doesNotMatch(effects,/ArenaTowerControls\?\.applyView\?\./,
-    'secondary effects must share the main world camera and screenshake');
-  assert.match(renderer,/p\.manualTower&&p\.hp>0/);
+test('mobile layout stays stable and renderer uses one projective camera for effects',()=>{
+ const css=fs.readFileSync(path.join(__dirname,'../css/tower-mine-ui.css'),'utf8');
+ assert.match(css,/max-width:800px\) and \(pointer:coarse\)/);
+ assert.match(css,/position:fixed!important;bottom:0;left:0;right:0/);
+ assert.match(css,/env\(safe-area-inset-bottom,0px\)/);
+ assert.match(css,/canvas-wrapper\{[\s\S]*?max-width:none!important/);
+ assert.match(css,/\.tower-manual-skill\{[\s\S]*?touch-action:none/);
+ const render=fs.readFileSync(path.join(__dirname,'../js/core/render.js'),'utf8');
+ const effects=fs.readFileSync(path.join(__dirname,'../js/features/battle-effects.js'),'utf8');
+ assert.match(render,/ArenaDepth\?\.layer\?\.\(canvas,'world'\)/);
+ assert.match(render,/ArenaFXLayer\?\.draw\?\.\(worldCtx\)/);
+ assert.match(render,/projectWorld\?\.\(ctx,layer\.canvas,canvas\)/);
+ assert.doesNotMatch(effects,/ArenaTowerControls\?\.applyView\?\./);
+ assert.match(render,/p\.manualTower&&p\.hp>0/);
 });
 
 test('dash uses physical Korean-IME keys, bounded speed, cooldown and paused guards',()=>{

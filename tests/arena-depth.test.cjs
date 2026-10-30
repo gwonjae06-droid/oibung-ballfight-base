@@ -118,15 +118,13 @@ test('lightweight network snapshots only include height when airborne; remote us
  assert.doesNotThrow(()=>r.paint());
  assert.ok(room.players[0].z>=0);
 });
-test('floor, height and VFX share the one camera transform',()=>{
+test('floor and VFX share projected ground coordinates before upright fighters',()=>{
  const render=read('js/core/render.js');
- const floor=render.indexOf('ArenaDepth?.paintFloor');
- const objects=render.indexOf('AdvancedCombat?.draw(ctx)');
- const actor=render.indexOf('ArenaMotion.drawFighter');
- const fx=render.indexOf('ArenaFXLayer?.draw');
- assert.ok(floor>0&&floor<objects&&objects<actor&&actor<fx);
- const main=read('index.html'),pvp=read('pvp-runtime.html');
- for(const html of [main,pvp])
+ const floor=render.indexOf('ArenaDepth?.paintFloor'),objects=render.indexOf('AdvancedCombat?.draw(worldCtx)');
+ const fx=render.indexOf('ArenaFXLayer?.draw?.(worldCtx)'),projection=render.indexOf('projectWorld?.(ctx,layer.canvas,canvas)');
+ const actor=render.indexOf('ArenaMotion.drawFighter(ctx,p,drawCharacter)');
+ assert.ok(floor>0&&floor<objects&&objects<fx&&fx<projection&&projection<actor);
+ for(const html of [read('index.html'),read('pvp-runtime.html')])
   assert.ok(html.indexOf('arena-depth.js')<html.indexOf('core/render.js'));
 });
 
@@ -140,40 +138,38 @@ test('shadow pass precedes height-aware stable painter sorting, without reorderi
  assert.match(render,/visibleHeight\?\.\(a\)/);
 });
 
-test('noticeably lowered camera view shows greater floor depth without distorting coordinates',()=>{
- const {w}=depthWorld();
- const h=600,view=w.ArenaDepth.VIEW_Y;
- assert.ok(view>.70&&view<.79,'stronger 2.5D angle but still a top-down camera');
- const far=w.ArenaDepth.screenPoint(200,0,{height:h});
- const middle=w.ArenaDepth.screenPoint(200,h/2,{height:h});
- const near=w.ArenaDepth.screenPoint(200,h,{height:h});
- assert.equal(middle.y,h/2);
- assert.ok(far.y>h*.10&&far.y<h*.16);
- assert.ok(near.y<h*.90&&near.y>h*.84);
- assert.equal(near.y-far.y,h*view);
- assert.equal(far.x,200,'horizontal hit position is unchanged');
+test('perspective narrows far ground and widens near ground instead of squashing sprites',()=>{
+ const {w}=depthWorld(),arena={width:600,height:600};
+ const fl=w.ArenaDepth.screenPoint(0,0,arena),fr=w.ArenaDepth.screenPoint(600,0,arena);
+ const nl=w.ArenaDepth.screenPoint(0,600,arena),nr=w.ArenaDepth.screenPoint(600,600,arena);
+ assert.ok(fr.x-fl.x<470);
+ assert.ok(nr.x-nl.x>650);
+ assert.ok((nr.x-nl.x)/(fr.x-fl.x)>1.6);
+ assert.ok(fl.y>60&&fl.y<95&&nl.y>480&&nl.y<535);
+ assert.equal(w.ArenaDepth.VIEW_Y,1,'no global vertical canvas compression');
 });
-test('2.5D camera has a single shared world transform and preserves save/restore',()=>{
- const {w}=depthWorld(),transforms=[];
- const c=new Proxy({}, {get:(o,k)=>k==='translate'?((...args)=>transforms.push(['translate',...args])):
-   k==='scale'?((...args)=>transforms.push(['scale',...args])):()=>{},
-   set:(o,k,v)=>(o[k]=v,true)});
- w.ArenaDepth.applyView(c,{width:780,height:520});
- assert.deepEqual(transforms,[['translate',0,520*(1-w.ArenaDepth.VIEW_Y)/2],
-  ['scale',1,w.ArenaDepth.VIEW_Y]]);
+
+test('scanline projector maps the ground while maintaining upright billboard silhouettes',()=>{
+ const {w}=depthWorld(),strips=[];
+ const c=new Proxy({}, {get:(o,k)=>k==='drawImage'?((...args)=>strips.push(args)):
+  k==='save'||k==='restore'?(()=>{}):k==='scale'?(()=>{throw Error('flat scale used');}):()=>{},
+  set:(o,k,v)=>(o[k]=v,true)});
+ const canvas={width:600,height:600};
+ assert.equal(w.ArenaDepth.projectWorld(c,canvas,canvas),true);
+ assert.ok(strips.length>45&&strips.length<110);
+ assert.ok(strips[0][7]<strips.at(-1)[7],'near rows expand in x');
  const src=read('js/core/render.js');
- assert.ok(src.indexOf('ArenaDepth?.paintBackdrop')<src.indexOf('ArenaDepth?.applyView'));
- assert.ok(src.indexOf('ArenaDepth?.applyView')<src.indexOf('ArenaDepth?.paintFloor'));
- assert.ok(src.indexOf('ArenaDepth?.applyView')<src.indexOf('AdvancedCombat?.draw(ctx)'));
- assert.match(src,/scale\*pose\.sy\/\(globalThis\.ArenaDepth\?\.VIEW_Y\|\|1\)/,
-   'character silhouette stays upright when floor is tilted');
+ assert.match(src,/ctx\.translate\(projected\.x,projected\.y\)/);
+ assert.match(src,/ctx\.scale\(size,size\)/);
+ assert.match(src,/projectWorld\?\.\(ctx,layer\.canvas,canvas\)/);
 });
+
 test('nearer 2.5D sprites are a little larger, without altering collision size',()=>{
  const {w}=depthWorld();
  const a={x:120,y:55,radius:26},b={x:120,y:440,radius:26};
  const far=w.ArenaDepth.spriteScale(a,{height:500}),near=w.ArenaDepth.spriteScale(b,{height:500});
  assert.ok(far<1&&near>1);
- assert.ok(near-far<.11,'perspective must be restrained');
+ assert.ok(near-far>.25&&near-far<.55,'near-far perspective is pronounced, not extreme');
  assert.equal(a.radius,26);assert.equal(b.radius,26);
 });
 test('camera floor framing is lightweight and adapts to tower and default arena',()=>{
@@ -184,16 +180,21 @@ test('camera floor framing is lightweight and adapts to tower and default arena'
  assert.ok(calls.gradient>=4);
  assert.equal(calls.saves,calls.restores);
 });
-test('PvP overlay, telegraph and character HP bars use exactly the same projection',()=>{
+test('PvP instant effects and health bars use matching perspective projection',()=>{
  const rt=read('js/features/pvp-runtime.js');
- const start=rt.indexOf('draw();\n // The instant PvP artwork');
- const camera=rt.indexOf('ArenaDepth?.applyView?.(ctx,canvas)',start);
- const fx=rt.indexOf('SkillVisuals.draw(ctx)',camera);
- const restore=rt.indexOf('ctx.restore()',fx);
- const bar=rt.indexOf('ArenaDepth?.screenPoint?.',restore);
- assert.ok(start>0&&camera>start&&fx>camera&&restore>fx&&bar>restore);
- const html=read('index.html'),frame=read('pvp-runtime.html');
- assert.match(html,/arena-depth\.js\?v=tilt2/);
- assert.match(frame,/arena-depth\.js\?v=tilt2/);
- assert.match(html,/pvp-original-engine\.js\?v=tilt2/);
+ const start=rt.indexOf("draw();\n // The guest has a separate instant FX pool");
+ const effects=rt.indexOf('SkillVisuals.draw(painter.ctx)',start);
+ const project=rt.indexOf('projectWorld?.(ctx,painter.canvas,canvas)',effects);
+ const hp=rt.indexOf('ArenaDepth?.elevatedPoint?.',project);
+ assert.ok(start>0&&effects>start&&project>effects&&hp>project);
+ for(const html of [read('index.html'),read('pvp-runtime.html')])
+  assert.match(html,/arena-depth\.js\?v=persp1/);
+ assert.match(read('index.html'),/pvp-original-engine\.js\?v=persp1/);
+});
+test('airborne figures project vertically without moving their physics footprint',()=>{
+ const {w}=depthWorld(),arena={width:500,height:500};
+ const p={x:250,y:300,z:80},ground=w.ArenaDepth.screenPoint(p.x,p.y,arena);
+ const upper=w.ArenaDepth.elevatedPoint(p,p.z,arena);
+ assert.equal(ground.x,upper.x);
+ assert.ok(ground.y-upper.y>60);
 });

@@ -82,7 +82,7 @@ test('each battleground draws a physically distinct 2D canvas motif without affe
   }
   assert.equal(new Set(hashes).size,10,'ten different color and shape scenes');
   const render=read('js/core/render.js');
-  assert.ok(render.includes('globalThis.ArenaTower?.paintBackground?.(ctx,canvas)'));
+  assert.ok(render.includes('globalThis.ArenaTower?.paintBackground?.(worldCtx,canvas)'));
   const tower=read('js/features/tower-challenge.js');
   assert.match(tower,/screen\.dataset\.towerTheme=f\.scene/);
   assert.match(tower,/global\.ArenaScreenRouter\?\.active!=='tower'/,'independent PvE free matches do not use Tower backgrounds');

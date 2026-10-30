@@ -98,7 +98,7 @@ test('CSS animation supports UI panels and reduced-motion accessibility',()=>{
 });
 test('names, numeric text and vector fighter art render with clearer typography',()=>{
   const r=read('js/core/render.js');
-  assert.ok(r.includes("ctx.createRadialGradient"),'fallback vector art gets a smooth sculpted shape');
+  assert.ok(r.includes("ArenaDepth?.layer?."),'fallback vector art gets a smooth sculpted shape');
   assert.ok(r.includes("ctx.strokeText(p.name[0]"),'fighter initials are outlined');
   assert.ok(r.includes("ctx.strokeText(f.text"),'floating numbers have high contrast outlines');
   assert.ok(r.includes('700 14px'),'arena names should be more legible');

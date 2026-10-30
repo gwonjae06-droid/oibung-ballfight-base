@@ -3,19 +3,18 @@ const test=require('node:test'),assert=require('node:assert/strict');
 const fs=require('node:fs'),vm=require('node:vm'),path=require('node:path');
 const read=p=>fs.readFileSync(path.join(__dirname,'..',p),'utf8');
 
-test('camera transforms scenery, actors and secondary VFX exactly once',()=>{
+test('scenery and VFX share one perspective projector before upright fighter billboards',()=>{
  const render=read('js/core/render.js'),effects=read('js/features/battle-effects.js');
- const start=render.indexOf('function draw(){');
- const draw=render.slice(start);
- const camera=draw.indexOf('ArenaTowerControls?.applyView?.');
- const background=draw.indexOf('ArenaTower?.paintBackground?.');
- const extra=draw.indexOf('ArenaFXLayer?.draw?.');
- const restore=draw.indexOf('ctx.restore();ctx.save();',background);
- assert.ok(camera>=0&&background>camera,'background must share the game world camera');
- assert.ok(extra>background&&extra<restore,'extra skill effects must be drawn before world transform is restored');
+ const body=render.slice(render.indexOf('function draw(){'));
+ const background=body.indexOf('ArenaTower?.paintBackground?.(worldCtx,canvas)');
+ const fx=body.indexOf('ArenaFXLayer?.draw?.(worldCtx)');
+ const projection=body.indexOf('projectWorld?.(ctx,layer.canvas,canvas)');
+ const fighter=body.indexOf('ArenaMotion.drawFighter(ctx,p,drawCharacter)');
+ assert.ok(background>0&&fx>background&&projection>fx&&fighter>projection);
  assert.match(effects,/window\.ArenaFXLayer=\{draw\(worldCtx\)/);
- assert.doesNotMatch(effects,/ArenaTowerControls\?\.applyView\?\./,'no second camera in VFX renderer');
+ assert.doesNotMatch(effects,/ArenaTowerControls\?\.applyView\?\./);
 });
+
 test('a character cannot receive both interpolated actor offsets',()=>{
  const s=read('js/features/battle-effects.js'),motion=read('js/features/motion-smoothing.js');
  assert.match(motion,/ctx\.translate\(dx,dy\)/);
