@@ -210,6 +210,9 @@ function snapshot(room,full=true){
     submitted:b.plans.map(Boolean)}}:{}),
   players:players.map((p,i)=>({x:p.x,y:p.y,hp:p.hp,maxHp:p.maxHp,name:p.name,
    color:p.themeColor,mode:room.modes[i],
+   ...(Math.abs(global.AdvancedCombat?.height?.(p)||0)>.5?
+      {h:Math.round(global.AdvancedCombat.height(p)*10)/10}:{}),
+   ...(p.jumpState&&p.jumpState!=='ground'?{j:p.jumpState}:{}),
    ...(global.ArenaTelegraph?.preview?.(p)?.length?
      {previews:global.ArenaTelegraph.preview(p)}:{}),
    charge:p.forgeCharge?{phase:p.forgeCharge.phase,ticks:p.forgeCharge.ticks,total:p.forgeCharge.total,
@@ -250,7 +253,7 @@ function receive(s){
    lastStateSeq=s.seq;
  }
  remote=true;lastSnapshotAt=Date.now();
- targets=s.players.map(p=>({x:p.x,y:p.y}));
+ targets=s.players.map(p=>({x:p.x,y:p.y,h:Number.isFinite(p.h)?p.h:0}));
  if(s.world){
    if(s.world.visualPlayers?.length===2)
      s.world.visualPlayers.forEach((v,i)=>{
@@ -277,6 +280,7 @@ function receive(s){
    players[i].hp=p.hp;players[i].maxHp=p.maxHp;
    players[i].forgeCharge=p.charge||null;
    players[i].telegraphPreviews=Array.isArray(p.previews)?p.previews.slice(0,1):[];
+   if(remote){players[i].jumpState=typeof p.j==='string'?p.j:'ground';}
  });
  isGameOver=!!s.finished;isPlaying=!isGameOver;
 }
@@ -328,6 +332,11 @@ function paint(){
      p.x+=(targets[i].x-p.x)*alpha;
      p.y+=(targets[i].y-p.y)*alpha;
    }
+   // Smooth vertical corrections at display Hz; game logic remains host-owned.
+   const height=targets[i]?.h||0;
+   const currentHeight=Number.isFinite(p.z)?p.z:0;
+   p.z=currentHeight+(height-currentHeight)*Math.min(1,alpha*1.4);
+   p.jumpHeight=p.z;
    const r=p.radius||28;
    p.x=Math.max(r,Math.min(canvas.width-r,p.x));
    p.y=Math.max(r,Math.min(canvas.height-r,p.y));

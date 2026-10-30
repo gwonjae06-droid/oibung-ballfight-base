@@ -309,7 +309,8 @@ function execute(p,a,target) {
     if(!near)return;
     visual('shot');const angle=Math.atan2(near.y-p.y,near.x-p.x);
     for(let i=0;i<a.count;i++){const t=angle+(i-(a.count-1)/2)*.19;
-      p.forgeShots.push({x:p.x,y:p.y,vx:Math.cos(t)*a.speed,vy:Math.sin(t)*a.speed,life:Math.ceil(a.radius/a.speed*3),a});
+      p.forgeShots.push({x:p.x,y:p.y,z:global.AdvancedCombat?.height?.(p)||0,
+        vx:Math.cos(t)*a.speed,vy:Math.sin(t)*a.speed,life:Math.ceil(a.radius/a.speed*3),a});
     }
     if(p.forgeShots.length>100)p.forgeShots.splice(0,p.forgeShots.length-100);
   } else if(a.type==='beam'){
@@ -455,13 +456,13 @@ function advanceWorld(p,target){
   for(let i=p.forgeShots.length-1;i>=0;i--){
     const b=p.forgeShots[i];b.prevX=b.x;b.prevY=b.y;b.x+=b.vx;b.y+=b.vy;b.life--;
     const blocked=global.AdvancedCombat?.blockSegment?.(
-      b.prevX,b.prevY,b.x,b.y,b.a?.damage||10,0);
+      b.prevX,b.prevY,b.x,b.y,b.a?.damage||10,b.z||0);
     if(blocked){p.forgeShots.splice(i,1);continue;}
     // Ground-level bullets use a ground-level hit check, not the firing
     // character's current jump height. Swept contact prevents tunneling.
     const e=enemies(p).find(e=>(global.ActionRegistry?.sweptCircle?.(
       b.prevX,b.prevY,b.x,b.y,e.x,e.y,e.radius+8)??
-      Math.hypot(e.x-b.x,e.y-b.y)<=e.radius+8)&&hit(p,e,b.a,1,0));
+      Math.hypot(e.x-b.x,e.y-b.y)<=e.radius+8)&&hit(p,e,b.a,1,b.z||0));
     if(e||b.life<=0||b.x<0||b.y<0||b.x>canvas.width||b.y>canvas.height)p.forgeShots.splice(i,1);
   }
   if(p.forgeZones.length>32)p.forgeZones.splice(0,p.forgeZones.length-32);
@@ -469,11 +470,11 @@ function advanceWorld(p,target){
     const z=p.forgeZones[i];z.timer--;z.ticks++;
     if(z.type==='bolt'&&z.timer<=0){
       if(global.BattleFX)BattleFX.cast(p,'lightning',{x:z.x,y:z.y,color:(p.forge.effectColor||p.forge.color)});
-      enemies(p).filter(e=>Math.hypot(e.x-z.x,e.y-z.y)<z.a.radius*.4+e.radius).forEach(e=>hit(p,e,z.a));
+      enemies(p).filter(e=>Math.hypot(e.x-z.x,e.y-z.y)<z.a.radius*.4+e.radius).forEach(e=>hit(p,e,z.a,1,0));
     }
     if(z.type==='zone'&&z.timer>0&&z.ticks%30===0){
       const actualRadius=z.r??z.a.radius;
-      enemies(p).filter(e=>Math.hypot(e.x-z.x,e.y-z.y)<actualRadius+e.radius).forEach(e=>hit(p,e,z.a,.4));
+      enemies(p).filter(e=>Math.hypot(e.x-z.x,e.y-z.y)<actualRadius+e.radius).forEach(e=>hit(p,e,z.a,.4,0));
     }
     if(z.timer<=0)p.forgeZones.splice(i,1);
   }
@@ -511,8 +512,16 @@ function drawFighter(p){
   p.forgeShots.forEach(b=>{
     const heading=Math.atan2(b.vy,b.vx),status=b.a?.status||'none';
     const x=global.AdvancedCombat?.blend(b.prevX,b.x)??b.x;
-    const y=global.AdvancedCombat?.blend(b.prevY,b.y)??b.y;
+    const groundY=global.AdvancedCombat?.blend(b.prevY,b.y)??b.y;
+    const height=Math.max(0,Number(b.z)||0);
+    const y=groundY-height;
     ctx.save();
+    if(height>9){
+      ctx.globalAlpha=Math.max(.10,.25-height*.0006);
+      ctx.fillStyle='rgba(21,29,41,.37)';
+      ctx.beginPath();ctx.ellipse(x+height*.055,groundY+3,9+height*.06,4+height*.025,0,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle=c;
+    }
     ctx.globalAlpha=.28;ctx.lineWidth=b.a?.charged?8:4;ctx.lineCap='round';
     ctx.beginPath();ctx.moveTo(x-b.vx*3,y-b.vy*3);ctx.lineTo(x,y);ctx.stroke();
     ctx.globalAlpha=1;ctx.translate(x,y);ctx.rotate(heading);

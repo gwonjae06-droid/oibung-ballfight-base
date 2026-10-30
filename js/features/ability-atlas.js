@@ -101,8 +101,8 @@ function execute(caster,action,originalTarget,api){
   const points=layout(caster,target,formation,count,action.radius,seed++);
   const colored=caster.forge.effectColor||caster.forge.color;
   const isEnemy=e=>e!==caster&&e.hp>0;
-  const hitAt=(x,y,r,multiplier=1)=>{
-    for(const e of foes)if(isEnemy(e)&&Math.hypot(e.x-x,e.y-y)<r+e.radius)api.hit(caster,e,action,multiplier);
+  const hitAt=(x,y,r,multiplier=1,impactZ)=>{
+    for(const e of foes)if(isEnemy(e)&&Math.hypot(e.x-x,e.y-y)<r+e.radius)api.hit(caster,e,action,multiplier,impactZ);
   };
   const show=(x,y,kind,r)=>{
     if(global.BattleFX&&BattleFX.mark)BattleFX.mark(kind,x,y,colored,r);
@@ -114,7 +114,7 @@ function execute(caster,action,originalTarget,api){
       // Directions differ with formation; bullets still travel from caster.
       const dx=point.x-caster.x,dy=point.y-caster.y,len=Math.hypot(dx,dy)||1;
       const vx=dx/len*action.speed,vy=dy/len*action.speed;
-      caster.forgeShots.push({x:caster.x,y:caster.y,vx,vy,
+      caster.forgeShots.push({x:caster.x,y:caster.y,z:global.AdvancedCombat?.height?.(caster)||0,vx,vy,
         life:Math.ceil(action.radius/action.speed*3),a:action,
         atlas:'shot',targetNum:target.playerNum});
     }
@@ -138,7 +138,7 @@ function execute(caster,action,originalTarget,api){
       show(point.x,point.y,'meteor',radius);
       // Apply the opening poison/DoT hit instantly. Previously moving targets
       // could leave the zone before its first 30-frame tick.
-      hitAt(point.x,point.y,radius,count>3?.66:1);
+      hitAt(point.x,point.y,radius,count>3?.66:1,0);
       caster.forgeZones.push({
         type:'zone',x:point.x,y:point.y,r:radius,timer:Math.round(action.duration*60),
         a:action,ticks:0
