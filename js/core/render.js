@@ -23,8 +23,7 @@ if(!p.forge)globalThis.ForgeExpansion?.draw(p);
 const img=p.getImage(),radius=p.radius,dead=p.hp<=0;
 const z=globalThis.AdvancedCombat?.visibleHeight(p) ?? (p.jumpHeight||0);
 const pose=globalThis.AdvancedCombat?.pose(p)||{sx:1,sy:1,tilt:0};
-const scale=(globalThis.AdvancedCombat?.size(p) ?? (1+Math.max(0,z)/140))*
-  (globalThis.ArenaDepth?.spriteScale?.(p,canvas)||1);
+const scale=globalThis.AdvancedCombat?.size(p) ?? (1+Math.max(0,z)/140);
 const offset=-z;
 // Manual Tower fighter: a subtle ground reticle and motion trail make it
 // instantly clear which character the player is steering, even in an effect storm.
@@ -54,7 +53,7 @@ if(p.id==='choi'&&p.suneungState==='success'&&!dead){ctx.save();ctx.beginPath();
 globalThis.ArenaCharge?.draw?.(p,ctx);
 const chargeJitter=globalThis.ArenaCharge?.jitter?.(p)||{x:0,y:0};
 ctx.save();ctx.translate(p.x+chargeJitter.x,p.y+offset+chargeJitter.y);
-ctx.scale(scale*pose.sx,scale*pose.sy/(globalThis.ArenaDepth?.VIEW_Y||1));
+ctx.scale(scale*pose.sx,scale*pose.sy);
 ctx.rotate(pose.tilt);if(dead)ctx.globalAlpha=0.3;if(z<0)ctx.globalAlpha*=.32;
 globalThis.ArenaDepth?.underlay?.(ctx,p,radius);
 ctx.save();ctx.beginPath();ctx.arc(0,0,radius,0,Math.PI*2);ctx.clip();
@@ -83,56 +82,83 @@ ctx.fillStyle='#fff';ctx.textAlign='center';ctx.textBaseline='middle';
 ctx.fillText(name,labelX,labelY-4);ctx.restore();
 }
 function draw(){
-ctx.save();ctx.clearRect(0,0,canvas.width,canvas.height);
+ctx.save();
+ctx.clearRect(0,0,canvas.width,canvas.height);
+const depth=globalThis.ArenaDepth;
 const isTower=globalThis.ArenaScreenRouter?.active==='tower';
 ctx.fillStyle=isTower?'#263443':'#cbd9e1';
 ctx.fillRect(0,0,canvas.width,canvas.height);
-globalThis.ArenaDepth?.paintBackdrop?.(ctx,canvas,isTower);
-// A single mild world projection for scenery, fighters, hits and all VFX.
-// Physics x/y and z never change; 2D overlay labels stay outside this transform.
-const manualCamera=globalThis.ArenaTowerControls?.camera?.(canvas.width,canvas.height);
-if(manualCamera)globalThis.ArenaTowerControls?.applyView?.(ctx,manualCamera);
-globalThis.ArenaDepth?.applyView?.(ctx,canvas);
-if(screenShake>0.5){const x=(Math.random()-0.5)*screenShake,y=(Math.random()-0.5)*screenShake;ctx.translate(x,y);}
-const painted=globalThis.ArenaTower?.paintBackground?.(ctx,canvas)===true;
-globalThis.ArenaDepth?.paintFloor?.(ctx,canvas,painted);
-shockwaves.forEach(w=>{ctx.beginPath();ctx.arc(w.x,w.y,w.radius,0,Math.PI*2);ctx.strokeStyle=`rgba(4,120,87,${w.alpha})`;ctx.lineWidth=6;ctx.stroke();ctx.beginPath();ctx.arc(w.x,w.y,w.radius*0.7,0,Math.PI*2);ctx.fillStyle=`rgba(5,150,105,${w.alpha*0.2})`;ctx.fill();});
+depth?.paintBackdrop?.(ctx,canvas,isTower);
+// A perspective ground plane is rendered to a logical-resolution buffer.
+// Every effect and floor object shares the SAME projective mapping. Actors
+// are upright billboards, not artwork flattened with ctx.scale(1,.74).
+const layer=depth?.layer?.(canvas,'world');
+const worldCtx=layer?.ctx||ctx;
+const shakeX=screenShake>0.5?(Math.random()-.5)*screenShake:0;
+const shakeY=screenShake>0.5?(Math.random()-.5)*screenShake:0;
+ctx.translate(shakeX,shakeY);
+worldCtx.save();
+if(layer)worldCtx.clearRect(0,0,canvas.width,canvas.height);
+// All coordinates in worldCtx are real battle coordinates, not screen coords.
+const painted=globalThis.ArenaTower?.paintBackground?.(worldCtx,canvas)===true;
+depth?.paintFloor?.(worldCtx,canvas,painted);
+shockwaves.forEach(w=>{worldCtx.beginPath();worldCtx.arc(w.x,w.y,w.radius,0,Math.PI*2);worldCtx.strokeStyle=`rgba(4,120,87,${w.alpha})`;worldCtx.lineWidth=6;worldCtx.stroke();worldCtx.beginPath();worldCtx.arc(w.x,w.y,w.radius*0.7,0,Math.PI*2);worldCtx.fillStyle=`rgba(5,150,105,${w.alpha*0.2})`;worldCtx.fill();});
 players.forEach(p=>{
-if(p.id==='bae'&&p.waves)p.waves.forEach(w=>{ctx.beginPath();ctx.arc(w.x,w.y,w.currentRadius,0,Math.PI*2);ctx.strokeStyle=`rgba(234,88,12,${w.alpha})`;ctx.lineWidth=3;ctx.stroke();ctx.beginPath();ctx.arc(w.x,w.y,w.currentRadius*0.85,0,Math.PI*2);ctx.fillStyle=`rgba(249,115,22,${w.alpha*0.12})`;ctx.fill();});
-if(p.id==='oh'&&p.mode==='menhera'&&p.hp>0){const r=p.auraRadius+Math.sin(p.auraPulse)*8,g=ctx.createRadialGradient(p.x,p.y,10,p.x,p.y,r);g.addColorStop(0,'rgba(126,34,206,0.4)');g.addColorStop(0.7,'rgba(168,85,247,0.15)');g.addColorStop(1,'rgba(126,34,206,0)');ctx.beginPath();ctx.arc(p.x,p.y,r,0,Math.PI*2);ctx.fillStyle=g;ctx.fill();ctx.beginPath();ctx.arc(p.x,p.y,r,0,Math.PI*2);ctx.strokeStyle='rgba(168,85,247,0.6)';ctx.setLineDash([5,5]);ctx.lineWidth=2;ctx.stroke();ctx.setLineDash([]);
-p.projectiles.forEach(b=>{ctx.save();ctx.beginPath();ctx.arc(b.x,b.y,b.radius,0,Math.PI*2);ctx.fillStyle='#a855f7';ctx.shadowColor='#c084fc';ctx.shadowBlur=8;ctx.fill();ctx.restore();});
-p.poisonTears.forEach(b=>{ctx.save();const g=ctx.createRadialGradient(b.x-2,b.y-2,1,b.x,b.y,b.radius);g.addColorStop(0,'#f3e8ff');g.addColorStop(0.45,'#c084fc');g.addColorStop(1,'#581c87');ctx.beginPath();ctx.arc(b.x,b.y,b.radius,0,Math.PI*2);ctx.fillStyle=g;ctx.shadowColor='#7e22ce';ctx.shadowBlur=12;ctx.fill();ctx.restore();});}
+if(p.id==='bae'&&p.waves)p.waves.forEach(w=>{worldCtx.beginPath();worldCtx.arc(w.x,w.y,w.currentRadius,0,Math.PI*2);worldCtx.strokeStyle=`rgba(234,88,12,${w.alpha})`;worldCtx.lineWidth=3;worldCtx.stroke();worldCtx.beginPath();worldCtx.arc(w.x,w.y,w.currentRadius*0.85,0,Math.PI*2);worldCtx.fillStyle=`rgba(249,115,22,${w.alpha*0.12})`;worldCtx.fill();});
+if(p.id==='oh'&&p.mode==='menhera'&&p.hp>0){const r=p.auraRadius+Math.sin(p.auraPulse)*8,g=worldCtx.createRadialGradient(p.x,p.y,10,p.x,p.y,r);g.addColorStop(0,'rgba(126,34,206,0.4)');g.addColorStop(0.7,'rgba(168,85,247,0.15)');g.addColorStop(1,'rgba(126,34,206,0)');worldCtx.beginPath();worldCtx.arc(p.x,p.y,r,0,Math.PI*2);worldCtx.fillStyle=g;worldCtx.fill();worldCtx.beginPath();worldCtx.arc(p.x,p.y,r,0,Math.PI*2);worldCtx.strokeStyle='rgba(168,85,247,0.6)';worldCtx.setLineDash([5,5]);worldCtx.lineWidth=2;worldCtx.stroke();worldCtx.setLineDash([]);
+p.projectiles.forEach(b=>{worldCtx.save();worldCtx.beginPath();worldCtx.arc(b.x,b.y,b.radius,0,Math.PI*2);worldCtx.fillStyle='#a855f7';worldCtx.shadowColor='#c084fc';worldCtx.shadowBlur=8;worldCtx.fill();worldCtx.restore();});
+p.poisonTears.forEach(b=>{worldCtx.save();const g=worldCtx.createRadialGradient(b.x-2,b.y-2,1,b.x,b.y,b.radius);g.addColorStop(0,'#f3e8ff');g.addColorStop(0.45,'#c084fc');g.addColorStop(1,'#581c87');worldCtx.beginPath();worldCtx.arc(b.x,b.y,b.radius,0,Math.PI*2);worldCtx.fillStyle=g;worldCtx.shadowColor='#7e22ce';worldCtx.shadowBlur=12;worldCtx.fill();worldCtx.restore();});}
 });
-globalThis.AdvancedCombat?.draw(ctx);
-globalThis.ArenaTower?.drawEncounter?.(ctx);
-globalThis.CosmeticArcade?.drawUnder?.(ctx,players);
+
+globalThis.AdvancedCombat?.draw(worldCtx);
+globalThis.ArenaTower?.drawEncounter?.(worldCtx);
+globalThis.CosmeticArcade?.drawUnder?.(worldCtx,players);
+
 // Separate ground-footprint pass: shadows never darken another fighter's face.
 players.forEach(p=>{
   const altitude=globalThis.AdvancedCombat?.visibleHeight?.(p)??(p.jumpHeight||0);
-  const paintShadow=()=>globalThis.ArenaDepth?.shadow?.(ctx,p,altitude);
-  if(globalThis.ArenaMotion?.drawFighter)ArenaMotion.drawFighter(ctx,p,paintShadow);
+  const paintShadow=()=>globalThis.ArenaDepth?.shadow?.(worldCtx,p,altitude);
+  if(globalThis.ArenaMotion?.drawFighter)ArenaMotion.drawFighter(worldCtx,p,paintShadow);
   else paintShadow();
 });
-// Painter's order is visual only. Original players[] order and physics remain intact.
+
+globalThis.CosmeticArcade?.drawOver?.(worldCtx,players);
+globalThis.ImpactPhysics?.draw?.(worldCtx);
+// Render secondary VFX before world transform is restored. The effect layer
+// never applies a second camera or a different random screenshake.
+globalThis.ArenaFXLayer?.draw?.(worldCtx);
+particles.forEach(p=>{worldCtx.beginPath();worldCtx.arc(p.x,p.y,p.radius,0,Math.PI*2);worldCtx.fillStyle=arenaEffectColor(p.color);worldCtx.globalAlpha=p.alpha;worldCtx.fill();worldCtx.globalAlpha=1;});
+
+worldCtx.restore();
+if(layer)depth?.projectWorld?.(ctx,layer.canvas,canvas);
+// Painter sorting only reorders pixels, never the actual simulation roster.
 const depthOrder=players.slice().sort((a,b)=>
   (a.y-(globalThis.AdvancedCombat?.visibleHeight?.(a)||0)*.28)-
   (b.y-(globalThis.AdvancedCombat?.visibleHeight?.(b)||0)*.28));
 depthOrder.forEach(p=>{
+  const visual=globalThis.ArenaMotion?.position?.(p)||p;
+  const projected=depth?.screenPoint?.(visual.x,visual.y,canvas)||
+    {x:visual.x,y:visual.y};
+  const size=depth?.spriteScale?.(visual,canvas)||1;
+  ctx.save();
+  if(layer){
+    ctx.translate(projected.x,projected.y);
+    ctx.scale(size,size); // sprite billboard retains correct x:y proportions
+    ctx.translate(-visual.x,-visual.y);
+  }
   if(globalThis.ArenaMotion?.drawFighter)ArenaMotion.drawFighter(ctx,p,drawCharacter);
   else drawCharacter(p);
+  ctx.restore();
 });
-globalThis.CosmeticArcade?.drawOver?.(ctx,players);
-globalThis.ImpactPhysics?.draw?.(ctx);
-// Render secondary VFX before world transform is restored. The effect layer
-// never applies a second camera or a different random screenshake.
-globalThis.ArenaFXLayer?.draw?.(ctx);
-particles.forEach(p=>{ctx.beginPath();ctx.arc(p.x,p.y,p.radius,0,Math.PI*2);ctx.fillStyle=arenaEffectColor(p.color);ctx.globalAlpha=p.alpha;ctx.fill();ctx.globalAlpha=1;});
-floatingTexts.forEach(f=>{ctx.save();
+floatingTexts.forEach(f=>{
+  const point=globalThis.ArenaDepth?.screenPoint?.(f.x,f.y,canvas)||{x:f.x,y:f.y};
+  ctx.save();
   ctx.font=`900 ${Math.min(22,Math.max(15,f.size))}px "Noto Sans KR",system-ui,sans-serif`;
   ctx.fillStyle=arenaEffectColor(f.color);ctx.globalAlpha=f.alpha;
   ctx.textAlign='center';ctx.textBaseline='middle';
   ctx.strokeStyle='rgba(255,255,255,.92)';ctx.lineWidth=2.8;ctx.lineJoin='round';
-  ctx.strokeText(f.text,f.x,f.y);ctx.fillText(f.text,f.x,f.y);ctx.restore();});
+  ctx.strokeText(f.text,point.x,point.y);ctx.fillText(f.text,point.x,point.y);ctx.restore();
+});
 // Pause/win labels stay screen-centred rather than tracking the hero.
 ctx.restore();ctx.save();
 if(!isPlaying&&!isGameOver){ctx.fillStyle='rgba(255,255,255,.45)';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.font='700 23px "Noto Sans KR", sans-serif';ctx.fillStyle='#252525';ctx.textAlign='center';ctx.fillText(roundStarted?'일시정지':'대기 중',canvas.width/2,canvas.height/2);}
