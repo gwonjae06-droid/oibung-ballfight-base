@@ -720,7 +720,10 @@ function initializeUI(){
   $('bf-analyze').addEventListener('click',()=>{
     try{
       sync();const d=normalize(draft);
-      report(d.skills.map((s,i)=>(i+1)+'. '+s.name+' · '+TRIGGER[s.trigger]+' / '+s.cooldown+'초'
+      const budget=global.ArenaBalance?.summary(d);
+      report((budget?'설계 화력 지수 '+budget.pressure+' / '+budget.budget+
+        ' · 실제 피해 적용 약 '+budget.percent+'%\n':'')+
+        d.skills.map((s,i)=>(i+1)+'. '+s.name+' · '+TRIGGER[s.trigger]+' / '+s.cooldown+'초'
         +'\n   '+s.actions.map(a=>TYPE[a.type]+' / '+(global.AbilityAtlas?.PATTERNS[a.pattern]||'직선 집중')+' / '+(global.AbilityAtlas?.TARGETS[a.target]||'가장 가까운 적')+' ('+a.damage+'위력, '+a.radius+'범위, '+STATUS[a.status]+')').join(' → ')).join('\n'));
     }catch(e){report(e.message);}
   });
@@ -733,7 +736,9 @@ function initializeUI(){
       reRollMatch();
       const first=$('bf-pick-0');
       if(first){first.value=id;globalThis.applyFighterPicks?.();}
-      roster();report(config.name+' 생성 완료 · P1 적용');
+      const budget=global.ArenaBalance?.summary(config);
+      roster();report(config.name+' 생성 완료 · P1 적용'+
+        (budget?.excess?' · 실제 피해 약 '+budget.percent+'% 적용 (입력값은 보존됨)':''));
       global.ArenaCategories?.hideStudio?.();
     }catch(e){report(e.message);}
   });

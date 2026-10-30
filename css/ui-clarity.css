@@ -509,3 +509,10 @@
 @media(prefers-reduced-motion:reduce){
   .character-studio-dialog .studio-mode-choice{transition:none}
 }
+
+/* Live power-budget hint in the Scratch-style skill editor. */
+.block-power-budget{padding:12px 14px;margin:5px 0 14px;border:1px solid #9ba9b9;border-radius:12px;background:rgba(44,62,81,.07);display:grid;gap:7px;font-size:13px;line-height:1.5}
+.block-power-budget strong{font-size:14px}.block-power-budget span{font-variant-numeric:tabular-nums;font-weight:700}
+.block-power-budget p{margin:0;color:inherit;opacity:.84;font-size:12px}
+.block-power-meter{background:rgba(130,146,163,.28);height:7px;overflow:hidden;border-radius:100px}
+.block-power-meter i{display:block;height:100%;border-radius:100px;background:#647d92}
