@@ -49,7 +49,7 @@ test('skill block UI previews effective damage without changing raw damage contr
  const ui=fs.readFileSync('js/features/block-forge.js','utf8');
  assert.match(ui,/block-power-budget/);
  assert.match(ui,/budget\?\.multiplier/);
- assert.match(ui,/data-key="\+key/);
+ assert.match(ui,/data-edit="param"/);
  const html=fs.readFileSync('index.html','utf8');
  const frame=fs.readFileSync('pvp-runtime.html','utf8');
  assert.ok(html.indexOf('arena-balance.js')<html.indexOf('skill-forge.js'));
