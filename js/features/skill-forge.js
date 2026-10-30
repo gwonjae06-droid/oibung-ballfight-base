@@ -345,7 +345,8 @@ function update(p,target){
   if(p.forgeDash>0){
     p.forgeDash--;
     if(target){const t=Math.atan2(target.y-p.y,target.x-p.x);p.vx+=(Math.cos(t)*p.forgeDashAction.speed-p.vx)*.18;p.vy+=(Math.sin(t)*p.forgeDashAction.speed-p.vy)*.18;}
-  }else if(v>.001&&Number.isFinite(v)){const next=v+(cruise-v)*(v>cruise?.075:.16);p.vx=p.vx/v*next;p.vy=p.vy/v*next;}
+  }else if(global.ArenaAutoAI?.steer?.(p,target,cruise)){}
+   else if(v>.001&&Number.isFinite(v)){const next=v+(cruise-v)*(v>cruise?.075:.16);p.vx=p.vx/v*next;p.vy=p.vy/v*next;}
   else{p.vx=cruise;p.vy=0;}
   tickSkills(p);
   if(p.forge.allAbilities){
@@ -368,7 +369,7 @@ function update(p,target){
       if(p.forgeTicks[i]<cooldownFrames(p,s))return;
       const active=(s.trigger==='auto'&&target)||(s.trigger==='lowhp'&&p.hp/p.maxHp*100<=s.threshold)
         ||(s.trigger==='damaged'&&loss>0);
-      if(active){p.forgeTicks[i]=0;cast(p,s,target,i);}
+      if(active&&global.ArenaAutoAI?.canCast?.(p,target,s)!==false){p.forgeTicks[i]=0;cast(p,s,target,i);}
     });
   }
   advanceWorld(p,target);
