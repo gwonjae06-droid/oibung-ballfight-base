@@ -311,7 +311,7 @@ function install(){
     nextStart.disabled=offers.length>0;
     const f=floor(level),best=read(global.localStorage).records[recordKey(selectedDef())]?.best||0;
     el('tower-floor').textContent=ancient?'최종 보스':level+' / '+FINISH+'F';
-    el('tower-rule').textContent=ancient?'HP 3000 · 즉사급 패턴 · 팔과 촉수를 공격하세요.':(realm()?realm().name+' · ':'')+f.difficulty+' · '+f.description+(blessings.length?' · 기연 '+blessings.length+'개 적용':'');
+    el('tower-rule').textContent=ancient?'HP 3000 · 공격당 약 200 피해 · 팔과 촉수를 공격하세요.':(realm()?realm().name+' · ':'')+f.difficulty+' · '+f.description+(blessings.length?' · 기연 '+blessings.length+'개 적용':'');
     el('tower-enemy').textContent=ancient?'☽ 고대의 존재':(f.boss?'👑 ':'')+f.name;
     el('tower-enemy-info').textContent=ancient?'HP 3000 · 16종 패턴 · 3페이즈 · 팔/촉수 피격은 본체 HP에 적용':realms&&f.boss?'체력 '+f.hp+' · 패턴 기본 피해 '+(20+level*2)+' · 고정형 보스':'체력 '+f.hp+' · 공격 '+f.damage+' · 이동 '+f.speed.toFixed(1);
     el('tower-best').textContent='최고 '+best+'F';
