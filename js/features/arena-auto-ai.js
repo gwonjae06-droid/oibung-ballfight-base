@@ -37,6 +37,20 @@ function steer(p,foe,speed){
  const spin=(p.playerNum||1)%2===0?-1:1;
  const orbit=forward===0?.63:.18;
  const threat=evade(p,foe);
+ // The Tower director steers away from locked hazard coordinates.
+ const encounter=g.ArenaTower?.active&&p.towerHero?g.ArenaTower.encounter:null;
+ for(const zone of encounter?.zones||[]){
+   const left=zone.fire-encounter.tick;
+   if(left<0||left>110||zone.shape==='ring'&&
+     Math.hypot(p.x-zone.x,p.y-zone.y)<(zone.inner||0)-28)continue;
+   const dd=Math.hypot(p.x-zone.x,p.y-zone.y)||1;
+   const extent=zone.shape==='line'?Math.max(80,zone.width*2):zone.r+42;
+   if(dd<extent){
+     const force=(extent-dd)/extent;
+     threat.x+=(p.x-zone.x)/dd*force*1.35;
+     threat.y+=(p.y-zone.y)/dd*force*1.35;
+   }
+ }
  let vx=ux*forward-uy*spin*orbit+threat.x*1.6;
  let vy=uy*forward+ux*spin*orbit+threat.y*1.6;
  const width=typeof canvas!=='undefined'?Number(canvas.width)||500:500;
