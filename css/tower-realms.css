@@ -107,3 +107,11 @@
 #screen-tower[data-tower-realm="forest"] .tower-ready-preview{background:radial-gradient(at 40% 60%,#4d954633,transparent 70%),#132219}
 #screen-tower[data-tower-realm="time"] .tower-ready-preview{background:radial-gradient(at 50% 50%,#b095443d,transparent 70%),#211b14}
 @media(max-width:600px){#screen-tower .tower-ready-preview{min-height:250px;padding:15px}#screen-tower .tower-ready-architecture{height:90px;width:90px}#screen-tower .tower-ready-rune{font-size:58px}}
+
+/* Ancient One unlock, shown only after all six realm clears. */
+.ancient-unlock{margin:20px 0 4px;padding:18px;border:1px solid #9e5dba;background:linear-gradient(120deg,#180e2b,#331743);border-radius:16px;text-align:center;color:#f0d9ff}
+.ancient-unlock p{margin:0 0 12px;font-weight:700}
+.ancient-unlock button:not([hidden]){display:block;width:100%;padding:16px 18px;border:1px solid #eda4ff;border-radius:12px;background:linear-gradient(110deg,#55236e,#962e82);color:#fff;font:800 1.15rem system-ui;cursor:pointer;box-shadow:0 0 24px #d24aff55}
+.ancient-unlock button:hover{filter:brightness(1.2)}
+.ancient-unlock [hidden]{display:none!important}
+@media(max-width:600px){.ancient-unlock{margin:12px 0;padding:12px}.ancient-unlock button:not([hidden]){min-height:48px;font-size:1rem}}
