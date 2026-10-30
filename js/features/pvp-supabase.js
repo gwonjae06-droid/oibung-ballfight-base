@@ -121,11 +121,13 @@ class SupabasePvpTransport{
     if(payload.finished){
      this.done=true;
      global.clearInterval(this.readyTicker);global.clearInterval(this.watchdog);
+     this.stopReliable();this.pendingControls.clear();
     }
     this.emit(payload);
    }else if(payload.type==='result'){
     this.done=true;global.clearInterval(this.readyTicker);
-    global.clearInterval(this.watchdog);this.emit(payload);
+    global.clearInterval(this.watchdog);this.stopReliable();this.pendingControls.clear();
+    this.emit(payload);
    }
   });
   await new Promise((resolve,reject)=>{
@@ -187,6 +189,19 @@ class SupabasePvpTransport{
  control(message,rule){
   if(this.closed||!this.current||!message||this.done)return;
   if(message.from===1&&this.side===0)this.lastPeer=Date.now();
+  if(message.type==='ack'&&this.side===1&&message.from===0){
+   this.pendingControls.delete(message.eventId);
+   if(!this.pendingControls.size)this.stopReliable();
+   return;
+  }
+  // Broadcast can drop packets. Ack every retry, but run a command only once.
+  if(this.side===0&&message.from===1&&Number.isSafeInteger(message.eventId)){
+   Promise.resolve(this.channel?.send({type:'broadcast',event:'control',
+    payload:{type:'ack',from:0,eventId:message.eventId}})).catch(()=>{});
+   if(this.seenControls.has(message.eventId))return;
+   this.seenControls.add(message.eventId);
+   if(this.seenControls.size>128)this.seenControls.delete(this.seenControls.values().next().value);
+  }
   if(message.type==='ready'){
    if(this.side===0&&message.from===1&&!this.peerReady){
     this.peerReady=true;this.lastStep=Date.now();
@@ -242,7 +257,7 @@ class SupabasePvpTransport{
    // Always deliver the final slash/explosion before closing the room.
    if(this.fxTimer){global.clearTimeout(this.fxTimer);this.fxTimer=null;}
    this.flushFx();
-   this.done=true;
+   this.done=true;this.stopReliable();this.pendingControls?.clear?.();
    const result={type:'result',winner:snap.winner};
    this.emit(result);
    this.channel?.send({type:'broadcast',event:'state',payload:result});
@@ -268,9 +283,37 @@ class SupabasePvpTransport{
    // The guest sees the first skill animation on keypress/tap.
    // The host still decides whether it hits, damages, or goes on cooldown.
    if(msg.type==='cast')this.rule.previewCast?.(1,Number(msg.slot));
-   this.channel?.send({type:'broadcast',event:'control',payload:{...msg,from:1}});
+   if(msg.type==='cast'||msg.type==='forfeit')this.sendReliable(msg);
+   else Promise.resolve(this.channel?.send({type:'broadcast',event:'control',payload:{...msg,from:1}})).catch(()=>{});
   }
  }
+ sendReliable(message){
+  if(this.closed||this.done||!this.channel)return;
+  const eventId=++this.controlSequence;
+  if(this.pendingControls.size>=16){
+   this.fail(Error('스킬 입력이 지연되고 있습니다. 네트워크를 확인해 주세요.'));return;
+  }
+  const entry={eventId,message,tries:0,lastAt:0};
+  this.pendingControls.set(eventId,entry);this.dispatchReliable(entry);
+  if(!this.reliableTicker)this.reliableTicker=global.setInterval(()=>{
+   if(this.closed||this.done){this.stopReliable();return;}
+   const now=Date.now();
+   for(const pending of this.pendingControls.values()){
+    if(now-pending.lastAt<350)continue;
+    if(pending.tries>=10){
+     this.fail(Error('입력 전송 응답을 받지 못했습니다. 다시 연결해 주세요.'));return;
+    }
+    this.dispatchReliable(pending);
+   }
+   if(!this.pendingControls.size)this.stopReliable();
+  },350);
+ }
+ dispatchReliable(entry){
+  entry.tries++;entry.lastAt=Date.now();
+  Promise.resolve(this.channel?.send({type:'broadcast',event:'control',
+   payload:{...entry.message,from:1,eventId:entry.eventId}})).catch(()=>{});
+ }
+ stopReliable(){if(this.reliableTicker){global.clearInterval(this.reliableTicker);this.reliableTicker=null;}}
  fail(error){
   if(this.closed)return;
   this.lastError=error?.message||'연결 오류';
