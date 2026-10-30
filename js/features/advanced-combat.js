@@ -121,8 +121,11 @@ function pushShot(o){if(projectiles.length>=MAX_PROJECTILES)projectiles.shift();
 const enemies=p=>players.filter(q=>q!==p&&q.hp>0);
 const nearest=p=>enemies(p).sort((a,b)=>Math.hypot(a.x-p.x,a.y-p.y)-Math.hypot(b.x-p.x,b.y-p.y))[0]||null;
 function strike(p,e,a,api,z=groundHeight(p),factor=1){
-  if(!e||!canHit(p,e,z))return false;
-  return api.hit(p,e,a,factor,z);
+  // Legacy authored melee and landing moves pass relative jump height.
+  // Convert those to the absolute tier used by canHit and Forge/AI shots.
+  const worldZ=z+terrainElevation(p);
+  if(!e||!canHit(p,e,worldZ))return false;
+  return api.hit(p,e,a,factor,worldZ);
 }
 function launch(p,power=8){
   ensure(p);
@@ -527,7 +530,7 @@ function stepObjects(api){
       }
     }else if(o.kind==='trap'){
       if(o.age>16)for(const e of enemies(p)){
-        if(Math.hypot(e.x-o.x,e.y-o.y)<o.r+e.radius && canHit(p,e,0)){
+        if(Math.hypot(e.x-o.x,e.y-o.y)<o.r+e.radius && canHit(p,e,terrainElevation(p))){
           strike(p,e,o.a,api,0);o.life=0;mark('burst',o.x,o.y,48,color(p));break;
         }
       }
