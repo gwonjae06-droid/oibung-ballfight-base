@@ -231,6 +231,13 @@ function install(){
     +'<div id="tower-blessing-choices" class="tower-blessing-choices"></div>'
     +'<button id="tower-next-start" type="button">다음 층 시작</button></div>';
   doc.querySelector?.('#tower-arena-slot .canvas-wrapper')?.append(clearOverlay);
+  const readyPreview=doc.createElement('section');
+  readyPreview.id='tower-ready-preview';readyPreview.className='tower-ready-preview';
+  readyPreview.setAttribute('aria-label','선택한 탑 내부 전장');
+  readyPreview.innerHTML='<div class="tower-ready-architecture" aria-hidden="true"><div class="tower-ready-rune" id="tower-ready-rune">◷</div></div>'
+    +'<div class="tower-ready-narrative"><span>ENTER THE REALM</span><h3 id="tower-ready-title">시간의 탑</h3>'
+    +'<p id="tower-ready-desc"></p><small>출전 파이터와 전투 방식을 정한 뒤 시작 버튼을 누르세요.</small></div>';
+  doc.getElementById('tower-arena-slot')?.prepend(readyPreview);
   const nextStart=el('tower-next-start');
   let active=false,stage='ready',level=1,cleared=0,selected=null,temporary=null,mode='auto';
   let blessings=[],offers=[],encounter=null,view='selection';
@@ -283,6 +290,14 @@ function install(){
     screen.dataset.towerRealm=realmId;
     panel.hidden=screen.dataset.towerView==='selection';
     const arenaSlot=el('tower-arena-slot');if(arenaSlot)arenaSlot.hidden=panel.hidden;
+    if(readyPreview){
+      readyPreview.hidden=stage!=='ready'||panel.hidden;
+      if(realms){
+        el('tower-ready-rune').textContent=realm().icon;
+        el('tower-ready-title').textContent=realm().name;
+        el('tower-ready-desc').textContent=realm().subtitle+' · '+floor(level).description;
+      }
+    }
     if(realms){
       const r=realm();
       el('tower-doorway-title').textContent=r.name;
@@ -503,7 +518,7 @@ function install(){
   });
    show();
   function paintBackground(ctx,canvas){
-    if(!['fighting','between','lost','won'].includes(stage)||
+    if(!['ready','fighting','between','lost','won'].includes(stage)||
        global.ArenaScreenRouter?.active!=='tower')return false;
     const painted=global.ArenaTowerScenes?.paint?.(ctx,canvas.width,canvas.height,realm()?.scene||level)||false;
     global.ArenaTowerAtmosphere?.paint?.(ctx,canvas.width,canvas.height,realmId,level);

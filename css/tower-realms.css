@@ -83,3 +83,27 @@
 @keyframes realmFloat{0%,100%{transform:translate(0,0)}50%{transform:translate(-8%,12%)}}
 @media(max-width:600px){#screen-tower .tower-doorway{padding:53px 14px 18px;gap:12px}#screen-tower .tower-doorway-symbol{font-size:48px}#screen-tower .tower-realm-card{min-height:143px}}
 @media(prefers-reduced-motion:reduce){#screen-tower .tower-doorway-symbol,#screen-tower .tower-ambient-orb{animation:none}#screen-tower .tower-realm-card{transition:none}}
+
+/* The realm waiting chamber hides old PvE fighters until Start is pressed. */
+#tower-ready-preview[hidden]{display:none!important}
+#screen-tower[data-tower-view="interior"][data-tower-phase="ready"] #tower-arena-slot>.battle-screen,
+#screen-tower[data-tower-view="interior"][data-tower-phase="ready"] #tower-manual-hud,
+#screen-tower[data-tower-view="interior"][data-tower-phase="ready"] #tower-manual-controls{display:none!important}
+#screen-tower .tower-ready-preview{position:relative;min-height:clamp(250px,39vw,430px);overflow:hidden;isolation:isolate;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;color:#fff;border:2px solid var(--realm-color);border-radius:16px;background:radial-gradient(ellipse at 50% 43%,color-mix(in srgb,var(--realm-color) 23%,transparent),transparent 60%),linear-gradient(160deg,var(--tower-dark,#1b253b),#090e18);padding:25px}
+#screen-tower .tower-ready-preview:before,#screen-tower .tower-ready-preview:after{content:"";position:absolute;width:42%;aspect-ratio:1;min-width:190px;border:2px solid var(--realm-color);border-radius:50%;opacity:.3;pointer-events:none}
+#screen-tower .tower-ready-preview:before{transform:rotate(25deg) scale(1.2);box-shadow:0 0 50px var(--realm-color)}
+#screen-tower .tower-ready-preview:after{transform:rotate(-25deg) scale(.65);border-style:dashed}
+#screen-tower .tower-ready-architecture{position:relative;z-index:1;width:130px;height:130px;display:grid;place-items:center;border-radius:50%;background:radial-gradient(circle,color-mix(in srgb,var(--realm-color) 36%,transparent),transparent 69%);filter:drop-shadow(0 0 22px var(--realm-color))}
+#screen-tower .tower-ready-rune{font-size:clamp(62px,9vw,100px);color:var(--realm-color);line-height:1}
+#screen-tower .tower-ready-narrative{position:relative;z-index:1;max-width:700px}
+#screen-tower .tower-ready-narrative span{font-size:11px;letter-spacing:.24em;color:var(--realm-color)}
+#screen-tower .tower-ready-narrative h3{font-size:clamp(25px,5vw,40px);margin:6px 0}
+#screen-tower .tower-ready-narrative p{font-size:14px;line-height:1.7;color:#e1e8f3}
+#screen-tower .tower-ready-narrative small{font-size:12px;color:#c8d2e2}
+#screen-tower[data-tower-realm="fire"] .tower-ready-preview{background:radial-gradient(at 50% 85%,#b8483059,transparent 65%),#1e130f}
+#screen-tower[data-tower-realm="space"] .tower-ready-preview{background:radial-gradient(at 50% 40%,#9466c34d,transparent 65%),#100e28}
+#screen-tower[data-tower-realm="storm"] .tower-ready-preview{background:linear-gradient(135deg,#112e3b,#0a141b 60%,#256b7855)}
+#screen-tower[data-tower-realm="ice"] .tower-ready-preview{background:linear-gradient(145deg,#1c455d,#0e202c 70%,#9edafa33)}
+#screen-tower[data-tower-realm="forest"] .tower-ready-preview{background:radial-gradient(at 40% 60%,#4d954633,transparent 70%),#132219}
+#screen-tower[data-tower-realm="time"] .tower-ready-preview{background:radial-gradient(at 50% 50%,#b095443d,transparent 70%),#211b14}
+@media(max-width:600px){#screen-tower .tower-ready-preview{min-height:250px;padding:15px}#screen-tower .tower-ready-architecture{height:90px;width:90px}#screen-tower .tower-ready-rune{font-size:58px}}
