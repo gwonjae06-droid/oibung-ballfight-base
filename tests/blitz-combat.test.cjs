@@ -128,3 +128,12 @@ test('tower waits indefinitely for the player, then runs only player skills befo
  assert.equal(a.phase,'plan');assert.equal(a.activeSide,0);
  a.stop();assert.equal(a.phase,'idle');
 });
+
+test('sequential mode requires protocol 2 from both peers before matchmaking',()=>{
+ const read=p=>fs.readFileSync(p,'utf8');
+ const sql=read('supabase/pvp_blitz_turn_v2.sql');
+ assert.match(sql,/p_mode='blitz' and p_fighter->>'bp' is distinct from '2'/);
+ assert.match(sql,/mode='blitz' and fighter->>'bp'='2'/);
+ assert.match(read('js/features/pvp-original-engine.js'),/v:2,bp:2,id:d\.id/);
+ assert.match(read('js/features/pvp-original-engine.js'),/pvp-runtime\.html\?v=pvp-turn2/);
+});
