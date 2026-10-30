@@ -26,6 +26,7 @@ class SupabasePvpTransport{
   this.peerReady=false;this.lastStep=0;this.lastPeer=Date.now();
   this.checkFailures=0;this.checkBusy=false;this.connected=false;this.done=false;
   this.pendingControls=new Map();this.seenControls=new Set();this.controlSequence=0;
+  this.peerReliable=false;
   this.authTimer=null;this.queueTimer=null;this.subscriptionTimer=null;this.reliableTicker=null;
   this.authTimer=global.setTimeout(()=>this.fail(Error('로그인 응답 시간이 초과됐습니다. 다시 시도해 주세요.')),20000);
   this.ticket=global.crypto?.randomUUID?.();
@@ -116,6 +117,7 @@ class SupabasePvpTransport{
    if(this.closed||this.side!==1||!payload)return;
    if(payload.type==='state'){
     this.lastPeer=Date.now();
+    this.peerReliable=payload.protocol===3;
     if(!Number.isInteger(payload.seq)||payload.seq<=(this.receivedSeq||0))return;
     this.receivedSeq=payload.seq;rule.receive(payload);
     if(payload.finished){
@@ -245,6 +247,7 @@ class SupabasePvpTransport{
    // flowing even when a particularly busy visual frame is too large.
    if(JSON.stringify(snap).length>MAX_FRAME_BYTES)delete snap.world;
   }
+  snap.protocol=3;
   snap.seq=(this.sequence=(this.sequence||0)+1);
   this.emit(snap);
   if(this.channel){
@@ -283,7 +286,8 @@ class SupabasePvpTransport{
    // The guest sees the first skill animation on keypress/tap.
    // The host still decides whether it hits, damages, or goes on cooldown.
    if(msg.type==='cast')this.rule.previewCast?.(1,Number(msg.slot));
-   if(msg.type==='cast'||msg.type==='forfeit')this.sendReliable(msg);
+   // A cached legacy host cannot ACK, and duplicate casts must not be sent to it.
+   if((msg.type==='cast'||msg.type==='forfeit')&&this.peerReliable)this.sendReliable(msg);
    else Promise.resolve(this.channel?.send({type:'broadcast',event:'control',payload:{...msg,from:1}})).catch(()=>{});
   }
  }

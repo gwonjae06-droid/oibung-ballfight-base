@@ -63,3 +63,14 @@ test('network broadcast backpressure clears if send never settles',()=>{
  h.now(4000);h.t.advance(h.t.rule);
  assert.ok(snap.length>0);
 });
+
+test('guest uses one-shot casts with legacy host and ACK protocol after version negotiation',()=>{
+ const h=mock(),t=h.t;t.rule={predict(){},previewCast(){}};
+ t.peerReliable=false;t.send(JSON.stringify({type:'cast',slot:0}));
+ assert.equal(h.packets.length,1);
+ assert.equal(h.packets[0].payload.eventId,undefined);
+ assert.equal(h.intervals.size,0);
+ t.peerReliable=true;t.send(JSON.stringify({type:'cast',slot:1}));
+ assert.equal(h.packets.length,2);
+ assert.ok(Number.isInteger(h.packets[1].payload.eventId));
+});
