@@ -3,7 +3,7 @@
   const $ = id => document.getElementById(id);
   const pool = () => [...CHARACTER_DEFS, ...CUSTOM_DEFS];
   const locked = () => roundStarted && !isGameOver;
-  const originalRoll = reRollMatch, originalUpdate = update;
+  const originalRoll = reRollMatch;
   const panel = document.createElement('section');
   panel.className = 'bf-tools';
   panel.setAttribute('aria-label', '대진 설정');
@@ -60,10 +60,7 @@
     return true;
   }
   window.applyFighterPicks=applyPicks;
-  update=function(){
-    if(isPlaying&&!isGameOver)players.forEach(p=>{if(p.bfDot>0&&p.hp>0){p.bfDot--;if(p.bfDot%30===0){const amount=Math.max(1,Math.min(6,p.bfDotDamage||2));p.hp=Math.max(0,p.hp-amount);addFloatingText('-'+amount,p.x,p.y-30,'#a75f2b',14);}}});
-    originalUpdate();
-  };
+  // Burn/poison ticks are handled in the shared engine, including PvP.
   // The single fixed-step game loop starts once effects are installed.
   reRollMatch();
   setEconomyMessage('');

@@ -31,6 +31,16 @@ function legacy(p,fn){
 function heal(p,amount){if(p.hp<=0)return;const n=active(p,'curse')?amount*.4:amount;p.hp=Math.min(p.maxHp,p.hp+n);}
 function tick(p){
   revive(p);if(p.hp<=0)return;
+  // Once per simulation frame in ALL modes. No second UI-only tick.
+  if(p.bfDot>0){
+    p.bfDot--;
+    if(p.bfDot%30===0){
+      const amount=Math.max(1,Math.min(6,p.bfDotDamage||2));
+      p.hp=Math.max(0,p.hp-amount);
+      global.addFloatingText?.('-'+amount,p.x,p.y-30,'#a75f2b',14);
+    }
+  }
+  if(p.hp<=0)return;
   if(p.forge){p.forgeHistory ||= [];p.forgeHistory.push({x:p.x,y:p.y,hp:p.hp});if(p.forgeHistory.length>181)p.forgeHistory.shift();}
   if(p.forgePhase?.time>0){p.forgePhase.time--;p.invincible=Math.max(p.invincible||0,2);}
   for(const [key,v] of Object.entries(p.forgeEffects||{})){
