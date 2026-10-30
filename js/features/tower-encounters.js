@@ -46,7 +46,8 @@ function create({realm,level,width=500,height=500,hero,boss,damage}){
  }
  function pattern(){
   const turn=bossTurn++%4,strong=level===10,rapid=phase===2;
-  const delay=rapid?78:96;
+  const cadence={time:[54,68],space:[87,104],fire:[72,82],storm:[48,60],ice:[112,126],forest:[76,90]}[realm]||[78,96];
+  const delay=rapid?cadence[0]:cadence[1];
   const x=clamp(hero.x,65,width-65),y=clamp(hero.y,65,height-65);
   const extra=strong||rapid;
   switch(realm){
@@ -115,7 +116,7 @@ function create({realm,level,width=500,height=500,hero,boss,damage}){
   if(isBoss&&phase===1&&boss.hp<=boss.maxHp*.5){phase=2;nextBoss=Math.max(tick+90,nextBoss);}
   // No extra terrain on boss floors; every pattern has safe geometry.
   if(!isBoss&&tick>=nextTerrain){terrain();nextTerrain=tick+Math.max(205,300-level*9);}
-  if(isBoss&&tick>=nextBoss){pattern();nextBoss=tick+(phase===2?255:315);}
+  if(isBoss&&tick>=nextBoss){pattern();nextBoss=tick+({time:phase===2?135:178,space:phase===2?230:272,fire:phase===2?150:185,storm:phase===2?118:155,ice:phase===2?245:295,forest:phase===2?158:204}[realm]||255);}
   for(const z of zones){
    if(tick<z.fire||tick>=z.end)continue;
    for(const p of z.kind==='boss'?[hero]:[hero,boss]){
@@ -130,7 +131,10 @@ function create({realm,level,width=500,height=500,hero,boss,damage}){
     }
     if(z.kind==='terrain'&&realm==='storm')p.x=clamp(p.x+1.5,p.radius||0,width-(p.radius||0));
     if(!z.hits.has(p)){
-      const amount=z.kind==='boss'?24+level*3+(phase===2?6:0):(realm==='fire'?18:12)+level*2;
+      const element={time:.86,space:1.02,fire:1.75,storm:1.05,ice:.82,forest:.9}[realm]||1;
+      const amount=Math.round((z.kind==='boss'?24+level*3+(phase===2?6:0):(realm==='fire'?18:12)+level*2)*element);
+      if(z.kind==='boss'&&realm==='ice'){p.slowTimer=Math.max(p.slowTimer||0,90);p.slowMultiplier=.5;}
+      if(z.kind==='boss'&&realm==='forest'){p.poisonTimer=Math.max(p.poisonTimer||0,120);}
       if(damage(p,amount,z)!==false)z.hits.add(p);
     }
    }
