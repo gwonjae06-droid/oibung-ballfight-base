@@ -259,6 +259,7 @@ function install(){
       if(dialog?.open)dialog.removeAttribute('open');
       global.dispatchEvent?.(new global.Event('studio:close'));
     }
+    if(where==='tower'&&active!=='tower'&&!global.ArenaTower?.active)global.ArenaTower?.openSelection?.();
     active=where;
     if(where==='tower'||where==='pve')moveArena(where);
     global.ArenaPvp?.onRoute?.(where==='pvp');

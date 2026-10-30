@@ -15,9 +15,22 @@ function floor(base,id){
  f.name=f.boss?r.bosses[f.number===10?1:0]:r.subtitle+' · '+f.number+'층';
  f.description=f.boss?r.pattern+' · HP 50% 이하 2페이즈':r.terrain+' · '+r.hint;
  f.scene=r.id;f.realm=r.id;f.difficulty=f.boss?'특수 보스':'테마 도전';
- // Normal floors stay approachable; boss strength comes from readable patterns.
- f.hp=150+f.number*18+(f.boss?130:0);f.damage=12+f.number*2;f.speed=1.2+f.number*.12;
+ // Higher floors require sustained damage and awareness; patterns remain telegraphed.
+  f.hp=190+f.number*26+(f.boss?170:0);f.damage=15+f.number*3;f.speed=1.35+f.number*.14;
+  f.cooldown=Math.max(1.1,2.6-f.number*.12);
  return f;
+}
+const LOADOUTS={
+ time:[['시침 투사','shot'],['초침 가속','haste'],['되감기 충격','wave'],['시간 도약','blink'],['과거의 잔영','rewind'],['정지의 장막','timestop']],
+ space:[['항성 추적탄','homing'],['중력 보호막','shield'],['사건 지평선','blackhole'],['회전 위성','orbit'],['별의 낙하','starfall'],['성운 낙뢰','bolt']],
+ fire:[['잿불 투사체','shot'],['용암 폭발','nova'],['분화구','zone'],['화염 유성','meteor'],['화염 돌진','dash'],['불꽃 회오리','spinslash']],
+ storm:[['청뢰 낙하','bolt'],['폭풍 가속','haste'],['낙뢰 연쇄','chain'],['뇌광 돌진','dash'],['폭풍 광선','beam'],['뇌운 소용돌이','orbit']],
+ ice:[['빙창 관통','pierce'],['서리 방벽','shield'],['눈보라 파동','wave'],['얼음 함정','trap'],['동토 결계','zone'],['빙결 궤도','orbit']],
+ forest:[['독가시 탄환','dung'],['세계수 재생','regen'],['덩굴 함정','trap'],['숲의 수호수','summon'],['생명 흡수','drain'],['가시 지대','zone']]
+};
+function enemyLoadout(id,level){
+ const n=level<=2?2:level<=4?4:level<=7?5:6;
+ return (LOADOUTS[id]||LOADOUTS.time).slice(0,n).map(a=>[...a]);
 }
 function choices(id,owned=[],random=Math.random){
  const r=get(id),all=[
@@ -51,5 +64,5 @@ function apply(p,id,blessings){
   }
  }
 }
-g.ArenaTowerRealms={REALMS:Object.freeze(REALMS),get,floor,choices,apply};
+g.ArenaTowerRealms={REALMS:Object.freeze(REALMS),get,floor,enemyLoadout,choices,apply};
 })(globalThis);

@@ -45,3 +45,41 @@
 #screen-tower[data-manual-focus="true"] #tower-manual-hud {order:0;}
 #screen-tower[data-manual-focus="true"] #tower-arena-slot>.battle-screen {order:1;}
 #screen-tower[data-manual-focus="true"] #tower-manual-controls {order:2;}
+
+/* Realm navigation: choose first; enter its own interior before fighting. */
+#screen-tower[data-tower-view="selection"] #tower-challenge,
+#screen-tower[data-tower-view="selection"] #tower-arena-slot,
+#screen-tower[data-tower-view="selection"] #tower-manual-controls{display:none!important}
+#screen-tower[data-tower-view="interior"] .tower-realm-selector{display:none!important}
+#screen-tower .tower-doorway{--glow:var(--realm-color,#f5ce78);position:relative;isolation:isolate;overflow:hidden;display:flex;align-items:center;gap:clamp(12px,3vw,34px);min-height:180px;padding:46px clamp(14px,4vw,32px) 22px;border-radius:16px;color:#f5f8ff;background:linear-gradient(115deg,#0d1525,color-mix(in srgb,var(--glow) 20%,#101726));border:1px solid var(--glow)}
+#screen-tower .tower-return{position:absolute;top:9px;left:10px;z-index:2;min-height:35px;background:#142039d9;color:#fff;border:1px solid #a5b6d177;border-radius:9px;padding:6px 12px;cursor:pointer}
+#screen-tower .tower-return[hidden]{display:none}
+#screen-tower .tower-doorway-symbol{font-size:clamp(48px,10vw,90px);line-height:1;color:var(--glow);filter:drop-shadow(0 0 16px var(--glow));animation:realmBreathe 5s ease-in-out infinite}
+#screen-tower .tower-doorway-text{z-index:1;position:relative;max-width:650px}
+#screen-tower .tower-doorway-text span{font-size:11px;letter-spacing:.18em;color:var(--glow)}
+#screen-tower .tower-doorway-text h2{font-size:clamp(25px,5vw,42px);margin:6px 0;color:#fff}
+#screen-tower .tower-doorway-text p{font-size:clamp(14px,2.5vw,18px);font-weight:700;color:#eff3ff;margin:0 0 10px}
+#screen-tower .tower-doorway-text small{display:block;color:#d6e1f4;line-height:1.6}
+#screen-tower .tower-ambient-orb{position:absolute;right:-8%;top:-55%;width:53%;aspect-ratio:1;border-radius:50%;background:radial-gradient(circle,color-mix(in srgb,var(--glow) 35%,transparent),transparent 69%);filter:blur(12px);animation:realmFloat 12s ease-in-out infinite;pointer-events:none}
+#screen-tower .tower-realm-selector{background:linear-gradient(150deg,#111c2d,#090f1a)}
+#screen-tower .tower-realm-card{position:relative;overflow:hidden;min-height:156px;transition:transform .2s,border-color .2s,box-shadow .2s}
+#screen-tower .tower-realm-card:after{content:"";position:absolute;bottom:-42px;right:-30px;width:140px;height:140px;border:2px solid var(--realm-color);border-radius:50%;opacity:.18;pointer-events:none}
+#screen-tower .tower-realm-card:hover{transform:translateY(-3px)}
+#screen-tower[data-tower-realm="time"]{--realm-color:#f5ce78;--tower-dark:#292014}
+#screen-tower[data-tower-realm="space"]{--realm-color:#c8aaff;--tower-dark:#231531}
+#screen-tower[data-tower-realm="fire"]{--realm-color:#ffad72;--tower-dark:#32170f}
+#screen-tower[data-tower-realm="storm"]{--realm-color:#8ce7f3;--tower-dark:#132936}
+#screen-tower[data-tower-realm="ice"]{--realm-color:#bcecff;--tower-dark:#152b3a}
+#screen-tower[data-tower-realm="forest"]{--realm-color:#b5e992;--tower-dark:#1b2c1d}
+#screen-tower[data-tower-view="interior"] .tower-challenge{background:linear-gradient(180deg,color-mix(in srgb,var(--tower-dark) 22%,#131b2b),#121a29)}
+#screen-tower[data-tower-view="interior"] #tower-arena-slot .canvas-wrapper{box-shadow:0 0 0 2px var(--realm-color),0 8px 38px color-mix(in srgb,var(--realm-color) 24%,transparent)}
+#screen-tower .tower-realm-card[data-realm="time"]{background:radial-gradient(at 95% 8%,#b68c3355,transparent 73%),#211c19}
+#screen-tower .tower-realm-card[data-realm="space"]{background:radial-gradient(at 95% 8%,#6c4ba86b,transparent 73%),#18172b}
+#screen-tower .tower-realm-card[data-realm="fire"]{background:radial-gradient(at 95% 8%,#af3d1f77,transparent 73%),#261711}
+#screen-tower .tower-realm-card[data-realm="storm"]{background:radial-gradient(at 95% 8%,#286d8d77,transparent 73%),#101f2b}
+#screen-tower .tower-realm-card[data-realm="ice"]{background:radial-gradient(at 95% 8%,#5cadd377,transparent 73%),#152433}
+#screen-tower .tower-realm-card[data-realm="forest"]{background:radial-gradient(at 95% 8%,#4c8c3577,transparent 73%),#14221b}
+@keyframes realmBreathe{0%,100%{transform:scale(1);opacity:.9}50%{transform:scale(1.08);opacity:1}}
+@keyframes realmFloat{0%,100%{transform:translate(0,0)}50%{transform:translate(-8%,12%)}}
+@media(max-width:600px){#screen-tower .tower-doorway{padding:53px 14px 18px;gap:12px}#screen-tower .tower-doorway-symbol{font-size:48px}#screen-tower .tower-realm-card{min-height:143px}}
+@media(prefers-reduced-motion:reduce){#screen-tower .tower-doorway-symbol,#screen-tower .tower-ambient-orb{animation:none}#screen-tower .tower-realm-card{transition:none}}
