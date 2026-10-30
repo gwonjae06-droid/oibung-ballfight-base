@@ -289,7 +289,7 @@ function update() {
   players.forEach(p=>globalThis.ForgeExpansion?.revive(p));
   const finalAlive=players.filter(p=>p.hp>0);
   if(finalAlive.length<=1){isGameOver=true;isPlaying=false;globalThis.BackgroundMusic?.setBattle(false);settleRound(finalAlive.length===1?finalAlive[0]:null);document.getElementById('btn-start').innerText='다음 경기';document.getElementById('btn-start').dataset.state='finished';syncStopButton();globalThis.ArenaTower?.onBattleEnd?.(finalAlive.length===1?finalAlive[0]:null);}
-  updateUI();
+  if(!globalThis.ArenaSpeedControl?.deferUI)updateUI();
 }
 // Identical fighters are distinguished by their match slot, not by
 // permanent renaming or ranking. Supports mirror fights in 1v1 and 3-player.
