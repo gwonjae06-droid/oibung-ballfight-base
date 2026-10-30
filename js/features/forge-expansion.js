@@ -22,6 +22,11 @@ function effect(p,key,time,source,power=0){
 function applyStatus(p,e,a){
   if(STATUSES[a.status])effect(e,a.status,Math.round((a.duration||1.5)*60),p,a.damage);
 }
+const heightOf=p=>global.AdvancedCombat?.height?.(p)||0;
+function shotSlope(p,e,speed){
+ const travel=Math.max(1,Math.hypot(e.x-p.x,e.y-p.y)/Math.max(1,speed||5));
+ return (heightOf(e)-heightOf(p))/travel;
+}
 function damageScale(p,e){return (active(p,'weak')?.6:1)*(active(p,'blind')?.65:1)*(active(e,'vulnerable')?1.35:1)*(active(e,'fortify')?.55:1);}
 function legacy(p,fn){
   const before=players.map(e=>({e,hp:e.hp})),ownHp=p.hp;fn();
@@ -107,11 +112,13 @@ function execute(p,a,target,api){
         delay,flight,total:delay+flight,hit:false,a});
     }
   }else if(a.type==='dung'){
-    p.forgeExtras.push({kind:'dung',x:p.x,y:p.y,vx:Math.cos(angle)*a.speed,vy:Math.sin(angle)*a.speed,life:Math.ceil(a.radius/a.speed*3),age:0,hits:[],a:{...a,status:'poison'}});
+    p.forgeExtras.push({kind:'dung',x:p.x,y:p.y,z:heightOf(p),heightVelocity:shotSlope(p,near,a.speed),
+      vx:Math.cos(angle)*a.speed,vy:Math.sin(angle)*a.speed,life:Math.ceil(a.radius/a.speed*3),age:0,hits:[],a:{...a,status:'poison'}});
   }
 
   if(['homing','pierce','boomerang'].includes(a.type)){
-    for(let i=0;i<a.count;i++){const t=angle+(i-(a.count-1)/2)*.15;p.forgeExtras.push({kind:a.type,x:p.x,y:p.y,vx:Math.cos(t)*a.speed,vy:Math.sin(t)*a.speed,life:Math.ceil(a.radius/a.speed*3),age:0,target:near.playerNum,hits:[],a});}
+    for(let i=0;i<a.count;i++){const t=angle+(i-(a.count-1)/2)*.15;p.forgeExtras.push({kind:a.type,x:p.x,y:p.y,z:heightOf(p),heightVelocity:shotSlope(p,near,a.speed),
+        vx:Math.cos(t)*a.speed,vy:Math.sin(t)*a.speed,life:Math.ceil(a.radius/a.speed*3),age:0,target:near.playerNum,hits:[],a});}
   }else if(a.type==='chain'){
     let origin=p;const visited=new Set();
     for(let i=0;i<a.count;i++){
@@ -181,15 +188,16 @@ function update(p,api){
       }
       const fromX=b.x,fromY=b.y;
       b.x+=b.vx;b.y+=b.vy;
-      // Every ground-level moving projectile is intercepted by real walls.
+      if(Number.isFinite(b.heightVelocity))b.z=(b.z||0)+b.heightVelocity;
+      // Projectiles now aim from the caster's elevation to the target tier.
       if(global.AdvancedCombat?.blockSegment?.(
-        fromX,fromY,b.x,b.y,b.a?.damage||10,0)){
+        fromX,fromY,b.x,b.y,b.a?.damage||10,b.z||0)){
         extras.splice(i,1);continue;
       }
       for(const e of api.enemies(p))if(!b.hits.includes(e.playerNum)&&
         (global.ActionRegistry?.sweptCircle?.(fromX,fromY,b.x,b.y,e.x,e.y,e.radius+8)??
           Math.hypot(e.x-b.x,e.y-b.y)<=e.radius+8)&&
-        api.hit(p,e,b.a,1,0)){
+        api.hit(p,e,b.a,1,b.z||0)){
         b.hits.push(e.playerNum);
         global.AdvancedCombat?.mark?.('burst',e.x,e.y,20,(p.forge.effectColor||p.forge.color),13);
         if(b.kind==='dung'){e.slowTimer=Math.round(b.a.duration*60);e.slowMultiplier=.5;}

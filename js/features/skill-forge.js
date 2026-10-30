@@ -318,7 +318,10 @@ function execute(p,a,target) {
     if(!near)return;
     visual('shot');const angle=Math.atan2(near.y-p.y,near.x-p.x);
     for(let i=0;i<a.count;i++){const t=angle+(i-(a.count-1)/2)*.19;
-      p.forgeShots.push({x:p.x,y:p.y,z:global.AdvancedCombat?.height?.(p)||0,
+      const originZ=global.AdvancedCombat?.height?.(p)||0;
+      const aimZ=global.AdvancedCombat?.height?.(near)||0;
+      const frames=Math.max(1,Math.hypot(near.x-p.x,near.y-p.y)/Math.max(1,a.speed));
+      p.forgeShots.push({x:p.x,y:p.y,z:originZ,heightVelocity:(aimZ-originZ)/frames,
         vx:Math.cos(t)*a.speed,vy:Math.sin(t)*a.speed,life:Math.ceil(a.radius/a.speed*3),a});
     }
     if(p.forgeShots.length>100)p.forgeShots.splice(0,p.forgeShots.length-100);
@@ -463,7 +466,9 @@ function advanceWorld(p,target){
   global.ForgeExpansion?.update(p,{hit,enemies});
   tickQueue(p,target);
   for(let i=p.forgeShots.length-1;i>=0;i--){
-    const b=p.forgeShots[i];b.prevX=b.x;b.prevY=b.y;b.x+=b.vx;b.y+=b.vy;b.life--;
+    const b=p.forgeShots[i];b.prevX=b.x;b.prevY=b.y;b.x+=b.vx;b.y+=b.vy;
+    if(Number.isFinite(b.heightVelocity))b.z=(b.z||0)+b.heightVelocity;
+    b.life--;
     const blocked=global.AdvancedCombat?.blockSegment?.(
       b.prevX,b.prevY,b.x,b.y,b.a?.damage||10,b.z||0);
     if(blocked){p.forgeShots.splice(i,1);continue;}

@@ -118,7 +118,13 @@ function execute(caster,action,originalTarget,api){
       // Directions differ with formation; bullets still travel from caster.
       const dx=point.x-caster.x,dy=point.y-caster.y,len=Math.hypot(dx,dy)||1;
       const vx=dx/len*action.speed,vy=dy/len*action.speed;
-      caster.forgeShots.push({x:caster.x,y:caster.y,z:global.AdvancedCombat?.height?.(caster)||0,vx,vy,
+      // Fire at the target's height, instead of keeping the shot on the
+      // caster's platform and missing every elevated opponent.
+      const originZ=global.AdvancedCombat?.height?.(caster)||0;
+      const aimZ=global.AdvancedCombat?.height?.(target)||0;
+      const heightVelocity=(aimZ-originZ)/Math.max(1,
+        Math.hypot(target.x-caster.x,target.y-caster.y)/Math.max(1,action.speed));
+      caster.forgeShots.push({x:caster.x,y:caster.y,z:originZ,heightVelocity,vx,vy,
         life:Math.ceil(action.radius/action.speed*3),a:action,
         atlas:'shot',targetNum:target.playerNum});
     }
