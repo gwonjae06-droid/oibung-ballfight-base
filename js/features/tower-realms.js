@@ -9,10 +9,18 @@ const REALMS=[
  {id:'ice',name:'빙결의 탑',icon:'❄',color:'#bcecff',scene:2,subtitle:'푸른 결정의 성소',terrain:'서리 결정',hint:'푸른 원이 켜지면 서리가 이동을 늦춥니다. 얼기 전에 안전한 바닥으로 이동하세요.',bosses:['서리의 수호자','백야의 여왕'],pattern:'서리 봉쇄',blessing:'빙정의 숨결'},
  {id:'forest',name:'숲의 탑',icon:'♧',color:'#b5e992',scene:6,subtitle:'고대 뿌리의 미궁',terrain:'가시 덩굴',hint:'초록색 뿌리가 자라기 전에 이탈하세요. 가시 원에서는 피해와 약한 둔화가 적용됩니다.',bosses:['가시의 문지기','태고의 세계수'],pattern:'뿌리 포위',blessing:'세계수의 씨앗'}
 ].map(x=>Object.freeze({...x,bosses:Object.freeze(x.bosses)}));
+const ENEMIES={
+ time:['모래시계 수습생','초침의 추격자','시침의 검객','되감기 술사','찰나의 학자','반복의 기사','정지의 선구자','역행의 장인'],
+ space:['성운의 견습병','유성 탐색자','중력의 인도자','궤도 수호자','별비의 사냥꾼','블랙홀 연구자','중력 항해사','성좌의 투사'],
+ fire:['화산의 정찰병','잿불 전사','용암의 광전사','분화구 술사','화염 기병','암흑 화염술사','지옥불 사냥꾼','재앙의 불꽃'],
+ storm:['바람의 전령','번개 창병','뇌운 무도가','낙뢰 마도사','돌풍 추격자','천둥의 수호병','폭풍의 검사','뇌전 대행자'],
+ ice:['서리 견습병','빙창 사수','눈보라 주술사','서리 함정꾼','빙하의 기사','동토 마도사','수정 방패병','백야의 집행자'],
+ forest:['덩굴 사냥꾼','독포자 정찰병','뿌리 장인','수호목 소환사','가시 투사','생명의 흡수자','녹음의 주술사','고대숲 파수병']
+};
 const get=id=>REALMS.find(r=>r.id===id)||REALMS[0];
 function floor(base,id){
  const r=get(id),f={...base};
- f.name=f.boss?r.bosses[f.number===10?1:0]:r.subtitle+' · '+f.number+'층';
+ f.name=f.boss?r.bosses[f.number===10?1:0]:(ENEMIES[r.id]||ENEMIES.time)[f.number<=4?f.number-1:f.number-2]+' · '+f.number+'층';
  f.description=f.boss?r.pattern+' · HP 50% 이하 2페이즈':r.terrain+' · '+r.hint;
  f.scene=r.id;f.realm=r.id;f.difficulty=f.boss?'특수 보스':'테마 도전';
  // Higher floors require sustained damage and awareness; patterns remain telegraphed.
