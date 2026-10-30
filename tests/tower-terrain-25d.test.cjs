@@ -120,3 +120,20 @@ test('Tower load order and damage fallback preserve persistent rosters and stage
  assert.ok(ch.includes('p.z||p.jumpHeight||0)>38'),'jump dodges ground patterns');
  assert.ok(read('js/features/tower-encounters.js').includes('ArenaTowerPattern3D?.draw?.'));
 });
+
+test('dynamic terrain heights are synchronized between movement and rendered platforms',()=>{
+ const T=load().ArenaTowerTerrain;
+ const at=(realm,t)=>T.nodes(realm,8,500,500,t);
+ const clock0=at('time',0)[1],clock1=at('time',210)[1];
+ assert.ok(Math.hypot(clock0.x-clock1.x,clock0.y-clock1.y)>3,'clock gear moves');
+ const s0=at('space',0)[0],s1=at('space',70)[0];
+ assert.ok(Math.abs(s1.z-s0.z)>4,'satellite platform levitates');
+ const i0=at('ice',300)[2],i1=at('ice',440)[2];
+ assert.ok(i1.z<i0.z*.4,'ice platform cracks and drops temporarily');
+ const f0=at('forest',0)[2],f1=at('forest',92)[2];
+ assert.ok(f1.z>f0.z+4,'root platform grows upward');
+ const p={x:clock1.x,y:clock1.y,hp:100,z:0,vx:1,vy:0};
+ T.step('time',8,[p],500,500,210);
+ const expected=T.heightAt('time',8,p.x,p.y,500,500,210);
+ assert.ok(Math.abs(p.towerGroundZ-expected*.16)<.001);
+});
