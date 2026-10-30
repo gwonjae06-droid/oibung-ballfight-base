@@ -168,7 +168,7 @@ test('nearer 2.5D sprites are a little larger, without altering collision size',
  const {w}=depthWorld();
  const a={x:120,y:55,radius:26},b={x:120,y:440,radius:26};
  const far=w.ArenaDepth.spriteScale(a,{height:500}),near=w.ArenaDepth.spriteScale(b,{height:500});
- assert.ok(far<1&&near>1);
+ assert.ok(far<.8&&near>.9&&near>far,'far fighters appear smaller without cropping near fighters');
  assert.ok(near-far>.25&&near-far<.55,'near-far perspective is pronounced, not extreme');
  assert.equal(a.radius,26);assert.equal(b.radius,26);
 });
