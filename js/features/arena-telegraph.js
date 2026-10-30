@@ -36,8 +36,8 @@ function data(q){
    target:q.a.target||'nearest',pattern:q.a.pattern||'direct'};
 }
 function select(p){
- const source=Array.isArray(p.forgeQueue)?p.forgeQueue:
-   Array.isArray(p.telegraphPreviews)?p.telegraphPreviews:[];
+ const source=Array.isArray(p.telegraphPreviews)?
+   p.telegraphPreviews:(Array.isArray(p.forgeQueue)?p.forgeQueue:[]);
  const list=[];
  for(const entry of source){
   const cue=entry.a?data(entry):entry;
@@ -66,7 +66,7 @@ function draw(ctx,roster){
     roster.find(e=>e!==p&&e.hp>0);
   const pos=global.ArenaMotion?.position?.(p)||p;
   const x=n(pos.x),y=n(pos.y)-(global.AdvancedCombat?.height?.(p)||0);
-  const tx=target?n((global.ArenaMotion?.position?.(target)||target).x):x+45;
+  const tx=target?n((global.ArenaMotion?.position?.(target)||target).x):x;
   const ty=target?n((global.ArenaMotion?.position?.(target)||target).y):y;
   const angle=Math.atan2(ty-y,tx-x),distance=Math.hypot(tx-x,ty-y);
   const progress=clamp(1-cue.remaining/Math.max(1,cue.lead),0,1);
@@ -89,12 +89,17 @@ function draw(ctx,roster){
    ctx.stroke();
   }else if(cue.kind==='ranged'||cue.kind==='movement'){
    const limit=cue.kind==='ranged'?clamp(cue.radius*1.5,60,250):clamp(cue.radius*.75,45,150);
-   const length=target?Math.min(limit,distance):limit;
-   const x2=x+Math.cos(angle)*length,y2=y+Math.sin(angle)*length;
-   ctx.setLineDash(cue.kind==='ranged'?[5,6]:[9,5]);
-   ctx.beginPath();ctx.moveTo(x+Math.cos(angle)*(base+9),y+Math.sin(angle)*(base+9));
-   ctx.lineTo(x2,y2);ctx.stroke();ctx.setLineDash([]);
-   ctx.beginPath();ctx.arc(x2,y2,2.9,0,Math.PI*2);ctx.fillStyle=tint;ctx.fill();
+   if(target){
+     const length=Math.min(limit,distance),x2=x+Math.cos(angle)*length,y2=y+Math.sin(angle)*length;
+     const x1=x+Math.cos(angle)*(base+9),y1=y+Math.sin(angle)*(base+9);
+     ctx.setLineDash(cue.kind==='ranged'?[5,6]:[9,5]);
+     ctx.strokeStyle='rgba(12,21,35,.75)';ctx.lineWidth=4;
+     ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();
+     ctx.strokeStyle=tint;ctx.lineWidth=2.2;
+     ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();
+     ctx.setLineDash([]);
+     ctx.beginPath();ctx.arc(x2,y2,2.9,0,Math.PI*2);ctx.fillStyle=tint;ctx.fill();
+   }
   }else if(cue.kind==='area'){
    // This is a TARGET REGION hint, not a promise of exact hit radius
    // for multi-projectile patterns or randomly scattered casts.
