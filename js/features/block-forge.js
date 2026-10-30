@@ -182,7 +182,8 @@ function inspector(skill,i){
     .filter(key=>forge.supportedParameter(action.type,key));
   const controls=allowed.map(key=>{
     const vals=selectValues(key),m=PARAM_META[key];
-    const label=m?.[0]||{target:'대상',pattern:'공격 형태',status:'상태이상'}[key]||key;
+    const label=action.type==='charge'&&key==='duration'?'차징 시간(초)':
+      m?.[0]||{target:'대상',pattern:'공격 형태',status:'상태이상'}[key]||key;
     const field=vals
       ?'<select data-edit="param" data-skill="'+i+'" data-index="'+j+'" data-key="'+key+'" aria-label="'+label+'">'+options(vals,action[key])+'</select>'
       :'<input type="number" min="'+m[1]+'" max="'+m[2]+'" step="'+m[3]+'" value="'+escape(action[key])+'" data-edit="param" data-skill="'+i+'" data-index="'+j+'" data-key="'+key+'" aria-label="'+label+'">';
@@ -199,7 +200,9 @@ function inspector(skill,i){
     +'<div class="block-inspector-grid"><label class="block-inspector-type">동작 변경'
     +'<select data-edit="type" data-skill="'+i+'" data-index="'+j+'" aria-label="선택한 블록 동작 변경">'+options(typelist,action.type)+'</select></label>'
     +controls+'</div>'
-    +'<p class="block-inspector-hint">'+(entry?.movementOnly?'순수 이동은 피해·상태이상·밀치기를 발생시키지 않습니다.'
+    +'<p class="block-inspector-hint">'+(action.type==='charge'?
+       '힘을 모으며 떨고 반짝인 뒤 다음 피해 동작 1회가 강화됩니다. 길게 모을수록 위력과 넉백이 증가하지만 공격 전에 무방비로 기다려야 합니다. 다른 차징과 중첩되지 않습니다.':
+       entry?.movementOnly?'순수 이동은 피해·상태이상·밀치기를 발생시키지 않습니다.'
       :'수치는 실제 전투에 반영됩니다. 공격 판정과 피해량은 기존 엔진의 설정을 따릅니다.')
     +' · 변경 후 아래에서 캐릭터를 저장하세요.</p></div></details>';
 }
@@ -208,6 +211,7 @@ function actionRow(a,i,j,count){
   const category=definition?.category||'attacks',icon=CATEGORY_ICON[category]||'✧';
   const chosen=i===selectedSkill&&j===selectedAction;
   const stats=definition?.movementOnly?'피해 없음':
+    a.type==='charge'?'⚡ '+Number(a.duration)+'초 모으기 → 다음 공격 강화':
     forge.supportedParameter(a.type,'damage')?Number(a.damage)+' 피해':
     category==='defense'?'보호·회복':'특수 동작';
   return (j?'<div class="block-quick-link"><span aria-hidden="true">↓</span><select data-edit="link" data-skill="'+i+'" data-index="'+j+'" aria-label="앞 동작과 연결 방식">'+options(LINKS,a.link||'and')+'</select></div>':'')

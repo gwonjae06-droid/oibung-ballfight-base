@@ -14,15 +14,23 @@ function actionPressure(a){
   (a.status&&a.status!=='none'?1.13:1);
 }
 function skillPressure(s){
- const raw=(s?.actions||[]).slice(0,3).reduce((sum,a)=>sum+actionPressure(a),0);
- const cd=Math.max(.35,cap(n(s?.cooldown,3),.2,30));
+ const actions=(s?.actions||[]).slice(0,3),charge=actions.find(a=>a.type==='charge');
+ const raw=actions.reduce((sum,a)=>sum+actionPressure(a),0)*
+   (charge?1+Math.min(.48,cap(n(charge.duration,1.2),.2,8)*.12):1);
+ const cd=Math.max(.35,cap(n(s?.cooldown,3),.2,30),
+    charge?Math.min(3,cap(n(charge.duration,1.2),.2,8))+.18:0);
  const availability=s?.trigger==='lowhp'?.7:s?.trigger==='damaged'?.65:s?.trigger==='contact'?.7:1;
  return raw/cd*availability;
 }
 function summary(profile){
  const skills=profile?.allAbilities&&g.SkillForge?.allSkillset?g.SkillForge.allSkillset():profile?.skills||[];
  const perSkill=skills.map(skillPressure);
- const pressure=perSkill.reduce((sum,x)=>sum+x,0);
+ const charges=skills.flatMap(s=>s.actions||[]).filter(a=>a.type==='charge');
+ // A separately authored charge skill also benefits other offensive slots,
+ // so factor that benefit into the shared offensive budget.
+ const bonus=charges.length?1+Math.min(.4,
+   Math.max(...charges.map(a=>cap(n(a.duration,1.2),.2,8)))*.11):1;
+ const pressure=perSkill.reduce((sum,x)=>sum+x,0)*bonus;
  const multiplier=cap(pressure>BUDGET?Math.pow(BUDGET/pressure,.82):1,.18,1);
  return {pressure:Number(pressure.toFixed(1)),budget:BUDGET,
   percent:Math.round(multiplier*100),multiplier:Number(multiplier.toFixed(4)),

@@ -349,10 +349,19 @@ function update(p,target){
   if(p.forgeDash>0){
     p.forgeDash--;
     if(target){const t=Math.atan2(target.y-p.y,target.x-p.x);p.vx+=(Math.cos(t)*p.forgeDashAction.speed-p.vx)*.18;p.vy+=(Math.sin(t)*p.forgeDashAction.speed-p.vy)*.18;}
+  }else if(p.forgeCharge?.phase==='charging'){
+    // Charge-up has a readable wind-up: the fighter trembles but does not
+    // rush around at full speed until energy is released.
+    p.vx*=.80;p.vy*=.80;
   }else if(global.ArenaAutoAI?.steer?.(p,target,cruise)){}
    else if(v>.001&&Number.isFinite(v)){const next=v+(cruise-v)*(v>cruise?.075:.16);p.vx=p.vx/v*next;p.vy=p.vy/v*next;}
   else{p.vx=cruise;p.vy=0;}
   tickSkills(p);
+  // Do not fire a fresh skill into the charge-up interval. Any existing
+  // queued combo continues to advance and executes after the full wind-up.
+  if(p.forgeCharge?.phase==='charging'){
+    advanceWorld(p,target);return;
+  }
   if(p.forge.allAbilities){
     // Each move has a separate clock; round-robin selection prevents 50+
     // casts on one tick from flooding the limited projectile/effect pools.

@@ -10,6 +10,9 @@ const force=a=>1.3+Math.min(3,duration(a))*.39;
 const ATTACK=new Set('wave shot beam bolt pull orbit zone homing pierce boomerang chain nova meteor mine drain blackhole starfall dung flight burrow dive uppercut slash spinslash thrust aircombo arcshot splitshot wall summon turret trap burrowdash erupt'.split(' '));
 function start(p,a){
  if(!p||p.hp<=0)return false;
+ // Never reset a charge already accumulating or awaiting release:
+ // 0.2-second cooldown spam cannot postpone, stack or refresh its power.
+ if(['charging','ready'].includes(p.forgeCharge?.phase))return true;
  p.forgeCharge={phase:'charging',ticks:framesOf(a),total:framesOf(a),
    damage:power(a),force:force(a),expires:0,flash:0};
  return true;
