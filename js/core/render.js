@@ -129,6 +129,9 @@ globalThis.ImpactPhysics?.draw?.(worldCtx);
 globalThis.ArenaFXLayer?.draw?.(worldCtx);
 particles.forEach(p=>{worldCtx.beginPath();worldCtx.arc(p.x,p.y,p.radius,0,Math.PI*2);worldCtx.fillStyle=arenaEffectColor(p.color);worldCtx.globalAlpha=p.alpha;worldCtx.fill();worldCtx.globalAlpha=1;});
 
+// Custom projectiles, persistent zones and summon effects occupy world
+// coordinates, not the owner's billboard plane.
+if(layer)players.forEach(p=>{if(p.forge)globalThis.SkillForge?.drawFighter?.(p,worldCtx);});
 worldCtx.restore();
 if(layer)depth?.projectWorld?.(ctx,layer.canvas,canvas);
 // Painter sorting only reorders pixels, never the actual simulation roster.

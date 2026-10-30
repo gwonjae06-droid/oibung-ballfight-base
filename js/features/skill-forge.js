@@ -504,49 +504,50 @@ function contact(p,e){
     if(s.trigger==='contact'&&p.forgeTicks[i]>=cooldownFrames(p,s)){p.forgeTicks[i]=0;cast(p,s,e,i);}
   });
 }
-function drawFighter(p){
+function drawFighter(p,renderCtx){
+  const ink=renderCtx||ctx;
   if(!p.forge||p.hp<=0)return;
-  global.ForgeExpansion?.draw(p);
-  const c=global.arenaEffectColor?.((p.forge.effectColor||p.forge.color))||(p.forge.effectColor||p.forge.color);ctx.save();ctx.globalCompositeOperation='source-over';
-  ctx.shadowColor=c;ctx.shadowBlur=3;ctx.fillStyle=c;ctx.strokeStyle=c;
+  if(!renderCtx)global.ForgeExpansion?.draw(p);
+  const c=global.arenaEffectColor?.((p.forge.effectColor||p.forge.color))||(p.forge.effectColor||p.forge.color);ink.save();ink.globalCompositeOperation='source-over';
+  ink.shadowColor=c;ink.shadowBlur=3;ink.fillStyle=c;ink.strokeStyle=c;
   p.forgeShots.forEach(b=>{
     const heading=Math.atan2(b.vy,b.vx),status=b.a?.status||'none';
     const x=global.AdvancedCombat?.blend(b.prevX,b.x)??b.x;
     const groundY=global.AdvancedCombat?.blend(b.prevY,b.y)??b.y;
     const height=Math.max(0,Number(b.z)||0);
     const y=groundY-height;
-    ctx.save();
+    ink.save();
     if(height>9){
-      ctx.globalAlpha=Math.max(.10,.25-height*.0006);
-      ctx.fillStyle='rgba(21,29,41,.37)';
-      ctx.beginPath();ctx.ellipse(x+height*.055,groundY+3,9+height*.06,4+height*.025,0,0,Math.PI*2);ctx.fill();
-      ctx.fillStyle=c;
+      ink.globalAlpha=Math.max(.10,.25-height*.0006);
+      ink.fillStyle='rgba(21,29,41,.37)';
+      ink.beginPath();ink.ellipse(x+height*.055,groundY+3,9+height*.06,4+height*.025,0,0,Math.PI*2);ink.fill();
+      ink.fillStyle=c;
     }
-    ctx.globalAlpha=.28;ctx.lineWidth=b.a?.charged?8:4;ctx.lineCap='round';
-    ctx.beginPath();ctx.moveTo(x-b.vx*3,y-b.vy*3);ctx.lineTo(x,y);ctx.stroke();
-    ctx.globalAlpha=1;ctx.translate(x,y);ctx.rotate(heading);
-    ctx.strokeStyle='#253344';ctx.fillStyle=c;ctx.lineWidth=2;
+    ink.globalAlpha=.28;ink.lineWidth=b.a?.charged?8:4;ink.lineCap='round';
+    ink.beginPath();ink.moveTo(x-b.vx*3,y-b.vy*3);ink.lineTo(x,y);ink.stroke();
+    ink.globalAlpha=1;ink.translate(x,y);ink.rotate(heading);
+    ink.strokeStyle='#253344';ink.fillStyle=c;ink.lineWidth=2;
     // All projectiles have a physical pointed direction; their status
     // adds a stable silhouette that reads against the white battleground.
-    ctx.beginPath();
+    ink.beginPath();
     if(status==='ice'){
-      ctx.moveTo(12,0);ctx.lineTo(0,-8);ctx.lineTo(-11,0);ctx.lineTo(0,8);
+      ink.moveTo(12,0);ink.lineTo(0,-8);ink.lineTo(-11,0);ink.lineTo(0,8);
     }else if(status==='fire'){
-      ctx.moveTo(13,0);ctx.lineTo(-7,-7);ctx.lineTo(-3,0);ctx.lineTo(-8,7);
+      ink.moveTo(13,0);ink.lineTo(-7,-7);ink.lineTo(-3,0);ink.lineTo(-8,7);
     }else if(status==='poison'){
-      ctx.moveTo(12,0);ctx.quadraticCurveTo(-5,-12,-9,0);
-      ctx.quadraticCurveTo(-5,12,12,0);
+      ink.moveTo(12,0);ink.quadraticCurveTo(-5,-12,-9,0);
+      ink.quadraticCurveTo(-5,12,12,0);
     }else{
-      ctx.moveTo(13,0);ctx.lineTo(-7,-6);ctx.lineTo(-3,0);ctx.lineTo(-7,6);
+      ink.moveTo(13,0);ink.lineTo(-7,-6);ink.lineTo(-3,0);ink.lineTo(-7,6);
     }
-    ctx.closePath();ctx.fill();ctx.stroke();
-    ctx.strokeStyle='#fff';ctx.lineWidth=1.4;ctx.beginPath();
-    ctx.moveTo(-4,-2);ctx.lineTo(8,0);ctx.stroke();
-    ctx.restore();
+    ink.closePath();ink.fill();ink.stroke();
+    ink.strokeStyle='#fff';ink.lineWidth=1.4;ink.beginPath();
+    ink.moveTo(-4,-2);ink.lineTo(8,0);ink.stroke();
+    ink.restore();
   });
-  p.forgeZones.forEach(z=>{ctx.globalAlpha=z.type==='bolt'?.9:.65;ctx.lineWidth=2;ctx.setLineDash([6,5]);ctx.beginPath();ctx.arc(z.x,z.y,z.type==='bolt'?z.a.radius*.4:(z.r??z.a.radius),0,2*Math.PI);ctx.stroke();ctx.setLineDash([]);});
-  p.forgeOrbs.forEach(o=>{for(let i=0;i<o.a.count;i++){const t=o.phase+i*2*Math.PI/o.a.count,r=o.a.radius*.75;ctx.globalAlpha=.9;ctx.beginPath();ctx.arc(p.x+Math.cos(t)*r,p.y+Math.sin(t)*r,8,0,2*Math.PI);ctx.fill();}});
-  ctx.restore();
+  p.forgeZones.forEach(z=>{ink.globalAlpha=z.type==='bolt'?.9:.65;ink.lineWidth=2;ink.setLineDash([6,5]);ink.beginPath();ink.arc(z.x,z.y,z.type==='bolt'?z.a.radius*.4:(z.r??z.a.radius),0,2*Math.PI);ink.stroke();ink.setLineDash([]);});
+  p.forgeOrbs.forEach(o=>{for(let i=0;i<o.a.count;i++){const t=o.phase+i*2*Math.PI/o.a.count,r=o.a.radius*.75;ink.globalAlpha=.9;ink.beginPath();ink.arc(p.x+Math.cos(t)*r,p.y+Math.sin(t)*r,8,0,2*Math.PI);ink.fill();}});
+  ink.restore();
 }
 function register(value,{towerEnemy=false}={}){
   if(CUSTOM_DEFS.length>=6&&!towerEnemy)throw Error('캐릭터는 최대 6명까지 만들 수 있습니다.');
@@ -787,7 +788,13 @@ function initialize(){
   if(CUSTOM_DEFS.length)reRollMatch();
   // Render custom projectiles and glyphs in the same pipeline as normal fighters.
   const oldDraw=drawCharacter;
-  drawCharacter=function(p){if(p.forge)drawFighter(p);oldDraw(p);};
+  drawCharacter=function(p){
+    if(p.forge){
+      if(global.ArenaDepth?.layer?.(canvas,'world'))global.ForgeExpansion?.draw(p);
+      else drawFighter(p); // canvas-only fallback
+    }
+    oldDraw(p);
+  };
 }
 global.SkillForge={autoUpdate:update,drawFighter,THEMES,randomProfile,normalize,register,remove,list,setDraft,refreshList:()=>refreshList(),refreshEditor:()=>{refreshBasics();render();},persist,TYPE,TRIGGER,STATUS,ACTION_PARAMETERS,MOVEMENT_ONLY,supportedParameter,cooldownFrames,advanceTimers:tickSkills,advanceWorld,hit,enableManual,manualUpdate,manualCast,allProfile,allSkillset,getDraft:()=>normalize(draft)};
 if(typeof document!=='undefined'&&document.querySelector('.bf-tools'))initialize();

@@ -57,7 +57,13 @@ updateCharacter=function(p){
  SkillForge.manualUpdate(p,target);
 };
 const baseDraw=drawCharacter;
-drawCharacter=p=>{if(p.forge)SkillForge.drawFighter(p);baseDraw(p);};
+drawCharacter=p=>{
+  if(p.forge){
+    if(global.ArenaDepth?.layer?.(canvas,'world'))global.ForgeExpansion?.draw(p);
+    else SkillForge.drawFighter(p);
+  }
+  baseDraw(p);
+};
 // Cache the detailed Tower scene at its native canvas resolution.
 let stageCache=null,stageWidth=0,stageHeight=0;
 global.ArenaTower={paintBackground:(c,s)=>{
