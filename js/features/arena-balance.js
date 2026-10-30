@@ -20,7 +20,8 @@ function skillPressure(s){
  return raw/cd*availability;
 }
 function summary(profile){
- const perSkill=(profile?.skills||[]).map(skillPressure);
+ const skills=profile?.allAbilities&&g.SkillForge?.allSkillset?g.SkillForge.allSkillset():profile?.skills||[];
+ const perSkill=skills.map(skillPressure);
  const pressure=perSkill.reduce((sum,x)=>sum+x,0);
  const multiplier=cap(pressure>BUDGET?Math.pow(BUDGET/pressure,.82):1,.18,1);
  return {pressure:Number(pressure.toFixed(1)),budget:BUDGET,
