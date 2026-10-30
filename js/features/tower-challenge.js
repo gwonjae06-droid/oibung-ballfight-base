@@ -209,7 +209,19 @@ function install(){
   if(realms){
     selector=doc.createElement('section');selector.className='tower-realm-selector';
     selector.setAttribute('aria-label','도전할 탑 선택');
-    selector.innerHTML='<div class="tower-realm-heading"><span>SIX REALMS</span><h2>어느 탑에 도전할까요?</h2><p>각 10층 · 5/10층 특수 보스 · 도전 전용 기연</p></div><div class="tower-realm-grid">'+realms.REALMS.map(r=>'<button type="button" data-realm="'+r.id+'" class="tower-realm-card" style="--realm-color:'+r.color+'"><span class="tower-realm-icon" aria-hidden="true">'+r.icon+'</span><strong>'+r.name+'</strong><small>'+r.subtitle+'</small><span>'+r.terrain+'</span></button>').join('')+'</div><div class="ancient-unlock"><p id="ancient-progress"></p><button id="ancient-start" type="button" hidden>☽ 고대의 존재 도전</button></div><p id="tower-realm-hint"></p>';
+    // Full panoramic clickable gallery. The six hit regions map to the six
+    // 256px sections of the 1536px art, keeping visual and input alignment.
+    selector.innerHTML='<div class="tower-panorama-scroll" tabindex="0" role="region" aria-label="여섯 탑 전경. 모바일에서는 좌우로 스와이프하세요.">'
+      +'<div class="tower-panorama-world">'
+      +'<img class="tower-panorama-art" src="assets/tower-gateway-scene.svg" alt="" draggable="false" decoding="async">'
+      +'<div class="tower-realm-heading"><span>THE SIX REALMS</span><h2>도전의 탑</h2><p>탑을 선택해 도전하세요</p></div>'
+      +'<div class="tower-realm-grid tower-panorama-targets">'
+      +realms.REALMS.map((r,i)=>'<button type="button" data-realm="'+r.id+'" class="tower-realm-card" style="--realm-color:'+r.color+';--tower-index:'+i+'" title="'+r.name+' 도전" aria-label="'+r.name+' 입장">'
+         +'<span class="tower-realm-card-caption"><span class="tower-realm-icon" aria-hidden="true">'+r.icon+'</span><strong>'+r.name+'</strong><small class="tower-realm-progress">0 / 10F</small></span></button>').join('')
+      +'</div></div></div>'
+      +'<p class="tower-panorama-swipe">각 탑을 누르면 해당 탑으로 들어갑니다. <span>모바일에서는 좌우로 밀어서 선택하세요.</span></p>'
+      +'<div class="ancient-unlock"><p id="ancient-progress"></p><button id="ancient-start" type="button" hidden>☽ 고대의 존재 도전</button></div>'
+      +'<p id="tower-realm-hint" class="tower-gateway-description"></p>';
     mount.prepend(selector);
     selector.addEventListener('click',e=>{const id=e.target.closest?.('[data-realm]')?.dataset.realm;if(id)selectRealm(id);});selector.querySelector('#ancient-start')?.addEventListener('click',beginAncient);
   }
@@ -299,7 +311,16 @@ function install(){
     }
     if(selector){
       selector.hidden=screen.dataset.towerView!=='selection';
-      for(const button of selector.querySelectorAll('[data-realm]'))button.setAttribute('aria-pressed',String(button.dataset.realm===realmId));
+      for(const button of selector.querySelectorAll('[data-realm]')){
+        button.setAttribute('aria-pressed',String(button.dataset.realm===realmId));
+        const records=read(global.localStorage).records;
+        const best=Math.max(0,...Object.entries(records)
+          .filter(([id])=>id.startsWith(button.dataset.realm+'_'))
+          .map(([,value])=>Math.min(FINISH,Number(value.best)||0)));
+        const text=button.querySelector('.tower-realm-progress');
+        if(text)text.textContent=best===FINISH?'✓ 정복 완료':'최고 '+best+' / 10F';
+        button.setAttribute('aria-label',button.title+' · '+(best===FINISH?'정복 완료':'최고 '+best+'층'));
+      }
       el('tower-realm-hint').textContent=realm().name+' · '+realm().hint;
       const done=realms.REALMS.filter(r=>Object.entries(read(global.localStorage).records).some(([id,v])=>id.startsWith(r.id+'_')&&Number(v.best)>=FINISH)).length;
       el('ancient-progress').textContent=done+' / 6개 탑 정복'+(done===6?' · 봉인이 해제됐습니다!':' · 모든 탑 10층을 클리어하세요.');
