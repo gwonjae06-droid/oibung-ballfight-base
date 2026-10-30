@@ -40,9 +40,7 @@ if(p.manualTower&&p.hp>0&&globalThis.ArenaTower?.active&&globalThis.ArenaTower?.
   }
   ctx.restore();
 }
-// The 2.5D floor shadow is visible even on the ground; its center
-// remains the actual physics x,y while the body lifts by z.
-globalThis.ArenaDepth?.shadow?.(ctx,p,z);
+// Ground shadows are painted in a dedicated pass beneath every character.
 if(Math.abs(z)>1){
   ctx.save();
   if(z>20&&p.slam){ctx.setLineDash([6,6]);ctx.strokeStyle='#a44136';ctx.lineWidth=2;ctx.beginPath();
@@ -99,7 +97,18 @@ p.poisonTears.forEach(b=>{ctx.save();const g=ctx.createRadialGradient(b.x-2,b.y-
 globalThis.AdvancedCombat?.draw(ctx);
 globalThis.ArenaTower?.drawEncounter?.(ctx);
 globalThis.CosmeticArcade?.drawUnder?.(ctx,players);
+// Separate ground-footprint pass: shadows never darken another fighter's face.
 players.forEach(p=>{
+  const altitude=globalThis.AdvancedCombat?.visibleHeight?.(p)??(p.jumpHeight||0);
+  const paintShadow=()=>globalThis.ArenaDepth?.shadow?.(ctx,p,altitude);
+  if(globalThis.ArenaMotion?.drawFighter)ArenaMotion.drawFighter(ctx,p,paintShadow);
+  else paintShadow();
+});
+// Painter's order is visual only. Original players[] order and physics remain intact.
+const depthOrder=players.slice().sort((a,b)=>
+  (a.y-(globalThis.AdvancedCombat?.visibleHeight?.(a)||0)*.28)-
+  (b.y-(globalThis.AdvancedCombat?.visibleHeight?.(b)||0)*.28));
+depthOrder.forEach(p=>{
   if(globalThis.ArenaMotion?.drawFighter)ArenaMotion.drawFighter(ctx,p,drawCharacter);
   else drawCharacter(p);
 });

@@ -129,3 +129,13 @@ test('floor, height and VFX share the one camera transform',()=>{
  for(const html of [main,pvp])
   assert.ok(html.indexOf('arena-depth.js')<html.indexOf('core/render.js'));
 });
+
+test('shadow pass precedes height-aware stable painter sorting, without reordering player physics',()=>{
+ const render=read('js/core/render.js');
+ const shadow=render.indexOf('const paintShadow=');
+ const sort=render.indexOf('const depthOrder=players.slice().sort(');
+ const fighter=render.indexOf('depthOrder.forEach(p=>');
+ assert.ok(shadow>0&&sort>shadow&&fighter>sort);
+ assert.match(render,/const depthOrder=players\.slice\(\)\.sort/);
+ assert.match(render,/visibleHeight\?\.\(a\)/);
+});
