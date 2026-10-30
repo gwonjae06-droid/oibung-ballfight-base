@@ -574,7 +574,7 @@ function register(value,{towerEnemy=false}={}){
   if(CUSTOM_DEFS.length>=6&&!towerEnemy)throw Error('캐릭터는 최대 6명까지 만들 수 있습니다.');
   const profile=normalize(value,{towerEnemy}),id='forge_'+(++sequence);
   if(!profile.artKey)profile.artKey='art'+Date.now().toString(36)+Math.random().toString(36).slice(2,9);
-  const runtime=profile.allAbilities?{...profile,skills:allSkillset()}:profile;
+  let runtime=profile.allAbilities?{...profile,skills:allSkillset()}:profile;
   const def={id,name:profile.name,forgeData:profile,createInstance(n){
     return {id,name:profile.name,playerNum:n,x:0,y:0,vx:1.1,vy:.9,radius:34,
       hp:profile.hp,maxHp:profile.hp,invincible:0,slowTimer:0,slowMultiplier:1,
@@ -591,6 +591,7 @@ function register(value,{towerEnemy=false}={}){
       getTag(){return {text:profile.allAbilities?'전체 '+runtime.skills.length+'개 능력':profile.skills.map(s=>s.name).join(' · ').slice(0,70)};}
     };
   }};
+  def.updateProfile=next=>{Object.assign(profile,next,{artKey:profile.artKey});runtime=profile.allAbilities?{...profile,skills:allSkillset()}:profile;def.name=profile.name;};
   CUSTOM_DEFS.push(def);
   global.CharacterStudioArt?.restore?.(id,profile.artKey);
   BEHAVIORS[id]={order:7,update,onContact:contact};
@@ -620,7 +621,7 @@ function persist(){
 const escape=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const options=(values,selected)=>Object.entries(values).map(([k,v])=>'<option value="'+k+'"'+(k===selected?' selected':'')+'>'+v+'</option>').join('');
 let draft={name:'',blurb:'',color:'#a78bfa',effectColor:'#a78bfa',hp:250,speed:1.8,skills:[skill()]};
-let refreshList=()=>{}, refreshForm=()=>{};
+let refreshList=()=>{}, refreshForm=()=>{},editingId=null;
 function field(key,value,attrs){
   return '<input data-field="'+key+'" '+attrs+' value="'+escape(value)+'">';
 }
@@ -694,7 +695,7 @@ function initializeUI(){
   +'<button id="forge-add-skill" class="forge-add" type="button">+ 스킬 추가</button>'
   +'<div class="bf-btn-row"><button type="button" id="bf-analyze">능력 미리보기</button><button type="button" id="bf-create">캐릭터 생성</button></div>'
   +'<div id="bf-result" class="bf-result" role="status" aria-live="polite"></div>'
-  +'<div id="bf-custom-list" class="bf-custom-list"></div>'
+  +'<div id="bf-custom-list" class="bf-custom-list"></div><button id="forge-cancel-edit" type="button" hidden>편집 취소</button>'
   +'<details class="forge-json"><summary>설정 JSON 가져오기 · 내보내기</summary>'
   +'<p class="bf-helper">다른 사람의 설정도 불러올 수 있습니다. 코드는 실행되지 않습니다.</p>'
   +'<textarea id="forge-json-text" rows="4" placeholder="JSON 붙여넣기"></textarea>'
@@ -727,22 +728,27 @@ function initializeUI(){
     for(const def of owned){
       const row=document.createElement('div');row.className='forge-saved-row';
       const name=document.createElement('span');name.textContent=def.name;
-      const remove=document.createElement('button');remove.type='button';remove.textContent='삭제';
+      const edit=document.createElement('button');edit.type='button';edit.textContent='스킬 수정';edit.dataset.editForgeId=def.id;edit.className='forge-add';
+       const remove=document.createElement('button');remove.type='button';remove.textContent='삭제';
       remove.dataset.forgeId=def.id;remove.className='forge-delete';
       remove.setAttribute('aria-label',def.name+' 삭제');
-      row.append(name,remove);target.appendChild(row);
+      row.append(name,edit,remove);target.appendChild(row);
     }
   }
   refreshList=roster;
   refreshForm=()=>{refreshBasics();render();};
+   function cancelEdit(){editingId=null;draft=normalize({name:'',color:'#a78bfa',effectColor:'#a78bfa',hp:250,speed:1.8,skills:[skill()]});refreshForm();global.BlockForge?.refresh?.();$('bf-create').textContent='캐릭터 생성';$('forge-cancel-edit').hidden=true;}
+   $('forge-cancel-edit').addEventListener('click',()=>{cancelEdit();report('편집 취소');});
   $('bf-custom-list').addEventListener('click',e=>{
-    const id=e.target.dataset.forgeId;
+    const editId=e.target.closest('button')?.dataset.editForgeId;
+     if(editId){if(roundStarted&&!isGameOver){report('전투 종료 후 수정할 수 있습니다.');return;}const d=CUSTOM_DEFS.find(d=>d.id===editId&&d.forgeData);if(!d)return;editingId=editId;draft=normalize(d.forgeData);refreshForm();global.BlockForge?.refresh?.();$('bf-create').textContent='변경 내용 저장';$('forge-cancel-edit').hidden=false;report(d.name+'의 스킬을 불러왔습니다.');return;}
+     const id=e.target.dataset.forgeId;
     if(!id)return;
     if(roundStarted&&!isGameOver){report('경기 종료 후 삭제할 수 있습니다.');return;}
     const selected=CUSTOM_DEFS.find(d=>d.id===id&&d.forgeData);
     if(!selected)return;
     if(!confirm(selected.name+' 캐릭터를 삭제하시겠습니까?'))return;
-    if(remove(id)){reRollMatch();roster();report(selected.name+' 캐릭터를 삭제했습니다.');}
+    if(remove(id)){if(editingId===id)cancelEdit();reRollMatch();roster();report(selected.name+' 캐릭터를 삭제했습니다.');}
   });
   $('forge-skills').addEventListener('input',e=>{
     const key=e.target.dataset.field;
@@ -782,16 +788,19 @@ function initializeUI(){
   $('bf-create').addEventListener('click',()=>{
     if(roundStarted&&!isGameOver){report('경기 종료 후 생성할 수 있습니다.');return;}
     try{
-      sync();const config=normalize(draft),id=register(config);
+      sync();const config=normalize(draft),old=editingId?CUSTOM_DEFS.find(d=>d.id===editingId&&d.forgeData):null;
+       if(editingId&&!old)throw Error('수정할 캐릭터가 없습니다.');
+       const id=old?old.id:register(config);
+       if(old)old.updateProfile(config);
       persist();
-      global.CharacterStudioArt?.commit?.(id);
+      if(!old)global.CharacterStudioArt?.commit?.(id);
       reRollMatch();
       const first=$('bf-pick-0');
       if(first){first.value=id;globalThis.applyFighterPicks?.();}
       const budget=global.ArenaBalance?.summary(config);
-      roster();report(config.name+' 생성 완료 · P1 적용'+
+      roster();report(config.name+(old?' 수정 완료 · P1 적용':' 생성 완료 · P1 적용')+
         (budget?.excess?' · 실제 피해 약 '+budget.percent+'% 적용 (입력값은 보존됨)':''));
-      global.ArenaCategories?.hideStudio?.();
+      if(old)cancelEdit();global.ArenaCategories?.hideStudio?.();
     }catch(e){report(e.message);}
   });
   $('forge-export').addEventListener('click',()=>{
