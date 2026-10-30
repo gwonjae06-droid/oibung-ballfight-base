@@ -79,15 +79,15 @@ test('shot spawned while airborne carries its height and hits only matching alti
     actions:[{type:'shot',damage:30,radius:190,speed:8,count:1,delay:0}]}]};
  const id=w.SkillForge.register(profile),hero=w.CUSTOM_DEFS[0].createInstance(1);
  hero.x=100;hero.y=100;hero.z=74;hero.vz=0;hero.forgeTicks=[1000];
- const foe={playerNum:2,x:154,y:100,z:0,hp:240,maxHp:240,invincible:0,radius:24,vx:0,vy:0};
+ const foe={playerNum:2,x:350,y:100,z:0,hp:240,maxHp:240,invincible:0,radius:24,vx:0,vy:0};
  w.players=[hero,foe];
  for(let i=0;i<16;i++)w.BEHAVIORS[id].update(hero,foe);
  assert.ok(hero.forgeShots.length>0);
  const bullet=hero.forgeShots[0];
- assert.equal(bullet.z,74);
+ assert.ok(bullet.z>30&&bullet.z<74,'projectile gradually aims down toward the grounded foe');
  assert.equal(w.SkillForge.hit(hero,foe,bullet.a,1,bullet.z),false,
    'elevated shot cannot strike ground-level target');
- foe.z=74;
+ foe.z=bullet.z;
  assert.equal(w.SkillForge.hit(hero,foe,bullet.a,1,bullet.z),true,
    'same-height target is vulnerable');
  const oldHp=foe.hp;foe.z=0;foe.invincible=0;
