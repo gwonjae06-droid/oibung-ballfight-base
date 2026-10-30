@@ -12,7 +12,7 @@ host.innerHTML='<section class="pvp-lobby" id="pvp-lobby">'
   +'<fieldset class="pvp-mode-list"><legend>전투 방식 · 매칭 전에 선택</legend>'
   +'<label><input type="radio" name="pvp-mode" value="auto" checked><span><strong>자동 전투</strong><small>AI가 내 캐릭터를 조종합니다. 직접 조종 상대와도 만날 수 있습니다.</small></span></label>'
   +'<label><input type="radio" name="pvp-mode" value="manual"><span><strong>클래식 직접 조종</strong><small>WASD 이동과 Q/E/R/F 스킬</small></span></label>'
-  +'<label><input type="radio" name="pvp-mode" value="blitz"><span><strong>블리츠 배틀 · NEW</strong><small>3초간 행동 2개를 고른 뒤 동시에 실행하는 초고속 전략전</small></span></label></fieldset>'
+  +'<label><input type="radio" name="pvp-mode" value="blitz"><span><strong>블리츠 턴제 · NEW</strong><small>기동과 스킬 두 개를 골라 서로 번갈아 행동합니다.</small></span></label></fieldset>'
   +'<details class="pvp-network" hidden><summary>온라인 서버 연결 설정</summary>'
   +'<label for="pvp-server">PvP 서버 주소 (wss://)</label>'
   +'<div class="pvp-server-row"><input id="pvp-server" inputmode="url" type="url" spellcheck="false" placeholder="wss://your-worker.workers.dev">'
@@ -34,14 +34,15 @@ host.innerHTML='<section class="pvp-lobby" id="pvp-lobby">'
   +'<div class="pvp-pad" id="pvp-pad" role="application" aria-label="이동 조이스틱"><span id="pvp-stick"></span></div><small>이동</small></div>'
   +'<div id="pvp-skills" class="pvp-skills"></div></div>'
   +'<section id="pvp-blitz" class="pvp-blitz" hidden aria-label="블리츠 행동 선택">'
-  +'<div class="pvp-blitz-heading"><strong>⚡ 블리츠 · 동시 행동 선택</strong><span id="pvp-blitz-time"></span></div>'
+  +'<div class="pvp-blitz-heading"><strong>⚡ 블리츠 · 교대 턴제</strong><span id="pvp-blitz-time"></span></div>'
   +'<div class="pvp-blitz-choices"><label>기동<select id="pvp-blitz-move"><option value="approach">접근</option>'
   +'<option value="retreat">후퇴</option><option value="left">좌측 우회</option>'
   +'<option value="right">우측 우회</option><option value="hold">방어</option></select></label>'
   +'<label>첫 번째 스킬<select id="pvp-blitz-first"></select></label>'
   +'<label>연계 스킬<select id="pvp-blitz-second"></select></label></div>'
   +'<button type="button" id="pvp-blitz-lock">이 행동 확정</button>'
-  +'<p id="pvp-blitz-note" role="status" aria-live="polite">상대에게 행동은 공개되지 않습니다.</p></section>'
+  +'<p id="pvp-blitz-note" role="status" aria-live="polite">내 턴에 행동을 확정하세요.</p>'
+  +'<small>PC: 1~5 기동 · Q/E/R/F 스킬 · Shift+Q/E/R/F 연계 · Enter 확정</small></section>'
   +'<p class="pvp-result" id="pvp-result" hidden role="status"></p>'
   +'<button type="button" id="pvp-again" hidden>다른 상대 찾기</button></section>';
 screen.append(host);
@@ -139,37 +140,53 @@ function fillBlitzOptions(skills){
  first.value=skills.length?'0':'-1';second.value=skills.length>1?'1':'-1';
 }
 function submitBlitz(){
- if(!matched||mode!=='blitz'||blitzLocked||latest?.blitz?.phase!=='plan')return false;
+ if(!matched||mode!=='blitz'||blitzLocked||latest?.blitz?.phase!=='plan'||
+   latest.blitz.turn!==side)return false;
  const b=latest.blitz,slots=[$('pvp-blitz-first').value,$('pvp-blitz-second').value]
   .map(Number).filter((v,i,all)=>v>=0&&all.indexOf(v)===i);
  const ok=send({type:'plan',round:b.round,move:$('pvp-blitz-move').value,slots});
- if(ok){blitzLocked=true;$('pvp-blitz-note').textContent='✓ 행동 확정 · 상대 선택 대기 중';}
+ if(ok){blitzLocked=true;$('pvp-blitz-note').textContent='✓ 행동 전송 · 공격 실행 대기 중';}
  return ok;
 }
 $('pvp-blitz-lock').addEventListener('click',submitBlitz);
 function renderBlitz(data,own){
  if(mode!=='blitz')return;
  const b=data.blitz;
- if(!b){$('pvp-blitz-note').textContent='블리츠 동기화를 확인하는 중입니다.';return;}
+ if(!b){$('pvp-blitz-note').textContent='턴 상태 동기화를 기다리는 중입니다.';return;}
  if(blitzRound!==b.round){
   blitzRound=b.round;blitzLocked=false;fillBlitzOptions(own?.skills||[]);
  }
- const planning=b.phase==='plan';
- const committed=!!b.submitted?.[side];
- if(committed)blitzLocked=true;
- const locked=!planning||blitzLocked;
+ const myTurn=b.turn===side,planning=b.phase==='plan';
+ if(b.submitted?.[side])blitzLocked=true;
+ const locked=!myTurn||!planning||blitzLocked;
+ for(const selectId of ['pvp-blitz-first','pvp-blitz-second']){
+  const select=$(selectId);
+  for(const option of select.options){
+   const slot=Number(option.value);
+   option.disabled=slot>=0&&(own?.cooldowns?.[slot]||0)>0.05;
+  }
+ }
  for(const id of ['pvp-blitz-move','pvp-blitz-first','pvp-blitz-second','pvp-blitz-lock'])
   $(id).disabled=locked;
- $('pvp-blitz-time').textContent=b.round+'라운드 · '+(planning?'선택':'실행')+' '+(b.remainingMs/1000).toFixed(1)+'초';
- $('pvp-blitz-note').textContent=planning?(blitzLocked?'✓ 내 행동 확정 · 상대 선택 대기 중':'기동과 스킬을 골라 확정하세요. 상대 계획은 비공개입니다.'):'⚔ 두 캐릭터가 동시에 행동 실행 중';
+ const label=myTurn?'내 턴':'상대 턴',remaining=Math.max(0,Number(b.remainingMs)||0);
+ $('pvp-blitz-time').textContent=b.round+'/'+b.maxTurns+'턴 · '+label+
+  ' · '+(planning?'선택':'실행')+' '+(remaining/1000).toFixed(1)+'초';
+ $('pvp-blitz-note').textContent=!planning?
+  (myTurn?'⚔ 내 행동 실행 중':'⚔ 상대의 행동을 지켜보는 중'):
+  !myTurn?'상대가 행동을 선택하는 중입니다. 상대 턴에는 조작할 수 없습니다.':
+  blitzLocked?'✓ 행동 전송 완료 · 실행 대기 중':
+  '내 턴입니다. 기동과 스킬을 선택하고 행동을 확정하세요.';
 }
 function renderState(data){
   if(data.events?.length)spawnEffects(data.events,data.players);
   latest=data;
   if(data.finished)global.PvpOriginalEngine.paint();
-  const theirs=data.players?.[1-side]?.mode==='auto'?'자동':'직접';
-  $('pvp-round-state').textContent='내 '+(mode==='auto'?'자동':'직접')+' VS 상대 '+theirs;
-  $('pvp-clock').textContent=Math.floor(Math.max(0,data.clock)/60)+':'+
+  const foeMode=data.players?.[1-side]?.mode;
+  const theirs=foeMode==='auto'?'자동':foeMode==='blitz'?'블리츠 턴제':'클래식 직접';
+  $('pvp-round-state').textContent='내 '+(mode==='auto'?'자동':mode==='blitz'?'블리츠 턴제':'클래식 직접')+' VS 상대 '+theirs;
+  $('pvp-clock').textContent=data.blitz?
+    data.blitz.round+' / '+data.blitz.maxTurns+'T':
+    Math.floor(Math.max(0,data.clock)/60)+':'+
     String(Math.floor(Math.max(0,data.clock)%60)).padStart(2,'0');
   const own=data.players[side],other=data.players[1-side];
   renderBlitz(data,own);
@@ -290,8 +307,14 @@ function inputKey(event,down){
    const k=String(event.key||'').toLowerCase();
    if(k==='enter'){submitBlitz();event.preventDefault?.();}
    const slot=HOTKEYS.indexOf(k);
-   if(slot>=0&&!$('pvp-blitz-first').disabled&&$('pvp-blitz-first').options.length>slot+1){
-    $('pvp-blitz-first').value=String(slot);event.preventDefault?.();
+   const target=$(event.shiftKey?'pvp-blitz-second':'pvp-blitz-first');
+   if(slot>=0&&!target.disabled&&target.options.length>slot+1&&
+      !target.options[slot+1].disabled){
+    target.value=String(slot);event.preventDefault?.();
+   }
+   const m=['1','2','3','4','5'].indexOf(k);
+   if(m>=0&&!$('pvp-blitz-move').disabled){
+    $('pvp-blitz-move').selectedIndex=m;event.preventDefault?.();
    }
    return;
   }
