@@ -99,6 +99,7 @@
     worldCtx.save();
     window.BattleFX?.draw?.(worldCtx,players);
     window.SkillVisuals?.draw?.(worldCtx);
+    window.ArenaTelegraph?.draw?.(worldCtx,players);
     worldCtx.globalCompositeOperation='source-over';
     sparks.forEach(s=>{worldCtx.save();worldCtx.globalAlpha=s.life/s.max;worldCtx.strokeStyle=s.c;worldCtx.lineWidth=2;worldCtx.beginPath();worldCtx.moveTo(s.x,s.y);worldCtx.lineTo(s.x-s.vx*2,s.y-s.vy*2);worldCtx.stroke();worldCtx.restore();});
     pulses.forEach(s=>{

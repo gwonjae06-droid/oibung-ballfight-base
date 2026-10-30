@@ -210,6 +210,7 @@ function snapshot(room,full=true){
     submitted:b.plans.map(Boolean)}}:{}),
   players:players.map((p,i)=>({x:p.x,y:p.y,hp:p.hp,maxHp:p.maxHp,name:p.name,
    color:p.themeColor,mode:room.modes[i],
+   previews:global.ArenaTelegraph?.preview?.(p)||[],
    charge:p.forgeCharge?{phase:p.forgeCharge.phase,ticks:p.forgeCharge.ticks,total:p.forgeCharge.total,
      expires:p.forgeCharge.expires,flash:p.forgeCharge.flash}:null,
    skills:p.forge?.skills.slice(0,4).map(s=>({name:s.name}))||[],
@@ -274,6 +275,7 @@ function receive(s){
  s.players.forEach((p,i)=>{
    players[i].hp=p.hp;players[i].maxHp=p.maxHp;
    players[i].forgeCharge=p.charge||null;
+   players[i].telegraphPreviews=Array.isArray(p.previews)?p.previews.slice(0,1):[];
  });
  isGameOver=!!s.finished;isPlaying=!isGameOver;
 }
@@ -329,7 +331,7 @@ function paint(){
    p.x=Math.max(r,Math.min(canvas.width-r,p.x));
    p.y=Math.max(r,Math.min(canvas.height-r,p.y));
  });
- draw();SkillVisuals.draw(ctx);
+ draw();SkillVisuals.draw(ctx);global.ArenaTelegraph?.draw?.(ctx,players);
  // Individual HP bar tracks each fighter on the original arena canvas.
  players.forEach((p,i)=>{
    if(!p||p.hp<=0)return;

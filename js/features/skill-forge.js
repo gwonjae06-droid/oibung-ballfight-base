@@ -228,11 +228,13 @@ function cast(p,s,target,index){
     const lead=transitionLead[s.actions[Math.max(0,step-1)].type]||6;
     start=step>0&&s.actions[step-1].type==='charge'?
       Math.max(requested,start+(global.ArenaCharge?.framesOf?.(s.actions[step-1])||60)+2):
-      step===0?requested:a.link==='with'?start:
+      step===0?Math.max(requested,global.ArenaTelegraph?.leadFrames?.(a)||0):
+      a.link==='with'?start:
       a.link==='after'?Math.max(requested,start+Math.max(24,lead)):
       Math.max(requested,start+lead);
     p.forgeQueue.push({remaining:start,step,castId,skillIndex:index,
       a,targetNum:target?.playerNum??null,
+      windup:global.ArenaTelegraph?.leadFrames?.(a)||0,
       waitApex:step>0&&['leap','glide','hover','uppercut'].includes(s.actions[step-1].type)&&
         ['dive','aircombo','slash','spinslash','thrust'].includes(a.type)});
   }
