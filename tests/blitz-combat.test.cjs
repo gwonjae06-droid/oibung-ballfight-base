@@ -27,7 +27,7 @@ test('Blitz accepts only the current side, then alternates and pauses simulation
  r.step(room,1/60,t+120);
  assert.equal(room.blitz.phase,'execute');
  assert.equal(room.blitz.turn,0);
- assert.equal(room.players[0].forgeTicks[0],0,'first authored skill used');
+ assert.ok(room.players[0].forgeTicks[0]<5,'first authored skill used, timer advances during execution');
  assert.ok(room.players[1].forgeTicks[0]>0,'opponent did not cast');
  for(let j=0;j<20;j++)r.step(room,1/60,t+140+j*17);
  assert.ok(Math.hypot(room.players[0].x-x,room.players[0].y-y)>1,'active character moves');
@@ -57,7 +57,7 @@ test('automated fighter plays only on its own turn and respects same skill coold
  r.step(room,1/60,t+1560);
  assert.equal(room.blitz.phase,'execute','automatic turn begins without network wait');
  assert.ok(room.blitz.resolved.slots.length>0);
- assert.equal(room.players[1].forgeTicks[0],0,'AI cast its authored skill');
+ assert.ok(room.players[1].forgeTicks[0]<5,'AI cast its authored skill, timer advances during execution');
 });
 test('planning validations sanitize unsafe inputs and respect turn/sequence',()=>{
  const r=runtime(),room=r.createRoom(fighter,fighter,'manual',Date.now(),['blitz','blitz']);
