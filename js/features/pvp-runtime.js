@@ -153,6 +153,12 @@ function blitzTick(room,now){
    for(let i=0;i<2;i++)if(b.resolved[i].slots.length>1)cast(room,i,b.resolved[i].slots[1]);
   }
   if(now>=b.executionEnd){
+   // Keep online rooms shorter than Realtime room-authorization expiry.
+   if(b.round>=24){
+    room.ended=true;isPlaying=false;isGameOver=true;room.elapsed=120;
+    room.winner=players[0].hp===players[1].hp?-1:players[0].hp>players[1].hp?0:1;
+    return false;
+   }
    b.round++;b.phase='plan';b.deadline=now+3400;b.plans=[null,null];
    b.resolved=null;b.secondDone=false;
    players.forEach(p=>{p.inputX=0;p.inputY=0;p.vx=0;p.vy=0;});

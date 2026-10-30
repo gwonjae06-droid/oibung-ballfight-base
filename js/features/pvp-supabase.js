@@ -211,6 +211,7 @@ class SupabasePvpTransport{
    if(this.side===0&&message.from===1&&!this.peerReady){
     this.peerReady=true;this.lastStep=Date.now();
     this.current.started=this.lastStep;
+    if(this.current.blitz)this.current.blitz.deadline=this.lastStep+4500;
    }
    return;
   }

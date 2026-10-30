@@ -115,7 +115,7 @@ function refresh(){
  const active=phase==='plan',disabled=!active||locked||!running();
  for(const id of ['tower-blitz-move','tower-blitz-first','tower-blitz-second','tower-blitz-lock'])el(id).disabled=disabled;
  el('tower-blitz-clock').textContent=round+'라운드 · '+(active?'선택 '+Math.max(0,(deadline-Date.now())/1000).toFixed(1)+'초':'동시 실행');
- el('tower-blitz-message').textContent=active?(locked?'✓ 행동 확정 · 실행 준비 중':'이동과 스킬을 골라 확정하세요. 미선택 시 방어합니다.'):'⚔ 양쪽 행동 동시 실행 · 다음 라운드 준비';
+ el('tower-blitz-message').textContent=active?(locked?'✓ 행동 확정 · 실행 준비 중':'이동과 스킬을 골라 확정하세요. 미확정 시 현재 선택을 자동 실행합니다.'):'⚔ 양쪽 행동 동시 실행 · 다음 라운드 준비';
  el('tower-blitz-vitals').textContent='내 HP '+Math.ceil(Math.max(0,hero?.hp||0))+' / '+(hero?.maxHp||0)
   +'  ·  적 HP '+Math.ceil(Math.max(0,foe?.hp||0))+' / '+(foe?.maxHp||0);
  const skillSet=skills(hero);
