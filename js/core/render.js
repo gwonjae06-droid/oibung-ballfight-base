@@ -40,11 +40,11 @@ if(p.manualTower&&p.hp>0&&globalThis.ArenaTower?.active&&globalThis.ArenaTower?.
   }
   ctx.restore();
 }
-// Ground coordinates stay fixed: the shadow always remains beneath the body.
+// The 2.5D floor shadow is visible even on the ground; its center
+// remains the actual physics x,y while the body lifts by z.
+globalThis.ArenaDepth?.shadow?.(ctx,p,z);
 if(Math.abs(z)>1){
   ctx.save();
-  ctx.fillStyle='rgba(25,31,38,'+Math.max(.06,.24-Math.abs(z)*.001)+')';
-  ctx.beginPath();ctx.ellipse(p.x,p.y,radius*(1+Math.max(0,z)/250),radius*.28,0,0,Math.PI*2);ctx.fill();
   if(z>20&&p.slam){ctx.setLineDash([6,6]);ctx.strokeStyle='#a44136';ctx.lineWidth=2;ctx.beginPath();
     ctx.arc(p.x,p.y,Math.max(40,p.slam.a.radius*.65),0,2*Math.PI);ctx.stroke();}
   if(z<0){ctx.strokeStyle='#786349';ctx.lineWidth=2;ctx.setLineDash([3,5]);ctx.beginPath();
@@ -55,6 +55,7 @@ if(p.id==='choi'&&p.suneungState==='success'&&!dead){ctx.save();ctx.beginPath();
 globalThis.ArenaCharge?.draw?.(p,ctx);
 const chargeJitter=globalThis.ArenaCharge?.jitter?.(p)||{x:0,y:0};
 ctx.save();ctx.translate(p.x+chargeJitter.x,p.y+offset+chargeJitter.y);ctx.scale(scale*pose.sx,scale*pose.sy);ctx.rotate(pose.tilt);if(dead)ctx.globalAlpha=0.3;if(z<0)ctx.globalAlpha*=.32;
+globalThis.ArenaDepth?.underlay?.(ctx,p,radius);
 ctx.save();ctx.beginPath();ctx.arc(0,0,radius,0,Math.PI*2);ctx.clip();
 if(img&&img.complete&&img.naturalWidth!==0)ctx.drawImage(img,-radius,-radius,radius*2,radius*2);
 else{
@@ -65,6 +66,7 @@ else{
   ctx.textAlign='center';ctx.textBaseline='middle';
   ctx.strokeText(p.name[0],0,0);ctx.fillText(p.name[0],0,0);
 }
+globalThis.ArenaDepth?.lightSurface?.(ctx,radius);
 ctx.restore();ctx.save();ctx.beginPath();ctx.arc(0,0,radius,0,Math.PI*2);ctx.lineWidth=globalThis.CosmeticArcade?.borderColor?.(p)?5:4;ctx.strokeStyle=globalThis.CosmeticArcade?.borderColor?.(p)||'#000';ctx.shadowColor=ctx.strokeStyle;ctx.shadowBlur=globalThis.CosmeticArcade?.borderGlow?.(p)||0;ctx.globalAlpha=1;ctx.shadowBlur=0;ctx.setLineDash([]);ctx.stroke();ctx.restore();globalThis.CosmeticArcade?.drawBorder?.(ctx,p,radius);ctx.restore();
 if(p.id==='lee'&&p.pokeAnim>0&&!dead){ctx.save();const a=Math.atan2(p.pokeTargetY-p.y,p.pokeTargetX-p.x),dist=Math.hypot(p.pokeTargetX-p.x,p.pokeTargetY-p.y),max=Math.min(p.pokeRange,Math.max(p.radius+40,dist)),reach=p.radius+(max-p.radius)*Math.sin(p.pokeAnim*Math.PI),x=p.x+Math.cos(a)*reach,y=p.y+Math.sin(a)*reach;ctx.beginPath();ctx.moveTo(p.x+Math.cos(a)*p.radius,p.y+Math.sin(a)*p.radius);ctx.lineTo(x,y);ctx.strokeStyle='#9a6500';ctx.lineWidth=5;ctx.lineCap='round';ctx.stroke();ctx.font='bold 24px -apple-system, sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('👉',x,y);ctx.restore();}
 globalThis.SkillVisuals?.drawAction?.(ctx,p,z);
@@ -85,7 +87,8 @@ ctx.save();ctx.clearRect(0,0,canvas.width,canvas.height);ctx.fillStyle='#fff';ct
 const manualCamera=globalThis.ArenaTowerControls?.camera?.(canvas.width,canvas.height);
 if(manualCamera)globalThis.ArenaTowerControls?.applyView?.(ctx,manualCamera);
 if(screenShake>0.5){const x=(Math.random()-0.5)*screenShake,y=(Math.random()-0.5)*screenShake;ctx.translate(x,y);}
-globalThis.ArenaTower?.paintBackground?.(ctx,canvas);
+const painted=globalThis.ArenaTower?.paintBackground?.(ctx,canvas)===true;
+globalThis.ArenaDepth?.paintFloor?.(ctx,canvas,painted);
 shockwaves.forEach(w=>{ctx.beginPath();ctx.arc(w.x,w.y,w.radius,0,Math.PI*2);ctx.strokeStyle=`rgba(4,120,87,${w.alpha})`;ctx.lineWidth=6;ctx.stroke();ctx.beginPath();ctx.arc(w.x,w.y,w.radius*0.7,0,Math.PI*2);ctx.fillStyle=`rgba(5,150,105,${w.alpha*0.2})`;ctx.fill();});
 players.forEach(p=>{
 if(p.id==='bae'&&p.waves)p.waves.forEach(w=>{ctx.beginPath();ctx.arc(w.x,w.y,w.currentRadius,0,Math.PI*2);ctx.strokeStyle=`rgba(234,88,12,${w.alpha})`;ctx.lineWidth=3;ctx.stroke();ctx.beginPath();ctx.arc(w.x,w.y,w.currentRadius*0.85,0,Math.PI*2);ctx.fillStyle=`rgba(249,115,22,${w.alpha*0.12})`;ctx.fill();});

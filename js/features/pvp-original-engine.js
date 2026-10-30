@@ -10,7 +10,7 @@
   if(promise)return promise;
   promise=new Promise((resolve,reject)=>{
    frame=document.createElement('iframe');frame.title='원래 오이붕 온라인 전투';frame.style.cssText='width:100%;aspect-ratio:1;border:0;pointer-events:none;display:none';
-   frame.src='pvp-runtime.html?v=prep1';
+   frame.src='pvp-runtime.html?v=depth1';
    const timer=setTimeout(()=>reject(Error('전투 엔진 로딩 시간 초과')),15000);
    frame.onload=()=>{clearTimeout(timer);const r=frame.contentWindow.PvpRuntime;if(!r)return reject(Error('전투 엔진 로딩 실패'));resolve({...r,normalizeProfile:unpack});};
    document.getElementById('pvp-canvas').after(frame);
