@@ -84,7 +84,7 @@ test('each of six towers has three go-stone variants, distinct 5F and 10F bosses
   assert.equal(R.floor({number:5,boss:true},realm).name,expected[0]);
   assert.equal(R.floor({number:10,boss:true},realm).name,expected[1]);
   for(const [i,fl] of [1,2,3].entries())
-   assert.ok(R.floor({number:fl,boss:false},realm).name.includes(expected[i]));
+   assert.ok(R.floor({number:fl,boss:false},realm).name.includes(expected[i+2]));
  }
 });
 test('2.5D pillar effects correspond to active zone stages, never appear during telegraph',()=>{
