@@ -85,7 +85,7 @@ function createRoom(a,b,mode,now,modes){
  players=placeFighters(defs);particles=[];floatingTexts=[];shockwaves=[];
  openingCollisionPairs.clear();isPlaying=true;isGameOver=false;roundStarted=true;
  players.forEach((p,i)=>{
-  p.onlineManual=modes[i]==='manual';
+  p.onlineManual=modes[i]==='manual'||modes.includes('blitz');
   if(p.onlineManual)SkillForge.enableManual(p);
  });
  remote=false;targets=null;steer=null;lastPaint=0;accumulator=0;
@@ -93,6 +93,8 @@ function createRoom(a,b,mode,now,modes){
  global.ArenaMotion?.reset?.(players);
  fxOutbox=[];fxSequence=0;remoteFxSequence=0;preview=null;fxFrameCarry=0;
  current={players,started:now,elapsed:0,ended:false,winner:null,modes,pending:[]};
+ if(modes.includes('blitz'))current.blitz={phase:'plan',round:1,deadline:now+4500,
+   plans:[null,null],resolved:null,secondDone:false,executionEnd:0};
  SkillVisuals.setSpawnListener(captureFx);
  return current;
 }
@@ -102,10 +104,69 @@ function setInput(room,i,msg,now=Date.now()){
  p.inputX=x/n;p.inputY=y/n;p.inputAt=now;return true;
 }
 function cast(room,i,slot){return !room.ended&&!!players[i]?.onlineManual&&SkillForge.manualCast(players[i],slot,getClosestAliveEnemy(players[i]));}
+// Blitz: each side chooses privately, host resolves both in one execution window.
+function normalizePlan(raw){
+ const allowed=['approach','retreat','left','right','hold'];
+ const move=allowed.includes(raw?.move)?raw.move:'hold';
+ const slots=Array.isArray(raw?.slots)?raw.slots.slice(0,2).map(Number)
+   .filter(x=>Number.isInteger(x)&&x>=0&&x<4):[];
+ return {move,slots:[...new Set(slots)]};
+}
+function submitPlan(room,index,raw,now=Date.now()){
+ const b=room.blitz;
+ if(!b||room.ended||b.phase!=='plan'||b.plans[index]||raw?.round!==b.round)return false;
+ if(room.modes[index]!=='blitz')return false;
+ b.plans[index]=normalizePlan(raw);
+ return true;
+}
+function autoPlan(room,index){
+ const p=players[index],e=players[1-index],distance=Math.hypot(p.x-e.x,p.y-e.y);
+ const slots=(p.forge?.skills||[]).map((skill,j)=>({j,ready:(p.forgeTicks[j]||0)>=SkillForge.cooldownFrames(p,skill)}))
+   .filter(item=>item.ready).slice(0,2).map(item=>item.j);
+ return {move:distance<95?'retreat':'approach',slots};
+}
+function beginBlitzExecution(room,b,now){
+ b.phase='execute';b.executionEnd=now+1600;b.secondAt=now+650;b.secondDone=false;
+ b.resolved=b.plans.map((p,i)=>p||autoPlan(room,i));
+ for(let i=0;i<2;i++){
+  const p=players[i],e=players[1-i],plan=b.resolved[i];
+  const distance=Math.hypot(e.x-p.x,e.y-p.y)||1,dx=(e.x-p.x)/distance,dy=(e.y-p.y)/distance;
+  const move=plan.move,dir=move==='retreat'?-1:move==='hold'?0:1;
+  p.inputX=move==='left'?-dy:move==='right'?dy:dx*dir;
+  p.inputY=move==='left'?dx:move==='right'?-dx:dy*dir;
+  p.inputAt=now;
+  if(move==='hold')p.invincible=Math.max(p.invincible||0,18);
+  if(plan.slots.length)cast(room,i,plan.slots[0]);
+ }
+}
+function blitzTick(room,now){
+ const b=room.blitz;
+ if(!b)return true;
+ if(b.phase==='plan'){
+  for(let i=0;i<2;i++)if(room.modes[i]==='auto'&&!b.plans[i])b.plans[i]=autoPlan(room,i);
+  if(now>=b.deadline||b.plans.every(Boolean))beginBlitzExecution(room,b,now);
+  else return false;
+ }
+ if(b.phase==='execute'){
+  if(!b.secondDone&&now>=b.secondAt){
+   b.secondDone=true;
+   for(let i=0;i<2;i++)if(b.resolved[i].slots.length>1)cast(room,i,b.resolved[i].slots[1]);
+  }
+  if(now>=b.executionEnd){
+   b.round++;b.phase='plan';b.deadline=now+3400;b.plans=[null,null];
+   b.resolved=null;b.secondDone=false;
+   players.forEach(p=>{p.inputX=0;p.inputY=0;p.vx=0;p.vy=0;});
+   return false;
+  }
+ }
+ return true;
+}
 function step(room,dt,now){
- if(room.ended)return;accumulator+=dt;
+ if(room.ended)return;
+ if(!blitzTick(room,now))return;
+ accumulator+=dt;
  while(accumulator>=1/60&&!isGameOver){
-  players.forEach(p=>{if(p.onlineManual&&now-(p.inputAt||0)>700)p.inputX=p.inputY=0;});
+  players.forEach(p=>{if(p.onlineManual&&!room.blitz&&now-(p.inputAt||0)>700)p.inputX=p.inputY=0;});
   global.ArenaMotion?.capture?.(players);
   update();SkillVisuals.tick();accumulator-=1/60;room.elapsed+=1/60;
  }
@@ -131,7 +192,10 @@ function decode(v){
 // Heavy effect data is transferred only 2 times per second. Frequent
 // position, HP and cooldown updates stay small and interpolate smoothly.
 function snapshot(room,full=true){
+ const b=room.blitz;
  const state={type:'state',clock:Math.max(0,120-room.elapsed),finished:room.ended,winner:room.winner,
+  ...(b?{blitz:{phase:b.phase,round:b.round,remainingMs:Math.max(0,
+    (b.phase==='plan'?b.deadline:b.executionEnd)-Date.now()),submitted:b.plans.map(Boolean)}}:{}),
   players:players.map((p,i)=>({x:p.x,y:p.y,hp:p.hp,maxHp:p.maxHp,name:p.name,
    color:p.themeColor,mode:room.modes[i],
    skills:p.forge?.skills.slice(0,4).map(s=>({name:s.name}))||[],
@@ -267,6 +331,6 @@ function paint(){
  });
 }
 
-global.PvpRuntime={createRoom,setInput,cast,step,snapshot,receive,receiveFx,
+global.PvpRuntime={createRoom,setInput,cast,submitPlan,step,snapshot,receive,receiveFx,
   drainFx,setFxWake,previewCast,predict,paint};
 })(window);

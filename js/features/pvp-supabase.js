@@ -204,6 +204,9 @@ class SupabasePvpTransport{
    this.seenControls.add(message.eventId);
    if(this.seenControls.size>128)this.seenControls.delete(this.seenControls.values().next().value);
   }
+  if(message.type==='plan'&&this.side===0&&message.from===1){
+   rule.submitPlan?.(this.current,1,message,Date.now());return;
+  }
   if(message.type==='ready'){
    if(this.side===0&&message.from===1&&!this.peerReady){
     this.peerReady=true;this.lastStep=Date.now();
@@ -275,7 +278,8 @@ class SupabasePvpTransport{
   if(msg.type==='cancel'){this.close();return;}
   if(!this.room||!this.current||this.done)return;
   if(this.side===0){
-   if(msg.type==='input')this.rule.setInput(this.current,0,msg,Date.now());
+   if(msg.type==='plan')this.rule.submitPlan?.(this.current,0,msg,Date.now());
+   else if(msg.type==='input')this.rule.setInput(this.current,0,msg,Date.now());
    else if(msg.type==='cast')this.rule.cast(this.current,0,Number(msg.slot),Date.now());
    else if(msg.type==='forfeit'){
     this.current.ended=true;this.current.winner=1;
@@ -287,7 +291,7 @@ class SupabasePvpTransport{
    // The host still decides whether it hits, damages, or goes on cooldown.
    if(msg.type==='cast')this.rule.previewCast?.(1,Number(msg.slot));
    // A cached legacy host cannot ACK, and duplicate casts must not be sent to it.
-   if((msg.type==='cast'||msg.type==='forfeit')&&this.peerReliable)this.sendReliable(msg);
+   if((msg.type==='cast'||msg.type==='forfeit'||msg.type==='plan')&&this.peerReliable)this.sendReliable(msg);
    else Promise.resolve(this.channel?.send({type:'broadcast',event:'control',payload:{...msg,from:1}})).catch(()=>{});
   }
  }
