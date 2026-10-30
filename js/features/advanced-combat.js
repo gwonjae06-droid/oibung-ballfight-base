@@ -934,6 +934,6 @@ function draw(ctx){
 }
 function activeLine(t){return Math.max(1,8*Math.sin(Math.PI*cap(t,0,1)));}
 global.AdvancedCombat={TYPES,TYPE_NAMES,DESCRIPTIONS,objects,projectiles,effects,
-  height:absoluteHeight,visibleHeight,visual,pose,setAlpha,setReduced,blend,size,renderY,canHit,
+  height:absoluteHeight,floorHeight:terrainElevation,visibleHeight,visual,pose,setAlpha,setReduced,blend,size,renderY,canHit,
   launch,execute,tick,draw,reset,mark,ensure,blockSegment};
 })(window);

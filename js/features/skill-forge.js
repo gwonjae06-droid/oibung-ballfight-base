@@ -189,6 +189,15 @@ function randomProfile(theme='any',rng=Math.random,exactCount=null){
 
 let sequence=0;
 const enemies=p=>players.filter(e=>e!==p&&e.hp>0);
+function groundImpactZ(target){
+ return global.AdvancedCombat?.floorHeight?.(target) ??
+  Math.max(0,Number(target?.towerGroundZ)||0);
+}
+// Ground-zone damage resolves at each struck platform, not at world z=0.
+// This does not bypass jumping or change the altitude of flying projectiles.
+function hitGround(attacker,target,action,multiplier=1){
+ return hit(attacker,target,action,multiplier,groundImpactZ(target));
+}
 function hit(p,e,action,multiplier=1,attackZ) {
   if(MOVEMENT_ONLY.has(action?.type))return false;
   if(!e||e===p||e.hp<=0||e.invincible>0)return false;
@@ -470,11 +479,11 @@ function advanceWorld(p,target){
     const z=p.forgeZones[i];z.timer--;z.ticks++;
     if(z.type==='bolt'&&z.timer<=0){
       if(global.BattleFX)BattleFX.cast(p,'lightning',{x:z.x,y:z.y,color:(p.forge.effectColor||p.forge.color)});
-      enemies(p).filter(e=>Math.hypot(e.x-z.x,e.y-z.y)<z.a.radius*.4+e.radius).forEach(e=>hit(p,e,z.a,1,0));
+      enemies(p).filter(e=>Math.hypot(e.x-z.x,e.y-z.y)<z.a.radius*.4+e.radius).forEach(e=>hitGround(p,e,z.a));
     }
     if(z.type==='zone'&&z.timer>0&&z.ticks%30===0){
       const actualRadius=z.r??z.a.radius;
-      enemies(p).filter(e=>Math.hypot(e.x-z.x,e.y-z.y)<actualRadius+e.radius).forEach(e=>hit(p,e,z.a,.4,0));
+      enemies(p).filter(e=>Math.hypot(e.x-z.x,e.y-z.y)<actualRadius+e.radius).forEach(e=>hitGround(p,e,z.a,.4));
     }
     if(z.timer<=0)p.forgeZones.splice(i,1);
   }
@@ -802,6 +811,6 @@ function initialize(){
     oldDraw(p);
   };
 }
-global.SkillForge={autoUpdate:update,drawFighter,THEMES,randomProfile,normalize,register,remove,list,setDraft,refreshList:()=>refreshList(),refreshEditor:()=>{refreshBasics();render();},persist,TYPE,TRIGGER,STATUS,ACTION_PARAMETERS,MOVEMENT_ONLY,supportedParameter,cooldownFrames,advanceTimers:tickSkills,advanceWorld,hit,enableManual,manualUpdate,manualCast,allProfile,allSkillset,getDraft:()=>normalize(draft)};
+global.SkillForge={autoUpdate:update,drawFighter,THEMES,randomProfile,normalize,register,remove,list,setDraft,refreshList:()=>refreshList(),refreshEditor:()=>{refreshBasics();render();},persist,TYPE,TRIGGER,STATUS,ACTION_PARAMETERS,MOVEMENT_ONLY,supportedParameter,cooldownFrames,advanceTimers:tickSkills,advanceWorld,hit,hitGround,groundImpactZ,enableManual,manualUpdate,manualCast,allProfile,allSkillset,getDraft:()=>normalize(draft)};
 if(typeof document!=='undefined'&&document.querySelector('.bf-tools'))initialize();
 })(window);

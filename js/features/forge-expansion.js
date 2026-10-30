@@ -68,7 +68,7 @@ function execute(p,a,target,api){
     }else effect(p,a.type,a.duration*60,p,a.damage);
     show(p.x,p.y,p.radius+12);return true;
   }
-  if(a.type==='nova'){show(p.x,p.y,a.radius);global.SkillVisuals?.detonate?.(p,'nova',p.x,p.y,a.radius);around(p.x,p.y,a.radius).forEach(e=>api.hit(p,e,a));return true;}
+  if(a.type==='nova'){show(p.x,p.y,a.radius);global.SkillVisuals?.detonate?.(p,'nova',p.x,p.y,a.radius);around(p.x,p.y,a.radius).forEach(e=>api.hit(p,e,a,1,(global.AdvancedCombat?.floorHeight?.(e)??Math.max(0,Number(e.towerGroundZ)||0))));return true;}
   if(!near)return true;
   const angle=Math.atan2(near.y-p.y,near.x-p.x);
   if(a.type==='flight'||a.type==='burrow'){
@@ -140,7 +140,7 @@ function update(p,api){
       if(b.kind==='lifebloom'){if(b.age%30===0&&Math.hypot(p.x-b.x,p.y-b.y)<b.a.radius)heal(p,b.a.damage*.25);}
       else for(const e of api.enemies(p))if(Math.hypot(e.x-b.x,e.y-b.y)<b.a.radius+e.radius){
         const angle=Math.atan2(b.y-e.y,b.x-e.x);if(e.invincible<=0){e.vx+=Math.cos(angle)*.5;e.vy+=Math.sin(angle)*.5;}
-        if(b.age%30===0)api.hit(p,e,{...b.a,knockback:0},.35);
+        if(b.age%30===0)api.hit(p,e,{...b.a,knockback:0},.35,(global.AdvancedCombat?.floorHeight?.(e)??Math.max(0,Number(e.towerGroundZ)||0)));
       }
     }else if(b.kind==='starfall'){
       if(!b.hit&&b.age>=b.delay+b.flight){
@@ -152,8 +152,8 @@ function update(p,api){
         global.BattleFX?.sound?.('heavy',.4);
         for(const e of api.enemies(p)){
           if(Math.hypot(e.x-b.x,e.y-b.y)<=impact+e.radius
-            &&(!global.AdvancedCombat||global.AdvancedCombat.canHit(p,e,0)))
-            api.hit(p,e,b.a);
+            &&(!global.AdvancedCombat||global.AdvancedCombat.canHit(p,e,(global.AdvancedCombat?.floorHeight?.(e)??Math.max(0,Number(e.towerGroundZ)||0)))))
+            api.hit(p,e,b.a,1,(global.AdvancedCombat?.floorHeight?.(e)??Math.max(0,Number(e.towerGroundZ)||0)));
         }
         b.life=0;
       }
@@ -162,7 +162,7 @@ function update(p,api){
       if((b.kind==='meteor'&&b.life<=0)||(b.kind==='mine'&&b.age>=20&&foes.length)){
         global.BattleFX?.mark?.('wave',b.x,b.y,(p.forge.effectColor||p.forge.color),b.a.radius);
         global.SkillVisuals?.detonate?.(p,b.kind,b.x,b.y,b.a.radius);
-        foes.forEach(e=>api.hit(p,e,b.a));b.life=0;
+        foes.forEach(e=>api.hit(p,e,b.a,1,(global.AdvancedCombat?.floorHeight?.(e)??Math.max(0,Number(e.towerGroundZ)||0))));b.life=0;
       }
     }else{
       const target=b.kind==='boomerang'&&b.age>20?p:players.find(e=>e.playerNum===b.target&&e.hp>0);

@@ -102,7 +102,11 @@ function execute(caster,action,originalTarget,api){
   const colored=caster.forge.effectColor||caster.forge.color;
   const isEnemy=e=>e!==caster&&e.hp>0;
   const hitAt=(x,y,r,multiplier=1,impactZ)=>{
-    for(const e of foes)if(isEnemy(e)&&Math.hypot(e.x-x,e.y-y)<r+e.radius)api.hit(caster,e,action,multiplier,impactZ);
+    for(const e of foes)if(isEnemy(e)&&Math.hypot(e.x-x,e.y-y)<r+e.radius){
+    const z=impactZ===0?
+      (global.AdvancedCombat?.floorHeight?.(e)??Math.max(0,Number(e.towerGroundZ)||0)):impactZ;
+    api.hit(caster,e,action,multiplier,z);
+   }
   };
   const show=(x,y,kind,r)=>{
     if(global.BattleFX&&BattleFX.mark)BattleFX.mark(kind,x,y,colored,r);
@@ -122,7 +126,7 @@ function execute(caster,action,originalTarget,api){
   }else if(action.type==='wave'){
     for(const point of points){
       show(point.x,point.y,'wave',Math.max(30,action.radius*.45));
-      hitAt(point.x,point.y,Math.max(30,action.radius*.45),count>3?.66:1);
+      hitAt(point.x,point.y,Math.max(30,action.radius*.45),count>3?.66:1,0);
     }
   }else if(action.type==='bolt'){
     for(const point of points){
