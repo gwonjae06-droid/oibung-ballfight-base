@@ -137,3 +137,9 @@ test('sequential mode requires protocol 2 from both peers before matchmaking',()
  assert.match(read('js/features/pvp-original-engine.js'),/v:2,bp:2,id:d\.id/);
  assert.match(read('js/features/pvp-original-engine.js'),/pvp-runtime\.html\?v=pvp-turn2/);
 });
+
+test('fresh turn-based loader is forced by an explicit version in the main HTML',()=>{
+ const html=fs.readFileSync('index.html','utf8');
+ assert.match(html,/pvp-original-engine\.js\?v=pvp-turn2/);
+ assert.match(html,/pvp-online\.js\?v=pvp-turn1/);
+});
