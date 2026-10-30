@@ -48,7 +48,7 @@ test('four-spell budget influences real combat damage, while transient Tower ene
 test('skill block UI previews effective damage without changing raw damage controls',()=>{
  const ui=fs.readFileSync('js/features/block-forge.js','utf8');
  assert.match(ui,/block-power-budget/);
- assert.match(ui,/budget\.multiplier/);
+ assert.match(ui,/budget\?\.multiplier/);
  assert.match(ui,/data-key="\+key/);
  const html=fs.readFileSync('index.html','utf8');
  const frame=fs.readFileSync('pvp-runtime.html','utf8');
