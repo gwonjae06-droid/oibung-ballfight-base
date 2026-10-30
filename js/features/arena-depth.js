@@ -7,37 +7,101 @@
 'use strict';
 const clamp=(v,a,b)=>Math.min(b,Math.max(a,v));
 const cached=new Map(), MAX_CACHE=4;
-// A clearly angled but still readable top-down view (~42° off overhead). Keep this a single
-// constant: ground, shadows, fighters, projectiles and PvP effects share it.
-const VIEW_Y=0.74;
+// TRUE pinhole-like ground-plane mapping, not a flattened canvas.
+// Ground coordinates remain in gameplay space; only pixels are projected.
+// y=0 is far away, y=canvas.height is near the viewer.
+const VIEW_Y=1;
+const FAR_SCALE=.68,NEAR_SCALE=1.16;
+const FAR_EDGE=.115,NEAR_EDGE=.855;
+const POINT_STEPS=8;
+const layers=new Map();
+const projectT=t=>Math.pow(clamp(t,0,1),1.18);
+const scaleAt=t=>FAR_SCALE+(NEAR_SCALE-FAR_SCALE)*projectT(t);
 function screenPoint(x,y,canvas){
- const h=Number(canvas?.height)||500;
- return {x,y:(1-VIEW_Y)*h*.5+VIEW_Y*y};
-}
-function applyView(ctx,canvas){
- const h=Number(canvas?.height)||500;
- ctx.translate(0,h*(1-VIEW_Y)*.5);
- ctx.scale(1,VIEW_Y);
+ const w=Math.max(1,Number(canvas?.width)||500),h=Math.max(1,Number(canvas?.height)||500);
+ const t=clamp(Number(y)/h||0,0,1),p=projectT(t);
+ return {x:w*.5+(Number(x)-w*.5)*scaleAt(t),
+   y:h*(FAR_EDGE+(NEAR_EDGE-FAR_EDGE)*p)};
 }
 function spriteScale(p,canvas){
  const h=Math.max(1,Number(canvas?.height)||500);
- // The nearer row appears only slightly larger; silhouettes stay legible.
- return clamp(1+(Number(p?.y||0)/h-.5)*.105,.948,1.052);
+ return scaleAt(clamp((Number(p?.y)||0)/h,0,1));
+}
+function elevatedPoint(p,z,canvas){
+ const at=screenPoint(p.x,p.y,canvas);
+ return {x:at.x,y:at.y-(Number(z)||0)*spriteScale(p,canvas)};
+}
+function applyView(ctx,canvas){
+ // The whole canvas must NOT be crushed along y. Each ground row instead
+ // receives its own x-width and screen y through projectWorld().
+}
+function layer(canvas,kind='world'){
+ const w=Number(canvas?.width),h=Number(canvas?.height);
+ if(!(w>0&&h>0)||!global.document?.createElement)return null;
+ const key=kind+':'+w+':'+h;
+ let cached=layers.get(key);
+ if(!cached){
+   try{
+     const surface=global.document.createElement('canvas');
+     surface.width=w;surface.height=h;
+     const painter=surface.getContext?.('2d');
+     if(!painter)return null;
+     cached={canvas:surface,ctx:painter};
+     if(layers.size>=5)layers.clear();
+     layers.set(key,cached);
+   }catch(_){return null;}
+ }
+ return cached;
+}
+function projectWorld(ctx,source,canvas){
+ if(!ctx||!source||!canvas||typeof ctx.drawImage!=='function')return false;
+ const w=Number(canvas.width),h=Number(canvas.height);
+ if(!(w>0&&h>0))return false;
+ ctx.save();
+ // Horizontal strips approximate a projective surface with consistent
+ // x vanishing point and nonlinear depth. No new game physics.
+ for(let y=0;y<h;y+=POINT_STEPS){
+   const next=Math.min(h,y+POINT_STEPS),a=screenPoint(0,y,canvas),
+     b=screenPoint(w,y,canvas),c=screenPoint(0,next,canvas),
+     d=screenPoint(w,next,canvas);
+   const destY=a.y,destH=Math.max(.001,c.y-a.y);
+   // Small overlaps remove antialias seams at high DPR while retaining
+   // the actual projected footprint.
+   const x=(a.x+c.x)*.5,width=(b.x+d.x-a.x-c.x)*.5;
+   ctx.drawImage(source,0,y,w,next-y,x,destY,width,destH+.45);
+ }
+ ctx.restore();return true;
 }
 function paintBackdrop(ctx,canvas,tower=false){
  const w=Number(canvas?.width)||500,h=Number(canvas?.height)||500;
- const band=h*(1-VIEW_Y)*.5;
+ const rear=h*FAR_EDGE,front=h*NEAR_EDGE;
+ const backLeft=screenPoint(0,0,canvas).x,backRight=screenPoint(w,0,canvas).x;
+ const frontLeft=screenPoint(0,h,canvas).x,frontRight=screenPoint(w,h,canvas).x;
  ctx.save();
- // The far boundary and the visible front thickness explain the angle
- // without introducing a large horizon or obscuring active combat.
- const back=ctx.createLinearGradient(0,0,0,band+2);
- if(tower){back.addColorStop(0,'#0d1825');back.addColorStop(1,'#314052');}
- else{back.addColorStop(0,'#a7b7c3');back.addColorStop(1,'#d3e0e7');}
- ctx.fillStyle=back;ctx.fillRect(0,0,w,band+2);
- const apron=ctx.createLinearGradient(0,h-band-2,0,h);
- if(tower){apron.addColorStop(0,'#4d5967');apron.addColorStop(.18,'#273444');apron.addColorStop(1,'#17212d');}
- else{apron.addColorStop(0,'#c4d5df');apron.addColorStop(.18,'#8a9eac');apron.addColorStop(1,'#607888');}
- ctx.fillStyle=apron;ctx.fillRect(0,h-band-2,w,band+2);
+ const wall=ctx.createLinearGradient(0,0,0,rear);
+ if(tower){wall.addColorStop(0,'#111c2b');wall.addColorStop(1,'#3c4a5d');}
+ else{wall.addColorStop(0,'#96a9b9');wall.addColorStop(1,'#dce7ec');}
+ ctx.fillStyle=wall;ctx.fillRect(0,0,w,h);
+ // Rear wall, trapezoid side surfaces and a solid front slab.
+ const left=ctx.createLinearGradient(0,rear,0,front);
+ left.addColorStop(0,tower?'#1c293a':'#9fb2be');
+ left.addColorStop(1,tower?'#263547':'#b7c8d2');
+ ctx.fillStyle=left;
+ ctx.beginPath();ctx.moveTo(0,rear-12);ctx.lineTo(backLeft,rear);
+ ctx.lineTo(frontLeft,front);ctx.lineTo(0,front+16);ctx.closePath();ctx.fill();
+ ctx.beginPath();ctx.moveTo(w,rear-12);ctx.lineTo(backRight,rear);
+ ctx.lineTo(frontRight,front);ctx.lineTo(w,front+16);ctx.closePath();ctx.fill();
+ const slab=ctx.createLinearGradient(0,front,0,h);
+ slab.addColorStop(0,tower?'#617088':'#9cb3c2');
+ slab.addColorStop(.12,tower?'#29384d':'#778fa0');
+ slab.addColorStop(1,tower?'#101c2c':'#4e687b');
+ ctx.fillStyle=slab;ctx.fillRect(0,front,w,h-front);
+ ctx.fillStyle=tower?'rgba(5,12,23,.27)':'rgba(30,53,68,.16)';
+ ctx.fillRect(0,front+5,w,6);
+ ctx.strokeStyle=tower?'rgba(218,228,246,.35)':'rgba(241,250,254,.66)';
+ ctx.lineWidth=2;
+ ctx.beginPath();ctx.moveTo(backLeft,rear);ctx.lineTo(backRight,rear);
+ ctx.moveTo(frontLeft,front);ctx.lineTo(frontRight,front);ctx.stroke();
  ctx.restore();
 }
 function line(c,x,y,xx,yy,color,width=1){
@@ -150,6 +214,6 @@ function lightSurface(ctx,r){
  ctx.fillStyle=shade;ctx.fillRect(-r,-r,r*2,r*2);
  ctx.restore();
 }
-global.ArenaDepth=Object.freeze({VIEW_Y,screenPoint,applyView,spriteScale,
-  paintBackdrop,paintFloor,shadow,underlay,lightSurface});
+global.ArenaDepth=Object.freeze({VIEW_Y,screenPoint,elevatedPoint,applyView,spriteScale,
+  layer,projectWorld,paintBackdrop,paintFloor,shadow,underlay,lightSurface});
 })(typeof window!=='undefined'?window:globalThis);
