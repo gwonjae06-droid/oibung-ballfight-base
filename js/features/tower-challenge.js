@@ -120,14 +120,14 @@ function makeEnemy(n){
     const isMovement=['dash','blink','retreat'].includes(type);
     const isSupport=['shield','fortify','haste','regen','rewind','timestop','timeburst'].includes(type);
     const attack=action(type,isMovement||isSupport?0:Math.round(f.damage*(i===0?1:.7)),{
-      radius:type==='starfall'||type==='blackhole'?155:112,
+      radius:type==='starfall'||type==='blackhole'?(realmId==='space'?190:155):112,
       speed:type==='dash'?8:5,
-      duration:type==='dash'?0.5:type==='starfall'?2.5:1.7,
-      count:type==='starfall'?5:type==='chain'?3:1,
+      duration:type==='dash'?0.5:type==='starfall'?2.5:type==='summon'&&realmId==='forest'?6:1.7,
+      count:type==='starfall'?(realmId==='space'?8:5):type==='chain'?(realmId==='storm'?6:3):type==='summon'&&realmId==='forest'?4:1,
       status:realms?({fire:'fire',ice:'ice',forest:'poison'})[realmId]||'none':(f.number===4&&['nova','zone','shot'].includes(type))?'fire':
         f.number===6&&['zone','trap','drain','dung'].includes(type)?'poison':'none'
     });
-    return {name,cooldown:Number((f.cooldown+i*.32+(isSupport?.55:0)).toFixed(2)),
+    return {name,cooldown:Number(Math.max(.4,(f.cooldown+i*.19+(isSupport?.15:0))*(realmId==='time'?.7:realmId==='storm'?.7:realmId==='forest'?.82:1)).toFixed(2)),
       trigger:f.number>=5&&i>=f.autoSkillCount?(i%2?'lowhp':'damaged'):'auto',
       threshold:70,actions:[attack]};
   });
