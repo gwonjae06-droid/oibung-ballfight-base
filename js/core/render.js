@@ -84,8 +84,7 @@ ctx.fillText(name,labelX,labelY-4);ctx.restore();
 }
 function draw(){
 ctx.save();ctx.clearRect(0,0,canvas.width,canvas.height);
-const isTower=globalThis.ArenaTower?.active&&
-   globalThis.ArenaScreenRouter?.active==='tower';
+const isTower=globalThis.ArenaScreenRouter?.active==='tower';
 ctx.fillStyle=isTower?'#263443':'#cbd9e1';
 ctx.fillRect(0,0,canvas.width,canvas.height);
 globalThis.ArenaDepth?.paintBackdrop?.(ctx,canvas,isTower);
