@@ -80,3 +80,28 @@ test('burn and poison tick via shared engine in PvP as well as offline, once per
  assert.ok(!pvp.includes('js/main.js'),'isolated PvP shares ForgeExpansion.tick via core engine');
  assert.ok(source('js/core/engine.js').includes('ForgeExpansion?.tick(p)'));
 });
+
+test('status-bearing ordinary shots climb toward a target on raised ground',()=>{
+ const {w,p,e,action}=sim();
+ const shot=action('shot','poison',36);
+ shot.speed=6;
+ assert.equal(w.AbilityAtlas.execute(p,shot,e,{enemies:()=>[e],hit:(...xs)=>w.SkillForge.hit(...xs)}),true);
+ assert.equal(p.forgeShots.length,1);
+ assert.ok(p.forgeShots[0].heightVelocity>0,'physical projectile aims up from ground tier');
+ for(let frame=0;frame<15&&e.hp===300;frame++)w.SkillForge.advanceWorld(p,e);
+ assert.ok(e.hp<300,'an elevated opponent takes actual hit damage');
+ assert.ok(e.bfDot>0,'the poison status is also applied');
+});
+test('poison bomb and homing status projectiles preserve height targeting',()=>{
+ for(const type of ['dung','homing']){
+  const {w,p,e,action}=sim(),a=action(type,'poison',30);
+  a.radius=200;a.speed=8;
+  assert.equal(w.ForgeExpansion.execute(p,a,e,{enemies:()=>[e],hit:(...xs)=>w.SkillForge.hit(...xs)}),true);
+  assert.ok(p.forgeExtras?.length);
+  assert.ok(p.forgeExtras[0].heightVelocity>0);
+  for(let frame=0;frame<14&&e.hp===300;frame++)
+   w.ForgeExpansion.update(p,{enemies:()=>[e],hit:(...xs)=>w.SkillForge.hit(...xs)});
+  assert.ok(e.hp<300,type+' applies immediate damage at elevated range');
+  assert.ok(e.bfDot>0,type+' carries poison damage over time');
+ }
+});
