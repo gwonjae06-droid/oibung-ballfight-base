@@ -143,7 +143,7 @@ test('perspective narrows far ground and widens near ground instead of squashing
  const fl=w.ArenaDepth.screenPoint(0,0,arena),fr=w.ArenaDepth.screenPoint(600,0,arena);
  const nl=w.ArenaDepth.screenPoint(0,600,arena),nr=w.ArenaDepth.screenPoint(600,600,arena);
  assert.ok(fr.x-fl.x<470);
- assert.ok(nr.x-nl.x>650);
+ assert.ok(nr.x-nl.x>=599,'foreground spans the whole playable width without clipping');
  assert.ok((nr.x-nl.x)/(fr.x-fl.x)>1.6);
  assert.ok(fl.y>60&&fl.y<95&&nl.y>480&&nl.y<535);
  assert.equal(w.ArenaDepth.VIEW_Y,1,'no global vertical canvas compression');

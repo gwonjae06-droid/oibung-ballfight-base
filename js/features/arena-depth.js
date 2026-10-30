@@ -11,7 +11,7 @@ const cached=new Map(), MAX_CACHE=4;
 // Ground coordinates remain in gameplay space; only pixels are projected.
 // y=0 is far away, y=canvas.height is near the viewer.
 const VIEW_Y=1;
-const FAR_SCALE=.68,NEAR_SCALE=1.16;
+const FAR_SCALE=.62,NEAR_SCALE=1.00;
 const FAR_EDGE=.115,NEAR_EDGE=.855;
 const POINT_STEPS=8;
 const layers=new Map();
