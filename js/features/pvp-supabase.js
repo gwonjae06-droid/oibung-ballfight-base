@@ -24,6 +24,10 @@ class SupabasePvpTransport{
   this.mode=null;this.profile=null;this.lastBroadcast=0;this.lastFull=0;
   this.lastFx=0;this.fxTimer=null;this.fxSending=false;
   this.peerReady=false;this.lastStep=0;this.lastPeer=Date.now();
+  this.checkFailures=0;this.checkBusy=false;this.connected=false;this.done=false;
+  this.pendingControls=new Map();this.seenControls=new Set();this.controlSequence=0;
+  this.authTimer=null;this.queueTimer=null;this.subscriptionTimer=null;this.reliableTicker=null;
+  this.authTimer=global.setTimeout(()=>this.fail(Error('로그인 응답 시간이 초과됐습니다. 다시 시도해 주세요.')),20000);
   this.ticket=global.crypto?.randomUUID?.();
   if(!this.ticket){this.fail(Error('안전한 매칭 요청 ID를 생성할 수 없습니다.'));return;}
   this.start().catch(e=>this.fail(e));
@@ -31,8 +35,10 @@ class SupabasePvpTransport{
  emit(msg){if(!this.closed)this.onmessage?.({data:JSON.stringify(msg)});}
  leave(room=this.room){
   if(!this.sb||!this.ticket)return Promise.resolve();
-  return this.sb.rpc('oibung_pvp_leave_v2',
-   {p_ticket:this.ticket,p_room:room||null}).catch(()=>{});
+  // RPC is a PromiseLike PostgREST builder; .catch() is not guaranteed.
+  try{return Promise.resolve(this.sb.rpc('oibung_pvp_leave_v2',
+    {p_ticket:this.ticket,p_room:room||null})).catch(()=>{});}
+  catch(_){return Promise.resolve();}
  }
  async start(){
   this.sb=await client();
@@ -48,11 +54,13 @@ class SupabasePvpTransport{
   if(this.closed)return;
   await this.sb.realtime.setAuth(session.access_token);
   if(this.closed)return;
+  if(this.authTimer){global.clearTimeout(this.authTimer);this.authTimer=null;}
   this.readyState=1;this.emit({type:'connected'});
  }
  async queue(message){
   if(this.mode||this.closed)return;
   this.mode=message.mode;this.profile=message.profile;
+  this.queueTimer=global.setTimeout(()=>this.fail(Error('매칭 대기가 2분을 넘었습니다. 다시 시도해 주세요.')),120000);
   const {data,error}=await this.sb.rpc('oibung_pvp_join_v2',
    {p_mode:this.mode,p_fighter:this.profile,p_ticket:this.ticket});
   // A cancellation may happen while the SQL join is still in-flight.
@@ -86,6 +94,7 @@ class SupabasePvpTransport{
  async match(data){
   if(this.closed||this.room)return;
   if(this.poll){global.clearInterval(this.poll);this.poll=null;}
+  if(this.queueTimer){global.clearTimeout(this.queueTimer);this.queueTimer=null;}
   this.room=data.room;this.side=data.side;
   const rule=await rules();
   if(this.closed)return;
@@ -120,12 +129,22 @@ class SupabasePvpTransport{
    }
   });
   await new Promise((resolve,reject)=>{
-   this.channel.subscribe(status=>{
-    if(status==='SUBSCRIBED'){this.connected=true;resolve();}
+   let settled=false;
+   const finish=(err)=>{
+    if(settled)return;settled=true;
+    if(this.subscriptionTimer){global.clearTimeout(this.subscriptionTimer);this.subscriptionTimer=null;}
+    if(err)reject(err);else resolve();
+   };
+   this.subscriptionTimer=global.setTimeout(()=>
+     finish(Error('실시간 채널 연결 시간이 초과됐습니다.')),14000);
+   try{this.channel.subscribe(status=>{
+    if(this.closed)return;
+    if(status==='SUBSCRIBED'){this.connected=true;finish();}
     else if(['CHANNEL_ERROR','TIMED_OUT','CLOSED'].includes(status)){
-     this.connected=false;reject(Error('온라인 대전 채널에 접속할 수 없습니다.'));
-    }else this.connected=false;
-   });
+     this.connected=false;
+     if(!settled)finish(Error('실시간 대전 채널에 접속할 수 없습니다.'));
+    }
+   });}catch(err){finish(err);}
   });
   if(this.closed)return;
   this.lastPeer=Date.now();
@@ -201,7 +220,7 @@ class SupabasePvpTransport{
   }
   this.lastStep=now;
   if(!this.current.ended&&now-this.lastBroadcast<SNAPSHOT_MS)return;
-  if(this.sending&&!this.current.ended)return;
+  if(this.sending&&!this.current.ended&&now-(this.lastSendAt||0)<1500)return;
   this.lastBroadcast=now;
   const full=this.current.ended||now-this.lastFull>=FULL_MS;
   let snap=rule.snapshot(this.current,full);
@@ -214,9 +233,10 @@ class SupabasePvpTransport{
   snap.seq=(this.sequence=(this.sequence||0)+1);
   this.emit(snap);
   if(this.channel){
-   this.sending=true;
+   this.sending=true;this.lastSendAt=now;
+   const sendId=this.lastSendId=(this.lastSendId||0)+1;
    Promise.resolve(this.channel.send({type:'broadcast',event:'state',payload:snap}))
-    .catch(()=>{}).finally(()=>{this.sending=false;});
+    .catch(()=>{}).finally(()=>{if(this.lastSendId===sendId)this.sending=false;});
   }
   if(snap.finished){
    // Always deliver the final slash/explosion before closing the room.
@@ -262,6 +282,10 @@ class SupabasePvpTransport{
   this.closed=true;this.readyState=3;
   if(this.watchdog)global.clearInterval(this.watchdog);
   if(this.poll)global.clearInterval(this.poll);
+  if(this.authTimer)global.clearTimeout(this.authTimer);
+  if(this.queueTimer)global.clearTimeout(this.queueTimer);
+  if(this.subscriptionTimer)global.clearTimeout(this.subscriptionTimer);
+  this.stopReliable?.();this.pendingControls?.clear?.();
   if(this.sim)global.clearInterval(this.sim);
   if(this.readyTicker)global.clearInterval(this.readyTicker);
   if(this.fxTimer)global.clearTimeout(this.fxTimer);
@@ -270,9 +294,9 @@ class SupabasePvpTransport{
   const room=this.room;
   if(this.channel){
    if(!this.done&&room)
-    this.channel.send({type:'broadcast',event:'control',
-     payload:{type:'leave',from:this.side}}).catch(()=>{});
-   this.sb?.removeChannel(this.channel);
+    Promise.resolve(this.channel.send({type:'broadcast',event:'control',
+     payload:{type:'leave',from:this.side}})).catch(()=>{});
+   try{Promise.resolve(this.sb?.removeChannel(this.channel)).catch(()=>{});}catch(_){}
   }
   if(this.sb)this.leave(room);
   this.onclose?.();
