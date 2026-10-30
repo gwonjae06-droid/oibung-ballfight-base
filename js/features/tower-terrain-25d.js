@@ -20,17 +20,29 @@ const NODES={
  forest:[[.5,.48,.24,43],[.23,.67,.17,25],[.76,.28,.16,28]]
 };
 const smooth=x=>{x=clamp(x,0,1);return x*x*(3-2*x);};
-function nodes(realm,level=1,width=500,height=500){
+function nodes(realm,level=1,width=500,height=500,tick=0){
  const base=NODES[realm]||NODES.time,variance=((level-1)%4)*.018;
- return base.map(([x,y,r,z],i)=>({
-  x:x*width,y:(y+(i===0?0:i===1?variance:-variance))*height,
-  r:r*Math.min(width,height)*(level%5===0?1.12:1),
-  z:z+(level>=6?5:0),index:i
- }));
+ return base.map(([x,y,r,z],i)=>{
+  let px=x*width,py=(y+(i===0?0:i===1?variance:-variance))*height;
+  let lift=z+(level>=6?5:0);
+  // Clock gears rotate gently; satellites bob; roots grow; ice cracks
+  // periodically. The same tick drives visible surfaces AND gameplay height.
+  const t=Math.max(0,Number(tick)||0);
+  if(realm==='time'&&i>0){
+    const a=t*.004+i*2.6;
+    px+=Math.cos(a)*Math.min(14,width*.026);
+    py+=Math.sin(a)*Math.min(13,height*.024);
+  }
+  if(realm==='space')lift+=Math.sin(t*.023+i*1.3)*8;
+  if(realm==='forest'&&i===2)lift+=Math.sin(t*.016)*9;
+  if(realm==='ice'&&i===2&&t%540>=410)lift=Math.max(6,lift*.24);
+  return {x:px,y:py,r:r*Math.min(width,height)*(level%5===0?1.12:1),
+   z:lift,index:i};
+ });
 }
-function heightAt(realm,level,x,y,width=500,height=500){
+function heightAt(realm,level,x,y,width=500,height=500,tick=0){
  let z=0;
- for(const n of nodes(realm,level,width,height)){
+ for(const n of nodes(realm,level,width,height,tick)){
    const distance=Math.hypot(x-n.x,y-n.y)/n.r;
    z=Math.max(z,n.z*(1-smooth((distance-.67)/.43)));
  }
@@ -38,7 +50,7 @@ function heightAt(realm,level,x,y,width=500,height=500){
 }
 function paint(ctx,realm,level,width=500,height=500,frame=0){
  const theme=C[realm];if(!theme||!ctx)return false;
- const platforms=nodes(realm,level,width,height);
+ const platforms=nodes(realm,level,width,height,frame);
  ctx.save();
  // Realm-specific low-ground structure and visible 2.5D platform sidewalls.
  for(const n of platforms){
@@ -72,10 +84,10 @@ function paint(ctx,realm,level,width=500,height=500,frame=0){
 function step(realm,level,roster,width=500,height=500,tick=0){
  for(const p of roster||[]){
   if(!p||p.hp<=0)continue;
-  const goal=heightAt(realm,level,p.x,p.y,width,height);
+  const goal=heightAt(realm,level,p.x,p.y,width,height,tick);
   p.towerGroundZ=(Number(p.towerGroundZ)||0)+(goal-(Number(p.towerGroundZ)||0))*.16;
   // Modest, realm-specific environmental forces, never direct untelegraphed damage.
-  const n=nodes(realm,level,width,height)[0],d=Math.hypot(p.x-n.x,p.y-n.y);
+  const n=nodes(realm,level,width,height,tick)[0],d=Math.hypot(p.x-n.x,p.y-n.y);
   if(realm==='ice'&&d<n.r*.85){p.slowTimer=Math.max(p.slowTimer||0,5);p.slowMultiplier=.92;}
   if(realm==='storm'&&d<n.r*.9){p.vx=clamp((p.vx||0)+.07,-8,8);}
   if(realm==='space'&&d<n.r*.82&&p.vz>1){p.vz=Math.min(15,p.vz+.07);}
