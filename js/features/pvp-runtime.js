@@ -342,18 +342,25 @@ function paint(){
    p.y=Math.max(r,Math.min(canvas.height-r,p.y));
  });
  draw();
- // The instant PvP artwork is replayed outside core draw(); it must inherit
- // the same camera projection or lasers and target markers drift vertically.
- ctx.save();global.ArenaDepth?.applyView?.(ctx,canvas);
- SkillVisuals.draw(ctx);global.ArenaTelegraph?.draw?.(ctx,players);
- ctx.restore();
+ // The guest has a separate instant FX pool. Project it using the same
+ // depth mapping as the host world, not an obsolete flat affine scale.
+ const painter=global.ArenaDepth?.layer?.(canvas,'instantfx');
+ if(painter){
+   painter.ctx.clearRect(0,0,canvas.width,canvas.height);
+   SkillVisuals.draw(painter.ctx);
+   global.ArenaTelegraph?.draw?.(painter.ctx,players);
+   global.ArenaDepth?.projectWorld?.(ctx,painter.canvas,canvas);
+ }else{
+   SkillVisuals.draw(ctx);
+   global.ArenaTelegraph?.draw?.(ctx,players);
+ }
  // HP bars are screen-space UI, anchored to projected airborne fighter positions.
  players.forEach((p,i)=>{
    if(!p||p.hp<=0)return;
    const w=76,h=9,rad=Number(p.radius)||30;
    const pos=!remote?(global.ArenaMotion?.position?.(p)||p):p;
    const height=global.AdvancedCombat?.visibleHeight?.(p)||0;
-   const screen=global.ArenaDepth?.screenPoint?.(pos.x,pos.y-height,canvas)||
+   const screen=global.ArenaDepth?.elevatedPoint?.(pos,height,canvas)||
      {x:pos.x,y:pos.y-height};
    const x=Math.max(2,Math.min(canvas.width-w-2,screen.x-w/2));
    const y=Math.max(4,screen.y-rad-27);
