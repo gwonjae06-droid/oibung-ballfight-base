@@ -32,20 +32,18 @@ function simulate({route='tower',tab='tower',speedValue='3'}={}){
   return steps;
 }
 
-test('the shared in-game selector applies 1x, 2x and 3x to Tower combat',()=>{
-  assert.equal(simulate({speedValue:'1'}),1);
-  assert.equal(simulate({speedValue:'2'}),2);
-  assert.equal(simulate({speedValue:'3'}),3);
+test('the shared selector runs 1x, 2x, 3x, 10x and 100x fixed physics in Tower',()=>{
+  for(const speed of [1,2,3,10,100])assert.equal(simulate({speedValue:String(speed)}),speed);
 });
-test('the very same selector provides 3x in free battle',()=>{
-  for(const speedValue of ['1','2','3']){
+test('the same selector speeds up free battle, too',()=>{
+  for(const speedValue of ['1','2','3','10','100']){
     const expected=Number(speedValue);
     assert.equal(simulate({route:'tower',tab:'free',speedValue}),expected);
     assert.equal(simulate({route:'lobby',speedValue}),expected);
   }
 });
-test('invalid speed values are clamped to 1x through 3x',()=>{
-  assert.equal(simulate({speedValue:'99'}),3);
+test('invalid speed values fall back safely to 1x',()=>{
+  assert.equal(simulate({speedValue:'99'}),1);
   assert.equal(simulate({speedValue:'-5'}),1);
   assert.equal(simulate({speedValue:'not-a-number'}),1);
 });
@@ -54,7 +52,7 @@ test('only one visible speed selector is declared in the shared battle canvas',(
   const tower=fs.readFileSync(path.join(__dirname,'../js/features/tower-challenge.js'),'utf8');
   const css=fs.readFileSync(path.join(__dirname,'../css/tower-mine-ui.css'),'utf8');
   assert.equal((html.match(/id="bf-speed"/g)||[]).length,1);
-  for(const value of ['1','2','3'])assert.ok(html.includes('<option value="'+value+'">'));
+  for(const value of ['1','2','3','10','100'])assert.ok(html.includes('<option value="'+value+'">'));
   assert.ok(!tower.includes('tower-speed'));
   assert.ok(!css.includes('tower-speed'));
 });
