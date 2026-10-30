@@ -93,18 +93,22 @@ function createRoom(a,b,mode,now,modes){
  global.ArenaMotion?.reset?.(players);
  fxOutbox=[];fxSequence=0;remoteFxSequence=0;preview=null;fxFrameCarry=0;
  current={players,started:now,elapsed:0,ended:false,winner:null,modes,pending:[]};
- if(modes.includes('blitz'))current.blitz={phase:'plan',round:1,deadline:now+4500,
-   plans:[null,null],resolved:null,secondDone:false,executionEnd:0};
+ if(modes.includes('blitz'))current.blitz={
+   phase:'plan',round:1,turn:0,maxTurns:24,deadline:now+10000,
+   plans:[null,null],resolved:null,secondDone:false,executionEnd:0
+ };
  SkillVisuals.setSpawnListener(captureFx);
  return current;
 }
 function setInput(room,i,msg,now=Date.now()){
+ if(room.blitz)return false; // Disable direct steering in turn-based matches.
  const p=players[i];if(!p?.onlineManual||room.ended)return false;
  let x=Number.isFinite(Number(msg.x))?Number(msg.x):0,y=Number.isFinite(Number(msg.y))?Number(msg.y):0,n=Math.max(1,Math.hypot(x,y));
  p.inputX=x/n;p.inputY=y/n;p.inputAt=now;return true;
 }
-function cast(room,i,slot){return !room.ended&&!!players[i]?.onlineManual&&SkillForge.manualCast(players[i],slot,getClosestAliveEnemy(players[i]));}
-// Blitz: each side chooses privately, host resolves both in one execution window.
+function cast(room,i,slot,fromPlan=false){return !room.ended&&(!room.blitz||fromPlan)&&!!players[i]?.onlineManual&&SkillForge.manualCast(players[i],slot,getClosestAliveEnemy(players[i]));}
+// Turn-based Blitz: alternate owners; the host resolves each short action
+// using the existing combat engine. Both cooldowns freeze during planning.
 function normalizePlan(raw){
  const allowed=['approach','retreat','left','right','hold'];
  const move=allowed.includes(raw?.move)?raw.move:'hold';
@@ -114,54 +118,55 @@ function normalizePlan(raw){
 }
 function submitPlan(room,index,raw,now=Date.now()){
  const b=room.blitz;
- if(!b||room.ended||b.phase!=='plan'||b.plans[index]||raw?.round!==b.round)return false;
+ if(!b||room.ended||b.phase!=='plan'||index!==b.turn||
+    b.plans[index]||raw?.round!==b.round||now>b.deadline)return false;
  if(room.modes[index]!=='blitz')return false;
  b.plans[index]=normalizePlan(raw);
  return true;
 }
 function autoPlan(room,index){
  const p=players[index],e=players[1-index],distance=Math.hypot(p.x-e.x,p.y-e.y);
- const slots=(p.forge?.skills||[]).map((skill,j)=>({j,ready:(p.forgeTicks[j]||0)>=SkillForge.cooldownFrames(p,skill)}))
-   .filter(item=>item.ready).slice(0,2).map(item=>item.j);
+ const slots=(p.forge?.skills||[])
+  .map((skill,j)=>({j,ready:(p.forgeTicks[j]||0)>=SkillForge.cooldownFrames(p,skill)}))
+  .filter(item=>item.ready).slice(0,2).map(item=>item.j);
  return {move:distance<95?'retreat':'approach',slots};
 }
 function beginBlitzExecution(room,b,now){
- b.phase='execute';b.executionEnd=now+1600;b.secondAt=now+650;b.secondDone=false;
- b.resolved=b.plans.map((p,i)=>p||autoPlan(room,i));
- for(let i=0;i<2;i++){
-  const p=players[i],e=players[1-i],plan=b.resolved[i];
-  const distance=Math.hypot(e.x-p.x,e.y-p.y)||1,dx=(e.x-p.x)/distance,dy=(e.y-p.y)/distance;
-  const move=plan.move,dir=move==='retreat'?-1:move==='hold'?0:1;
-  p.inputX=move==='left'?-dy:move==='right'?dy:dx*dir;
-  p.inputY=move==='left'?dx:move==='right'?-dx:dy*dir;
-  p.inputAt=now;
-  if(move==='hold')p.invincible=Math.max(p.invincible||0,18);
-  if(plan.slots.length)cast(room,i,plan.slots[0]);
+ const i=b.turn,p=players[i],e=players[1-i],plan=b.plans[i]||{move:'hold',slots:[]};
+ b.resolved=plan;b.phase='execute';b.executionEnd=now+1350;
+ b.secondAt=now+500;b.secondDone=false;
+ for(const fighter of players){
+  fighter.inputX=0;fighter.inputY=0;fighter.vx=0;fighter.vy=0;
  }
+ const distance=Math.hypot(e.x-p.x,e.y-p.y)||1,dx=(e.x-p.x)/distance,dy=(e.y-p.y)/distance;
+ const move=plan.move,dir=move==='retreat'?-1:move==='hold'?0:1;
+ p.inputX=move==='left'?-dy:move==='right'?dy:dx*dir;
+ p.inputY=move==='left'?dx:move==='right'?-dx:dy*dir;
+ p.inputAt=now;
+ if(move==='hold')p.invincible=Math.max(p.invincible||0,18);
+ if(plan.slots.length)cast(room,i,plan.slots[0],true);
+}
+function finishBlitz(room){
+ room.ended=true;isPlaying=false;isGameOver=true;
+ room.winner=players[0].hp===players[1].hp?-1:players[0].hp>players[1].hp?0:1;
 }
 function blitzTick(room,now){
- const b=room.blitz;
- if(!b)return true;
+ const b=room.blitz;if(!b)return true;
  if(b.phase==='plan'){
-  for(let i=0;i<2;i++)if(room.modes[i]==='auto'&&!b.plans[i])b.plans[i]=autoPlan(room,i);
-  if(now>=b.deadline||b.plans.every(Boolean))beginBlitzExecution(room,b,now);
+  if(room.modes[b.turn]==='auto'&&!b.plans[b.turn])b.plans[b.turn]=autoPlan(room,b.turn);
+  if(b.plans[b.turn]||now>=b.deadline)beginBlitzExecution(room,b,now);
   else return false;
  }
  if(b.phase==='execute'){
   if(!b.secondDone&&now>=b.secondAt){
    b.secondDone=true;
-   for(let i=0;i<2;i++)if(b.resolved[i].slots.length>1)cast(room,i,b.resolved[i].slots[1]);
+   if(b.resolved.slots.length>1)cast(room,b.turn,b.resolved.slots[1],true);
   }
   if(now>=b.executionEnd){
-   // Keep online rooms shorter than Realtime room-authorization expiry.
-   if(b.round>=24){
-    room.ended=true;isPlaying=false;isGameOver=true;room.elapsed=120;
-    room.winner=players[0].hp===players[1].hp?-1:players[0].hp>players[1].hp?0:1;
-    return false;
-   }
-   b.round++;b.phase='plan';b.deadline=now+3400;b.plans=[null,null];
-   b.resolved=null;b.secondDone=false;
-   players.forEach(p=>{p.inputX=0;p.inputY=0;p.vx=0;p.vy=0;});
+   if(b.round>=b.maxTurns){finishBlitz(room);return false;}
+   b.round++;b.turn=1-b.turn;b.phase='plan';b.deadline=now+10000;
+   b.plans=[null,null];b.resolved=null;b.secondDone=false;
+   for(const p of players){p.inputX=0;p.inputY=0;p.vx=0;p.vy=0;}
    return false;
   }
  }
@@ -200,8 +205,9 @@ function decode(v){
 function snapshot(room,full=true){
  const b=room.blitz;
  const state={type:'state',clock:Math.max(0,120-room.elapsed),finished:room.ended,winner:room.winner,
-  ...(b?{blitz:{phase:b.phase,round:b.round,remainingMs:Math.max(0,
-    (b.phase==='plan'?b.deadline:b.executionEnd)-Date.now()),submitted:b.plans.map(Boolean)}}:{}),
+  ...(b?{blitz:{phase:b.phase,round:b.round,turn:b.turn,maxTurns:b.maxTurns,
+    remainingMs:Math.max(0,(b.phase==='plan'?b.deadline:b.executionEnd)-Date.now()),
+    submitted:b.plans.map(Boolean)}}:{}),
   players:players.map((p,i)=>({x:p.x,y:p.y,hp:p.hp,maxHp:p.maxHp,name:p.name,
    color:p.themeColor,mode:room.modes[i],
    skills:p.forge?.skills.slice(0,4).map(s=>({name:s.name}))||[],
