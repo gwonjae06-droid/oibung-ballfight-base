@@ -301,6 +301,16 @@ if(originalSelect)g.CharacterStudioModes.select=(mode,opts)=>{
 doc.getElementById('bf-custom-list')?.addEventListener('click',e=>{
  if(e.target.closest('[data-edit-forge-id]')){render();openTab('code');}
 });
+// Do not persist a blank program: it would display a valid fighter with a
+// never-executing unique skill. Keep editing available, including Undo.
+const hasAction=blocks=>blocks.some(n=>n.kind==='action'||(n.kind==='if'&&(hasAction(n.then)||hasAction(n.else)))||(n.kind==='repeat'&&hasAction(n.body)));
+doc.getElementById('bf-create')?.addEventListener('click',e=>{
+ const p=current();
+ if(p.signatureVersion===1&&!hasAction(programOf(p))){
+  e.preventDefault();e.stopImmediatePropagation();
+  feedback('최소한 하나의 행동 블록을 연결해야 저장할 수 있습니다.');
+ }
+},true);
 g.addEventListener?.('studio:open',()=>{render();openTab('code');});
 renderPalette();render();openTab('code');
 g.ScratchStudio={render,openTab,insert,get activeCategory(){return category;}};
