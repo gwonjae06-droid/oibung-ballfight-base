@@ -39,6 +39,71 @@ function draw(ctx,zone,realm,tick,width=500,height=500){
   if(g.ArenaDepth?.air)g.ArenaDepth.air(ctx,pt,rise,render,zone.kind==='boss'?14:8);
   else render(ctx);
  }
+ if(zone.signature)drawUltimate(ctx,zone,realm,tick);
+}
+
+/* 10F ultimate sigils live above the real hit zone. Per-realm silhouettes are
+ * different (clockwork, orbital, caldera, thunder, crystalline, roots). */
+function drawUltimate(ctx,z,realm,tick){
+ const age=Math.max(0,tick-z.fire),col=COLOR[realm]||'#fff',
+   rad=Math.max(24,Math.min(65,(z.r||z.width||60)*.7)),
+   pt={x:z.x,y:z.y},lift=realm==='storm'?82:realm==='space'?65:realm==='fire'?60:54;
+ const painter=c=>{
+  c.save();c.translate(pt.x,pt.y-lift);
+  c.globalAlpha=.82;c.strokeStyle=col;c.fillStyle=col;
+  c.lineWidth=2.2;c.shadowBlur=12;c.shadowColor=col;
+  const line=(x,y,X,Y)=>{c.beginPath();c.moveTo(x,y);c.lineTo(X,Y);c.stroke();};
+  const arc=(r,start=0,end=T)=>{c.beginPath();c.arc(0,0,r,start,end);c.stroke();};
+  if(realm==='time'){
+   arc(rad*.75);arc(rad*.43);
+   for(let k=0;k<12;k++){
+    const a=k*T/12;line(Math.cos(a)*rad*.59,Math.sin(a)*rad*.59,
+      Math.cos(a)*rad*.75,Math.sin(a)*rad*.75);
+   }
+   const a=age*.14;line(0,0,Math.cos(a)*rad*.64,Math.sin(a)*rad*.64);
+   line(0,0,Math.cos(-a*.3)*rad*.4,Math.sin(-a*.3)*rad*.4);
+  }else if(realm==='space'){
+   c.save();c.rotate(age*.035);c.scale(1,.45);
+   for(let i=0;i<3;i++){arc(rad*(.5+i*.19),i*T/3,i*T/3+T*.73);}
+   for(let i=0;i<3;i++){const a=i*T/3;
+    c.beginPath();c.arc(Math.cos(a)*rad*.86,Math.sin(a)*rad*.86,4,0,T);c.fill();}
+   c.restore();arc(7);
+  }else if(realm==='fire'){
+   arc(rad*.56);
+   for(let i=0;i<9;i++){const a=i*T/9,
+     inner=rad*.57,outer=rad*(.85+Math.sin(age*.18+i)*.16);
+    line(Math.cos(a)*inner,Math.sin(a)*inner,Math.cos(a)*outer,Math.sin(a)*outer);}
+   for(let i=0;i<4;i++){
+    const x=(i-1.5)*rad*.3,h=12+Math.sin(age*.21+i)*8;
+    line(x,rad*.2,x+5,-h-rad*.45);
+   }
+  }else if(realm==='storm'){
+   arc(rad*.65);
+   for(let i=0;i<5;i++){
+    const a=i*T/5,tx=Math.cos(a)*rad*.76,ty=Math.sin(a)*rad*.76,
+      jitter=Math.sin(age*.9+i*7)*7;
+    line(0,0,tx*.55+jitter,ty*.55-8);
+    line(tx*.55+jitter,ty*.55-8,tx,ty);
+   }
+  }else if(realm==='ice'){
+   for(let i=0;i<8;i++){const a=i*T/8,dx=Math.cos(a),dy=Math.sin(a);
+    line(0,0,dx*rad*.83,dy*rad*.83);
+    line(dx*rad*.48,dy*rad*.48,dx*rad*.35-dy*rad*.13,dy*rad*.35+dx*rad*.13);
+    line(dx*rad*.48,dy*rad*.48,dx*rad*.35+dy*rad*.13,dy*rad*.35-dx*rad*.13);
+   }arc(9);
+  }else if(realm==='forest'){
+   for(let i=0;i<6;i++){
+    const a=i*T/6+age*.003,dx=Math.cos(a),dy=Math.sin(a),
+      sway=Math.sin(age*.12+i)*rad*.1;
+    line(0,0,dx*rad*.53+sway,dy*rad*.53);
+    line(dx*rad*.53+sway,dy*rad*.53,dx*rad*.85,dy*rad*.86);
+    c.beginPath();c.ellipse(dx*rad*.87,dy*rad*.87,7,3,a,0,T);c.fill();
+   }arc(9);
+  }
+  c.restore();
+ };
+ if(g.ArenaDepth?.air)g.ArenaDepth.air(ctx,pt,lift,painter,12);
+ else painter(ctx);
 }
 // Raised warning gantry: 2.5D posts float ABOVE the projected footprint.
 // Hit detection always stays in world-space; only the presentation changes.
