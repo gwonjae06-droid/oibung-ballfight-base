@@ -57,8 +57,10 @@ test('choosing a class does not replace authored skill blocks',()=>{
 });
 test('real damage uses both attacker output and defender resistance',()=>{
  const g=context();
- const a=g.CUSTOM_DEFS.find(d=>d.id===g.SkillForge.register(draft('melee'))).createInstance(1);
- const defender=g.CUSTOM_DEFS.find(d=>d.id===g.SkillForge.register(draft('defense'))).createInstance(2);
+ const aId=g.SkillForge.register(draft('melee'));
+ const dId=g.SkillForge.register(draft('defense'));
+ const a=g.CUSTOM_DEFS.find(d=>d.id===aId).createInstance(1);
+ const defender=g.CUSTOM_DEFS.find(d=>d.id===dId).createInstance(2);
  const action={type:'shot',damage:40,status:'none',knockback:0};
  assert.equal(g.SkillForge.hit(a,defender,action),true);
  const expected=Math.round(40*1.12*.78);
@@ -67,8 +69,10 @@ test('real damage uses both attacker output and defender resistance',()=>{
 });
 test('control class extends ordinary slow, without bypassing invulnerability',()=>{
  const g=context();
- const c=g.CUSTOM_DEFS.find(d=>d.id===g.SkillForge.register(draft('control'))).createInstance(1);
- const m=g.CUSTOM_DEFS.find(d=>d.id===g.SkillForge.register(draft('melee'))).createInstance(2);
+ const cId=g.SkillForge.register(draft('control'));
+ const mId=g.SkillForge.register(draft('melee'));
+ const c=g.CUSTOM_DEFS.find(d=>d.id===cId).createInstance(1);
+ const m=g.CUSTOM_DEFS.find(d=>d.id===mId).createInstance(2);
  const a={type:'shot',damage:10,status:'ice',knockback:0};
  assert.equal(g.SkillForge.hit(c,m,a),true);
  assert.equal(m.slowTimer,Math.round(90*1.35));
