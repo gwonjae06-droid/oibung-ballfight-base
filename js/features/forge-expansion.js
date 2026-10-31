@@ -31,7 +31,7 @@ function damageScale(p,e){return (active(p,'weak')?.6:1)*(active(p,'blind')?.65:
 function legacy(p,fn){
   const before=players.map(e=>({e,hp:e.hp})),ownHp=p.hp;fn();
   if(p.hp>ownHp&&active(p,'curse'))p.hp=ownHp+(p.hp-ownHp)*.4;
-  for(const {e,hp} of before)if(e!==p&&e.hp<hp)e.hp=Math.max(0,hp-(hp-e.hp)*damageScale(p,e));
+  for(const {e,hp} of before)if(e!==p&&e.hp<hp)e.hp=Math.max(0,hp-(hp-e.hp)*damageScale(p,e)*(global.ArenaStalemate?.attackFactor?.()??1));
 }
 function heal(p,amount){if(p.hp<=0)return;const n=active(p,'curse')?amount*.4:amount;p.hp=Math.min(p.maxHp,p.hp+n);}
 function tick(p){
