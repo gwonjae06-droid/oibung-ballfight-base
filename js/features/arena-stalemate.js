@@ -6,8 +6,8 @@
 (function(g){
 'use strict';
 const LIMITS=Object.freeze({
- regular:300*60,tower:420*60,stagnant:150*60,towerStagnant:180*60,
- pulse:120,deadline:300*60
+ regular:300*60,tower:105*60,stagnant:150*60,towerStagnant:65*60,
+ pulse:120,deadline:300*60,towerDeadline:85*60
 });
 let elapsed=0,lastProgress=0,pressureStart=-1,before=new Map(),notice=false,expired=false,pulses=0,bonus=0;
 const fraction=p=>Math.max(0,Number(p.hp)||0)/Math.max(1,Number(p.maxHp)||1);
@@ -74,7 +74,7 @@ function tick(roster,tower=false){
  }
  // If healing remains stronger than the pressure, finish as a DRAW: never
  // decide the outcome merely by absolute or remaining health.
- if(overdue>=LIMITS.deadline)expired=true;
+ if(overdue>=(tower?LIMITS.towerDeadline:LIMITS.deadline))expired=true;
  return true;
 }
 function finish(){status(false);g.BackgroundMusic?.setOvertime?.(false);}
