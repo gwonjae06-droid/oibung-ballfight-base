@@ -68,19 +68,28 @@ test('engine resets the overtime supervisor and only ticks it on active fights',
  assert.ok(html.indexOf('arena-stalemate.js')<html.indexOf('core/engine.js'));
 });
 
-test('overtime inflicts identical percentages of max HP, slowly, without changing max HP',()=>{
+test('overtime cannot bypass shields, invulnerability, regeneration or max HP',()=>{
  const S=world('js/features/arena-stalemate.js').ArenaStalemate;
  const p=[{hp:200,maxHp:200,invincible:9999},{hp:1500,maxHp:1500,invincible:9999}];
- for(let i=0;i<S.LIMITS.stagnant;i++)S.tick(p);
+ for(let i=0;i<S.LIMITS.stagnant+S.LIMITS.pulse*3;i++)S.tick(p);
  assert.equal(S.state.active,true);
- const before=p.map(a=>a.hp),max=p.map(a=>a.maxHp);
- for(let i=0;i<S.LIMITS.pulse;i++)S.tick(p);
- assert.equal(S.state.pulses,1);
- const decrease=p.map((a,i)=>(before[i]-a.hp)/max[i]*100);
- assert.ok(Math.abs(decrease[0]-decrease[1])<.001);
- assert.ok(decrease[0]>=1&&decrease[0]<2,'first pulse is gentle');
- assert.deepEqual(p.map(a=>a.maxHp),max,'no HP-cap mechanic');
- assert.ok(p.every(a=>a.hp>0),'overtime must not immediately kill both fighters');
+ assert.equal(S.state.pulses,3);
+ assert.deepEqual(p.map(a=>a.hp),[200,1500],'no unavoidable neutral damage');
+ assert.deepEqual(p.map(a=>a.maxHp),[200,1500],'no forced HP cap');
+ assert.ok(S.attackFactor()>1,'only actual offensive damage receives a mild bonus');
+});
+test('overtime offense grows gradually, never heals or decides draws by current HP',()=>{
+ const S=world('js/features/arena-stalemate.js').ArenaStalemate;
+ const fighters=[{hp:200,maxHp:200},{hp:800,maxHp:800}];
+ assert.equal(S.attackFactor(),1);
+ for(let i=0;i<S.LIMITS.stagnant;i++)S.tick(fighters);
+ assert.equal(Number(S.attackFactor().toFixed(2)),1.08);
+ for(let i=0;i<30*60;i++)S.tick(fighters);
+ assert.equal(Number(S.attackFactor().toFixed(2)),1.15);
+ for(let i=0;i<S.LIMITS.deadline;i++)S.tick(fighters);
+ assert.equal(S.state.expired,true);
+ assert.deepEqual(fighters.map(p=>p.hp),[200,800],
+   'both invincible fighters draw; winner is never chosen by base HP');
 });
 test('overtime tick plays urgency music only at activation and restores it on reset',()=>{
  const calls=[],w={Math,Map,Set,Number,console,BackgroundMusic:{setOvertime(v){calls.push(v)}}};
