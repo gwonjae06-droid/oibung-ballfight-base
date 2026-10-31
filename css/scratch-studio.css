@@ -1,0 +1,114 @@
+/* A restrained Scratch-style visual coding surface for the game. */
+.scratch-studio-active #studio-mode-picker,
+.scratch-studio-active #studio-mode-random,
+.scratch-studio-active #studio-mode-compose,
+.scratch-studio-active #studio-clarity-steps,
+.scratch-studio-active .studio-save-purpose,
+.scratch-studio-active #studio-panel-skills>.forge-random-entry{display:none!important}
+.scratch-studio-active .scratch-main-nav{display:flex;gap:4px;background:#151d29;border:1px solid #38475b;border-radius:12px;padding:5px}
+.scratch-studio-active .scratch-main-nav button{flex:1;min-width:0;background:transparent;border:0;border-radius:8px;padding:12px 10px;color:#becde0;font:inherit;font-weight:750;cursor:pointer}
+.scratch-studio-active .scratch-main-nav button[aria-pressed=true]{color:#f9fcff;background:#2f547a;box-shadow:inset 0 0 0 1px #6da5d1}
+.scratch-studio-active #studio-panel-skills[hidden],.scratch-studio-active #studio-panel-appearance[hidden]{display:none!important}
+.scratch-studio-active .forge-name{background:#192636!important;border:1px solid #3b546c!important;box-shadow:none!important}
+.scratch-studio-active .forge-name input{background:#101b2b;color:#f1f7ff;border-color:#54718c}
+.scratch-studio-active .forge-role-picker{margin:0;padding:11px;background:#192636;border-color:#3b546c}
+.scratch-studio-active .forge-role-picker .forge-role-option{min-height:57px;padding:8px 4px}
+.scratch-studio-active #forge-role-picker h3{font-size:.95rem}
+.scratch-studio-active .forge-role-stat-grid{margin-top:9px}
+.scratch-studio-active .scratch-workbench{color:#e8f3ff;background:#151e2b;border:1px solid #384b63;border-radius:15px;overflow:hidden;min-width:0;font:inherit}
+.scratch-workbench *{box-sizing:border-box}
+.scratch-workbench button,.scratch-workbench input,.scratch-workbench select{font:inherit}
+.scratch-heading{display:flex;align-items:center;justify-content:space-between;gap:15px;padding:17px 19px;border-bottom:1px solid #34465a;background:#1d2b3d}
+.scratch-heading h3{font-size:1.25rem;font-weight:850;color:#f3f8ff;margin:1px 0 4px}
+.scratch-heading p{font-size:.8rem;color:#b7cbe0;margin:0;line-height:1.5}
+.scratch-eyebrow{display:block;color:#a0bfdd;font-size:.66rem;letter-spacing:.11em;font-weight:800}
+.scratch-heading-actions{display:flex;gap:6px;align-items:center;flex:none}
+.scratch-heading-actions button{border:1px solid #56718f;border-radius:8px;background:#293e56;color:#f7fcff;padding:10px;min-height:39px;cursor:pointer;font-weight:750}
+.scratch-heading-actions button:first-child{background:#2e6685;border-color:#78a7c7}
+.scratch-heading-actions button:disabled{opacity:.4;cursor:default}
+.scratch-layout{display:grid;grid-template-columns:minmax(132px,.66fr) minmax(260px,1.85fr);gap:0;min-height:470px}
+.scratch-library{border-right:1px solid #35475d;background:#192537;padding:13px 10px;min-width:0}
+.scratch-library-title{font-size:.85rem;font-weight:850;color:#e9f4ff;padding:5px 3px 10px}
+.scratch-categories{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;margin-bottom:11px}
+.scratch-category{cursor:pointer;border:1px solid #495f78;background:#27364b;color:#cbd9e9;border-radius:8px;min-height:34px;font-size:.78rem!important;font-weight:750}
+.scratch-category[aria-pressed=true]{color:#fff;border-color:#abc2db;background:#395c7e}
+.scratch-search-label{display:flex;flex-direction:column;gap:4px;font-size:.72rem;color:#c7d8e8;margin-bottom:10px}
+.scratch-search-label input{width:100%;min-width:0;min-height:36px;padding:7px 9px;border:1px solid #4d657d;border-radius:7px;background:#0e1a29;color:#edf6ff}
+.scratch-palette{display:flex;flex-direction:column;align-items:stretch;gap:8px;max-height:660px;overflow-y:auto;padding:2px}
+.scratch-palette-block{border:0;text-align:left;padding:11px 10px;color:#fff;border-radius:7px 12px 12px 7px;min-height:42px;line-height:1.35;cursor:grab;box-shadow:inset 0 -3px 0 #0003;overflow-wrap:anywhere;font-weight:750;font-size:.78rem!important}
+.scratch-palette-block:active{cursor:grabbing}
+.scratch-palette-glyph{opacity:.8;margin-right:5px}
+.scratch-color-control,.scratch-node-if,.scratch-node-repeat,.scratch-node-wait{background:#af7829!important}
+.scratch-color-attacks,.scratch-node-action{background:#8553ba!important}
+.scratch-color-mobility{background:#2d86c6!important}
+.scratch-color-defense{background:#308774!important}
+.scratch-color-special{background:#b05485!important}
+.scratch-palette-block.scratch-color-mobility{background:#2778af!important}
+.scratch-palette-block.scratch-color-defense{background:#2e806e!important}
+.scratch-no-blocks{font-size:.75rem;color:#b8c9da}
+.scratch-editor{min-width:0;background:radial-gradient(circle at 20% 10%,#2b3d53,#1a2839 66%);padding:13px;display:flex;flex-direction:column;gap:12px;overflow:hidden}
+.scratch-script-top{display:grid;grid-template-columns:minmax(0,1fr) minmax(105px,.36fr);gap:9px}
+.scratch-script-top label{display:grid;gap:5px;font-size:.73rem;color:#c8d8e9;font-weight:700}
+.scratch-script-top input,.scratch-hat select{width:100%;min-width:0;background:#101c2b;color:#edf7ff;border:1px solid #58748d;border-radius:7px;padding:8px 9px;min-height:38px}
+.scratch-hat{display:flex;align-items:center;gap:10px;background:#ac7b24;border:1px solid #dfb95b;border-radius:17px 17px 5px 5px;padding:11px 13px;color:#fff;font-size:.85rem;font-weight:850;max-width:100%}
+.scratch-hat select{background:#e9c47c;border:1px solid #f3d993;color:#34250f;flex:1;max-width:280px}
+.scratch-script{min-width:0;min-height:235px;max-height:720px;overflow:auto;padding:11px;border-radius:10px;border:1px dashed #71839c;background:repeating-linear-gradient(0deg,#1b2938,#1b2938 27px,#203042 28px),#1b2938;overscroll-behavior:contain}
+.scratch-block-tree{min-width:0}
+.scratch-code-list{min-width:0;display:flex;flex-direction:column;align-items:stretch;gap:0;padding:0}
+.scratch-node{margin:0;min-width:0;border-radius:7px 7px 6px 6px;border:1px solid #ffffff35;box-shadow:inset 0 -3px 0 #0002;position:relative;cursor:grab;color:#fff;font-size:.8rem}
+.scratch-node:active{cursor:grabbing}
+.scratch-node-line{display:flex;flex-wrap:wrap;gap:7px;align-items:center;padding:9px 8px;min-width:0}
+.scratch-drag-grip{font-size:1.1rem;color:#fff9;flex:none}
+.scratch-block-title,.scratch-node-line>span:not(.scratch-drag-grip):not(.scratch-node-controls){font-weight:850;max-width:100%;overflow-wrap:anywhere}
+.scratch-node label{display:inline-flex;align-items:center;gap:4px;font-size:.7rem;max-width:100%}
+.scratch-node input,.scratch-node select{min-width:0;max-width:145px;background:#f2eaf9;border:1px solid #e6cafa;border-radius:6px;min-height:31px;padding:4px 6px;color:#2d1e39}
+.scratch-node input[type=number]{width:70px}
+.scratch-node-if select{background:#ffebc5;border-color:#f1d296;color:#432a07;max-width:210px}
+.scratch-node-repeat input,.scratch-node-repeat select,.scratch-node-wait input{background:#ffe9b8;border-color:#f6d38b;color:#472a0b}
+.scratch-node-controls{display:inline-flex;align-items:center;gap:3px;margin-left:auto}
+.scratch-node-controls button,.scratch-node-line>button{cursor:pointer;border:1px solid #ffffff68;border-radius:6px;color:white;background:#0002;min-width:28px;min-height:30px;font-size:.78rem}
+.scratch-node-controls button:hover{background:#ffffff28}
+.scratch-cavity{display:flex;flex-direction:column;flex:0 0 100%;min-width:0;margin-top:4px;padding:7px 7px 9px 17px;border-left:10px solid #d5a65a;border-radius:0 0 0 12px;background:#1d2b3b;border-bottom:10px solid #c18938}
+.scratch-cavity-label{color:#f0d19b;font-size:.68rem;font-weight:750;margin:3px 0}
+.scratch-cavity .scratch-code-list{margin-bottom:5px}
+.scratch-insert-zone{height:10px;flex:none;border-radius:7px;cursor:pointer;transition:background .12s;position:relative}
+.scratch-insert-zone>span{display:none}
+.scratch-insert-zone:hover,.scratch-insert-zone.scratch-drop-hover{height:29px;background:#c5edfb55;outline:2px dashed #9bd4fa}
+.scratch-insert-zone:hover>span,.scratch-insert-zone.scratch-drop-hover>span{display:block;font-size:.69rem;text-align:center;color:#def4ff;line-height:26px}
+.scratch-slot{display:flex;flex-direction:column;gap:6px;padding:8px;border:2px dashed #6388a5;border-radius:8px;background:#21364a6b}
+.scratch-slot-add{background:#253e53;border:1px solid #597d98;color:#deeffd;border-radius:7px;min-height:38px;cursor:pointer}
+.scratch-slot-active{border-color:#f1d180}
+.scratch-footer{display:flex;align-items:center;justify-content:space-between;gap:9px;color:#bacddd;font-size:.74rem}
+.scratch-footer button{border:1px solid #536c82;border-radius:7px;padding:8px 10px;background:transparent;color:#d1dfeb;cursor:pointer}
+.scratch-help{display:none;padding:15px 12px;background:#1c2c3e;color:#aebfd0;font-size:.76rem;line-height:1.6}
+.scratch-help strong{display:block;font-size:.9rem;color:#f1f6fd;margin-bottom:7px}
+.scratch-help p{margin:5px 0}
+.scratch-status{margin-top:14px;padding:9px;background:#2b4257;color:#deedfb;border:1px solid #476784;border-radius:8px}
+.scratch-legacy{padding:18px;background:#283548;border:1px solid #b89562;border-radius:10px;font-size:.87rem}
+.scratch-legacy strong{font-size:1rem;color:#fff}
+.scratch-legacy p{line-height:1.7;color:#e1d6c8}
+.scratch-legacy button{border:1px solid #d3b080;background:#79613c;padding:11px;border-radius:7px;color:#fff;cursor:pointer}
+.scratch-studio-active .forge-primary-actions #bf-create{background:#84c6ee!important;color:#122235!important;border-color:#84c6ee!important;border-radius:10px!important;font-weight:900}
+.scratch-studio-active #forge-role-picker .forge-role-option[aria-pressed=true]{background:#2a6f94}
+.scratch-workbench button:focus-visible,.scratch-main-nav button:focus-visible,.scratch-workbench select:focus-visible,.scratch-workbench input:focus-visible{outline:3px solid #fae39e;outline-offset:2px}
+@media(min-width:1500px){.scratch-layout{grid-template-columns:minmax(144px,.57fr) minmax(300px,1.8fr) minmax(150px,.53fr)}.scratch-help{display:block}}
+@media(max-width:1060px){.scratch-heading{flex-wrap:wrap}.scratch-heading-actions{width:100%;justify-content:flex-end}}
+@media(max-width:800px){.scratch-layout{grid-template-columns:minmax(110px,.65fr) minmax(0,1.75fr)}.scratch-editor{padding:9px}.scratch-node-line{gap:5px;padding:8px 6px}.scratch-cavity{padding-left:10px}.scratch-script{padding:7px}.scratch-hat{flex-wrap:wrap}}
+@media(max-width:520px){
+ .scratch-layout{display:flex;flex-direction:column}
+ .scratch-library{border-right:0;border-bottom:1px solid #4b6581;padding:9px}
+ .scratch-categories{grid-template-columns:repeat(5,minmax(0,1fr))}
+ .scratch-category{font-size:.68rem!important;min-height:35px}
+ .scratch-palette{max-height:136px;display:flex;flex-wrap:nowrap;flex-direction:row;overflow-x:auto;overflow-y:hidden;gap:7px}
+ .scratch-palette-block{min-width:116px;max-width:160px;flex:none}
+ .scratch-editor{padding:9px}
+ .scratch-heading{padding:13px}
+ .scratch-heading h3{font-size:1.04rem}
+ .scratch-node input[type=number]{width:57px}
+ .scratch-node-if select{max-width:175px}
+ .scratch-block-tree{min-width:0}
+ .scratch-script{max-height:430px}
+ .scratch-script-top{grid-template-columns:minmax(0,1fr) 110px}
+ .scratch-heading-actions button{padding:8px}
+}
+@media(prefers-reduced-motion:reduce){.scratch-workbench *, .scratch-main-nav *{transition:none!important}}
