@@ -34,6 +34,7 @@ function contains(z,p){
 function create({realm,level,width=500,height=500,hero,boss,damage,environmentManaged=false}){
  let tick=0,serial=0,phase=1,nextBoss=100,nextTerrain=150,terrainTurn=0,bossTurn=0;
  const zones=[];const isBoss=level%5===0,cx=width/2,cy=height/2;
+ const MAX_ZONES=30;
  const circle=(x,y,r)=>({shape:'circle',x,y,r});
  const line=(x,y,angle,thickness=48)=>({shape:'line',x,y,angle,width:thickness,length:Math.hypot(width,height)});
  const ring=(x,y,inner,r)=>({shape:'ring',x,y,inner,r});
