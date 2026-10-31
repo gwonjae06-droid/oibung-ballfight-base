@@ -37,7 +37,7 @@ test('new statuses affect movement, actions, damage, recovery, and expire',()=>{
   const h=app(),p={playerNum:1,hp:200,maxHp:300,x:100,y:100,vx:1,vy:0},e={playerNum:2,hp:300,maxHp:300,x:180,y:100,vx:1,vy:0};h.players.push(p,e);
   const x=h.ForgeExpansion;
   for(const status of Object.keys(x.STATUSES)){
-    e.forgeEffects={};e.hp=300;x.applyStatus(p,e,{status,damage:20,duration:1});assert.ok(e.forgeEffects[status]);
+    e.forgeEffects={};e._forgeCCReady=0;e.hp=300;x.applyStatus(p,e,{status,damage:20,duration:1});assert.ok(e.forgeEffects[status]);
     if(['freeze','stun','root'].includes(status))assert.equal(x.movement(e),0);
     if(['freeze','stun','silence'].includes(status))assert.ok(x.blocked(e));
     if(status==='vulnerable')assert.equal(x.damageScale(p,e),1.35);

@@ -241,7 +241,7 @@ function draw(){
     +'<strong>⚖ 스킬 화력 밸런스</strong><span>설계 화력 지수 '+budget.pressure+' / 기준 '+budget.budget+'</span>'
     +'<div class="block-power-meter"><i style="width:'+Math.round(Math.min(100,budget.pressure/budget.budget*100))+'%"></i></div>'
     +'<p>'+(budget.excess?'과도한 화력이 겹쳐 실제 피해가 약 '+budget.percent+'% 적용됩니다.':'기본 피해가 100% 적용됩니다.')
-    +preview+'. 설정한 피해량·쿨타임·효과는 그대로 저장됩니다. 범위·개수·지속 효과를 고려한 근사치이므로 실제 DPS는 명중률에 따라 달라집니다.</p></div>':'';
+    +preview+'. 설정값은 그대로 저장됩니다. 0.6초 이하 주기 공격은 0.1초마다 보조 이펙트가 재생되지만, 실제 피해·회복은 별도로 계산됩니다. 실제 DPS는 명중률에 따라 달라집니다.</p></div>':'';
   const defensiveNotice=defense&&defense.pressure>0?
     '<div class="block-power-budget" role="status" aria-label="회복·보호 밸런스">'
     +'<strong>🛡 회복·보호 밸런스</strong><span>유지력 지수 '+defense.pressure+' / 기준 '+defense.budget+'</span>'

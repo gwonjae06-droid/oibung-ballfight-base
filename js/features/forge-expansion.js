@@ -15,9 +15,28 @@ function revive(p){
 }
 const active=(p,key)=>(p.forgeEffects?.[key]?.time||0)>0;
 const blocked=p=>active(p,'stun')||active(p,'freeze')||active(p,'silence');
+// Control effects are potent even at zero damage. Each hit may still play its
+// VFX, but a target always gets a recovery window before another hard CC.
+const CC_LIMIT={freeze:84,stun:72,root:105,silence:90};
 function effect(p,key,time,source,power=0){
   p.forgeEffects ||= {};
-  p.forgeEffects[key]={time:Math.max(p.forgeEffects[key]?.time||0,Math.min(480,Math.max(12,time))),source:source?.playerNum,power,age:0};
+  const previous=p.forgeEffects[key];
+  const ticks=Number.isFinite(time)?Math.min(480,Math.max(12,Math.round(time))):90;
+  if(CC_LIMIT[key]){
+    const frame=p._forgeBalanceFrame||0;
+    if(frame<(p._forgeCCReady||0))return false;
+    const window=Math.min(ticks,CC_LIMIT[key]);
+    // Shared recovery across freeze, stun, silence and roots. The break is
+    // at least one second; no chain-CC by alternating skills.
+    p._forgeCCReady=frame+window+72;
+    p.forgeEffects[key]={time:window,source:source?.playerNum,power,age:0};
+    return true;
+  }
+  // Preserve elapsed periodic-effect time when the status is refreshed.
+  // Resetting age to zero every 0.2 s suppressed 0.5 s regen/bleed ticks.
+  p.forgeEffects[key]={time:Math.max(previous?.time||0,ticks),source:source?.playerNum,
+    power,age:previous?.age||0};
+  return true;
 }
 function applyStatus(p,e,a){
   if(STATUSES[a.status])effect(e,a.status,Math.round((a.duration||1.5)*60),p,a.damage);
@@ -34,19 +53,25 @@ function legacy(p,fn){
   for(const {e,hp} of before)if(e!==p&&e.hp<hp)e.hp=Math.max(0,hp-(hp-e.hp)*damageScale(p,e)*(global.ArenaStalemate?.attackFactor?.()??1));
 }
 function heal(p,amount){if(p.hp<=0)return 0;
- const n=(active(p,'curse')?amount*.4:amount)*(global.ArenaBalance?.defenseFactorOf?.(p)??1);
+ const raw=(active(p,'curse')?amount*.4:amount)*(global.ArenaBalance?.defenseFactorOf?.(p)??1);
+ const n=global.ArenaBalance?.healingWindow?.(p,Math.max(0,raw))??raw;
  const before=p.hp;p.hp=Math.min(p.maxHp,p.hp+Math.max(0,n));return p.hp-before;}
 function tick(p){
+  if(p?.forge||p?.forgeEffects)p._forgeBalanceFrame=(p._forgeBalanceFrame||0)+1;
+  global.ArenaBalance?.tickShield?.(p);
+  global.ArenaBalance?.tickHealing?.(p);
   revive(p);if(p.hp<=0)return;
   // Once per simulation frame in ALL modes. No second UI-only tick.
   if(p.bfDot>0){
     p.bfDot--;
-    if(p.bfDot%30===0){
+    p._forgeDotClock=(p._forgeDotClock||0)+1;
+    if(p._forgeDotClock%30===0){
       const amount=Math.max(1,Math.min(6,p.bfDotDamage||2));
       p.hp=Math.max(0,p.hp-amount);
       global.addFloatingText?.('-'+amount,p.x,p.y-30,'#a75f2b',14);
     }
   }
+  if(p.bfDot<=0)p._forgeDotClock=0;
   if(p.hp<=0)return;
   if(p.forge){p.forgeHistory ||= [];p.forgeHistory.push({x:p.x,y:p.y,hp:p.hp});if(p.forgeHistory.length>181)p.forgeHistory.shift();}
   if(p.forgePhase?.time>0){p.forgePhase.time--;p.invincible=Math.max(p.invincible||0,2);}
@@ -78,7 +103,8 @@ function execute(p,a,target,api){
     const history=p.forgeHistory||[],old=history[Math.max(0,history.length-1-Math.min(180,Math.round(a.duration*60)))];
     if(old){p.x=old.x;p.y=old.y;
       const recovery=Math.max(0,old.hp-p.hp)*(global.ArenaBalance?.defenseFactorOf?.(p)??1);
-      p.hp=Math.max(1,Math.min(p.maxHp,p.hp+recovery));
+      const allowed=global.ArenaBalance?.healingWindow?.(p,recovery)??recovery;
+      p.hp=Math.max(1,Math.min(p.maxHp,p.hp+allowed));
       clampPosition(p);show(p.x,p.y,50);}return true;
   }
   if(['cleanse','haste','regen','fortify','timeburst'].includes(a.type)){

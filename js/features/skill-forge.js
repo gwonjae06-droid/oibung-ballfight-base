@@ -354,7 +354,8 @@ function execute(p,a,target) {
     else p.hp=Math.min(p.maxHp,p.hp+a.damage*(global.ArenaBalance?.defenseFactorOf?.(p)??1));
     visual('heal');addFloatingText('+'+Math.round(Math.max(0,p.hp-oldHp)),p.x,p.y-26,'#8bf2af',17);
   } else if(a.type==='shield'){
-    p.invincible=Math.max(p.invincible,Math.max(1,Math.round(a.duration*60*(global.ArenaBalance?.defenseFactorOf?.(p)??1))));visual('shield');
+    const durationFrames=Math.max(1,Math.round(a.duration*60*(global.ArenaBalance?.defenseFactorOf?.(p)??1)));
+   p.invincible=global.ArenaBalance?.shieldWindow?.(p,durationFrames)??Math.max(p.invincible,durationFrames);visual('shield');
   } else if(a.type==='pull'){
     visual('wave',{radius:a.radius});
     within(p.x,p.y,a.radius).forEach(e=>{
@@ -384,6 +385,13 @@ function update(p,target){
    else if(v>.001&&Number.isFinite(v)){const next=v+(cruise-v)*(v>cruise?.075:.16);p.vx=p.vx/v*next;p.vy=p.vy/v*next;}
   else{p.vx=cruise;p.vy=0;}
   tickSkills(p);
+  // Repeat tiny ornamental pulses without triggering extra damage, healing or
+  // CC. The true combat cooldown is unchanged (at least 0.2 s).
+  p._forgeVisualFrame=(p._forgeVisualFrame||0)+1;
+  if(target?.hp>0&&!global.ForgeExpansion?.blocked(p))p.forge.skills.forEach((s,i)=>{
+    if(s.trigger==='auto'&&s.cooldown<=.6&&(p._forgeVisualFrame+i*2)%6===0)
+      global.ForgeComboFX?.pulse?.(p,s.actions[0],i);
+  });
   // Do not fire a fresh skill into the charge-up interval. Any existing
   // queued combo continues to advance and executes after the full wind-up.
   if(p.forgeCharge?.phase==='charging'){

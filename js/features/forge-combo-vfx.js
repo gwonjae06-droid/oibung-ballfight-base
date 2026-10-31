@@ -57,6 +57,15 @@ function cast(p,action,info={},target){
    x,y,targetX:where.x,targetY:where.y};
  push(e);return true;
 }
+function pulse(p,action,slot=0){
+ // 0.1s ornamental cadence for rapid periodic skills. Never calls gameplay.
+ if(!p?.forge||p.towerEnemy||p.hp<=0||!action?.type||reduced)return false;
+ const at=position(p),x=Number(at?.x),y=Number(at?.y);
+ if(!Number.isFinite(x)||!Number.isFinite(y))return false;
+ push({kind:'pulse',owner:p,x,y,type:action.type,color:color(p),
+  status:statusTint[action.status]||null,age:0,life:14,slot:slot%4});
+ return true;
+}
 function impact(p,target,action){
  if(!p?.forge||p.towerEnemy||!target||!action?.type)return false;
  const x=Number(target.x),y=Number(target.y);if(!Number.isFinite(x)||!Number.isFinite(y))return false;
@@ -110,11 +119,22 @@ function drawImpact(c,e,t){
  }
  if(e.status===statusTint.ice){c.strokeStyle='#e7ffff';for(let i=0;i<6;i++){c.save();c.rotate(i*TAU/6);polygon(c,4,4+t*9,0);c.restore();}}
 }
+function drawPulse(c,e,t){
+ const owner=position(e.owner),x=Number(owner?.x)||e.x,
+   y=(Number(owner?.y)||e.y)-(global.AdvancedCombat?.visibleHeight?.(e.owner)||0);
+ const a=(1-t)*.55,r=17+t*16+e.slot*2,turn=e.age*.05+e.slot*TAU/4;
+ c.translate(x,y);c.globalAlpha=a;c.strokeStyle=e.status||e.color;
+ c.lineWidth=1.8;ring(c,0,0,r,turn,turn+TAU*.72);
+ c.strokeStyle='#fff3d7';c.lineWidth=1.1;
+ ring(c,0,0,r*.7,-turn*.6,-turn*.6+Math.PI*1.1);
+ for(let i=0;i<3;i++){const angle=turn+i*TAU/3;c.beginPath();
+  c.arc(Math.cos(angle)*r,Math.sin(angle)*r,1.5,0,TAU);c.fillStyle=e.color;c.fill();}
+}
 function draw(c){if(!c||!effects.length)return;
  c.save();c.globalCompositeOperation='source-over';
  for(const e of effects){if(e.owner?.hp<=0)continue;
   const t=clamp(e.age/e.life,0,1);c.save();c.lineCap='round';c.lineJoin='round';
-  if(e.kind==='cast')drawCast(c,e,t);else drawImpact(c,e,t);c.restore();
+  if(e.kind==='cast')drawCast(c,e,t);else if(e.kind==='pulse')drawPulse(c,e,t);else drawImpact(c,e,t);c.restore();
  }c.restore();
 }
 function preview(c,{type='wave',status='none',link='and',progress=0,color:colorValue='#bca6f4'}={}){
@@ -130,5 +150,5 @@ function preview(c,{type='wave',status='none',link='and',progress=0,color:colorV
 }
 function clear(){effects.length=0;}
 function setReduced(v){reduced=!!v;}
-global.ForgeComboFX={cast,impact,tick,draw,preview,clear,setReduced,get active(){return effects.length;},get reduced(){return reduced;}};
+global.ForgeComboFX={cast,impact,pulse,tick,draw,preview,clear,setReduced,get active(){return effects.length;},get reduced(){return reduced;}};
 })(window);
