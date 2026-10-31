@@ -81,7 +81,7 @@ original.forEach(node=>advanced.append(node));
 heading.innerHTML='<h3>나만의 전투 스타일 만들기</h3>'
  +'<p>① 원하는 스타일을 고르고 ② 스킬을 바꿔 본 뒤 ③ 왼쪽에서 움직임을 확인하고 ④ 저장하세요. 복잡한 설정은 전문가 설정에 있습니다.</p>';
 view.append(switcher,simple,advanced);
-let mode='simple',lastStyle='';
+let mode='simple',lastStyle='',previewSkill=0;
 function typeOptions(value){
  let seen=false;
  let html=Object.entries(QUICK).map(([group,types])=>'<optgroup label="'+E(group)+'">'+
@@ -100,7 +100,8 @@ function makeCard(s,i){
  const rest=extra?' · 연결: '+E(extra):'';
  return '<article class="studio-easy-card" aria-label="스킬 '+(i+1)+'">'
    +'<header class="studio-easy-card-head"><span class="studio-easy-number">스킬 '+String(i+1).padStart(2,'0')+'</span>'
-   +'<button type="button" data-easy-detail="'+i+'" aria-label="'+E(s.name)+' 모든 수치 자세히 설정">⚙ 세부 조정</button></header>'
+   +'<span class="studio-easy-card-actions"><button type="button" data-easy-preview="'+i+'" aria-label="'+E(s.name)+' 동작 시연">▶ 시연</button>'
+   +'<button type="button" data-easy-detail="'+i+'" aria-label="'+E(s.name)+' 모든 수치 자세히 설정">⚙ 세부 조정</button></span></header>'
    +'<label class="studio-easy-name">스킬 이름<input type="text" maxlength="18" data-easy-key="name" data-skill="'+i+'" value="'+E(s.name)+'"></label>'
    +'<div class="studio-easy-fields">'
    +'<label>어떤 행동을 하나요?<select data-easy-key="type" data-skill="'+i+'">'+typeOptions(a.type)+'</select></label>'
@@ -122,7 +123,7 @@ function refresh(){
    +'<div class="studio-easy-step"><div class="studio-easy-step-title"><b>2</b>'
    +'<div><h4>스킬 설정 <small>'+profile.skills.length+' / 4</small></h4>'
    +'<p>각 스킬의 행동과 사용 시점을 고르세요. 범위·연계·상태이상은 각 스킬의 세부 조정에서 바꿀 수 있습니다.</p></div></div>'
-   +(profile.allAbilities?'<p class="studio-easy-all">현재 모든 능력 모드입니다. 전문가 설정에서 일반 스킬 조합으로 변경할 수 있습니다.</p>':'')
+   +(profile.allAbilities?'<div class="studio-easy-all" role="status"><strong>전체 능력 모드 사용 중</strong><span>아래 개별 스킬 대신 모든 능력이 발동됩니다. 직접 만든 스킬을 사용하려면 일반 스킬 조합으로 전환하세요.</span><button type="button" data-easy-enable>일반 스킬 조합으로 전환</button></div>':'')
    +'<div class="studio-easy-cards">'+profile.skills.map(makeCard).join('')+'</div>'
    +'<button class="studio-easy-add" type="button" data-easy-add'+(profile.skills.length>=4?' disabled':'')+'>+ 스킬 하나 추가 ('+profile.skills.length+'/4)</button></div>'
    +'<div class="studio-easy-step studio-easy-finish"><div class="studio-easy-step-title"><b>3</b>'
@@ -159,6 +160,13 @@ simple.addEventListener('click',e=>{
   try{forge.setDraft(presetPlan(p.dataset.easyPreset,readBasics()));lastStyle=p.dataset.easyPreset;
    global.CharacterStudioWorkspace?.refresh?.();refresh();}catch(err){global.alert?.(err.message);}
   return;
+ }
+ if(e.target.closest('[data-easy-enable]')){
+  try{commit(blocks.modify(readBasics(),{kind:'enable'}));}catch(err){global.alert?.(err.message);}return;
+ }
+ const play=e.target.closest('[data-easy-preview]');
+ if(play){previewSkill=Number(play.dataset.easyPreview);
+  global.CharacterStudioWorkspace?.selectPreviewSkill?.(previewSkill,0);return;
  }
  const add=e.target.closest('[data-easy-add]'),remove=e.target.closest('[data-easy-remove]');
  if(add||remove){
