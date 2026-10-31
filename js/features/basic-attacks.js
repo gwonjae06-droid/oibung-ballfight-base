@@ -57,7 +57,7 @@ function blueprint(role,config){
  return {action:a,frames,reach,role,style:choice.style,effect:choice.effect,tempo:choice.tempo};
 }
 function tick(p,target,api){
- if(!p?.forge||p.towerEnemy||p.manualTower||p.hp<=0||!target||target.hp<=0)return false;
+ if(!p?.forge||p.forge.signatureVersion!==1||p.towerEnemy||p.manualTower||p.hp<=0||!target||target.hp<=0)return false;
  const role=p.forge.archetype,config=p.forge.basicAttack;
  const attack=blueprint(role,config);if(!attack)return false;
  // Update only on normal combat ticks; no bypass through silence/stun/charge.
