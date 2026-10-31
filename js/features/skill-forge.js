@@ -346,9 +346,12 @@ function execute(p,a,target) {
     p.y=Math.max(p.radius,Math.min(canvas.height-p.radius,near.y-dy/d*68));
     visual('blink'); // Reposition only: a separate attack block owns damage.
   } else if(a.type==='heal'){
-    if(global.ForgeExpansion)global.ForgeExpansion.heal(p,a.damage);else p.hp=Math.min(p.maxHp,p.hp+a.damage);visual('heal');addFloatingText('+'+a.damage,p.x,p.y-26,'#8bf2af',17);
+    const oldHp=p.hp;
+    if(global.ForgeExpansion)global.ForgeExpansion.heal(p,a.damage);
+    else p.hp=Math.min(p.maxHp,p.hp+a.damage*(global.ArenaBalance?.defenseFactorOf?.(p)??1));
+    visual('heal');addFloatingText('+'+Math.round(Math.max(0,p.hp-oldHp)),p.x,p.y-26,'#8bf2af',17);
   } else if(a.type==='shield'){
-    p.invincible=Math.max(p.invincible,Math.round(a.duration*60));visual('shield');
+    p.invincible=Math.max(p.invincible,Math.max(1,Math.round(a.duration*60*(global.ArenaBalance?.defenseFactorOf?.(p)??1))));visual('shield');
   } else if(a.type==='pull'){
     visual('wave',{radius:a.radius});
     within(p.x,p.y,a.radius).forEach(e=>{
