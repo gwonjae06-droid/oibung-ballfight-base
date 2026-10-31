@@ -220,11 +220,12 @@ function update(p,api){
       if(target&&(b.kind==='homing'||(b.kind==='boomerang'&&b.age>20))){
         const angle=Math.atan2(target.y-b.y,target.x-b.x);b.vx=Math.cos(angle)*b.a.speed;b.vy=Math.sin(angle)*b.a.speed;
       }
-      const fromX=b.x,fromY=b.y;
+      const fromX=b.x,fromY=b.y,fromZ=Number.isFinite(b.z)?b.z:0;
       b.x+=b.vx;b.y+=b.vy;
       if(Number.isFinite(b.heightVelocity))b.z=(b.z||0)+b.heightVelocity;
       // Projectiles now aim from the caster's elevation to the target tier.
-      if(global.AdvancedCombat?.blockSegment?.(
+      if(global.ArenaTowerTerrain?.obstructsShot?.(fromX,fromY,fromZ,b.x,b.y,b.z||0,7)||
+        global.AdvancedCombat?.blockSegment?.(
         fromX,fromY,b.x,b.y,b.a?.damage||10,b.z||0)){
         extras.splice(i,1);continue;
       }

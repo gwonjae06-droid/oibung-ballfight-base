@@ -246,7 +246,7 @@ function update() {
   players.forEach(updateCharacter);
   players.forEach(p=>{
     if(p.hp>0&&(!p.jumpState||p.jumpState==='ground')){
-      const m=(p.slowTimer>0?p.slowMultiplier:1)*(globalThis.ForgeExpansion?.movement(p)??1);
+      const m=(p.slowTimer>0?p.slowMultiplier:1)*(globalThis.ForgeExpansion?.movement(p)??1)*(p.towerTerrainSpeed??1);
       const velocity=Math.hypot(p.vx,p.vy);
       if(!Number.isFinite(velocity)){p.vx=p.playerNum%2?1.4:-1.4;p.vy=0.9;}
       else if(velocity>12){p.vx=p.vx/velocity*12;p.vy=p.vy/velocity*12;}
@@ -274,6 +274,8 @@ function update() {
       globalThis.ImpactPhysics?.integrate?.(p);
     }
   });
+  // Actors' footing follows their POST-movement position before any hit test.
+  globalThis.ArenaTowerTerrain?.sync?.(players);
   if(globalThis.AdvancedCombat)AdvancedCombat.tick({
     hit(attacker,defender,action,multiplier=1,attackZ){
       // Custom fighters must use the exact same resistance, knockback and

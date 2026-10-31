@@ -233,14 +233,14 @@ function execute(p,a,target,api){
       const travel=cap(Math.ceil(distance/(Math.max(2,a.speed||6)*.5)),24,72);
       pushShot({kind:a.type,owner:p.playerNum,x:p.x,y:p.y,startX:p.x,startY:p.y,
         tx:destX,ty:destY,age:0,travel,
-        a,z:groundHeight(p),split:false,life:travel+8});
+        a,z:groundHeight(p),startZ:absoluteHeight(p)+12,targetZ:absoluteHeight(enemy)+12,split:false,life:travel+8});
       mark('target',destX,destY,Math.min(radius*.35,58),col,travel+5);
     }
   }else if(a.type==='wall'){
     const x=enemy?cap((p.x+enemy.x)/2,35,canvas.width-35):cap(p.x+Math.cos(face)*70,35,canvas.width-35);
     const y=enemy?cap((p.y+enemy.y)/2,35,canvas.height-35):cap(p.y+Math.sin(face)*70,35,canvas.height-35);
     pushObject({kind:'wall',owner:p.playerNum,x,y,r:cap(radius*.32,24,65),hp:Math.max(35,a.damage*3),maxHp:Math.max(35,a.damage*3),
-      life:duration,age:0});mark('wall',x,y,45,col,12);
+      life:duration,age:0,floorZ:global.ArenaTowerTerrain?.worldHeight?.(x,y)||0});mark('wall',x,y,45,col,12);
   }else if(a.type==='portal'){
     if(!enemy)return true;
     const offset=cap(radius*.4,45,100);
@@ -255,7 +255,8 @@ function execute(p,a,target,api){
     const x=cap(p.x+Math.cos(face)*45,25,canvas.width-25),y=cap(p.y+Math.sin(face)*45,25,canvas.height-25);
     pushObject({kind:a.type,owner:p.playerNum,x,y,r:a.type==='trap'?19:18,
       hp:Math.max(25,a.damage*2),maxHp:Math.max(25,a.damage*2),life:duration,age:0,
-      vx:0,vy:0,next:25,a:{...a},target:enemy?.playerNum||null});
+      vx:0,vy:0,next:25,a:{...a},target:enemy?.playerNum||null,
+      floorZ:global.ArenaTowerTerrain?.worldHeight?.(x,y)||0});
     mark(a.type==='trap'?'target':'ring',x,y,35,col,16);
   }else if(a.type==='grow'||a.type==='shrink'){
     p.bodyScale=a.type==='grow'?cap(1.25+a.count*.08,1.2,2.2):cap(.6-a.count*.015,.37,.8);
@@ -316,7 +317,7 @@ function stepHeight(p,api){
   if(p.z>0||p.vz>0){
     const previous=p.z;
     p.z=Math.max(0,p.z+p.vz);
-    p.vz=cap(p.vz-.55,-13,15);
+    p.vz=cap(p.vz-(Number.isFinite(p.towerGravity)?p.towerGravity:.55),-13,15);
     if(p.jumpMotion?.phase==='rising'&&p.vz<=0){
       const pose=p.jumpMotion;pose.age=0;
       if(pose.hover>0){
@@ -404,11 +405,11 @@ function segmentDistance(x1,y1,x2,y2,px,py){
 // Swept segment against the circular physical footprints of constructed walls.
 // A successful intersection damages the wall and absorbs the entire shot.
 function blockSegment(x1,y1,x2,y2,power=10,z=0){
-  if(z>42)return null; // high arcing shells fly over a ground-height wall
+  // Wall bases follow their terrain, so an elevated wall blocks at its own tier.
   const dx=x2-x1,dy=y2-y1,A=dx*dx+dy*dy;
   let first=null;
   for(const wall of objects){
-    if(wall.kind!=='wall'||wall.life<=0||wall.hp<=0)continue;
+    if(wall.kind!=='wall'||wall.life<=0||wall.hp<=0||z>(wall.floorZ||0)+42||z<(wall.floorZ||0)-9)continue;
     const r=wall.r+4,fx=x1-wall.x,fy=y1-wall.y;
     const C=fx*fx+fy*fy-r*r;
     let t=null;
@@ -438,20 +439,25 @@ function updateProjectiles(api){
     const b=projectiles[i],p=ownerOf(b);if(!p){projectiles.splice(i,1);continue;}
     b.prevX=b.x;b.prevY=b.y;b.prevHeight=b.height||0;
     b.age++;b.life--;
+    const prevZ=Number.isFinite(b.worldZ)?b.worldZ:(Number.isFinite(b.startZ)?b.startZ:0);
     const t=cap(b.age/b.travel,0,1);
     b.x=b.startX+(b.tx-b.startX)*t;b.y=b.startY+(b.ty-b.startY)*t;
-    b.height=b.kind==='arcshot'?4*t*(1-t)*88:0;
-    const wallHit=blockSegment(b.prevX,b.prevY,b.x,b.y,b.a?.damage||10,b.height);
+    const arc=b.kind==='arcshot'?4*t*(1-t)*88:0;
+    b.worldZ=lerp(b.startZ||0,b.targetZ??b.startZ??0,t)+arc;
+    b.height=b.worldZ;
+    const terrainHit=global.ArenaTowerTerrain?.obstructsShot?.(b.prevX,b.prevY,prevZ,b.x,b.y,b.worldZ,7);
+    const wallHit=terrainHit?null:blockSegment(b.prevX,b.prevY,b.x,b.y,b.a?.damage||10,b.worldZ);
+    if(terrainHit){mark('burst',b.x,b.y,17,color(p),13);projectiles.splice(i,1);continue;}
     if(wallHit){
       b.x=wallHit.x;b.y=wallHit.y;b.life=0;
       projectiles.splice(i,1);continue;
     }
     if(b.kind==='turretshot'){
-      const shooter= {...p,x:b.startX,y:b.startY,z:0,vz:0};
+      const shooter= {...p,x:b.startX,y:b.startY,z:0,vz:0,towerGroundZ:0};
       let collided=false;
       for(const e of enemies(p)){
         if(segmentDistance(b.prevX,b.prevY,b.x,b.y,e.x,e.y)>(e.radius||0)+6)continue;
-        if(strike(shooter,e,b.a,api,0,.62)){
+        if(strike(shooter,e,b.a,api,b.worldZ,.62)){
           mark('stab',e.x,e.y-groundHeight(e),Math.min(28,e.radius||25),color(p),15,
             Math.atan2(b.ty-b.startY,b.tx-b.startX),groundHeight(e));
           collided=true;break;
@@ -468,7 +474,7 @@ function updateProjectiles(api){
         pushShot({kind:'fragment',owner:b.owner,x:b.x,y:b.y,startX:b.x,startY:b.y,
           tx:cap(b.x+Math.cos(theta)*Math.min(95,b.a.radius),15,canvas.width-15),
           ty:cap(b.y+Math.sin(theta)*Math.min(95,b.a.radius),15,canvas.height-15),
-          age:0,travel:cap(Math.ceil(95/Math.max(2,b.a.speed||6)),10,40),a:b.a,life:50,height:0});
+          age:0,travel:cap(Math.ceil(95/Math.max(2,b.a.speed||6)),10,40),a:b.a,life:50,height:b.worldZ,startZ:b.worldZ,targetZ:b.worldZ});
       }
       mark('cleave',b.x,b.y,34,color(p),18,b.age*.24);
       mark('burst',b.x,b.y,33,color(p),17);
@@ -479,7 +485,7 @@ function updateProjectiles(api){
     if(b.kind==='fragment'&&b.life>0){
       for(const e of enemies(p)){
         if(segmentDistance(b.prevX,b.prevY,b.x,b.y,e.x,e.y)>(e.radius||0)+8)continue;
-        if(strike(p,e,b.a,api,0,.5)){
+        if(strike(p,e,b.a,api,b.worldZ-terrainElevation(p),.5)){
           b.life=0;
           mark('stab',e.x,e.y-groundHeight(e),Math.max(24,e.radius),color(p),15,
             Math.atan2(b.ty-b.startY,b.tx-b.startX),groundHeight(e));
@@ -495,7 +501,7 @@ function updateProjectiles(api){
         mark('ring',b.x,b.y,impactR,color(p),17);
         for(const e of enemies(p)){
           if(Math.hypot(e.x-b.x,e.y-b.y)<(e.radius||0)+impactR)
-            strike(p,e,b.a,api,0);
+            strike(p,e,b.a,api,b.worldZ-terrainElevation(p));
         }
       }
       b.life=0;
@@ -552,8 +558,8 @@ function stepObjects(api){
       }
     }else if(o.kind==='trap'){
       if(o.age>16)for(const e of enemies(p)){
-        if(Math.hypot(e.x-o.x,e.y-o.y)<o.r+e.radius && canHit(p,e,terrainElevation(p))){
-          strike(p,e,o.a,api,0);o.life=0;mark('burst',o.x,o.y,48,color(p));break;
+        if(Math.hypot(e.x-o.x,e.y-o.y)<o.r+e.radius && canHit(p,e,o.floorZ||0)){
+          strike(p,e,o.a,api,(o.floorZ||0)-terrainElevation(p));o.life=0;mark('burst',o.x,o.y,48,color(p));break;
         }
       }
     }else if(o.kind==='summon'||o.kind==='turret'){
@@ -586,7 +592,8 @@ function stepObjects(api){
             const travel=Math.max(5,Math.min(36,Math.ceil(d/Math.max(5,o.a.speed||6))));
             pushShot({kind:'turretshot',owner:p.playerNum,
               x:o.x,y:o.y,startX:o.x,startY:o.y,tx:e.x,ty:e.y,
-              age:0,life:travel+5,travel,a:o.a,height:0});
+              age:0,life:travel+5,travel,a:o.a,height:o.floorZ||0,
+               startZ:(o.floorZ||0)+12,targetZ:absoluteHeight(e)+12});
             o.aim=Math.atan2(e.y-o.y,e.x-o.x);
             mark('ring',o.x,o.y,23,color(p),10);
           }else if(canHit(anchor,e,0)){
@@ -876,7 +883,7 @@ function draw(ctx){
     }
     ctx.restore();};
     if(o.kind!=='trap'&&global.ArenaDepth?.air){
-      const z=attacker?attacker.z:0;
+      const z=o.floorZ||0;
       global.ArenaDepth.air(ctx,{x,y:y+z},z,paintObject,o.r||18);
     }else paintObject(ctx);
   }

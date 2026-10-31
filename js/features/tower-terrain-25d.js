@@ -20,6 +20,14 @@ const NODES={
  forest:[[.5,.48,.24,43],[.23,.67,.17,25],[.76,.28,.16,28]]
 };
 const smooth=x=>{x=clamp(x,0,1);return x*x*(3-2*x);};
+// The same floor field is sampled for rendering, actor footing, and projectiles.
+// The only active context lives for a Tower encounter and is removed on exit.
+let active=null;
+const between=(a,b,t)=>a+(b-a)*t;
+function phaseOf(t,period){return (Math.max(0,t)||0)%period;}
+function ventPhase(t){return phaseOf(t,540);}
+function ventLift(t){const q=ventPhase(t);return q<180?0:q<265?24*smooth((q-180)/85):q<350?24:q<425?24*(1-smooth((q-350)/75)):0;}
+
 function nodes(realm,level=1,width=500,height=500,tick=0){
  const base=NODES[realm]||NODES.time,variance=((level-1)%4)*.018;
  return base.map(([x,y,r,z],i)=>{
@@ -34,6 +42,8 @@ function nodes(realm,level=1,width=500,height=500,tick=0){
     py+=Math.sin(a)*Math.min(13,height*.024);
   }
   if(realm==='space')lift+=Math.sin(t*.023+i*1.3)*8;
+  if(realm==='fire'&&i===0)lift+=ventLift(t);
+  if(realm==='storm')lift+=Math.sin(t*.018+i*.9)*(i===0?8:5);
   if(realm==='forest'&&i===2)lift+=Math.sin(t*.016)*9;
   if(realm==='ice'&&i===2&&t%540>=410)lift=Math.max(6,lift*.24);
   return {x:px,y:py,r:r*Math.min(width,height)*(level%5===0?1.12:1),
@@ -41,13 +51,38 @@ function nodes(realm,level=1,width=500,height=500,tick=0){
  });
 }
 function heightAt(realm,level,x,y,width=500,height=500,tick=0){
- let z=0;
- for(const n of nodes(realm,level,width,height,tick)){
+ let z=0;const platforms=nodes(realm,level,width,height,tick);
+ for(const n of platforms){
    const distance=Math.hypot(x-n.x,y-n.y)/n.r;
    z=Math.max(z,n.z*(1-smooth((distance-.67)/.43)));
  }
+ // Previously only painted bridges linked the islands: a fighter looked as
+ // though it walked on a ramp, but its physics instantly fell to z=0.
+ for(let i=1;i<platforms.length;i++){
+   const a=platforms[0],b=platforms[i],dx=b.x-a.x,dy=b.y-a.y;
+   const len2=dx*dx+dy*dy||1,t=clamp(((x-a.x)*dx+(y-a.y)*dy)/len2,0,1);
+   const dist=Math.hypot(x-a.x-t*dx,y-a.y-t*dy);
+   const halfWidth=Math.min(width,height)*.042;
+   const ridge=between(a.z,b.z,t)*.88*(1-smooth((dist-halfWidth*.65)/(halfWidth*.65)));
+   z=Math.max(z,ridge);
+ }
  return z;
 }
+function worldHeight(x,y){
+ return active?heightAt(active.realm,active.level,x,y,active.width,active.height,active.tick):0;
+}
+// A raised island is solid cover. Sample the swept segment, not just its end,
+// and compare terrain against the bullet's world-space altitude.
+function obstructsShot(x0,y0,z0,x1,y1,z1,clearance=9){
+ if(!active||![x0,y0,z0,x1,y1,z1].every(Number.isFinite))return false;
+ const length=Math.hypot(x1-x0,y1-y0),steps=Math.max(1,Math.ceil(length/5));
+ for(let i=1;i<=steps;i++){
+   const t=i/steps;
+   if(worldHeight(between(x0,x1,t),between(y0,y1,t))>between(z0,z1,t)+clearance)return true;
+ }
+ return false;
+}
+
 function paint(ctx,realm,level,width=500,height=500,frame=0){
  const theme=C[realm];if(!theme||!ctx)return false;
  const platforms=nodes(realm,level,width,height,frame);
@@ -100,24 +135,86 @@ function paint(ctx,realm,level,width=500,height=500,frame=0){
  ctx.strokeStyle=theme.side;ctx.globalAlpha=.67;
  for(let i=1;i<platforms.length;i++){
    const a=platforms[0],b=platforms[i];
-   ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();
+   ctx.beginPath();ctx.moveTo(a.x,a.y-a.z);ctx.lineTo(b.x,b.y-b.z);ctx.stroke();
+   ctx.strokeStyle=theme.rim;ctx.lineWidth=Math.max(3,Math.min(width,height)*.009);ctx.stroke();
+   ctx.strokeStyle=theme.side;ctx.lineWidth=Math.max(11,Math.min(width,height)*.048);
+ }
+ // Realm-specific height telegraphs are drawn at the exact raised surface.
+ const t=phaseOf(frame,540),main=platforms[0];
+ if(realm==='fire'&&t>=145&&t<425){
+   ctx.save();ctx.translate(main.x,main.y-main.z);ctx.strokeStyle=t<265?'#ffd36b':'#ff512c';
+   ctx.lineWidth=4+(t<265?3*Math.sin(frame*.24)**2:4);ctx.setLineDash(t<265?[9,5]:[]);
+   ctx.beginPath();ctx.arc(0,0,main.r*.86,0,PI*2);ctx.stroke();ctx.setLineDash([]);
+   ctx.fillStyle='#ffe8a0';ctx.font='bold 15px system-ui';ctx.textAlign='center';
+   ctx.fillText(t<265?'분화 예고':t<350?'분화 중':'용암 가라앉음',0,-main.r*.45);
+   ctx.restore();
+ }
+ if(realm==='storm'&&phaseOf(frame,450)>=180&&phaseOf(frame,450)<290){
+   ctx.save();ctx.strokeStyle='#c5faff';ctx.lineWidth=3;
+   const center=platforms[0];
+   for(let k=0;k<6;k++){const a=k*PI/3+frame*.016,r=center.r*.55;
+     ctx.beginPath();ctx.moveTo(center.x+Math.cos(a)*r,center.y-center.z+Math.sin(a)*r);
+     ctx.lineTo(center.x+Math.cos(a)*r*.35,center.y-center.z+Math.sin(a)*r*.35-28);ctx.stroke();}
+   ctx.restore();
+ }
+ if(realm==='ice'&&phaseOf(frame,540)>=355&&phaseOf(frame,540)<480){
+   const ice=platforms[2];ctx.save();ctx.strokeStyle='#f0ffff';ctx.lineWidth=3;
+   ctx.beginPath();ctx.arc(ice.x,ice.y-ice.z,ice.r*.76,0,PI*2);ctx.stroke();
+   ctx.fillStyle='#e8feff';ctx.font='bold 13px system-ui';ctx.textAlign='center';ctx.fillText('빙판 붕괴',ice.x,ice.y-ice.z-ice.r*.32);ctx.restore();
  }
  ctx.globalAlpha=1;ctx.restore();return true;
 }
-function step(realm,level,roster,width=500,height=500,tick=0){
+// Called once after movement and once after encounter advancement. `sync` only
+// updates footing, while `step` owns time-dependent hazards and movement buffs.
+function sync(roster){
+ if(!active)return;
+ for(const p of roster||[])if(p&&p.hp>0)
+   {p._towerPreviousFloor=Number(p.towerGroundZ)||0;
+    p.towerGroundZ=worldHeight(p.x,p.y);}
+}
+function step(realm,level,roster,width=500,height=500,tick=0,damage){
+ const prev=active;
+ active={realm,level,width,height,tick};
+ const curr=nodes(realm,level,width,height,tick),oldNodes=prev?.realm===realm?nodes(realm,level,width,height,prev.tick):null;
  for(const p of roster||[]){
   if(!p||p.hp<=0)continue;
-  const goal=heightAt(realm,level,p.x,p.y,width,height,tick);
-  // A single, authoritative world-space floor height powers collisions,
-  // jump origins and the drawn raised platform. Smooth SDF ramps already
-  // interpolate at the edges; a second lerp here made actors hover and miss.
-  p.towerGroundZ=goal;
-  // Terrain owns only height; the separate environment engine paints and
-  // applies clearly telegraphed realm effects. No hidden passive debuffs.
+  const before=Number.isFinite(p._towerPreviousFloor)?p._towerPreviousFloor:(Number(p.towerGroundZ)||0);
+  delete p._towerPreviousFloor;
+  // Moving gears carry grounded occupants a little; travel stays inside
+  // real world XY coordinates and stays bounded by the small island motion.
+  if(realm==='time'&&oldNodes&&!(p.z>2))for(let i=1;i<3;i++){
+    const old=oldNodes[i],next=curr[i];
+    if(Math.hypot(p.x-old.x,p.y-old.y)<old.r*.64){
+      p.x+=clamp(next.x-old.x,-2,2);p.y+=clamp(next.y-old.y,-2,2);break;
+    }
+  }
+  const ground=worldHeight(p.x,p.y);
+  // A collapsing island removes the floor under an actor. Let gravity carry
+  // them down instead of teleporting the sprite through the vertical wall.
+  if(before-ground>5&&!(p.z>2)&&realm==='ice'){
+    p.z=clamp(before-ground,0,52);
+    p.vz=Math.min(Number(p.vz)||0,-1.5);
+  }
+  p.towerGroundZ=ground;
+  p.towerGravity=realm==='space'?.34:realm==='storm'?.44:.55;
+  p.towerTerrainSpeed=realm==='forest'&&ground>15?.9:realm==='fire'&&ventPhase(tick)>=265&&ventPhase(tick)<350&&ground>25?.87:1;
+  p.towerHeightLabel=realm==='space'?'저중력':realm==='storm'?'상승기류':realm==='ice'?'붕괴 지형':realm==='fire'?'용암 승강대':realm==='time'?'회전 기어':'성장하는 뿌리';
+  if(realm==='storm'&&p.z<2&&ground>20&&phaseOf(tick,450)===260){
+    g.AdvancedCombat?.launch?.(p,7.5);
+  }
+  // Fire's magma lift has a warning and a single confirmed-hit pulse. It is
+  // a boss arena hazard, never a hidden permanent damage aura or a PvP rule.
+  if(realm==='fire'&&tick>0&&ventPhase(tick)===285&&p.towerHero&&ground>30&&p.z<18&&p._towerVentHitFrame!==tick){
+    p._towerVentHitFrame=tick;
+    damage?.(p,level>=5?27:17,{realm:'fire',kind:'terrain',label:'용암 분화'});
+  }
  }
 }
 function clear(roster){
- for(const p of roster||[])if(p)delete p.towerGroundZ;
+ active=null;
+ for(const p of roster||[])if(p){
+  for(const key of ['towerGroundZ','towerGravity','towerTerrainSpeed','towerHeightLabel','_towerPreviousFloor','_towerVentHitFrame'])delete p[key];
+ }
 }
-g.ArenaTowerTerrain={nodes,heightAt,paint,step,clear,THEMES:C};
+g.ArenaTowerTerrain={nodes,heightAt,worldHeight,obstructsShot,paint,sync,step,clear,THEMES:C};
 })(globalThis);

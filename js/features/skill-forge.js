@@ -356,7 +356,11 @@ function execute(p,a,target) {
     const d=Math.hypot(near.x-p.x,near.y-p.y)||1,x=p.x+(near.x-p.x)/d*a.radius*2,y=p.y+(near.y-p.y)/d*a.radius*2;
     if(global.BattleFX)BattleFX.beam(p.x,p.y,x,y,c);
     visual('energy');
-    enemies(p).forEach(e=>{const vx=x-p.x,vy=y-p.y,t=Math.max(0,Math.min(1,((e.x-p.x)*vx+(e.y-p.y)*vy)/(vx*vx+vy*vy||1)));if(Math.hypot(e.x-p.x-t*vx,e.y-p.y-t*vy)<e.radius+12)hit(p,e,a);});
+    enemies(p).forEach(e=>{const vx=x-p.x,vy=y-p.y,t=Math.max(0,Math.min(1,((e.x-p.x)*vx+(e.y-p.y)*vy)/(vx*vx+vy*vy||1)));
+      const startZ=(global.AdvancedCombat?.height?.(p)||0)+12,endZ=(global.AdvancedCombat?.height?.(e)||0)+12;
+      const occluded=global.ArenaTowerTerrain?.obstructsShot?.(p.x,p.y,startZ,e.x,e.y,endZ,7);
+      if(!occluded&&Math.hypot(e.x-p.x-t*vx,e.y-p.y-t*vy)<e.radius+12)hit(p,e,a);
+    });
   } else if(a.type==='bolt'){
     if(!near)return;
     visual('meteor',{x:near.x,y:near.y,radius:a.radius});
@@ -509,8 +513,12 @@ function advanceWorld(p,target){
     const b=p.forgeShots[i];b.prevX=b.x;b.prevY=b.y;b.x+=b.vx;b.y+=b.vy;
     if(Number.isFinite(b.heightVelocity))b.z=(b.z||0)+b.heightVelocity;
     b.life--;
-    const blocked=global.AdvancedCombat?.blockSegment?.(
-      b.prevX,b.prevY,b.x,b.y,b.a?.damage||10,b.z||0);
+    const flightZ=Number.isFinite(b.z)?b.z:0;
+    const initialZ=Number.isFinite(b.z)?b.z-(b.heightVelocity||0):flightZ;
+    const terrainBlock=global.ArenaTowerTerrain?.obstructsShot?.(
+      b.prevX,b.prevY,initialZ,b.x,b.y,flightZ,7);
+    const blocked=terrainBlock||global.AdvancedCombat?.blockSegment?.(
+      b.prevX,b.prevY,b.x,b.y,b.a?.damage||10,flightZ);
     if(blocked){p.forgeShots.splice(i,1);continue;}
     // Ground-level bullets use a ground-level hit check, not the firing
     // character's current jump height. Swept contact prevents tunneling.

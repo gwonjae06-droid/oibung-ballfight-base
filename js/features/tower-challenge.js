@@ -528,7 +528,12 @@ function install(){
   function tickEncounter(){if(active&&stage==='fighting'){
     encounter?.step();
     environment?.step?.();
-    if(!ancient)global.ArenaTowerTerrain?.step?.(realmId,level,players,canvas.width,canvas.height,encounter?.tick||0);
+    if(!ancient)global.ArenaTowerTerrain?.step?.(realmId,level,players,canvas.width,canvas.height,encounter?.tick||0,(p,amount,zone)=>{
+      if(p.hp<=0||p.invincible>0)return false;
+      return global.SkillForge?.hit?.(players[1],p,
+        {type:'wave',damage:amount,radius:0,knockback:0,status:'fire',duration:1.5},
+        1,global.AdvancedCombat?.height?.(p));
+    });
   }}
   function drawEncounter(ctx){if(!active||stage!=='fighting')global.ArenaTowerSpectacle?.page(null);if(active&&stage==='fighting'){global.ArenaTowerAtmosphere?.particles?.(ctx,canvas.width,canvas.height,realmId,encounter?.tick||0);environment?.draw?.(ctx);encounter?.draw(ctx,realm()?.color);}}
   const api={beginAncient,allRealmsCleared,selectRealm,openSelection,chooseBlessing,tickEncounter,drawEncounter,get encounter(){return encounter;},get environment(){return environment;},floor,makeEnemy,read,updateRecord,records,begin,forfeit,paintBackground,
