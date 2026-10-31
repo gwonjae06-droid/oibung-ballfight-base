@@ -181,6 +181,9 @@ function create({realm,level,width=500,height=500,roster=[],damage}){
    ctx.fillStyle=live?(realm==='fire'?'#ff6b3470':realm==='storm'?'#73f2ff45':color+'48'):color+'23';
    ctx.fill();ctx.strokeStyle=live?'#ffffff':color;ctx.lineWidth=live?3.8:2.2;
    ctx.setLineDash(live?[]:[8,5]);ctx.stroke();ctx.setLineDash([]);
+   // Distinct animated geometry: not only a label or a danger outline.
+   // The layer is projected together with the existing Tower floor.
+   g.ArenaTowerEnvironmentVFX?.draw?.(ctx,z,tick,level);
    if(live){
     ctx.globalAlpha=.75;ctx.strokeStyle=color;ctx.lineWidth=1.5;
     if(z.shape==='circle'){
