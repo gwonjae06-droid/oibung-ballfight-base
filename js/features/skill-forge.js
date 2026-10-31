@@ -70,7 +70,7 @@ function normalize(value,{towerEnemy=false}={}){
   return {
     name:clean(value.name,14)||'커스텀 파이터',blurb:clean(value.blurb,90),
     artKey:clean(value.artKey||'',52).replace(/[^a-zA-Z0-9_-]/g,''),
-    color:color(value.color),effectColor:color(value.effectColor||value.color),hp:Math.round(number(value.hp,140,500,250)),
+    color:color(value.color),effectColor:color(value.effectColor||value.color),hp:Math.round(number(value.hp,140,towerEnemy?1800:500,250)),
     speed:number(value.speed,.6,5,1.8),
     allAbilities:value.allAbilities===true,
     // Only transient Tower enemies may exceed the four-skill player limit.
@@ -204,7 +204,7 @@ function hit(p,e,action,multiplier=1,attackZ) {
   if(global.AdvancedCombat&&!AdvancedCombat.canHit(p,e,attackZ))return false;
   if(!global.AdvancedCombat&&e.jumpState&&e.jumpState!=='ground')return false;
   const d=Math.round((action.damage||0)*multiplier*(global.ForgeExpansion?.damageScale(p,e)||1)*
-  (global.ArenaBalance?.factorOf?.(p)??1));
+  (global.ArenaBalance?.factorOf?.(p)??1)*(global.ArenaStalemate?.attackFactor?.()??1));
   if(d){const tint=p.forge?.effectColor||p.forge?.color||p.themeColor||'#58687a';e.hp=Math.max(0,e.hp-d);e.invincible=12;createHitParticles(e.x,e.y,tint,d>=25?22:14);addFloatingText('-'+d,e.x,e.y-30,tint,17);global.ImpactPhysics?.hit?.(p,e,d,{knockback:action.knockback||0,color:tint,type:action.type});}
   if(action.status==='ice'){e.slowTimer=Math.max(e.slowTimer||0,90);e.slowMultiplier=.5;}
   if(action.status==='fire'||action.status==='poison'){
