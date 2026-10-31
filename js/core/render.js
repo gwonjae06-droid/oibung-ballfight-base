@@ -54,6 +54,8 @@ if(p.id==='choi'&&p.suneungState==='success'&&!dead){ctx.save();ctx.beginPath();
 const chargeJitter=globalThis.ArenaCharge?.jitter?.(p)||{x:0,y:0};
 ctx.save();ctx.translate(p.x+chargeJitter.x,p.y+offset+chargeJitter.y);
 ctx.scale(scale*pose.sx,scale*pose.sy);
+const squash=globalThis.ArenaBallSquash?.pose?.(p);
+if(squash){ctx.rotate(squash.angle);ctx.scale(squash.sx,squash.sy);ctx.rotate(-squash.angle);}
 ctx.rotate(pose.tilt);if(dead)ctx.globalAlpha=0.3;if(z<0)ctx.globalAlpha*=.32;
 globalThis.ArenaDepth?.underlay?.(ctx,p,radius);
 if(!globalThis.ArenaTowerCreatures?.draw?.(ctx,p,radius)){

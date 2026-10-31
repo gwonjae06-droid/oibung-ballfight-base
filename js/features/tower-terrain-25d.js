@@ -69,9 +69,14 @@ function footprint(realm,node){
  else {vertices=Array.from({length:18},(_,i)=>{const a=i*PI/9,rad=r*(i%6===2?.73:i%6===3?.87:1.12);return [Math.cos(a)*rad,Math.sin(a)*rad*.82];});}
  return vertices.map(([px,py])=>({x:x+px,y:y+py}));
 }
-function arenaClearance(realm,x,y,width=500,height=500){return polygonMetrics(outline(realm,width,height),x,y).clearance;}
-function isWalkable(realm,x,y,width=500,height=500,radius=0){return arenaClearance(realm,x,y,width,height)>=radius;}
+function arenaClearance(realm,x,y,width=500,height=500){
+ const a=g.ArenaTowerArchitecture;return a?a.clearance(realm,x,y,width,height,active?.tick||0,active?.level||1):polygonMetrics(outline(realm,width,height),x,y).clearance;
+}
+function isWalkable(realm,x,y,width=500,height=500,radius=0){
+ const a=g.ArenaTowerArchitecture;return a?a.isWalkable(realm,x,y,width,height,radius,active?.level||1,active?.tick||0):arenaClearance(realm,x,y,width,height)>=radius;
+}
 function boundaryBounce(p,realm,width,height){
+ if(g.ArenaTowerArchitecture)return g.ArenaTowerArchitecture.bounce(p,realm,width,height,active?.level||1,active?.tick||0);
  const polygon=outline(realm,width,height),pad=Math.max(5,Math.min(30,Number(p.radius)||20)*.65);
  let hit=false;
  for(let k=0;k<3;k++){
@@ -133,6 +138,7 @@ function geometry(realm,level,width,height,tick){
  return (geometryCache={key,platforms,peak:Math.max(22,...platforms.map(n=>n.z)),polygons:platforms.map(n=>footprint(realm,n))});
 }
 function heightAt(realm,level,x,y,width=500,height=500,tick=0){
+ if(g.ArenaTowerArchitecture)return g.ArenaTowerArchitecture.heightAt(realm,level,x,y,width,height,tick);
  let z=0;const geo=geometry(realm,level,width,height,tick),platforms=geo.platforms;
  for(let i=0;i<platforms.length;i++){
    const n=platforms[i];
@@ -206,6 +212,7 @@ function obstructsShot(x0,y0,z0,x1,y1,z1,clearance=9){
 }
 
 function paint(ctx,realm,level,width=500,height=500,frame=0){
+ if(g.ArenaTowerArchitecture)return g.ArenaTowerArchitecture.paint(ctx,realm,level,width,height,frame);
  const theme=C[realm];if(!theme||!ctx)return false;
  const platforms=nodes(realm,level,width,height,frame);
  ctx.save();
@@ -339,10 +346,24 @@ function paint(ctx,realm,level,width=500,height=500,frame=0){
 // updates footing, while `step` owns time-dependent hazards and movement buffs.
 function sync(roster){
  if(!active)return;
- for(const p of roster||[])if(p&&p.hp>0)
-   {boundaryBounce(p,active.realm,active.width,active.height);
-    p._towerPreviousFloor=Number(p.towerGroundZ)||0;
-    p.towerGroundZ=worldHeight(p.x,p.y);}
+ for(const p of roster||[])if(p&&p.hp>0){
+   const oldX=p._towerSafeX,oldY=p._towerSafeY,oldZ=Number(p.towerGroundZ)||0;
+   boundaryBounce(p,active.realm,active.width,active.height);
+   const current=g.ArenaTowerArchitecture?.at?.(active.realm,active.level,p.x,p.y,
+     active.width,active.height,active.tick);
+   const goal=worldHeight(p.x,p.y);
+   // A low fighter cannot climb a high vertical wall by simply walking
+   // across the top-down silhouette; ramps/steps are the physical route.
+   if(g.ArenaTowerArchitecture&&goal-oldZ>16&&p.z<4&&
+      current?.surface&&!current.surface.from&&
+      Number.isFinite(oldX)&&Number.isFinite(oldY)&&!(p.movementOnlyFrames>0)){
+     p.x=oldX;p.y=oldY;
+     p.vx=-(p.vx||0)*.14;p.vy=-(p.vy||0)*.14;
+     g.ArenaBallSquash?.wall?.(p,1,0,Math.hypot(p.vx,p.vy));
+   }
+   p._towerPreviousFloor=oldZ;
+   p.towerGroundZ=worldHeight(p.x,p.y);
+ }
 }
 function step(realm,level,roster,width=500,height=500,tick=0,damage){
  const prev=active;
@@ -375,20 +396,26 @@ function step(realm,level,roster,width=500,height=500,tick=0,damage){
   if(realm==='storm'&&p.z<2&&ground>20&&phaseOf(tick,450)===260){
     g.AdvancedCombat?.launch?.(p,7.5);
   }
+  // Falling off a broken bridge recoils before a mild, once-per-event penalty.
+  if(p._towerVoidFallPending){p._towerVoidFallPending=false;
+    if(p.towerHero)damage?.(p,Math.max(3,Math.round((p.maxHp||100)*.035)),{realm,kind:'terrain',label:'추락'});
+  }
   // Fire's magma lift has a warning and a single confirmed-hit pulse. It is
   // a boss arena hazard, never a hidden permanent damage aura or a PvP rule.
-  if(realm==='fire'&&tick>0&&ventPhase(tick)===285&&p.towerHero&&ground>30&&p.z<18&&p._towerVentHitFrame!==tick){
+  if(realm==='fire'&&tick>0&&ventPhase(tick)===285&&p.towerHero&&p.z<18&&p._towerVentHitFrame!==tick&&
+     (g.ArenaTowerArchitecture?.at?.(realm,level,p.x,p.y,width,height,tick).surface?.id==='caldera'||ground>30)){
     p._towerVentHitFrame=tick;
     damage?.(p,level>=5?27:17,{realm:'fire',kind:'terrain',label:'용암 분화'});
   }
  }
 }
 function clear(roster){
- active=null;geometryCache=null;
+ active=null;geometryCache=null;g.ArenaTowerArchitecture?.reset?.();
  for(const p of roster||[])if(p){
-  for(const key of ['towerGroundZ','towerGravity','towerTerrainSpeed','towerHeightLabel','_towerPreviousFloor','_towerVentHitFrame','_towerRimBounce'])delete p[key];
+  for(const key of ['towerGroundZ','towerGravity','towerTerrainSpeed','towerHeightLabel','_towerPreviousFloor','_towerVentHitFrame','_towerRimBounce','_towerVoidFallPending','_towerVoidCooldown','_towerSafeX','_towerSafeY'])delete p[key];
  }
 }
 g.ArenaTowerTerrain={nodes,heightAt,worldHeight,obstructsShot,paint,sync,step,clear,
-  outline,footprint,arenaClearance,isWalkable,boundaryBounce,THEMES:C};
+  outline,footprint,arenaClearance,isWalkable,boundaryBounce,getMap:(...args)=>g.ArenaTowerArchitecture?.getMap?.(...args),
+  nextWaypoint:(realm,from,to,w,h,level,tick)=>g.ArenaTowerArchitecture?.nextWaypoint?.(realm,from,to,w,h,level,tick),THEMES:C};
 })(globalThis);

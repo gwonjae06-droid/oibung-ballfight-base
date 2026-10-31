@@ -206,6 +206,7 @@ function handleCombat(pA,pB) {
   if(movingA||movingB)return;
   const approach=((pB.vx||0)+(pB.impactVX||0)*.4-(pA.vx||0)-(pA.impactVX||0)*.4)*nx+
     ((pB.vy||0)+(pB.impactVY||0)*.4-(pA.vy||0)-(pA.impactVY||0)*.4)*ny;
+  globalThis.ArenaBallSquash?.pair?.(pA,pB,approach,nx,ny);
   if(approach<0){
     const impulse=Math.min(5,Math.max(1.8,-approach*.58));
     pA.vx-=nx*impulse;pA.vy-=ny*impulse;
@@ -239,6 +240,7 @@ function update() {
   spectacle?.temporal?.capture();
   const healthAtStart=players.map(p=>p.hp);
   players.forEach(p=>{
+    globalThis.ArenaBallSquash?.tick?.(p);
     if(p.movementOnlyFrames>0)p.movementOnlyFrames--;
     globalThis.ForgeExpansion?.tick(p);
     if(p.invincible>0)p.invincible--;
@@ -264,6 +266,7 @@ function update() {
       if(p.y-p.radius<0){p.y=p.radius;p.vy=Math.abs(p.vy);bounceY=true;}
       if(p.y+p.radius>canvas.height){p.y=canvas.height-p.radius;p.vy=-Math.abs(p.vy);bounceY=true;}
       if(bounceX||bounceY){
+        globalThis.ArenaBallSquash?.wall?.(p,bounceX?(p.x<p.radius*2?1:-1):0,bounceY?(p.y<p.radius*2?1:-1):0,Math.hypot(p.vx||0,p.vy||0));
         // Subtle, bounded wall energy and a tiny off-axis nudge: no
         // repeated sticking on straight corridors and no runaway speed.
         const before=Math.hypot(p.vx,p.vy);

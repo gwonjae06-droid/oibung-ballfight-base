@@ -104,6 +104,11 @@ function projectWorld(ctx,source,canvas){
  ctx.restore();return true;
 }
 function paintBackdrop(ctx,canvas,tower=false){
+ if(tower){const w=Number(canvas?.width)||500,h=Number(canvas?.height)||500;
+  ctx.save();const bg=ctx.createLinearGradient(0,0,0,h);
+  bg.addColorStop(0,'#081020');bg.addColorStop(1,'#1b2038');
+  ctx.fillStyle=bg;ctx.fillRect(0,0,w,h);ctx.restore();return;
+ }
  const w=Number(canvas?.width)||500,h=Number(canvas?.height)||500;
  const rear=h*FAR_EDGE,front=h*NEAR_EDGE;
  const backLeft=screenPoint(0,0,canvas).x,backRight=screenPoint(w,0,canvas).x;
@@ -185,6 +190,7 @@ function floorImage(ctx,w,h,scene){
  ctx.restore();
 }
 function paintFloor(ctx,canvas,scenePainted=false){
+ if(global.ArenaTower?.active&&global.ArenaScreenRouter?.active==='tower')return;
  if(!ctx||!canvas)return;
  const w=Number(canvas.width),h=Number(canvas.height);
  if(!(w>0&&h>0))return;

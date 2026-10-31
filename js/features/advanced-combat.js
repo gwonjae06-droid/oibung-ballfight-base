@@ -242,7 +242,7 @@ function execute(p,a,target,api){
       const travel=cap(Math.ceil(distance/(Math.max(2,a.speed||6)*.5)),24,72);
       pushShot({kind:a.type,owner:p.playerNum,x:p.x,y:p.y,startX:p.x,startY:p.y,
         tx:destX,ty:destY,age:0,travel,
-        a,z:groundHeight(p),startZ:absoluteHeight(p)+12,targetZ:absoluteHeight(enemy)+12,split:false,life:travel+8});
+        a,z:groundHeight(p),startZ:absoluteHeight(p)+12,targetZ:absoluteHeight(enemy)+12,targetNum:enemy.playerNum,split:false,life:travel+8});
       mark('target',destX,destY,Math.min(radius*.35,58),col,travel+5);
     }
   }else if(a.type==='wall'){
@@ -451,6 +451,12 @@ function updateProjectiles(api){
     const prevZ=Number.isFinite(b.worldZ)?b.worldZ:(Number.isFinite(b.startZ)?b.startZ:0);
     const t=cap(b.age/b.travel,0,1);
     b.x=b.startX+(b.tx-b.startX)*t;b.y=b.startY+(b.ty-b.startY)*t;
+    // A jumping target changes the destination altitude during the flight.
+    // Vertical tracking is bounded; arcshots keep their ballistic curvature.
+    if(b.targetNum!==undefined){const aim=enemies(p).find(e=>e.playerNum===b.targetNum&&e.hp>0);
+      if(aim){const target=absoluteHeight(aim)+12;
+        b.targetZ=lerp(b.targetZ??target,target,.28);}
+    }
     const arc=b.kind==='arcshot'?4*t*(1-t)*88:0;
     b.worldZ=lerp(b.startZ||0,b.targetZ??b.startZ??0,t)+arc;
     b.height=b.worldZ;

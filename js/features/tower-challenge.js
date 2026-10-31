@@ -389,6 +389,19 @@ function install(){
     if(!setMatchCount(2))throw Error('2인 대전 변경 실패');
     if(!reRollMatch([selected,enemy]))throw Error('대진 구성 실패');
     if(realms){
+      // Real architectural islands replace the old common rectangular spawns.
+      // Place both fighters on valid surfaces before elevation is sampled.
+      if(!ancient&&global.ArenaTowerArchitecture){
+        const point={
+          time:[[250,376],[250,250]],space:[[253,417],[256,280]],
+          fire:[[235,413],[381,231]],storm:[[109,393],[371,157]],
+          ice:[[250,396],[257,134]],forest:[[241,418],[345,172]]
+        }[realmId]||[[250,380],[250,200]];
+        for(let i=0;i<2;i++){players[i].x=point[i][0]*canvas.width/500;
+          players[i].y=point[i][1]*canvas.height/500;
+          players[i].vx=0;players[i].vy=0;
+          delete players[i]._towerSafeX;delete players[i]._towerSafeY;}
+      }
       // Built-in fighters need their authored Forge fallback kit, while saved
       // custom fighters already carry their own authored skill loadout.
       if(!players[0].forge)global.SkillForge.enableManual(players[0]);

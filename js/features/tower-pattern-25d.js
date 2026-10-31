@@ -18,8 +18,10 @@ function draw(ctx,zone,realm,tick,width=500,height=500){
   const rise=realm==='space'?92:realm==='storm'?106:realm==='ice'?75:realm==='forest'?58:realm==='time'?70:85;
   // The attack zone stays on the floor; this is a vertically standing
   // visual continuation. Only the zone's existing hit logic applies damage.
+  const groundZ=g.ArenaTowerTerrain?.worldHeight?.(pt.x,pt.y)||0;
+  const worldRise=rise+groundZ;
   const render=c=>{
-   const y=pt.y-rise,t=tick-zone.fire,rad=zone.shape==='line'?12:21;
+   const y=pt.y-worldRise,t=tick-zone.fire,rad=zone.shape==='line'?12:21;
    c.save();c.globalAlpha=.86;c.lineWidth=3;
    c.strokeStyle=col;c.fillStyle=col;
    if(realm==='fire'||realm==='forest'||realm==='ice'){
@@ -36,7 +38,7 @@ function draw(ctx,zone,realm,tick,width=500,height=500){
    }
    c.restore();
   };
-  if(g.ArenaDepth?.air)g.ArenaDepth.air(ctx,pt,rise,render,zone.kind==='boss'?14:8);
+  if(g.ArenaDepth?.air)g.ArenaDepth.air(ctx,pt,worldRise,render,zone.kind==='boss'?14:8);
   else render(ctx);
  }
  if(zone.signature)drawUltimate(ctx,zone,realm,tick);

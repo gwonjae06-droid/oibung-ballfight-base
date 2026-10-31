@@ -187,7 +187,7 @@ test('PvP instant effects and health bars use matching perspective projection',(
  assert.ok(!rt.includes("layer?.(canvas,'instantfx')"),'remote FX share fighter occlusion and screen shake');
  assert.match(rt,/ArenaDepth\?\.elevatedPoint\?\./);
  for(const html of [read('index.html'),read('pvp-runtime.html')])
-  assert.match(html,/arena-depth\.js\?v=stone25d1/);
+  assert.match(html,/arena-depth\.js\?v=(?:stone25d1|six-decks1)/);
  assert.match(read('index.html'),/pvp-original-engine\.js\?v=realm-chaos1/);
 });
 test('airborne figures project vertically without moving their physics footprint',()=>{

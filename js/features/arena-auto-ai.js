@@ -215,7 +215,17 @@ function stance(p,foe,data){
 function plan(p,foe,speed,evadeOnly=false){
  const threats=sense(p,foe),intent=stance(p,foe,threats);
  const pn=magnitude(intent.x,intent.y)||1;
- const preferred={x:intent.x/pn,y:intent.y/pn};
+ let preferred={x:intent.x/pn,y:intent.y/pn};
+ // On separated towers, use real stair/bridge nodes instead of trying to
+ // charge across nonwalkable void. Keep the same movement physics at contact.
+ if(g.ArenaTower?.active&&g.ArenaTowerTerrain?.nextWaypoint){
+   const wp=g.ArenaTowerTerrain.nextWaypoint(g.ArenaTower?.state?.realm||p.towerRealm||'time',
+     p,foe,dimension('width'),dimension('height'),g.ArenaTower?.state?.level||1,
+     g.ArenaTower?.encounter?.tick||0);
+   if(wp&&Math.hypot(wp.x-p.x,wp.y-p.y)>9){const dx=wp.x-p.x,dy=wp.y-p.y,d=Math.hypot(dx,dy);
+     preferred={x:dx/d,y:dy/d};
+   }
+ }
  const pad=safeRadius(p)+18,w=dimension('width'),h=dimension('height');
  const base=clamp(finite(speed,2),.6,8);
  const oldX=finite(p.vx),oldY=finite(p.vy),oldSpeed=magnitude(oldX,oldY);

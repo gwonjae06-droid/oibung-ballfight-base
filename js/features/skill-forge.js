@@ -359,7 +359,7 @@ function execute(p,a,target) {
       const aimZ=global.AdvancedCombat?.height?.(near)||0;
       const frames=Math.max(1,Math.hypot(near.x-p.x,near.y-p.y)/Math.max(1,a.speed));
       p.forgeShots.push({x:p.x,y:p.y,z:originZ,heightVelocity:(aimZ-originZ)/frames,
-        vx:Math.cos(t)*a.speed,vy:Math.sin(t)*a.speed,life:Math.ceil(a.radius/a.speed*3),a});
+        vx:Math.cos(t)*a.speed,vy:Math.sin(t)*a.speed,targetNum:near.playerNum,life:Math.ceil(a.radius/a.speed*3),a});
     }
     if(p.forgeShots.length>100)p.forgeShots.splice(0,p.forgeShots.length-100);
   } else if(a.type==='beam'){
@@ -522,7 +522,20 @@ function advanceWorld(p,target){
   tickQueue(p,target);
   for(let i=p.forgeShots.length-1;i>=0;i--){
     const b=p.forgeShots[i];b.prevX=b.x;b.prevY=b.y;b.x+=b.vx;b.y+=b.vy;
-    if(Number.isFinite(b.heightVelocity))b.z=(b.z||0)+b.heightVelocity;
+    if(Number.isFinite(b.heightVelocity)){
+      if(b.targetNum!==undefined){const victim=enemies(p).find(e=>e.playerNum===b.targetNum&&e.hp>0);
+        if(victim){const alt=global.AdvancedCombat?.height?.(victim)||0;
+          const distance=Math.hypot(victim.x-b.x,victim.y-b.y);
+          const remain=Math.max(1,distance/Math.max(1,b.a?.speed||5));
+          const ideal=(alt-(b.z||0))/remain,previous=b.heightVelocity;
+          // Preserve the initial high-altitude aim. Only limit the change
+          // in climb rate; clamping the absolute rate misses jumping targets.
+          b.heightVelocity=Math.max(-30,Math.min(30,previous+
+            Math.max(-.9,Math.min(.9,ideal-previous))));
+        }
+      }
+      b.z=(b.z||0)+b.heightVelocity;
+    }
     b.life--;
     const flightZ=Number.isFinite(b.z)?b.z:0;
     const initialZ=Number.isFinite(b.z)?b.z-(b.heightVelocity||0):flightZ;

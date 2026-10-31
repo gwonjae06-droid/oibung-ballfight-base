@@ -89,7 +89,7 @@ test('local and PvP scripts use the exact same latest auto balance, and the peri
  for(const file of ['index.html','pvp-runtime.html']){
   const html=fs.readFileSync(file,'utf8');
   for(const name of ['skill-forge','arena-balance','forge-expansion','forge-combo-vfx'])
-   assert.ok(html.includes(name+'.js?v=periodic-balance1'),`${file} ${name} cache version`);
+   assert.ok(html.includes(name+'.js?v='+(file==='index.html'&&name==='skill-forge'?'six-decks1':'periodic-balance1')),`${file} ${name} cache version`);
   assert.ok(html.indexOf('skill-visuals.js')<html.indexOf('forge-combo-vfx.js'));
  }
  const src=code('skill-forge');assert.match(src,/forgeVisualFrame.*\+1/);
