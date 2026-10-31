@@ -5,7 +5,8 @@ updateUI=()=>{};syncStopButton=()=>{};
 global.settleRound=()=>{};
 let current=null,accumulator=0,remote=false,targets=null,lastPaint=0;
 let lastSimAt=0,lastSnapshotAt=0,lastSteerAt=0,lastStateSeq=-1;
-let steer=null,fxOutbox=[],fxSequence=0,remoteFxSequence=0,preview=null,fxFrameCarry=0;
+let steer=null,fxOutbox=[],fxSequence=0,remoteFxSequence=0,remoteFxSeen=new Set(),preview=null,fxFrameCarry=0;
+let targetVelocities=null;
 let fxWake=null;
 // Online auto combat must use the same overtime + neutral draw rules as local.
 const MATCH_LIMIT_SECONDS=Math.ceil(((global.ArenaStalemate?.LIMITS?.regular||7200)+
@@ -16,7 +17,7 @@ function setFxWake(fn){fxWake=typeof fn==='function'?fn:null;}
 function captureFx(effect,owner){
   if(remote||!current||current.ended)return;
   const src=players.indexOf(owner);
-  if(fxOutbox.length>=128)fxOutbox.shift();
+  if(fxOutbox.length>=256)fxOutbox.shift();
   fxOutbox.push({
     id:++fxSequence,owner:src,follow:!!effect.source,
     type:effect.type,kind:effect.kind,x:effect.x,y:effect.y,
@@ -33,8 +34,12 @@ function receiveFx(events){
   remote=true;
   let count=0;
   for(const e of events.slice(0,24)){
-    if(!Number.isInteger(e?.id)||e.id<=remoteFxSequence)continue;
-    remoteFxSequence=e.id;
+    if(!Number.isInteger(e?.id)||e.id<=remoteFxSequence-256||remoteFxSeen.has(e.id))continue;
+    remoteFxSequence=Math.max(remoteFxSequence,e.id);
+    remoteFxSeen.add(e.id);
+    // Events travel on a separate realtime channel and can arrive out of order.
+    // A bounded ID window prevents dropped or retransmitted effects flashing twice.
+    if(remoteFxSeen.size>384)for(const id of remoteFxSeen)if(id<=remoteFxSequence-256)remoteFxSeen.delete(id);
     // An optimistic local manual cast was already drawn at keydown.
     if(preview&&e.kind==='cast'&&e.owner===1&&e.type===preview.type&&
       Date.now()-preview.time<650){preview=null;continue;}
@@ -104,10 +109,10 @@ function createRoom(a,b,mode,now,modes){
   p.onlineManual=modes[i]==='manual'||modes.includes('blitz');
   if(p.onlineManual)SkillForge.enableManual(p);
  });
- remote=false;targets=null;steer=null;lastPaint=0;accumulator=0;
+ remote=false;targets=null;targetVelocities=null;steer=null;lastPaint=0;accumulator=0;
  lastSimAt=0;lastSnapshotAt=0;lastSteerAt=0;lastStateSeq=-1;
  global.ArenaMotion?.reset?.(players);
- fxOutbox=[];fxSequence=0;remoteFxSequence=0;preview=null;fxFrameCarry=0;
+ fxOutbox=[];fxSequence=0;remoteFxSequence=0;remoteFxSeen.clear();preview=null;fxFrameCarry=0;
  current={players,started:now,elapsed:0,ended:false,winner:null,modes,pending:[]};
  if(modes.includes('blitz'))current.blitz={
    phase:'plan',round:1,turn:0,maxTurns:24,deadline:now+10000,
@@ -233,6 +238,7 @@ function snapshot(room,full=true){
     remainingMs:Math.max(0,(b.phase==='plan'?b.deadline:b.executionEnd)-Date.now()),
     submitted:b.plans.map(Boolean)}}:{}),
   players:players.map((p,i)=>({x:p.x,y:p.y,hp:p.hp,maxHp:p.maxHp,name:p.name,
+   vx:Math.round((Number(p.vx)||0)*100)/100,vy:Math.round((Number(p.vy)||0)*100)/100,
    color:p.themeColor,mode:room.modes[i],
    ...(Math.abs(global.AdvancedCombat?.height?.(p)||0)>.5?
       {h:Math.round(global.AdvancedCombat.height(p)*10)/10}:{}),
@@ -278,6 +284,7 @@ function receive(s){
  }
  remote=true;lastSnapshotAt=Date.now();
  targets=s.players.map(p=>({x:p.x,y:p.y,h:Number.isFinite(p.h)?p.h:0}));
+ targetVelocities=s.players.map(p=>({vx:Number.isFinite(p.vx)?p.vx:0,vy:Number.isFinite(p.vy)?p.vy:0}));
  if(s.world){
    if(s.world.visualPlayers?.length===2)
      s.world.visualPlayers.forEach((v,i)=>{
@@ -352,9 +359,16 @@ function paint(){
        }
      }
    }else if(!local||lastSnapshotAt>=lastSteerAt){
-     // Wait for a post-release snapshot before correcting stopped movement.
-     p.x+=(targets[i].x-p.x)*alpha;
-     p.y+=(targets[i].y-p.y)*alpha;
+     // Estimate where the fighter is NOW, rather than chasing a 120-ms-old
+     // position sample. Only extrapolate briefly to avoid rubber-banding
+     // during packet loss and hard knockback / blinks.
+     const age=Math.max(0,Math.min(125,now-lastSnapshotAt)),
+       velocity=targetVelocities?.[i]||{vx:0,vy:0};
+     const aimX=targets[i].x+velocity.vx*age/(1000/60),
+       aimY=targets[i].y+velocity.vy*age/(1000/60);
+     const err=Math.hypot(aimX-p.x,aimY-p.y);
+     const smooth=err>100?Math.min(1,alpha*3):Math.min(1,alpha*1.55);
+     p.x+=(aimX-p.x)*smooth;p.y+=(aimY-p.y)*smooth;
    }
    // Smooth vertical corrections at display Hz; game logic remains host-owned.
    const height=targets[i]?.h||0;
