@@ -268,7 +268,7 @@ function update() {
         return globalThis.SkillForge.hit(attacker,defender,action,multiplier,attackZ);
       if(!AdvancedCombat.canHit(attacker,defender,attackZ))return false;
       if(defender.invincible>0||defender.hp<=0)return false;
-      const value=Math.max(0,Math.round((action.damage||0)*multiplier));
+      const value=Math.max(0,Math.round((action.damage||0)*multiplier*(globalThis.ArenaStalemate?.attackFactor?.()??1)));
       if(value){
         defender.hp=Math.max(0,defender.hp-value);defender.invincible=12;
         addFloatingText('-'+value,defender.x,defender.y-28,attacker.forge?.color||'#4b5563',17);
@@ -294,11 +294,11 @@ function update() {
     if(f.alpha<=0)floatingTexts.splice(i,1);
   }
   players.forEach(p=>globalThis.ForgeExpansion?.revive(p));
-  // Long heal/shield loops and zero-offense builds must eventually conclude.
+  // Immortal defense/healing builds remain valid; unbreakable ties end neutrally.
   // Only active physics ticks count; paused matches never advance overtime.
   globalThis.ArenaStalemate?.tick?.(players,!!globalThis.ArenaTower?.active);
   // Track actual lost HP once per physics tick, even at 100x when HUD writes
-  // are batched. This includes DoT and fair percentage overtime damage.
+  // are batched. This includes DoT and any offensive overtime damage.
   players.forEach((p,i)=>{
     const lost=Math.max(0,(healthAtStart[i]||0)-(p.hp||0));
     if(lost>0.001){
