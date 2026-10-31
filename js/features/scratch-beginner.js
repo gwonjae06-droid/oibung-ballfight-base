@@ -52,6 +52,12 @@ panel.innerHTML='<div class="kid-top"><div><span class="kid-overline">MY SPECIAL
  +'</div><div class="kid-feedback" role="status" aria-live="polite">① 기술을 쓸 순간을 고르고, ② 행동 블록을 눌러 보세요.</div>';
 const work=studio.querySelector('#studio-panel-skills');work.insertBefore(panel,workspace);
 studio.classList.add('scratch-friendly-mode');
+// Preserve access to appearance editing even when the code panel is hidden.
+const nav=studio.querySelector('.scratch-main-nav');
+const codeTab=nav?.querySelector('[data-scratch-tab="code"]');
+const looksTab=nav?.querySelector('[data-scratch-tab="looks"]');
+if(codeTab)codeTab.textContent='✏️ 스킬 만들기';
+if(looksTab)looksTab.textContent='🎨 외형 꾸미기';
 const $=sel=>panel.querySelector(sel),get=()=>forge.getDraft();
 let mode='easy';
 function tell(text){$('.kid-feedback').textContent=text;}
