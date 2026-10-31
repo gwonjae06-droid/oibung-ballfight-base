@@ -653,3 +653,23 @@
  .character-studio-dialog .studio-easy-tab{font-size:12px;padding:9px 5px}
  .character-studio-dialog .studio-easy-card{padding:12px}
 }
+
+.character-studio-dialog .studio-easy-card-actions{
+ display:flex;align-items:center;flex-wrap:wrap;justify-content:flex-end;gap:7px;
+}
+.character-studio-dialog .studio-easy-card-actions button[data-easy-preview]{
+ border-color:#85d0c8;background:#234c4a;color:#d5fff8;
+}
+.character-studio-dialog .studio-easy-all{
+ display:grid;gap:9px;padding:12px 14px;border:1px solid #bfa16e;
+ background:#423a2b;border-radius:9px;color:#ffebc3;font-size:12px;line-height:1.55;
+}
+.character-studio-dialog .studio-easy-all strong{font-size:13px}
+.character-studio-dialog .studio-easy-all button{
+ justify-self:start;min-height:40px;padding:8px 11px;border:1px solid #e7c98f;
+ border-radius:8px;background:#6d5532;color:#fff4db;font-weight:800;cursor:pointer;
+}
+@media(max-width:600px){
+ .character-studio-dialog .studio-easy-card-head{align-items:flex-start}
+ .character-studio-dialog .studio-easy-card-actions button{min-height:38px;padding:7px 8px;font-size:11px}
+}
