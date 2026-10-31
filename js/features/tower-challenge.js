@@ -306,7 +306,8 @@ function install(){
       el('ancient-progress').textContent=done+' / 6개 탑 정복'+(done===6?' · 봉인이 해제됐습니다!':' · 모든 탑 10층을 클리어하세요.');
       el('ancient-start').hidden=done!==6;
       el('ancient-lock-note').hidden=done===6;
-      selector.querySelector('.ancient-unlock').dataset.unlocked=done===6?'true':'false';
+      const ancientCard=selector.querySelector('.ancient-unlock');
+      if(ancientCard)ancientCard.dataset.unlocked=done===6?'true':'false';
       screen.style.setProperty('--realm-color',realm().color);
     }
     const choiceHost=el('tower-blessing-choices');
