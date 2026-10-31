@@ -89,3 +89,15 @@ test('expert inspector remains wired to a visible switch and existing block valu
  assert.match(css,/\.studio-easy-panel\[hidden\]/);
  assert.ok(html.indexOf('studio-easy-designer.js')>html.indexOf('studio-modes.js'));
 });
+
+test('guided mode offers a real per-skill motion preview and conversion from all abilities',()=>{
+ const source=read('js/features/studio-easy-designer.js'),w=world();
+ assert.match(source,/data-easy-preview/);
+ assert.match(source,/selectPreviewSkill\?\.\(previewSkill,0\)/);
+ assert.match(source,/data-easy-enable/);
+ let profile=w.SkillForge.normalize({name:'모든 능력',allAbilities:true,
+  skills:[{name:'기본',cooldown:3,actions:[{type:'wave',damage:20}]}]});
+ profile=w.BlockForge.modify(profile,{kind:'enable'});
+ assert.equal(profile.allAbilities,false);
+ assert.equal(profile.skills[0].actions[0].type,'wave');
+});
