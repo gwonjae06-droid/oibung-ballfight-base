@@ -62,7 +62,7 @@ test('host sends one final duplicate FX burst even if no further ability fires',
  const events=[{id:1,type:'wave',kind:'cast',x:120,y:130}];
  const packets=[];
  const o={closed:false,done:false,side:0,connected:true,fxRecent:[],fxRepeatPending:false,
-  lastFx:0,fxTimer:null,rule:{drainFx:()=>events.splice(0,24)},
+  lastFx:0,fxTimer:null,scheduleFx(){},rule:{drainFx:()=>events.splice(0,24)},
   channel:{send(v){packets.push(v);return Promise.resolve();}}};
  const h={window:null,Date:{now:()=>2000},console,Promise,
    setTimeout(){return 1;},clearTimeout(){}};
