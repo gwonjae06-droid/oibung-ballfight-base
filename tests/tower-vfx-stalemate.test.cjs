@@ -39,16 +39,17 @@ test('unbounded healing and permanent shields still end after bounded simulation
  const S=world('js/features/arena-stalemate.js').ArenaStalemate;
  const p=[{hp:240,maxHp:240,invincible:9999},{hp:400,maxHp:400,invincible:9999}];
  let active=false;
- for(let i=0;i<120*60;i++){
-   // Simulate effectively permanent regeneration, without real attacks.
+ for(let i=0;i<S.LIMITS.stagnant+S.LIMITS.deadline+3;i++){
+   // Simulate effectively infinite regeneration and invulnerability.
    p.forEach(a=>{if(a.hp>0)a.hp=Math.min(a.maxHp,a.hp+400);});
    active=S.tick(p)||active;
-   if(p.every(a=>a.hp===0))break;
+   if(S.state.expired)break;
  }
  assert.equal(active,true);
- assert.ok(p.every(a=>a.hp===0),'no build can remain immortal forever');
+ assert.equal(S.state.expired,true,'hard draw deadline resolves permanent heal loops');
  assert.equal(S.state.active,true);
  S.reset();assert.equal(S.state.active,false);
+ assert.equal(S.state.expired,false);
 });
 test('pauses never count as physics ticks and Tower bosses have a longer grace period',()=>{
  const S=world('js/features/arena-stalemate.js').ArenaStalemate;
@@ -65,4 +66,36 @@ test('engine resets the overtime supervisor and only ticks it on active fights',
  assert.match(source,/ArenaStalemate\?\.tick\?\.\(players,/);
  assert.ok(source.indexOf('ArenaStalemate?.tick?.(players')<source.indexOf('const finalAlive='));
  assert.ok(html.indexOf('arena-stalemate.js')<html.indexOf('core/engine.js'));
+});
+
+test('overtime inflicts identical percentages of max HP, slowly, without changing max HP',()=>{
+ const S=world('js/features/arena-stalemate.js').ArenaStalemate;
+ const p=[{hp:200,maxHp:200,invincible:9999},{hp:1500,maxHp:1500,invincible:9999}];
+ for(let i=0;i<S.LIMITS.stagnant;i++)S.tick(p);
+ assert.equal(S.state.active,true);
+ const before=p.map(a=>a.hp),max=p.map(a=>a.maxHp);
+ for(let i=0;i<S.LIMITS.pulse;i++)S.tick(p);
+ assert.equal(S.state.pulses,1);
+ const decrease=p.map((a,i)=>(before[i]-a.hp)/max[i]*100);
+ assert.ok(Math.abs(decrease[0]-decrease[1])<.001);
+ assert.ok(decrease[0]>=1&&decrease[0]<2,'first pulse is gentle');
+ assert.deepEqual(p.map(a=>a.maxHp),max,'no HP-cap mechanic');
+ assert.ok(p.every(a=>a.hp>0),'overtime must not immediately kill both fighters');
+});
+test('overtime tick plays urgency music only at activation and restores it on reset',()=>{
+ const calls=[],w={Math,Map,Set,Number,console,BackgroundMusic:{setOvertime(v){calls.push(v)}}};
+ w.window=w;w.globalThis=w;vm.createContext(w);vm.runInContext(read('js/features/arena-stalemate.js'),w);
+ const S=w.ArenaStalemate,p=[{hp:100,maxHp:100},{hp:100,maxHp:100}];
+ for(let i=0;i<S.LIMITS.stagnant+S.LIMITS.pulse*3;i++)S.tick(p);
+ assert.deepEqual(calls,[true]);S.reset();assert.deepEqual(calls,[true,false]);
+});
+test('overtime and health-bar visuals are present in both current and regenerated HUD cards',()=>{
+ const html=read('index.html'),engine=read('js/core/engine.js'),css=read('css/style.css');
+ assert.match(html,/id="arena-overtime-banner"/);
+ assert.match(html,/id="p1-hp-trail"/);
+ assert.match(engine,/hp-bar-trail/);
+ assert.match(engine,/hp-impact-/);
+ assert.match(engine,/_hudHitSerial/);
+ assert.match(css,/\.hp-bar-trail/);
+ assert.match(css,/arena-overtime-glow/);
 });
