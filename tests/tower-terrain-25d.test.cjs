@@ -137,3 +137,30 @@ test('dynamic terrain heights are synchronized between movement and rendered pla
  const expected=T.heightAt('time',8,p.x,p.y,500,500,210);
  assert.ok(Math.abs(p.towerGroundZ-expected*.16)<.001);
 });
+
+test('2.5D warnings stand above the projected arena instead of being flat text',()=>{
+ const w={Math,Map,Set,Number,console};w.globalThis=w;w.window=w;
+ const raised=[];
+ w.ArenaDepth={air(ctx,p,height,draw,radius){raised.push({p,height,draw});}};
+ vm.createContext(w);
+ vm.runInContext(read('js/features/tower-pattern-25d.js'),w);
+ const fx=w.ArenaTowerPattern3D;
+ for(const shape of [
+  {shape:'circle',x:200,y:220,r:75},
+  {shape:'ring',x:250,y:250,inner:65,r:140},
+  {shape:'line',x:250,y:250,angle:.6,width:50,length:500}
+ ]){
+  const z={...shape,kind:'environment',label:'위험 경고',born:1,fire:91,end:130};
+  const {c}=painter();const initial=raised.length;
+  assert.equal(fx.warning(c,z,'time',40,500,500),true);
+  assert.ok(raised.length-initial>=5,'upright posts and a floating countdown required');
+  assert.ok(raised.slice(initial).every(x=>x.height>=20));
+  for(const entry of raised.slice(initial))assert.doesNotThrow(()=>entry.draw(c));
+  const emitted=raised.length;
+  assert.equal(fx.warning(c,z,'time',95,500,500),false);
+  assert.equal(raised.length,emitted,'no warning after active damage begins');
+ }
+ const env=read('js/features/tower-environment.js'),boss=read('js/features/tower-encounters.js');
+ assert.match(env,/ArenaTowerPattern3D\?\.warning\?\.\(/);
+ assert.match(boss,/ArenaTowerPattern3D\?\.warning\?\.\(/);
+});
