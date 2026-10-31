@@ -134,7 +134,10 @@
     if(last===null)last=time;
     const delta=Math.min(100,Math.max(0,time-last));last=time;
     const step=1000/60;
-    if(isPlaying&&!isGameOver){
+    // Wall-clock countdown is independent of 1x/100x simulation time.
+    // Keep painting the ready fighters while no skills, hazards or hits advance.
+    const countdownBlocked=isPlaying&&!isGameOver&&!!window.ArenaCountdown?.tick?.(time);
+    if(isPlaying&&!isGameOver&&!countdownBlocked){
       const multiplier=selectedSpeed();
       // Do not try to catch up indefinitely after a tab stalls or a heavy
       // 100x fight: preserve real physics steps but lower effective speed.
@@ -169,6 +172,10 @@
     requestAnimationFrame(gameLoop);
   };
   speed.onchange=()=>{acc=0;last=null;};
-  document.addEventListener('visibilitychange',()=>{acc=0;last=null;});
+  document.addEventListener('visibilitychange',()=>{
+    acc=0;last=null;
+    if(document.hidden)window.ArenaCountdown?.pause?.();
+    else if(isPlaying)window.ArenaCountdown?.resume?.();
+  });
   requestAnimationFrame(gameLoop);
 })();
