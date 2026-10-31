@@ -128,7 +128,12 @@ function replaceWithTemplate(t,random=false){
  if(!t||!migrate())return;
  if(program().length>1&&!safeConfirm('현재 만든 블록을 새 예시로 바꿀까요? 이전 내용은 되돌릴 수 있어요.'))return;
  const sequence=random?[...t.sequence].sort(()=>Math.random()-.5):t.sequence;
- const code=sequence.map(nodeOf);
+ const code=[];
+ for(const id of sequence){
+  if(code.length&&['dash','blink','retreat'].includes(sequence[sequence.indexOf(id)-1]))
+   code.push({kind:'waitUntil',condition:'move',timeout:3});
+  code.push(nodeOf(id));
+ }
  const name=random?'깜짝 필살기':t.name.replace(/[!]/g,'');
  setProgram(code,{trigger:t.trigger,name,cooldown:5},'짜잔! '+name+'를 만들었어요. 블록을 더 눌러 바꿀 수도 있어요.');
  g.CharacterStudioWorkspace?.selectPreviewSkill?.('all');
