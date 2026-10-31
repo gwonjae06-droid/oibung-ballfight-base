@@ -107,15 +107,8 @@ function step(realm,level,roster,width=500,height=500,tick=0){
   if(!p||p.hp<=0)continue;
   const goal=heightAt(realm,level,p.x,p.y,width,height,tick);
   p.towerGroundZ=(Number(p.towerGroundZ)||0)+(goal-(Number(p.towerGroundZ)||0))*.16;
-  // Modest, realm-specific environmental forces, never direct untelegraphed damage.
-  const n=nodes(realm,level,width,height,tick)[0],d=Math.hypot(p.x-n.x,p.y-n.y);
-  if(realm==='ice'&&d<n.r*.85){p.slowTimer=Math.max(p.slowTimer||0,5);p.slowMultiplier=.92;}
-  if(realm==='storm'&&d<n.r*.9){p.vx=clamp((p.vx||0)+.07,-8,8);}
-  if(realm==='space'&&d<n.r*.82&&p.vz>1){p.vz=Math.min(15,p.vz+.07);}
-  if(realm==='time'&&d<n.r*.88&&p.forgeTicks&&tick%4===0){
-    p.forgeTicks=p.forgeTicks.map(t=>Math.min(5000,t+1));
-  }
-  if(realm==='forest'&&d<n.r*.8){p.slowTimer=Math.max(p.slowTimer||0,5);p.slowMultiplier=.94;}
+  // Terrain owns only height; the separate environment engine paints and
+  // applies clearly telegraphed realm effects. No hidden passive debuffs.
  }
 }
 function clear(roster){
