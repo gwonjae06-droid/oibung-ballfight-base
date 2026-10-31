@@ -199,12 +199,16 @@ function stance(p,foe,data){
  // collision at a favorable moment. The normal collision solver owns bounce.
  if(profile.role==='melee'&&profile.ready&&d>=58&&d<135&&!windup&&
     Math.floor(finite(p._aiClock)/105)%3===1)mode='clash';
- const pressure=mode==='clash'?1.16:mode==='approach'?1:mode==='bait'?-.84:mode==='recover'?-.8:
+ const order=g.ArenaTowerTactics?.modeFor?.(p)||'';
+ const pressure=order==='attack'?1.35:order==='evade'?-1.12:order==='hold'?
+   (d>profile.preferred+15?.6:d<profile.preferred-15?-.7:0):
+   mode==='clash'?1.16:mode==='approach'?1:mode==='bait'?-.84:mode==='recover'?-.8:
    mode==='reposition'?-.58:d>profile.preferred+9?.16:0;
  // Commit to one flank until a new tactical beat, not a direction flip each tick.
  const tick=finite(p._aiClock),beat=Math.floor((tick+(p.playerNum||1)*23)/95);
  const spin=((beat+(p.playerNum||1))%2)?1:-1;
- const sidestep=mode==='clash'?.14:mode==='approach'?.26:mode==='bait'?.48:mode==='recover'?.36:
+ const sidestep=order==='attack'?.12:order==='evade'?.65:order==='hold'?.85:
+   mode==='clash'?.14:mode==='approach'?.26:mode==='bait'?.48:mode==='recover'?.36:
    mode==='reposition'?.60:.9;
  const sideX=-dy/d*spin,sideY=dx/d*spin;
  let x=dx/d*pressure+sideX*sidestep,y=dy/d*pressure+sideY*sidestep;
