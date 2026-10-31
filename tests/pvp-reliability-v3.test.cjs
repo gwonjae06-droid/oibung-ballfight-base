@@ -83,3 +83,21 @@ test('stale rooms are closed without deleting match history or touching active g
  assert.match(sql,/ticket_a=p_ticket/);
  assert.match(sql,/ticket_b=p_ticket/);
 });
+
+test('oversized world snapshot preserves useful guest objects instead of discarding every effect',()=>{
+ const h=mock(),t=h.t;t.side=0;t.peerReady=true;
+ t.lastStep=3000;t.lastPeer=3000;t.lastBroadcast=0;t.lastFull=0;t.sending=false;
+ const heavy='V'.repeat(900);
+ const rich={type:'state',finished:false,winner:null,players:[],
+   world:{effects:Array.from({length:85},(_,i)=>({i,description:heavy})),
+    floatingTexts:[],shockwaves:[],objects:[],projectiles:[{x:5,y:8}],
+    visualPlayers:[{forgeShots:[{x:6,y:9,vx:2,vy:0}],forgeZones:[],forgeOrbs:[],
+      poisonTears:[],waves:[],projectiles:[]}]}};
+ t.rule={step(){},snapshot(){return rich;}};
+ h.now(3000);t.advance(t.rule);
+ const packet=h.packets.find(x=>x.event==='state')?.payload;
+ assert.ok(packet?.world,'guest must still see its important projectile when decoration is huge');
+ assert.ok(JSON.stringify(packet).length<=40*1024,'respects Supabase free-tier payload cap');
+ assert.ok(packet.world.projectiles.length);
+ assert.ok(packet.world.visualPlayers[0].forgeShots.length);
+});
