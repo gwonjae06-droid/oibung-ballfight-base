@@ -255,6 +255,7 @@ function hit(p,e,action,multiplier=1,attackZ) {
     addFloatingText('-'+d,e.x,e.y-30,tint,17);
     global.ImpactPhysics?.hit?.(p,e,d,{knockback:action.knockback||0,color:tint,type:action.type});
   }
+  const priorStatus={slow:e.slowTimer||0,dot:e.bfDot||0,effect:e.forgeEffects?.[action.status]?.time||0};
   const controlPower=global.ForgeArchetypes?.control?.(p)??1;
   if(!e.isConstruct&&action.status==='ice'){
     e.slowTimer=Math.max(e.slowTimer||0,Math.round(90*controlPower));
@@ -278,7 +279,11 @@ function hit(p,e,action,multiplier=1,attackZ) {
     action.status==='poison'&&e.bfDot>0?'poison':
     e.forgeEffects?.[action.status]?.time>0?action.status:'none';
   if(d>0)global.SignatureLive?.record?.(p,'hit');
-  if(appliedStatus!=='none')global.SignatureLive?.record?.(p,'status');
+  if(appliedStatus!=='none'&&(
+    (action.status==='ice'&&(e.slowTimer||0)>priorStatus.slow)||
+    (['fire','poison'].includes(action.status)&&(e.bfDot||0)>priorStatus.dot)||
+    ((e.forgeEffects?.[action.status]?.time||0)>priorStatus.effect)
+  ))global.SignatureLive?.record?.(p,'status');
   global.ArenaBattleDirector?.skillHit?.(p,e,action,Math.min(hpBeforeHit,d),appliedStatus);
   if(action.knockback>0&&!global.ImpactPhysics){const dx=e.x-p.x,dy=e.y-p.y,dist=Math.hypot(dx,dy)||1;e.vx+=dx/dist*action.knockback;e.vy+=dy/dist*action.knockback;}
   global.SkillVisuals?.impact(p,e,action); // Only after damage/status actually connects.
