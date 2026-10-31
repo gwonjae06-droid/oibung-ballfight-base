@@ -318,7 +318,7 @@ function install(){
       info.textContent=(global.ArenaEncounter?.patternNames?.(realmId)||[realm().pattern]).join(' · ');
       skillHost.append(info);
     }
-    for(const ability of (ancient||(realms&&f.boss)?[]:makeEnemy(level).skills)){
+    for(const ability of (ancient?[]:makeEnemy(level).skills)){
       const info=skillDetail(ability);
       const card=doc.createElement('details');
       card.className='tower-enemy-skill';
