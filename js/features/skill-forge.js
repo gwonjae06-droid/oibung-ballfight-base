@@ -2,7 +2,7 @@
 (function(global){
 'use strict';
 const STORE='oibung-forge-v3', TYPE=global.ActionRegistry?.TYPE||{wave:'충격파',shot:'투사체',beam:'레이저',bolt:'낙뢰',dash:'돌진',blink:'순간이동',heal:'회복',shield:'방어막',pull:'흡입',orbit:'회전 소환체',zone:'지속 장판'};
-const TRIGGER={auto:'주기적으로',lowhp:'체력 이하',contact:'접촉 시',damaged:'피격 시',danger:'보스 패턴 예고 시',dodge:'보스 패턴 회피 성공 시'};
+const TRIGGER={auto:'주기적으로',lowhp:'체력 이하',contact:'접촉 시',damaged:'피격 시',danger:'보스 패턴 예고 시',dodge:'보스 패턴 회피 성공 시',basicHit:'기본 공격 명중 시',basicStatus:'기본 공격 상태이상 성공 시'};
 const STATUS={none:'없음',ice:'둔화',fire:'화상',poison:'중독'};
 Object.assign(TYPE,global.ForgeExpansion?.TYPES||{});
 Object.assign(TYPE,global.AdvancedCombat?.TYPES||{});
@@ -81,6 +81,7 @@ function normalize(value,{towerEnemy=false}={}){
     name:clean(value.name,14)||'커스텀 파이터',blurb:clean(value.blurb,90),
     artKey:clean(value.artKey||'',52).replace(/[^a-zA-Z0-9_-]/g,''),
     archetype,
+    basicAttack:base?global.BasicAttacks?.normalize?.(value.basicAttack,archetype):undefined,
     color:color(value.color),effectColor:color(value.effectColor||value.color),
     hp:base?base.hp:Math.round(number(value.hp,140,towerEnemy?8000:500,250)),
     speed:base?base.speed:number(value.speed,.6,5,1.8),
@@ -278,12 +279,23 @@ function hit(p,e,action,multiplier=1,attackZ) {
     action.status==='fire'&&e.bfDot>0?'fire':
     action.status==='poison'&&e.bfDot>0?'poison':
     e.forgeEffects?.[action.status]?.time>0?action.status:'none';
-  if(d>0)global.SignatureLive?.record?.(p,'hit');
+  if(d>0){
+    global.SignatureLive?.record?.(p,'hit');
+    if(action.basicAttack)global.SignatureLive?.record?.(p,'basicHit');
+    if(action.basicAttack&&action.basicLifesteal&&p.hp>0){
+      const heal=Math.min(4,Math.max(1,Math.round(d*.16)));
+      const allowed=global.ArenaBalance?.healingWindow?.(p,heal)??heal;
+      p.hp=Math.min(p.maxHp,p.hp+allowed);
+    }
+  }
   if(appliedStatus!=='none'&&(
     (action.status==='ice'&&(e.slowTimer||0)>priorStatus.slow)||
     (['fire','poison'].includes(action.status)&&(e.bfDot||0)>priorStatus.dot)||
     ((e.forgeEffects?.[action.status]?.time||0)>priorStatus.effect)
-  ))global.SignatureLive?.record?.(p,'status');
+  )){
+    global.SignatureLive?.record?.(p,'status');
+    if(action.basicAttack)global.SignatureLive?.record?.(p,'basicStatus');
+  }
   global.ArenaBattleDirector?.skillHit?.(p,e,action,Math.min(hpBeforeHit,d),appliedStatus);
   if(action.knockback>0&&!global.ImpactPhysics){const dx=e.x-p.x,dy=e.y-p.y,dist=Math.hypot(dx,dy)||1;e.vx+=dx/dist*action.knockback;e.vy+=dy/dist*action.knockback;}
   global.SkillVisuals?.impact(p,e,action); // Only after damage/status actually connects.
@@ -501,6 +513,9 @@ function update(p,target){
    else if(v>.001&&Number.isFinite(v)){const next=v+(cruise-v)*(v>cruise?.075:.16);p.vx=p.vx/v*next;p.vy=p.vy/v*next;}
   else{p.vx=cruise;p.vy=0;}
   tickSkills(p);
+  // Basic attacks are deliberately separate from the one signature cooldown.
+  // They still pass through execute()/hit() and honor physical collision.
+  global.BasicAttacks?.tick?.(p,target,{execute});
   // Repeat tiny ornamental pulses without triggering extra damage, healing or
   // CC. The true combat cooldown is unchanged (at least 0.2 s).
   p._forgeVisualFrame=(p._forgeVisualFrame||0)+1;
@@ -539,6 +554,8 @@ function update(p,target){
       if(active&&global.ArenaAutoAI?.canCast?.(p,target,s)!==false&&cast(p,s,target,i)){
         p.forgeTicks[i]=0;
         if(s.trigger==='dodge')p._forgeDodgeConsumed=p._forgeDodgeSerial||0;
+        if(s.trigger==='basicHit')p._scratchBasicHitConsumed=p._scratchEvents?.basicHit?.count||0;
+        if(s.trigger==='basicStatus')p._scratchBasicStatusConsumed=p._scratchEvents?.basicStatus?.count||0;
       }
     });
   }
