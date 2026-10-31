@@ -56,6 +56,9 @@ test('basic attacks are real independent combat actions, only when in range and 
  const legacy=hero('legacy');
  for(let i=0;i<200;i++)g.BasicAttacks.tick(legacy,foe,{execute:()=>events.push('legacy')});
  assert.equal(events.length,count,'legacy characters receive no surprise attack');
+ const classic=hero('melee');classic.forge.signatureVersion=0;
+ for(let i=0;i<200;i++)g.BasicAttacks.tick(classic,foe,{execute:()=>events.push('classic')});
+ assert.equal(events.length,count,'classic four-skill fighters keep their original attacks only');
  const tower=hero('melee');tower.towerEnemy=true;
  for(let i=0;i<200;i++)g.BasicAttacks.tick(tower,foe,{execute:()=>events.push('tower')});
  assert.equal(events.length,count,'tower enemies preserve authored skills');
@@ -100,7 +103,7 @@ test('new fighter stores attack variants; old or enemy data preserves previous s
  const reload=g.SkillForge.normalize(JSON.parse(JSON.stringify(newProfile)));
  assert.equal(reload.basicAttack.effect,'slow');
  assert.equal(reload.basicAttack.tempo,'heavy');
- const original=g.SkillForge.normalize({name:'old',skills:[{name:'old',trigger:'auto',cooldown:3,actions:[{type:'wave',damage:18}]}]});
+ const original=g.SkillForge.normalize({name:'old',archetype:'melee',skills:[{name:'old',trigger:'auto',cooldown:3,actions:[{type:'wave',damage:18}]}]});
  assert.equal(original.signatureVersion,0);
  assert.equal(original.basicAttack,undefined);
  const enemy=g.SkillForge.normalize(profile('melee'),{towerEnemy:true});
