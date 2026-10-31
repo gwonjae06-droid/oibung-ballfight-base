@@ -14,19 +14,26 @@ test('PvE is visible as a standalone lobby destination, never a Tower tab',()=>{
  assert.match(router,/if\(where==='pve'&&global\.ArenaTower\?\.active\)/);
  assert.match(router,/stopMatch\(\)/);
 });
-test('Tower only reveals critical setup; optional floor, enemy and control info are collapsible',()=>{
+test('Tower displays one compact encounter setup with opponent skills on demand',()=>{
  const tower=read('js/features/tower-challenge.js');
- const styles=read('css/tower-mine-ui.css');
- assert.match(tower,/<details class="tower-disclosure" id="tower-progress-details">/);
- assert.match(tower,/<details class="tower-disclosure" id="tower-enemy-details">/);
- assert.match(tower,/<details class="tower-disclosure" id="tower-help-details">/);
- assert.doesNotMatch(tower,/<details class="tower-disclosure" id="tower-[^"]+" open/);
+ const styles=read('css/tower-realms.css');
+ assert.match(tower,/<details class="tower-opponent" id="tower-enemy-details">/);
+ assert.match(tower,/<summary class="tower-enemy">/);
+ assert.match(tower,/id="tower-enemy"/);
+ assert.match(tower,/id="tower-skill-count"/);
+ assert.match(tower,/id="tower-enemy-skills"/);
+ assert.match(tower,/id="tower-hero"/);
+ assert.doesNotMatch(tower,/id="tower-progress-details"/);
+ assert.doesNotMatch(tower,/id="tower-help-details"/);
+ assert.doesNotMatch(tower,/id="tower-chip-/);
+ assert.doesNotMatch(tower,/tower-ready-preview/);
  assert.match(tower,/id="tower-start"/);
  assert.match(tower,/id="tower-pause"/);
  assert.match(tower,/id="tower-abandon"/);
  assert.match(tower,/message\.hidden=stage==='fighting'\|\|stage==='between'/);
  assert.match(tower,/start\.hidden=stage==='fighting'\|\|stage==='between'/);
- assert.match(styles,/#screen-tower details\.tower-disclosure:not\(\[open\]\)>/);
+ assert.match(styles,/#screen-tower details\.tower-opponent/);
+ assert.match(styles,/#screen-tower \.tower-opponent-detail/);
 });
 test('Shared engine appears on both PvE and Tower without duplicate buttons',()=>{
  const css=read('css/app-shell.css');
