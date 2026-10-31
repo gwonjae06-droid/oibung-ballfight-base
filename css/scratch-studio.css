@@ -65,6 +65,11 @@
 .scratch-node input[type=number]{width:70px}
 .scratch-node-if select{background:#ffebc5;border-color:#f1d296;color:#432a07;max-width:210px}
 .scratch-node-repeat input,.scratch-node-repeat select,.scratch-node-wait input{background:#ffe9b8;border-color:#f6d38b;color:#472a0b}
+.scratch-advanced{flex:0 0 100%;margin:3px 0 0!important;padding:4px 6px!important;background:#2b1e3b88!important;border:1px solid #ffffff2d!important;border-radius:7px!important}
+.scratch-advanced>summary{cursor:pointer;font-size:.74rem;color:#fff9;padding:3px 6px}
+.scratch-advanced-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;padding:9px 3px 3px}
+.scratch-advanced-fields label{display:flex;flex-direction:column;align-items:stretch;gap:4px;min-width:0}
+.scratch-advanced-fields select,.scratch-advanced-fields input{width:100%;max-width:100%;min-height:34px}
 .scratch-node-controls{display:inline-flex;align-items:center;gap:3px;margin-left:auto}
 .scratch-node-controls button,.scratch-node-line>button{cursor:pointer;border:1px solid #ffffff68;border-radius:6px;color:white;background:#0002;min-width:28px;min-height:30px;font-size:.78rem}
 .scratch-node-controls button:hover{background:#ffffff28}
