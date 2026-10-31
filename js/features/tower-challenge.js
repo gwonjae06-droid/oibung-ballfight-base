@@ -171,6 +171,7 @@ function install(){
    +'<div id="tower-floor-options" class="tower-floor-options" aria-label="도전할 층 선택"></div></details></div>'
    +'<strong id="tower-best">최고 0F</strong></div>'
    +'<p class="tower-rule" id="tower-rule"></p>'
+   +'<p class="tower-weakpoint-hint" id="tower-weakpoint-hint" hidden></p>'
    +'<div class="tower-fighter-pick">'
    +'<label class="tower-hero-choice" for="tower-hero"><span>출전 캐릭터</span><select id="tower-hero"></select></label>'
    +'<details class="tower-opponent" id="tower-enemy-details">'
@@ -379,10 +380,11 @@ function install(){
         options.append(b);
       }}}
     el('tower-rule').textContent=ancient?'보스 HP 3,000 · 팔과 촉수를 공격':realm()?.terrain+(blessings.length?' · 기연 '+blessings.length+'개':'')+(routeSelected?' · '+ROUTES[routeSelected].name:'');
-    let weakpoint=el('tower-weakpoint-hint');
-    if(!weakpoint){weakpoint=doc.createElement('p');weakpoint.id='tower-weakpoint-hint';weakpoint.className='tower-weakpoint-hint';el('tower-rule')?.after(weakpoint);}
-    weakpoint.hidden=ancient||!f.boss;
-    if(!weakpoint.hidden)weakpoint.textContent='보스 약점: '+(WEAKPOINT[realmId]||'특수')+'의 위험 지대를 연속 두 번 피하면 3초 동안 받는 피해가 50% 증가합니다.';
+    const weakpoint=el('tower-weakpoint-hint');
+    if(weakpoint){
+      weakpoint.hidden=ancient||!f.boss;
+      if(!weakpoint.hidden)weakpoint.textContent='보스 약점: '+(WEAKPOINT[realmId]||'특수')+'의 위험 지대를 연속 두 번 피하면 3초 동안 받는 피해가 50% 증가합니다.';
+    }
     el('tower-enemy').textContent=ancient?'☽ 고대의 존재':(f.boss?'👑 ':'')+f.name;
     el('tower-enemy-info').textContent=ancient?'HP 3,000 · 3페이즈 · 팔·촉수 공격 가능':realms&&f.boss?'HP '+f.hp+' · 패턴 공격 · 2페이즈':'HP '+f.hp+' · 공격 '+f.damage+' · 속도 '+f.speed.toFixed(1);
     el('tower-best').textContent='최고 '+best+'F';
@@ -568,9 +570,9 @@ function install(){
     level++;
     try{
       prepareFight();
-      routePending=[3,6,8].includes(cleared);routeSelected='';
       stage='between';
       retainReport(justFinished);
+      routePending=[3,6,8].includes(cleared);routeSelected='';
       if(realms&&[2,4,7].includes(cleared))offers=realms.choices(realmId,blessings);
       message.textContent='✓ '+cleared+'층 클리어! '+level+'층이 준비됐습니다. 시작 버튼을 눌러 진행하세요.';
       show();global.ArenaScreenRouter?.refresh?.();
