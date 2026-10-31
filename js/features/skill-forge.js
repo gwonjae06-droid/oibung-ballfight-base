@@ -591,8 +591,8 @@ function manualCast(p,index,target){
   if(global.ForgeExpansion?.blocked(p))return false;
   if(!target||target.hp<=0)return false;
   if((p.forgeTicks[i]||0)<cooldownFrames(p,s))return false;
+  if(!cast(p,s,target,i))return false;
   p.forgeTicks[i]=0;
-  cast(p,s,target,i);
   return true;
 }
 // Existing projectiles, summons, cooldown-independent sequences and zones
@@ -668,7 +668,7 @@ function contact(p,e){
   if(global.ForgeExpansion?.blocked(p))return;
   p.forge.skills.forEach((s,i)=>{
     if(global.ForgeExpansion?.blocked(p))return;
-    if(s.trigger==='contact'&&p.forgeTicks[i]>=cooldownFrames(p,s)){p.forgeTicks[i]=0;cast(p,s,e,i);}
+    if(s.trigger==='contact'&&p.forgeTicks[i]>=cooldownFrames(p,s)&&cast(p,s,e,i))p.forgeTicks[i]=0;
   });
 }
 function drawFighter(p,renderCtx){
