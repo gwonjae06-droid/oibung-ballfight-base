@@ -26,7 +26,7 @@ test('the panoramic scene is responsive and has keyboard focus',()=>{
  assert.match(css,/overflow-x:auto/);
  assert.match(css,/:focus-visible/);
  assert.match(code,/tabindex="0" role="region"/);
- assert.match(code,/aria-label="'+r\.name+' 입장"/);
+ assert.ok(code.includes(`aria-label="'+r.name+' 입장"`));
 });
 test('original brass fanfare plays on tower entry without bypassing mute',()=>{
  const audio=read('js/features/tower-gateway-audio.js');
