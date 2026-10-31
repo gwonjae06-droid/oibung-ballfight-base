@@ -40,5 +40,57 @@ function draw(ctx,zone,realm,tick,width=500,height=500){
   else render(ctx);
  }
 }
-g.ArenaTowerPattern3D={draw};
+// Raised warning gantry: 2.5D posts float ABOVE the projected footprint.
+// Hit detection always stays in world-space; only the presentation changes.
+function warning(ctx,z,realm,tick,width=500,height=500){
+ if(!ctx||!z||tick>=z.fire||tick>=z.end)return false;
+ const remaining=Math.max(0,z.fire-tick),
+   total=Math.max(1,z.fire-(z.born||0)),charge=1-Math.min(1,remaining/total);
+ const col=COLOR[realm]||'#ffebbd',poles=[];
+ if(z.shape==='line'){
+   for(const t of [-.43,-.15,.15,.43]){
+     const a=z.angle||0,d=(z.length||Math.max(width,height))*t;
+     poles.push({x:z.x+Math.cos(a)*d,y:z.y+Math.sin(a)*d});
+   }
+ }else{
+   const r=z.shape==='ring'?z.r:Math.max(20,z.r||60);
+   for(let i=0;i<6;i++){
+     const a=i*Math.PI/3+(z.shape==='ring'?.18:0);
+     poles.push({x:z.x+Math.cos(a)*r,y:z.y+Math.sin(a)*r});
+   }
+ }
+ const lift=26+charge*19,glowAlpha=.30+charge*.55;
+ for(const [i,p] of poles.entries()){
+   const height=lift+(i%2)*6;
+   const paint=c=>{
+     c.save();c.globalAlpha=glowAlpha;
+     // Each post is a TRUE upright sprite in the depth-sorted air pass.
+     c.fillStyle='rgba(8,14,34,.76)';
+     c.strokeStyle=col;c.lineWidth=2.1;
+     c.beginPath();c.moveTo(p.x-6,p.y);c.lineTo(p.x-6,p.y-height*.84);
+     c.lineTo(p.x,p.y-height-7);c.lineTo(p.x+6,p.y-height*.84);
+     c.lineTo(p.x+6,p.y);c.closePath();c.fill();c.stroke();
+     c.lineWidth=1.1;c.strokeStyle='#ffffff';
+     c.beginPath();c.moveTo(p.x,p.y-height-4);c.lineTo(p.x,p.y-8);c.stroke();
+     c.beginPath();c.arc(p.x,p.y-height-4,3.8+Math.sin(tick*.18+i)*1.8,0,T);c.fillStyle=col;c.fill();
+     c.restore();
+   };
+   if(g.ArenaDepth?.air)g.ArenaDepth.air(ctx,p,height,paint,0);
+   else paint(ctx);
+ }
+ // The countdown stands upright in world depth instead of being squashed
+ // into the flat world texture alongside the warning disk.
+ const anchor={x:z.x,y:z.y};
+ const paintLabel=c=>{
+  const text=(z.label||'위험 예고')+' '+(remaining/60).toFixed(1)+'s';
+  c.save();c.font='bold 13px system-ui';c.textAlign='center';c.textBaseline='middle';
+  c.lineWidth=4;c.strokeStyle='#0c1726';c.fillStyle='#ffffff';
+  c.strokeText(text,anchor.x,anchor.y-lift-21);
+  c.fillText(text,anchor.x,anchor.y-lift-21);c.restore();
+ };
+ if(g.ArenaDepth?.air)g.ArenaDepth.air(ctx,anchor,lift+12,paintLabel,0);
+ else paintLabel(ctx);
+ return true;
+}
+g.ArenaTowerPattern3D={draw,warning};
 })(globalThis);
