@@ -59,6 +59,6 @@ test('delete still uses confirmation and never deletes mid-battle',()=>{
   const forge=read('js/features/skill-forge.js');
   assert.ok(forge.includes('if(roundStarted&&!isGameOver){report('));
   assert.ok(forge.includes("if(!confirm(selected.name+' 캐릭터를 삭제하시겠습니까?'))return;"));
-  assert.ok(forge.includes('if(remove(id)){reRollMatch();roster();report('));
+  assert.ok(forge.includes('if(remove(id)){if(editingId===id)cancelEdit();reRollMatch();roster();report('));
   assert.ok(forge.includes('persist();refreshList();return true;'));
 });
