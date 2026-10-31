@@ -69,18 +69,17 @@ test('actual router constructs all six routes and preserves original game widget
   assert.equal(x.tools.parent.id,'pve-free-slot');
   assert.equal(x.ranking.parent.id,'ranking-power');
   assert.equal(x.gallery.parent.id,'ranking-shared');
-  assert.equal(x.market.parent.id,'stock-screen-slot');
-  assert.equal(x.mine.parent.id,'mine-screen-slot');
-  assert.equal(x.cosmetic.parent.id,'screen-mine');
+  assert.equal(x.cosmetic.parent.id,'character-cosmetic-slot');
   assert.ok(x.cosmetic.classList.contains('mine-gacha'));
   assert.equal(x.dialog.parent.id,'character-design-slot');
   const visited=[];
-  for(const id of ['tower','pve','character','ranking','mine','stock','lobby']){
+  for(const id of ['tower','pve','character','ranking','lobby']){
     assert.equal(r.go(id),id);
     visited.push(r.active);
     assert.equal(x.byId.get('screen-'+id).hidden,false);
   }
-  assert.deepEqual(visited,['tower','pve','character','ranking','mine','stock','lobby']);
+  assert.deepEqual(visited,['tower','pve','character','ranking','lobby']);
+  assert.equal(r.go('mine'),'lobby');assert.equal(r.go('stock'),'lobby');
   assert.equal(x.byId.get('screen-tower').hidden,true);
   assert.equal(x.events.includes('studio:open'),true);
   assert.equal(x.events.includes('studio:close'),true);
@@ -105,17 +104,13 @@ test('PvE is a standalone route; rankings keep their underlying data',()=>{
     assert.equal(x.byId.get(show).hidden,false);
     assert.equal(x.ranking.parent.id,'ranking-power','original ranking persists');
   }
-  r.go('mine');r.mineTab('gacha');
-  assert.equal(x.cosmetic.hidden,false);
-  assert.equal(x.byId.get('mine-screen-slot').hidden,true);
-  r.mineTab('mine');
-  assert.equal(x.cosmetic.hidden,true);
-  assert.equal(x.byId.get('mine-screen-slot').hidden,false);
   r.go('character');
   r.characterTab('cosmetics');
   assert.equal(x.byId.get('character-cosmetic-slot').hidden,false);
+  assert.equal(x.cosmetic.hidden,false);
   r.characterTab('design');
   assert.equal(x.byId.get('character-design-slot').hidden,false);
+  assert.equal(x.cosmetic.hidden,true);
 });
 
 test('character route embeds a single editor without an inner duplicate heading or tabs',()=>{

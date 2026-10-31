@@ -3,7 +3,7 @@
  * Screen switching neither clones widgets nor reloads the document. */
 (function(global){
 'use strict';
-const ROUTES=['lobby','tower','pve','pvp','character','ranking','mine','stock'];
+const ROUTES=['lobby','tower','pve','pvp','character','ranking'];
 const NAMES={lobby:'메인 로비',tower:'도전의 탑',pve:'PvE · 자유 대전',pvp:'온라인 PvP',character:'캐릭터 설계',
  ranking:'캐릭터 랭킹',mine:'광산',stock:'주식'};
 const ICONS={tower:'⚔',pve:'🎯',pvp:'⚡',character:'✦',ranking:'★',mine:'⛏',stock:'▥'};
@@ -51,9 +51,7 @@ function install(){
    ['pve','PvE · 자유 대전','원하는 파이터를 선택해 AI 전투를 즐기세요.','자유 대전 · 2~10인 · 실험 전투'],
    ['pvp','온라인 PvP','커스텀 파이터끼리 실시간 자동전투로 맞붙습니다.','1:1 랜덤 매칭 · 온라인 서버 필요'],
    ['character','캐릭터 설계','블록으로 스킬을 만들고 외형을 꾸며 보세요.','스킬 코드 · 미리보기 · 가챠'],
-   ['ranking','캐릭터 랭킹','공유 파이터와 내 탑 기록을 확인하세요.','파워랭킹 · 기록 · 공유'],
-   ['mine','포인트 광산','G를 채굴하고 가챠로 꾸미기 아이템을 모으세요.','터치 채굴 · 단차 · 10연차'],
-   ['stock','모의 주식','5개 가상 종목의 가격 변화를 이용하세요.','가상 투자 · 3초 시세']
+   ['ranking','캐릭터 랭킹','공유 파이터와 내 탑 기록을 확인하세요.','파워랭킹 · 기록 · 공유']
   ].map(([id,name,desc,meta])=>'<button type="button" class="lobby-card lobby-'+id+'" data-screen="'+id+'">'
     +'<span class="lobby-card-icon" aria-hidden="true">'+ICONS[id]+'</span>'
     +'<span class="lobby-card-copy"><strong>'+name+'</strong><small>'+desc+'</small><span>'+meta+'</span></span>'
@@ -64,6 +62,8 @@ function install(){
     +'<div><small>도전의 탑 최고 기록</small><strong id="lobby-highest-floor">0층</strong></div>'
     +'<div><small>최근 도전</small><strong id="lobby-recent-run">아직 기록 없음</strong></div>';
   lobby.append(summary);
+  const championIdentity=node('p','lobby-champion-identity');championIdentity.id='lobby-champion-identity';
+  championIdentity.textContent='기본 챔피언 5명 · 각자의 기술과 이야기';lobby.append(championIdentity);
   screens.lobby=lobby;mount.append(lobby);
   for(const id of ROUTES.slice(1)){
     const page=node('section','arena-screen game-screen');page.id='screen-'+id;
@@ -117,8 +117,8 @@ function install(){
    screens.character.append(designSlot);
   const cosmeticSlot=node('div','character-cosmetic-slot');cosmeticSlot.id='character-cosmetic-slot';
   cosmeticSlot.innerHTML='<div class="character-cosmetic-guide"><strong>새 꾸미기 아이템이 필요하신가요?</strong>'
-    +'<p>광산의 가챠에서 획득한 아이템을 여기서 캐릭터별로 장착·해제할 수 있습니다.</p>'
-    +'<button type="button" data-screen="mine" data-mine-tab="gacha">⛏ 광산 가챠로 이동</button></div>';
+    +'<p>보유한 외형을 캐릭터별로 장착하거나 교체할 수 있습니다.</p>'
+    +'</div>';
   screens.character.append(cosmeticSlot);
   const score=node('section','tower-record-panel');score.id='tower-record-panel';
   score.innerHTML='<h3>내 브라우저 도전 기록</h3><p>온라인 기록이 아닙니다. 이 기기에 저장된 캐릭터별 최고 층입니다.</p>'
@@ -140,18 +140,9 @@ function install(){
     +'<p>이 기기의 도전 기록만 표시합니다. 전 세계 순위가 아닙니다.</p>'
     +'<div id="tower-personal-list" role="list">아직 기록이 없습니다.</div></div>';
   screens.ranking.append(rankingPower,score,shared,personal);
-  const mineTabs=node('nav','screen-tabs mine-route-tabs');
-  mineTabs.setAttribute('aria-label','광산과 가챠 선택');
-  mineTabs.innerHTML='<button type="button" data-mine-tab="mine">⛏ 포인트 채굴</button>'
-    +'<button type="button" data-mine-tab="gacha">✦ 가챠 · 수집 도감</button>';
-  screens.mine.append(mineTabs);
-  const mineFrame=node('div','single-economy-slot');mineFrame.id='mine-screen-slot';
-  if(mine)mineFrame.append(mine);screens.mine.append(mineFrame);
-  // MOVE the original roulette — keep every existing listener, owned cosmetic,
-  // pity counter and coin wallet. Never clone a second gacha.
-  if(cosmetic){cosmetic.classList.add('mine-gacha');screens.mine.append(cosmetic);}
-  const stockFrame=node('div','single-economy-slot');stockFrame.id='stock-screen-slot';
-  if(market)stockFrame.append(market);screens.stock.append(stockFrame);
+  // The arcade is still available in Appearance; click mining and stocks
+  // are retired. Never remove saved cosmetics or reset a user's wallet.
+  if(cosmetic){cosmetic.classList.add('mine-gacha');cosmeticSlot.append(cosmetic);}
   // Keep the legacy wallet IDs and finance shell mounted; their backing
   // code accesses them via document.getElementById.
   finance.hidden=true;finance.style.display='none';main.append(finance);
@@ -160,8 +151,11 @@ function install(){
     const w=walletText();
     doc.getElementById('lobby-wallet-amount').textContent=w;
     for(const el of doc.querySelectorAll('[data-wallet]'))el.textContent=w;
-    doc.getElementById('lobby-hero-fighter').textContent=
-      (typeof players!=='undefined'&&players[0]?.name)||'파이터 선택 전';
+    const featured=(typeof players!=='undefined'&&players[0])||null;
+    doc.getElementById('lobby-hero-fighter').textContent=featured?.name||'파이터 선택 전';
+    const trait=global.CHAMPION_IDENTITY?.[featured?.id];
+    doc.getElementById('lobby-champion-identity').textContent=trait?
+      trait.title+' — '+trait.intro:'기본 챔피언 5명 · 외형과 기술 조합으로 나만의 라이벌을 만드세요';
     const records=global.ArenaTower?.records?.()||[];
     doc.getElementById('lobby-highest-floor').textContent=
       (records.length?records[0].best:0)+'층';
@@ -212,20 +206,14 @@ function install(){
     const legacyControls=arena.querySelector('.arena-setup-controls');
     if(legacyControls)legacyControls.hidden=where!=='pve';
   }
-  function mineTab(id){
-    mineView=id==='gacha'?'gacha':'mine';
-    mineFrame.hidden=mineView!=='mine';
-    if(cosmetic)cosmetic.hidden=mineView!=='gacha';
-    for(const btn of mineTabs.querySelectorAll('button'))
-      btn.setAttribute('aria-pressed',String(btn.dataset.mineTab===mineView));
-    if(mineView==='gacha')global.CosmeticArcade?.refresh?.();
-  }
+  function mineTab(){return false;} // retired route kept as compatibility hook
   function characterTab(id){
     charTab=id==='cosmetics'?'cosmetics':'design';
     designSlot.hidden=false;cosmeticSlot.hidden=charTab!=='cosmetics';
     for(const btn of designTabs.querySelectorAll('button')){
       btn.setAttribute('aria-pressed',String(btn.dataset.characterTab===charTab));
     }
+    if(cosmetic)cosmetic.hidden=charTab!=='cosmetics';
     if(active==='character'){
       const d=doc.getElementById('character-studio-dialog');
       if(d&&!d.open)d.setAttribute('open','');
@@ -280,7 +268,7 @@ function install(){
     }else if(where==='pve'){
       if(typeof reRollMatch==='function'&&(!roundStarted||isGameOver))reRollMatch();
     }else if(where==='ranking')setRankingTab(rankingTab);
-    else if(where==='mine')mineTab(mineView);
+
     refresh();
     global.scrollTo?.({top:0,behavior:'instant'});
     return where;
@@ -291,10 +279,9 @@ function install(){
     if(!b||!mount.contains(b))return;
     if(b.dataset.screen){
       go(b.dataset.screen);
-      if(b.dataset.mineTab)mineTab(b.dataset.mineTab);
     }else if(b.dataset.characterTab)characterTab(b.dataset.characterTab);
     else if(b.dataset.rankingTab)setRankingTab(b.dataset.rankingTab);
-    else if(b.dataset.mineTab)mineTab(b.dataset.mineTab);
+
   });
   // The BGM controls are created on DOMContentLoaded by BackgroundMusic.
   // Relocate the original widgets to the lobby settings afterwards so saved

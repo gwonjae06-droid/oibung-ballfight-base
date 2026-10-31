@@ -144,8 +144,8 @@ test('online battle loads the shared auto AI with cache-busted scripts',()=>{
  const html=fs.readFileSync('index.html','utf8');
  const frame=fs.readFileSync('pvp-runtime.html','utf8');
  assert.match(html,/pvp-original-engine\.js\?v=realm-chaos1/);
- assert.match(html,/arena-auto-ai\.js\?v=(?:tactics1|arena-shapes1)/);
- assert.match(frame,/arena-auto-ai\.js\?v=(?:tactics1|arena-shapes1)/);
+ assert.match(html,/arena-auto-ai\.js\?v=(?:tactics1|arena-shapes1|bridge-ai2)/);
+ assert.match(frame,/arena-auto-ai\.js\?v=(?:tactics1|arena-shapes1|bridge-ai2)/);
  assert.match(html,/arena-balance\.js\?v=periodic-balance1/);
  assert.match(frame,/arena-balance\.js\?v=periodic-balance1/);
 });

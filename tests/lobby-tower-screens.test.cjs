@@ -53,16 +53,17 @@ test('malformed records and excessive counters safely clamp to valid floor range
 });
 test('router creates one lobby and exactly five separate destinations from existing nodes',()=>{
   const src=read('js/features/screen-router.js'),html=read('index.html');
-  for(const name of ['lobby','tower','pve','character','ranking','mine','stock'])
+  for(const name of ['lobby','tower','pve','character','ranking'])
     assert.ok(src.includes("'"+name+"'"),name);
   assert.ok(src.includes("lobby.append(hero)"));
   assert.ok(src.includes('rankingPower.append(ranking)'));
   assert.ok(src.includes('shared.append(gallery)'));
   assert.ok(src.includes('designSlot.append(studio)'));
-  assert.ok(src.includes('screens.mine.append(cosmetic)'));
+  assert.ok(src.includes('cosmeticSlot.append(cosmetic)'));
+  assert.ok(!src.includes('screens.mine.append(cosmetic)'));
   assert.ok(src.includes('screens.character.append(cosmeticSlot)'));
-  assert.ok(src.includes('mineFrame.append(mine)'));
-  assert.ok(src.includes('stockFrame.append(market)'));
+  assert.ok(!src.includes('stockFrame.append(market)'));
+  assert.ok(!src.includes('mineFrame.append(mine)'));
   assert.ok(src.includes('arenaSlot.append(arena)'));
   assert.ok(src.includes('free.append(tools)'));
   assert.ok(src.includes('pve.append(pveArena,free)'));

@@ -223,7 +223,16 @@ function nextWaypoint(realm,from,to,w=500,h=500,level=1,tick=0){
   if(ends.length>=2)links.push([ends[0].id,ends[1].id,ramp]);
  }
  const visited=new Set([start]),queue=[{id:start,path:[]}];
- while(queue.length){const q=queue.shift();if(q.id===end){const next=q.path[0];return next?{x:next.cx,y:next.cy,z:next.z}:null;}
+ while(queue.length){const q=queue.shift();if(q.id===end){
+   const next=q.path[0];if(!next)return null;
+   const a={x:next.from[0]*w/500,y:next.from[1]*h/500,z:next.z0},
+         b={x:next.to[0]*w/500,y:next.to[1]*h/500,z:next.z1};
+   const dA=Math.hypot(a.x-from.x,a.y-from.y),dB=Math.hypot(b.x-from.x,b.y-from.y);
+   const entry=dA<=dB?a:b,exit=dA<=dB?b:a;
+   // Approach the real entry instead of steering straight into the caldera
+   // to reach the mathematical midpoint. Once entered, cross to the far end.
+   return (Math.hypot(entry.x-from.x,entry.y-from.y)<22)?exit:entry;
+  }
   for(const [u,v,ramp] of links){const id=q.id===u?v:q.id===v?u:null;
    if(!id||visited.has(id))continue;visited.add(id);queue.push({id,path:[...q.path,ramp]});}
  }

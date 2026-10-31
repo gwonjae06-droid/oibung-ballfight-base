@@ -188,7 +188,9 @@ function randomProfile(theme='any',rng=Math.random,exactCount=null){
 }
 
 let sequence=0;
-const enemies=p=>players.filter(q=>q!==p&&q.hp>0).concat(globalThis.ArenaTower?.encounter?.spectacle?.targets(p)||[]);
+const enemies=p=>players.filter(q=>q!==p&&q.hp>0)
+ .concat(globalThis.ArenaTower?.encounter?.spectacle?.targets(p)||[],
+ global.AdvancedCombat?.objects?.filter(o=>o.isConstruct&&o.owner!==p.playerNum&&o.hp>0&&o.life>0)||[]);
 function groundImpactZ(target){
  return global.AdvancedCombat?.floorHeight?.(target) ??
   Math.max(0,Number(target?.towerGroundZ)||0);
@@ -219,6 +221,7 @@ function hit(p,e,action,multiplier=1,attackZ) {
   const last=stamps&&action&&typeof action==='object'?stamps.get(action):null;
   if(d>0&&last&&last.attacker===p&&frame>=last.frame&&
      frame-last.frame<IMPACT_GRACE_FRAMES)return false;
+  const hpBeforeHit=Math.max(0,Number(e.hp)||0);
   if(d){
     (e._forgeImpactStamps||=new WeakMap()).set(action,{attacker:p,frame});
     const tint=p.forge?.effectColor||p.forge?.color||p.themeColor||'#58687a';
@@ -232,8 +235,8 @@ function hit(p,e,action,multiplier=1,attackZ) {
     addFloatingText('-'+d,e.x,e.y-30,tint,17);
     global.ImpactPhysics?.hit?.(p,e,d,{knockback:action.knockback||0,color:tint,type:action.type});
   }
-  if(action.status==='ice'){e.slowTimer=Math.max(e.slowTimer||0,90);e.slowMultiplier=.5;}
-  if(action.status==='fire'||action.status==='poison'){
+  if(!e.isConstruct&&action.status==='ice'){e.slowTimer=Math.max(e.slowTimer||0,90);e.slowMultiplier=.5;}
+  if(!e.isConstruct&&(action.status==='fire'||action.status==='poison')){
     const seconds=Number.isFinite(action.duration)?action.duration:(action.status==='fire'?2:3);
     // A DoT lasts as long as requested; its half-second damage ticks are
     // handled by the single existing simulation loop.
@@ -241,14 +244,14 @@ function hit(p,e,action,multiplier=1,attackZ) {
     e._forgeDotKind=action.status;
     e.bfDotDamage=Math.max(e.bfDotDamage||2,Math.min(6,Math.max(1,Math.round(d*.12))));
   }
-  global.ForgeExpansion?.applyStatus(p,e,action);
+  if(!e.isConstruct)global.ForgeExpansion?.applyStatus(p,e,action);
   // Only report a confirmed hit; commentary never assumes a queued action
   // actually reached its target or that a resisted status was applied.
   const appliedStatus=action.status==='ice'&&e.slowTimer>0?'ice':
     action.status==='fire'&&e.bfDot>0?'fire':
     action.status==='poison'&&e.bfDot>0?'poison':
     e.forgeEffects?.[action.status]?.time>0?action.status:'none';
-  global.ArenaBattleDirector?.skillHit?.(p,e,action,d,appliedStatus);
+  global.ArenaBattleDirector?.skillHit?.(p,e,action,Math.min(hpBeforeHit,d),appliedStatus);
   if(action.knockback>0&&!global.ImpactPhysics){const dx=e.x-p.x,dy=e.y-p.y,dist=Math.hypot(dx,dy)||1;e.vx+=dx/dist*action.knockback;e.vy+=dy/dist*action.knockback;}
   global.SkillVisuals?.impact(p,e,action); // Only after damage/status actually connects.
   global.ForgeComboFX?.impact?.(p,e,action);
@@ -543,7 +546,7 @@ function advanceWorld(p,target){
     const terrainBlock=global.ArenaTowerTerrain?.obstructsShot?.(
       b.prevX,b.prevY,initialZ,b.x,b.y,flightZ,7);
     const blocked=terrainBlock||global.AdvancedCombat?.blockSegment?.(
-      b.prevX,b.prevY,b.x,b.y,b.a?.damage||10,flightZ);
+      b.prevX,b.prevY,b.x,b.y,b.a?.damage||10,flightZ,p.playerNum);
     if(blocked){p.forgeShots.splice(i,1);continue;}
     // Ground-level bullets use a ground-level hit check, not the firing
     // character's current jump height. Swept contact prevents tunneling.

@@ -70,10 +70,10 @@ test('economy restores signed balance and inventory, and the UI navigation is wi
   new vm.Script(codeText).runInContext(setup);
   assert.equal(vm.runInContext('coins',setup),-250);
   assert.equal(vm.runInContext('itemInventory.vitality',setup),3);
-  for(const file of ['js/features/cosmetic-arcade.js','js/features/point-market.js'])
-    assert.ok(html.includes('src="'+file+'"'),file+' must load');
+  assert.ok(html.includes('src="js/features/cosmetic-arcade.js"'));
+  assert.ok(!html.includes('src="js/features/point-market.js"'));
   assert.ok(html.includes('data-category="cosmetics"'));
-  assert.ok(html.includes('data-category="finance"'));
+  assert.ok(html.includes('data-category="finance" hidden'));
   assert.ok(read('js/features/ui-categories.js').includes("'cosmetics','finance'"));
   assert.ok(read('js/core/render.js').includes('CosmeticArcade?.drawUnder'));
   assert.ok(read('js/core/render.js').includes('CosmeticArcade?.borderColor'));

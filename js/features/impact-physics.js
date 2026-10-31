@@ -44,6 +44,8 @@ function hit(attacker,defender,damage,options={}){
     attacker.borderColor||'#45586a';
   // The initial flash reacts immediately; real travel then eases to normal
   // motion over a series of fixed simulation ticks.
+  if(!attacker.forge&&amount>0&&!defender.isConstruct)
+    global.ArenaBattleDirector?.legacyHit?.(attacker,defender,amount,options.type||kind);
   const nudge=kind==='projectile'?clamp(impulse*.12,.5,1.5):
     kind==='contact'?clamp(impulse*.12,1.5,3.5):clamp(impulse*.15,2.5,6);
   const arena=typeof canvas!=='undefined'?canvas:global.canvas;

@@ -180,7 +180,8 @@ function install(){
    +'<div class="tower-buttons"><button id="tower-start" type="button">1층 시작</button>'
    +'<button id="tower-pause" type="button" hidden>⏸ 일시정지</button>'
    +'<button id="tower-abandon" type="button" hidden>도전 포기</button></div>'
-   +'<p class="tower-feedback" id="tower-feedback" role="status" aria-live="polite" hidden></p>';
+   +'<p class="tower-feedback" id="tower-feedback" role="status" aria-live="polite" hidden></p>'
+   +'<details id="tower-last-report" class="tower-last-report" hidden><summary>직전 층 상세 전투 분석</summary><div id="tower-report-body"></div></details>';
   mount.append(panel);
   const doorway=doc.createElement('div');doorway.className='tower-doorway';
   doorway.innerHTML='<button type="button" id="tower-back-selection" class="tower-return">← 다른 탑 선택</button>'
@@ -220,7 +221,12 @@ function install(){
     selector.addEventListener('click',e=>{const id=e.target.closest?.('[data-realm]')?.dataset.realm;if(id)selectRealm(id);});selector.querySelector('#ancient-start')?.addEventListener('click',beginAncient);
   }
   const el=id=>doc.getElementById(id),hero=el('tower-hero'),message=el('tower-feedback'),
-    start=el('tower-start'),pause=el('tower-pause'),abandon=el('tower-abandon');
+    start=el('tower-start'),pause=el('tower-pause'),abandon=el('tower-abandon'),
+    lastReport=el('tower-last-report'),reportBody=el('tower-report-body');
+  const clearReport=()=>{if(lastReport)lastReport.hidden=true;if(reportBody)reportBody.replaceChildren();};
+  const retainReport=(lines)=>{if(!lastReport||!reportBody||!lines?.length)return;
+    reportBody.replaceChildren();for(const line of lines){const row=doc.createElement('p');row.textContent=line;reportBody.append(row);}
+    lastReport.hidden=false;};
   // Between floors the new opponents are already built, but the game engine
   // must remain fully stopped until an explicit Start press.
   const clearOverlay=doc.createElement('div');
@@ -245,7 +251,7 @@ function install(){
   function selectRealm(id){
     if(active||!realms?.REALMS.some(r=>r.id===id))return false;
     ancient=false;realmId=id;view='interior';stage='ready';level=1;cleared=0;blessings=[];offers=[];encounter=null;environment?.clear?.();environment=null;
-    message.textContent='';show();return true;
+    message.textContent='';clearReport();show();return true;
   }
   function allRealmsCleared(){const records=read(global.localStorage).records;return !!realms&&realms.REALMS.every(r=>Object.entries(records).some(([id,v])=>id.startsWith(r.id+'_')&&Number(v.best)>=FINISH));}
   function beginAncient(){if(active||!allRealmsCleared()||!selectRealm('space'))return false;ancient=true;level=10;show();return begin();}
@@ -442,7 +448,7 @@ function install(){
     if(!isPlaying||!roundStarted)throw Error('전투 엔진이 시작되지 않았습니다. 자유 대전 상태를 초기화하고 다시 시도해 주세요.');
     stage='fighting';
     global.ArenaBattleDirector?.floorReady?.(level,ancient?'고대의 존재':realm()?.name);
-    message.textContent='';
+    message.textContent='';clearReport();
     show();
     global.ArenaScreenRouter?.showArena?.();
     return true;
@@ -466,7 +472,7 @@ function install(){
     if(!who){message.textContent='캐릭터가 없습니다. 캐릭터 설계에서 먼저 만들어 주세요.';return false;}
     if(roundStarted&&!isGameOver){message.textContent='진행 중인 자유 대전을 먼저 종료해 주세요.';return false;}
     blessings=[];offers=[];encounter=null;
-    message.textContent='';selected=who;active=true;view='interior';stage='ready';level=ancient?10:1;cleared=0;
+    clearReport();message.textContent='';selected=who;active=true;view='interior';stage='ready';level=ancient?10:1;cleared=0;
     try{startFight();return true;}
     catch(e){
       active=false;stage='ready';cleanup();
@@ -493,10 +499,12 @@ function install(){
     }
     // Next floor is initialized but deliberately NOT started. The win
     // acknowledgement stays on screen until the player presses Start.
+    const justFinished=global.ArenaBattleDirector?.reportLines?.(players)||[];
     level++;
     try{
       prepareFight();
       stage='between';
+      retainReport(justFinished);
       if(realms&&[2,4,7].includes(cleared))offers=realms.choices(realmId,blessings);
       message.textContent='✓ '+cleared+'층 클리어! '+level+'층이 준비됐습니다. 시작 버튼을 눌러 진행하세요.';
       show();global.ArenaScreenRouter?.refresh?.();

@@ -10,7 +10,7 @@
   <link rel="stylesheet" href="css/ui-clarity.css?v=easy-designer2">
   <link rel="stylesheet" href="css/app-shell.css">
   <link rel="stylesheet" href="css/premium-ui.css">
-  <link rel="stylesheet" href="css/tower-mine-ui.css">
+  <link rel="stylesheet" href="css/tower-mine-ui.css"> <!-- cosmetic arcade styles retained; market screen retired -->
   <link rel="stylesheet" href="css/pvp-ui.css?v=auto-focus1">
   <link rel="stylesheet" href="css/arena-responsive.css?v=motion1">
   <link rel="stylesheet" href="css/tower-realms.css?v=compactui1">
@@ -19,7 +19,7 @@
   <link rel="stylesheet" href="css/ancient-one-portrait.css?v=eldritch1">
   <link rel="stylesheet" href="css/lobby-atmosphere.css?v=arena-lobby1">
   <link rel="stylesheet" href="css/arena-countdown.css?v=fight-countdown1">
-  <link rel="stylesheet" href="css/arena-cinematic-ui.css?v=cinema1">
+  <link rel="stylesheet" href="css/arena-cinematic-ui.css?v=report1">
   <link rel="stylesheet" href="css/tower-art-motion.css?v=towerart1">
 </head>
 <body>
@@ -43,7 +43,7 @@
         <summary>기타 활동 <span aria-hidden="true">＋</span></summary>
         <div class="arena-nav-more-list">
           <a href="#economy-section" data-category="economy">우승 예측 · 상점</a>
-          <a href="#point-finance" data-category="finance">투자 · 포인트 광산</a>
+          <a href="#point-finance" data-category="finance" hidden aria-hidden="true">투자 · 포인트 광산</a>
         </div>
       </details>
     </nav>
@@ -209,7 +209,7 @@
       <p id="cosmetic-result" class="game-extra-status" role="status" aria-live="polite">미당첨 시 소액 G 또는 짧은 인생 명언이 등장합니다. 오래 못 뽑으면 보상이 보장됩니다.</p>
       <div class="cosmetic-collections" id="cosmetic-collections" aria-label="보유한 가챠 아이템 도감"></div>
     </section>
-    <section class="game-extra-panel" id="point-finance" aria-labelledby="finance-title">
+    <section class="game-extra-panel" id="point-finance" hidden aria-labelledby="finance-title">
       <div class="game-extra-title">
         <div><span class="eyebrow">SIMULATED MARKET / CLICK MINE</span><h2 id="finance-title">모의 투자소 · 포인트 광산</h2></div>
         <strong id="finance-wallet" class="game-wallet">1,000 G</strong>
@@ -267,14 +267,14 @@
   <script src="js/features/action-registry.js"></script>
   <script src="js/features/arena-charge.js?v=stone25d1"></script>
   <script src="js/features/ability-atlas.js?v=statusheight3"></script>
-  <script src="js/features/advanced-combat.js?v=six-decks1"></script>
-  <script src="js/features/forge-expansion.js?v=periodic-balance1"></script>
+  <script src="js/features/advanced-combat.js?v=ownerhp2"></script>
+  <script src="js/features/forge-expansion.js?v=flight2"></script>
   <script src="js/features/status-vfx.js?v=status-vfx1"></script>
-  <script src="js/features/battle-director.js?v=cinema1&skills-and-variety2"></script>
-  <script src="js/features/arena-auto-ai.js?v=arena-shapes1"></script>
+  <script src="js/features/battle-director.js?v=report2"></script>
+  <script src="js/features/arena-auto-ai.js?v=bridge-ai2"></script>
   <script src="js/features/arena-balance.js?v=periodic-balance1"></script>
   <script src="js/features/arena-telegraph.js?v=prep1"></script>
-  <script src="js/features/skill-forge.js?v=six-decks1"></script>
+  <script src="js/features/skill-forge.js?v=ownerhp2"></script>
   <script src="js/features/skill-visuals.js?v=clock-single2"></script>
   <script src="js/features/forge-combo-vfx.js?v=periodic-balance1"></script>
   <script src="js/features/natural-forge.js"></script>
@@ -287,15 +287,15 @@
   <script src="js/features/studio-motion-model.js"></script>
   <script src="js/features/studio-workspace.js?v=unlimited-roster1"></script>
   <script src="js/features/cosmetic-arcade.js"></script>
-  <script src="js/features/point-market.js"></script>
+  <!-- Stock market and click mine retired; existing wallet saves are retained. -->
   <script src="js/features/battle-effects.js?v=fight-countdown1"></script>
   <script src="js/features/ui-flow.js"></script>
   <script src="js/features/tower-gateway-audio.js?v=fanfare2"></script>
-  <script src="js/features/screen-router.js?v=fanfare2"></script>
+  <script src="js/features/screen-router.js?v=economy-clean2"></script>
   <script src="js/features/tower-scenes.js"></script>
   <script src="js/features/tower-realms.js?v=arena-shapes1"></script>
-  <script src="js/features/tower-map-architecture.js?v=six-decks1"></script>
-  <script src="js/features/tower-terrain-25d.js?v=six-decks1"></script>
+  <script src="js/features/tower-map-architecture.js?v=bridge-ai2"></script>
+  <script src="js/features/tower-terrain-25d.js?v=flight2"></script>
   <script src="js/features/tower-creatures.js?v=1"></script>
   <script src="js/features/tower-enemy-art.js?v=terrain25d1"></script>
   <script src="js/features/tower-pattern-25d.js?v=six-decks1"></script>

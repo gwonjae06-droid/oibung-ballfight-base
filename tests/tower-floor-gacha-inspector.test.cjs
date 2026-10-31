@@ -87,13 +87,11 @@ test('each battleground draws a physically distinct 2D canvas motif without affe
   assert.match(tower,/screen\.dataset\.towerTheme=f\.scene/);
   assert.match(tower,/global\.ArenaScreenRouter\?\.active!=='tower'/,'independent PvE free matches do not use Tower backgrounds');
 });
-test('existing single roulette moves into mine, controls and pity remain untouched',()=>{
+test('existing cosmetic roulette moves under character appearance without stock or mining',()=>{
   const router=read('js/features/screen-router.js'),gacha=read('js/features/cosmetic-arcade.js');
-  assert.match(router,/screens\.mine\.append\(cosmetic\)/);
-  assert.ok(!router.includes('cosmeticSlot.append(cosmetic)'));
-  assert.match(router,/data-mine-tab="gacha"/);
-  assert.match(router,/mineTab\(mineView\)/);
-  assert.match(router,/global\.CosmeticArcade\?\.refresh\?\.\(\)/);
+  assert.match(router,/cosmeticSlot\.append\(cosmetic\)/);
+  assert.ok(!router.includes('screens.mine.append(cosmetic)'));
+  assert.ok(!router.includes('mineTab(mineView)'));
   assert.match(router,/global\.CharacterStudioWorkspace\?\.selectTab\?\./);
   assert.match(gacha,/cosmetic-draw-ten/);
   assert.match(gacha,/drawTen/);

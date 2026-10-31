@@ -102,3 +102,9 @@
  .ancient-void-waves,.ancient-portrait-art,.ancient-unlock button,.pvp-overtime-banner,
  .director-pop,.player-section,.arena-purpose-steps li,.tower-challenge,.tower-doorway{animation:none!important}
  .arena-category-nav a,.control-panel button,#screen-tower button{transition:none!important}}
+
+/* Keep the completed floor report visible during the between-floor intermission. */
+#screen-tower .tower-last-report{margin:10px 0 16px;padding:12px 15px;background:#142333;border:1px solid #67859c88;border-radius:12px;color:#e6f0ff}
+#screen-tower .tower-last-report[hidden]{display:none!important}
+#screen-tower .tower-last-report summary{cursor:pointer;font-weight:750;color:#f6d99f}
+#screen-tower .tower-last-report p{margin:7px 0;font-size:12px;line-height:1.6;color:#d2e2f4}

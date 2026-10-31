@@ -3,6 +3,7 @@
 (function(g){'use strict';
 let frame=0,lastNarrated=-200,roster=[],history=new Map(),overTimeWas=false,ended=false;
 let queue=[],recent=[],lastSentence='',phraseSerial=0,actionNames=new WeakMap(),lastSkillUsed=new WeakMap();
+let skillTotals=new Map(),confirmedHits=0;
 const name=p=>String(p?.name||'파이터').slice(0,24);
 const sample=p=>({hp:Number(p?.hp)||0,maxHp:Math.max(1,Number(p?.maxHp)||1),
  status:Object.keys(p?.forgeEffects||{}).filter(key=>p.forgeEffects[key]?.time>0),
@@ -154,7 +155,7 @@ function dispatch(){
 }
 function reset(players=[]){
  frame=0;lastNarrated=0;roster=players.slice();history=new Map();overTimeWas=false;ended=false;
- queue=[];recent=[];actionNames=new WeakMap();lastSkillUsed=new WeakMap();
+ queue=[];recent=[];actionNames=new WeakMap();lastSkillUsed=new WeakMap();skillTotals=new Map();confirmedHits=0;
  for(const p of roster)history.set(p,{previous:sample(p),lost:0,healed:0,biggest:0,last:0,low:false,controlled:false});
  const panel=g.document?.getElementById?.('arena-defeat-analysis');if(panel){panel.hidden=true;panel.replaceChildren();}
  // Tower enemies are already prepared in the intermission. Narrate only
@@ -179,11 +180,33 @@ function skillUsed(attacker,target,action,skillName){
  // When a multi-block combo hits, report the result ahead of mere casting.
  offer('cast',[name(attacker),label,name(target)],1,`cast:${attacker.playerNum}:${label}`);
 }
+function legacyHit(attacker,target,damage,type='일반 공격'){
+ if(ended||!attacker||!target||!(damage>0))return;
+ let map=skillTotals.get(attacker);if(!map){map=new Map();skillTotals.set(attacker,map);}
+ const label=String(ACTION[type]||type||'기본 공격').slice(0,28);
+ const row=map.get(label)||{name:label,damage:0,hits:0,statuses:{}};
+ row.damage+=Math.round(damage);row.hits++;map.set(label,row);
+}
+function constructHit(shooterNum,obj,damage){
+ // A destructible summon is not a fighter and cannot determine match victory.
+ const attacker=roster.find(p=>p.playerNum===shooterNum);if(!attacker||ended)return;
+ let map=skillTotals.get(attacker);if(!map){map=new Map();skillTotals.set(attacker,map);}
+ const label='소환체·설치물 파괴';
+ const row=map.get(label)||{name:label,damage:0,hits:0,statuses:{}};
+ row.damage+=Math.min(Math.max(0,obj.maxHp||0),Math.round(damage));row.hits++;map.set(label,row);
+}
 function skillHit(attacker,target,action,damage,status='none'){
  if(ended||!attacker||!target||!action)return;
  const last=lastSkillUsed.get(attacker);
  const label=actionNames.get(action)||(last&&frame-last.frame<120&&last.type===action.type?last.label:knownAction(action));
  const n=name(attacker),t=name(target),d=Math.round(Math.max(0,Number(damage)||0));
+ if(d>0||status!=='none'){
+  let fighter=skillTotals.get(attacker);if(!fighter){fighter=new Map();skillTotals.set(attacker,fighter);}
+  const entry=fighter.get(label)||{name:label,damage:0,hits:0,statuses:{}};
+  if(d>0){entry.damage+=d;entry.hits++;confirmedHits++;}
+  if(status!=='none')entry.statuses[status]=(entry.statuses[status]||0)+1;
+  fighter.set(label,entry);
+ }
  if(status!=='none'&&STATUS[status])offer('control',[n,label,t,STATUS[status]],5,
    `control:${attacker.playerNum}:${target.playerNum}:${status}:${label}`);
  else if(d>0)offer('impact',[n,label,t,d],d>=Math.max(24,(target.maxHp||100)*.12)?5:3,
@@ -225,8 +248,21 @@ function explanations(players,winner=null,reason=''){
   summaries.push(parts.join(' '));
  }
  if(!summaries.length&&winner)return [`${name(winner)}이(가) 마지막까지 생존했습니다. 정확한 결정타는 기록되지 않았습니다.`];
- if(!summaries.length)return ['동시에 쓰러졌거나 승자가 없어 무승부입니다.'];
+ if(!summaries.length)summaries.push('동시에 쓰러졌거나 승자가 없어 무승부입니다.');
  return summaries;
+}
+function reportLines(players=[]){
+ const lines=[];
+ for(const fighter of players){
+  const row=history.get(fighter),group=skillTotals.get(fighter);
+  const total=[...(group?.values()||[])].reduce((sum,value)=>sum+value.damage,0);
+  lines.push(name(fighter)+' · 확인된 기술 피해 '+total+' HP / 회복 '+Math.round(row?.healed||0)+' HP / 받은 피해 '+Math.round(row?.lost||0)+' HP');
+  for(const info of [...(group?.values()||[])].sort((a,b)=>b.damage-a.damage))
+   lines.push(info.name+': '+info.damage+' 피해 / '+info.hits+'회 유효타'+
+    (Object.keys(info.statuses).length?' / 상태이상 '+Object.entries(info.statuses).map(([key,n])=>key+' '+n+'회').join(', '):''));
+ }
+ lines.push('기술별 수치는 확인된 명중만 포함합니다. 낙하·지속 피해 등은 기술별 합계에서 누락될 수 있습니다.');
+ return lines;
 }
 function finish(players,winner=null,reason=''){
  if(ended)return;ended=true;queue=[];
@@ -234,9 +270,22 @@ function finish(players,winner=null,reason=''){
  const panel=g.document?.getElementById?.('arena-defeat-analysis');
  if(panel){panel.replaceChildren();const h=g.document.createElement('h3');h.textContent='승부 원인 분석';panel.append(h);
   for(const line of lines){const p=g.document.createElement('p');p.textContent=line;panel.append(p);}
-  const note=g.document.createElement('small');note.textContent='관측된 체력·상태 변화 기준입니다. 기록되지 않은 공격의 가해자는 추정하지 않습니다.';panel.append(note);panel.hidden=false;}
+  for(const fighter of players){
+   const row=history.get(fighter),group=skillTotals.get(fighter);
+   const sub=g.document.createElement('h4');sub.textContent=name(fighter)+' · 피해 및 생존 분석';panel.append(sub);
+   const stat=g.document.createElement('p');stat.textContent=
+    '확인된 기술 피해 '+[...(group?.values()||[])].reduce((s,x)=>s+x.damage,0)+' HP · '
+    +'관측 회복 '+Math.round(row?.healed||0)+' HP · 받은 피해 '+Math.round(row?.lost||0)+' HP';panel.append(stat);
+   for(const info of [...(group?.values()||[])].sort((a,b)=>b.damage-a.damage)){
+    const line=g.document.createElement('p');
+    line.textContent=info.name+': '+info.damage+' 피해 / '+info.hits+'회 유효타'+
+      (Object.keys(info.statuses).length?' / 상태이상 '+Object.entries(info.statuses).map(([key,n])=>key+' '+n+'회').join(', '):'');
+    panel.append(line);
+   }
+  }
+  const note=g.document.createElement('small');note.textContent='기술별 피해는 확인된 커스텀 공격만 집계합니다. 기본 챔피언 공격, 낙하, 지속 피해, 결전 피해는 기술별 합계에서 제외될 수 있습니다. 회복·받은 피해는 체력 변화 관측치입니다.';panel.append(note);panel.hidden=false;}
  speak(winner?`${name(winner)} 승리! 전투가 종료됐습니다.`:'무승부! 치열한 경기가 마무리됐습니다.');
  return lines;
 }
-g.ArenaBattleDirector=Object.freeze({reset,observe,finish,explanations,skillUsed,skillHit,floorReady,get frame(){return frame;},catalogSize});
+g.ArenaBattleDirector=Object.freeze({reset,observe,finish,reportLines,explanations,skillUsed,skillHit,legacyHit,constructHit,floorReady,get skillTotals(){return skillTotals;},get frame(){return frame;},catalogSize});
 })(typeof window!=='undefined'?window:globalThis);

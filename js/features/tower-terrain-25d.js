@@ -348,7 +348,35 @@ function sync(roster){
  if(!active)return;
  for(const p of roster||[])if(p&&p.hp>0){
    const oldX=p._towerSafeX,oldY=p._towerSafeY,oldZ=Number(p.towerGroundZ)||0;
-   boundaryBounce(p,active.realm,active.width,active.height);
+   const entered=g.ArenaTowerArchitecture?.at?.(active.realm,active.level,p.x,p.y,
+     active.width,active.height,active.tick);
+   if(!entered?.surface){
+     // Walking into a ledge still rebounds; only already-airborne fighters
+     // can cross it. A timed flight/hover can maintain lift, others fall.
+     const inAir=(p.z||0)>0||(p.vz||0)>1||(p.hoverTime||0)>0||(p.glideTime||0)>0;
+     if(!p._towerOverVoid&&inAir&&oldZ>0)p.z=Math.max(p.z||0,(p.z||0)+oldZ);
+     const wasOverVoid=!!p._towerOverVoid;
+     p._towerOverVoid=inAir;
+     if(!inAir){
+       if(wasOverVoid){
+         // A previously flying fighter has now hit the abyss, not just
+         // wandered against its wall: schedule the realm's fall hazard.
+         p._towerVoidFallPending=true;p._towerOverVoid=false;
+       }
+       boundaryBounce(p,active.realm,active.width,active.height);
+     }else if((p.z||0)<=0&&(p.hoverTime||0)<=0){
+       p._towerVoidFallPending=true;
+       p.x=Number.isFinite(oldX)?oldX:(entered?.nearest?.point?.x||250);
+       p.y=Number.isFinite(oldY)?oldY:(entered?.nearest?.point?.y||250);
+       p.z=0;p.vz=0;p._towerOverVoid=false;
+     }
+   }else{
+     if(p._towerOverVoid){
+       p.z=Math.max(0,(p.z||0)-entered.height);
+       p._towerOverVoid=false;
+     }
+   }
+   if(!p._towerOverVoid)boundaryBounce(p,active.realm,active.width,active.height);
    const current=g.ArenaTowerArchitecture?.at?.(active.realm,active.level,p.x,p.y,
      active.width,active.height,active.tick);
    const goal=worldHeight(p.x,p.y);
@@ -371,7 +399,7 @@ function step(realm,level,roster,width=500,height=500,tick=0,damage){
  const curr=nodes(realm,level,width,height,tick),oldNodes=prev?.realm===realm?nodes(realm,level,width,height,prev.tick):null;
  for(const p of roster||[]){
   if(!p||p.hp<=0)continue;
-  boundaryBounce(p,realm,width,height);
+  if(!p._towerOverVoid)boundaryBounce(p,realm,width,height);
   const before=Number.isFinite(p._towerPreviousFloor)?p._towerPreviousFloor:(Number(p.towerGroundZ)||0);
   delete p._towerPreviousFloor;
   // Moving gears carry grounded occupants a little; travel stays inside
@@ -398,7 +426,11 @@ function step(realm,level,roster,width=500,height=500,tick=0,damage){
   }
   // Falling off a broken bridge recoils before a mild, once-per-event penalty.
   if(p._towerVoidFallPending){p._towerVoidFallPending=false;
-    if(p.towerHero)damage?.(p,Math.max(3,Math.round((p.maxHp||100)*.035)),{realm,kind:'terrain',label:'추락'});
+    if(p.towerHero){
+      const damageRatio=realm==='fire'?.09:realm==='space'?.075:realm==='storm'?.055:.04;
+      damage?.(p,Math.max(4,Math.round((p.maxHp||100)*damageRatio)),
+       {realm,kind:'terrain',label:realm==='fire'?'용암 추락':realm==='space'?'우주 심연':realm==='ice'?'빙하 추락':'지형 추락'});
+    }
   }
   // Fire's magma lift has a warning and a single confirmed-hit pulse. It is
   // a boss arena hazard, never a hidden permanent damage aura or a PvP rule.
@@ -412,7 +444,7 @@ function step(realm,level,roster,width=500,height=500,tick=0,damage){
 function clear(roster){
  active=null;geometryCache=null;g.ArenaTowerArchitecture?.reset?.();
  for(const p of roster||[])if(p){
-  for(const key of ['towerGroundZ','towerGravity','towerTerrainSpeed','towerHeightLabel','_towerPreviousFloor','_towerVentHitFrame','_towerRimBounce','_towerVoidFallPending','_towerVoidCooldown','_towerSafeX','_towerSafeY'])delete p[key];
+  for(const key of ['towerGroundZ','towerGravity','towerTerrainSpeed','towerHeightLabel','_towerPreviousFloor','_towerVentHitFrame','_towerRimBounce','_towerVoidFallPending','_towerVoidCooldown','_towerSafeX','_towerSafeY','_towerOverVoid'])delete p[key];
  }
 }
 g.ArenaTowerTerrain={nodes,heightAt,worldHeight,obstructsShot,paint,sync,step,clear,

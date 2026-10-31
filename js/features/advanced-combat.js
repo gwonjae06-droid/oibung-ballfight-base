@@ -56,7 +56,7 @@ function visual(p){
     y:lerp(s.prev.y,s.now.y,alpha),
     z:lerp(s.prev.z,s.now.z,alpha)};
 }
-function terrainElevation(p){return Math.max(0,Number(p?.towerGroundZ)||0);}
+function terrainElevation(p){return Math.max(0,Number(p?.isConstruct?p.floorZ:p?.towerGroundZ)||0);}
 function absoluteHeight(p){return groundHeight(p)+terrainElevation(p);}
 function visibleHeight(p){return visual(p).z+terrainElevation(p);}
 function pose(p){
@@ -149,7 +149,10 @@ function pushOwned(pool,item,max){
 }
 function pushObject(o){return pushOwned(objects,o,MAX_OBJECTS);}
 function pushShot(o){o.trail=[];return pushOwned(projectiles,o,MAX_PROJECTILES);}
-const enemies=p=>players.filter(q=>q!==p&&q.hp>0).concat(globalThis.ArenaTower?.encounter?.spectacle?.targets(p)||[]);
+const hostileConstructs=p=>objects.filter(o=>
+ o.owner!==p.playerNum&&o.hp>0&&o.life>0&&['summon','turret','trap'].includes(o.kind));
+const enemies=p=>players.filter(q=>q!==p&&q.hp>0)
+ .concat(globalThis.ArenaTower?.encounter?.spectacle?.targets(p)||[],hostileConstructs(p));
 const nearest=p=>enemies(p).sort((a,b)=>Math.hypot(a.x-p.x,a.y-p.y)-Math.hypot(b.x-p.x,b.y-p.y))[0]||null;
 function strike(p,e,a,api,z=groundHeight(p),factor=1){
   // Legacy authored melee and landing moves pass relative jump height.
@@ -264,6 +267,7 @@ function execute(p,a,target,api){
     const x=cap(p.x+Math.cos(face)*45,25,canvas.width-25),y=cap(p.y+Math.sin(face)*45,25,canvas.height-25);
     pushObject({kind:a.type,owner:p.playerNum,x,y,r:a.type==='trap'?19:18,
       hp:Math.max(25,a.damage*2),maxHp:Math.max(25,a.damage*2),life:duration,age:0,
+      radius:a.type==='trap'?19:18,invincible:0,isConstruct:true,playerNum:null,
       vx:0,vy:0,next:25,a:{...a},target:enemy?.playerNum||null,
       floorZ:global.ArenaTowerTerrain?.worldHeight?.(x,y)||0});
     mark(a.type==='trap'?'target':'ring',x,y,35,col,16);
@@ -413,12 +417,15 @@ function segmentDistance(x1,y1,x2,y2,px,py){
 }
 // Swept segment against the circular physical footprints of constructed walls.
 // A successful intersection damages the wall and absorbs the entire shot.
-function blockSegment(x1,y1,x2,y2,power=10,z=0){
+function blockSegment(x1,y1,x2,y2,power=10,z=0,shooterNum=null){
   // Wall bases follow their terrain, so an elevated wall blocks at its own tier.
   const dx=x2-x1,dy=y2-y1,A=dx*dx+dy*dy;
   let first=null;
   for(const wall of objects){
-    if(wall.kind!=='wall'||wall.life<=0||wall.hp<=0||z>(wall.floorZ||0)+42||z<(wall.floorZ||0)-9)continue;
+    const destructible=['wall','summon','turret','trap'].includes(wall.kind);
+    if(!destructible||wall.life<=0||wall.hp<=0||
+      (wall.isConstruct&&wall.owner===shooterNum)||
+      z>(wall.floorZ||0)+42||z<(wall.floorZ||0)-9)continue;
     const r=wall.r+4,fx=x1-wall.x,fy=y1-wall.y;
     const C=fx*fx+fy*fy-r*r;
     let t=null;
@@ -435,6 +442,7 @@ function blockSegment(x1,y1,x2,y2,power=10,z=0){
   }
   if(!first)return null;
   first.wall.hp=Math.max(0,first.wall.hp-Math.max(1,power));
+  if(first.wall.isConstruct)globalThis.ArenaBattleDirector?.constructHit?.(shooterNum,first.wall,Math.max(1,power));
   mark('burst',first.x,first.y,21,'#53667c',15);
   if(first.wall.hp===0){
     first.wall.life=0;
@@ -461,7 +469,7 @@ function updateProjectiles(api){
     b.worldZ=lerp(b.startZ||0,b.targetZ??b.startZ??0,t)+arc;
     b.height=b.worldZ;
     const terrainHit=global.ArenaTowerTerrain?.obstructsShot?.(b.prevX,b.prevY,prevZ,b.x,b.y,b.worldZ,7);
-    const wallHit=terrainHit?null:blockSegment(b.prevX,b.prevY,b.x,b.y,b.a?.damage||10,b.worldZ);
+    const wallHit=terrainHit?null:blockSegment(b.prevX,b.prevY,b.x,b.y,b.a?.damage||10,b.worldZ,b.owner);
     if(terrainHit){mark('burst',b.x,b.y,17,color(p),13);projectiles.splice(i,1);continue;}
     if(wallHit){
       b.x=wallHit.x;b.y=wallHit.y;b.life=0;
@@ -533,6 +541,8 @@ function stepObjects(api){
     if(!p){objects.splice(i,1);continue;}
     o.prevX=o.x;o.prevY=o.y;
     o.age++;o.life--;
+    if(o.invincible>0)o.invincible--;
+    if(o.isConstruct&&o.hp<=0){mark('crack',o.x,o.y,o.r*1.8,'#adceff',22);objects.splice(i,1);continue;}
     if(o.kind==='melee')stepMelee(o,p,api);
     else if(o.kind==='uppercut'){
       o.x=p.x;o.y=p.y;
@@ -628,7 +638,9 @@ function stepObjects(api){
         }
       }
     }
-    if(o.hp!==undefined&&o.hp<=0)o.life=0;
+    if(o.hp!==undefined&&o.hp<=0){
+      o.life=0;if(o.isConstruct)mark('crack',o.x,o.y,o.r*1.8,'#adceff',22);
+    }
     if(o.life<=0)objects.splice(i,1);
   }
 }

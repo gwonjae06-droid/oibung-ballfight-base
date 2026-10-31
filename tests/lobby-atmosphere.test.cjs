@@ -7,7 +7,7 @@ test('atmospheric lobby skin loads after the original design without changing na
  const original=html.indexOf('css/premium-ui.css');
  const skin=html.indexOf('css/lobby-atmosphere.css?v=arena-lobby1');
  assert.ok(original>=0&&skin>original);
- for(const id of ['tower','pve','pvp','character','ranking','mine','stock'])
+ for(const id of ['tower','pve','pvp','character','ranking'])
    assert.ok(router.includes("'"+id+"'"),id+' existing route is still available');
  assert.ok(router.includes('lobby.append(hero)'));
  assert.ok(router.includes('lobby.append(cards)'));
