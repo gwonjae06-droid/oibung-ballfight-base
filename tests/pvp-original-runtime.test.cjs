@@ -25,3 +25,47 @@ test('manual online fighter uses original cooldown and combo executor',()=>{
  for(let i=0;i<30;i++)w.PvpRuntime.step(r,1/60,1000+i*16.7);
  assert.equal(w.PvpRuntime.cast(r,0,0),true);
 });
+
+test('online PvP shares local overtime, has a longer match clock and resets each room',()=>{
+ const w=world(),P=w.PvpRuntime,S=w.ArenaStalemate;
+ assert.equal(P.MATCH_LIMIT_SECONDS,Math.ceil((S.LIMITS.regular+S.LIMITS.deadline)/60)+5);
+ const room=P.createRoom(profile,profile,'auto',1000,['auto','auto']);
+ for(let i=0;i<S.LIMITS.stagnant;i++)S.tick(room.players);
+ assert.equal(S.state.active,true);
+ const next=P.createRoom(profile,profile,'auto',2000,['auto','auto']);
+ assert.equal(S.state.active,false,'stale overtime must not leak into another online match');
+ assert.equal(P.snapshot(next).clock,P.MATCH_LIMIT_SECONDS);
+});
+test('online stalling after 120 seconds does not declare an HP-based winner',()=>{
+ const w=world(),P=w.PvpRuntime,room=P.createRoom(profile,profile,'auto',1000,['auto','auto']);
+ room.players[0].hp=100;room.players[1].hp=290;
+ for(const p of room.players)p.invincible=99999;
+ room.elapsed=120;
+ P.step(room,1/60,121000);
+ assert.equal(room.ended,false,'old 120-second cut-off must not remain');
+ room.elapsed=P.MATCH_LIMIT_SECONDS-.05;
+ P.step(room,.1,246000);
+ assert.equal(room.ended,true);
+ assert.equal(room.winner,-1,'unequal surviving HP is not an overtime tiebreaker');
+});
+test('online battle still awards a genuine last fighter standing',()=>{
+ const w=world(),P=w.PvpRuntime,room=P.createRoom(profile,profile,'auto',1000,['auto','auto']);
+ room.players[1].hp=0;
+ P.step(room,1/60,1100);
+ assert.equal(room.ended,true);
+ assert.equal(room.winner,0);
+});
+test('Tower pattern boss stays stationary while its Forge defense can continue',()=>{
+ const text=fs.readFileSync('js/core/engine.js','utf8');
+ const a=text.indexOf('function updateCharacter(self)'),
+       b=text.indexOf('function handleCombat(',a);
+ assert.ok(a>=0&&b>a);
+ const fighter={hp:300,forge:{skills:[]},towerPatternBoss:true,vx:4,vy:-6};
+ let calls=0;
+ const context={fighter,globalThis:{
+   ArenaTower:{active:true},SkillForge:{autoUpdate(p){calls++;p.vx=9;p.vy=11;}}
+ },getClosestAliveEnemy:()=>({hp:100})};
+ vm.runInNewContext(text.slice(a,b)+';updateCharacter(fighter);',context);
+ assert.equal(calls,1,'boss defensive ability clock must still update');
+ assert.equal(fighter.vx,0);assert.equal(fighter.vy,0);
+});
