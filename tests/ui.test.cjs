@@ -115,5 +115,6 @@ test('stop action is adjacent to speed and marked as an actual round termination
   assert.match(style,/\.canvas-wrapper \.arena-stop-button\s*\{[^}]*background:rgba/);
   assert.ok(engine.includes("function stopMatch()"));
   assert.ok(engine.includes("syncStopButton()"));
-  assert.ok(render.includes("roundStopped?'경기 중단 · 무승부'"));
+  assert.ok(render.includes("'경기 중단 · 무승부'"));
+  assert.ok(render.includes("'결전 종료 · 무승부'"));
 });
