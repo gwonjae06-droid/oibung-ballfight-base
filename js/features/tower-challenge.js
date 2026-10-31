@@ -166,7 +166,9 @@ function install(){
   // A compact single flow: floor → fighter/opponent → action. Details stay optional.
   panel.innerHTML='<div class="tower-head">'
    +'<div class="tower-head-current"><span class="tower-kicker">현재 층</span>'
-   +'<h2><span id="tower-floor">1 / 10F</span></h2></div>'
+   +'<h2><span id="tower-floor">1 / 10F</span></h2>'
+   +'<details id="tower-floor-picker" class="tower-floor-picker"><summary>층 선택 ▾</summary>'
+   +'<div id="tower-floor-options" class="tower-floor-options" aria-label="도전할 층 선택"></div></details></div>'
    +'<strong id="tower-best">최고 0F</strong></div>'
    +'<p class="tower-rule" id="tower-rule"></p>'
    +'<div class="tower-fighter-pick">'
@@ -253,6 +255,18 @@ function install(){
     ancient=false;realmId=id;view='interior';stage='ready';level=1;cleared=0;blessings=[];offers=[];encounter=null;environment?.clear?.();environment=null;
     message.textContent='';clearReport();show();return true;
   }
+  function moveToFloor(target){
+    const dest=Math.floor(Number(target));
+    if(ancient||stage==='fighting'||(roundStarted&&!isGameOver))return false;
+    if(active&&stage!=='between')return false;
+    const best=Number(read(global.localStorage).records[recordKey(selectedDef())]?.best)||0;
+    if(!(dest>=1&&dest<=Math.min(FINISH,best+1)))return false;
+    if(active){cleanup();active=false;selected=null;encounter=null;environment=null;}
+    level=dest;cleared=Math.min(best,dest-1);stage='ready';blessings=[];offers=[];
+    clearReport();message.textContent=dest+'층 도전을 선택했습니다.';
+    show();return true;
+  }
+  el('tower-floor-options')?.addEventListener('click',e=>{const b=e.target.closest?.('[data-floor]');if(b)moveToFloor(b.dataset.floor);});
   function allRealmsCleared(){const records=read(global.localStorage).records;return !!realms&&realms.REALMS.every(r=>Object.entries(records).some(([id,v])=>id.startsWith(r.id+'_')&&Number(v.best)>=FINISH));}
   function beginAncient(){if(active||!allRealmsCleared()||!selectRealm('space'))return false;ancient=true;level=10;show();return begin();}
   function openSelection(){
@@ -321,6 +335,13 @@ function install(){
     nextStart.disabled=offers.length>0;
     const f=floor(level),best=read(global.localStorage).records[recordKey(selectedDef())]?.best||0;
     el('tower-floor').textContent=ancient?'최종 보스':level+' / '+FINISH+'F';
+    const picker=el('tower-floor-picker'),options=el('tower-floor-options');
+    if(picker&&options){picker.hidden=!!ancient||stage==='fighting'||(!!active&&stage!=='between');
+      if(!picker.hidden){options.replaceChildren();for(let f=1;f<=Math.min(FINISH,best+1);f++){
+        const b=doc.createElement('button');b.type='button';b.dataset.floor=String(f);
+        b.textContent=f+'층'+(f<=best?' ✓':' · 다음');b.disabled=f===level;
+        options.append(b);
+      }}}
     el('tower-rule').textContent=ancient?'보스 HP 3,000 · 팔과 촉수를 공격':realm()?.terrain+(blessings.length?' · 기연 '+blessings.length+'개':'');
     el('tower-enemy').textContent=ancient?'☽ 고대의 존재':(f.boss?'👑 ':'')+f.name;
     el('tower-enemy-info').textContent=ancient?'HP 3,000 · 3페이즈 · 팔·촉수 공격 가능':realms&&f.boss?'HP '+f.hp+' · 패턴 공격 · 2페이즈':'HP '+f.hp+' · 공격 '+f.damage+' · 속도 '+f.speed.toFixed(1);
@@ -352,7 +373,7 @@ function install(){
       body.append(explanation,metadata);card.append(summary,body);skillHost.append(card);
     }
     start.textContent=ancient&&stage==='ready'?'▶ 고대의 존재 도전':stage==='between'?'▶ '+level+'층 시작':
-      stage==='fighting'?'전투 진행 중':stage==='ready'?'▶ 1층 시작':'▶ 다시 도전';
+      stage==='fighting'?'전투 진행 중':stage==='ready'?'▶ '+level+'층 시작':'▶ 다시 도전';
     start.hidden=stage==='fighting'||stage==='between';
     clearOverlay.hidden=stage!=='between';
     // Feedback is shown only for actionable results and errors.
@@ -472,7 +493,9 @@ function install(){
     if(!who){message.textContent='캐릭터가 없습니다. 캐릭터 설계에서 먼저 만들어 주세요.';return false;}
     if(roundStarted&&!isGameOver){message.textContent='진행 중인 자유 대전을 먼저 종료해 주세요.';return false;}
     blessings=[];offers=[];encounter=null;
-    clearReport();message.textContent='';selected=who;active=true;view='interior';stage='ready';level=ancient?10:1;cleared=0;
+    clearReport();message.textContent='';selected=who;active=true;view='interior';stage='ready';
+    if(ancient){level=10;cleared=0;}else{const best=read(global.localStorage).records[recordKey(who)]?.best||0;
+      level=Math.max(1,Math.min(level,Math.min(FINISH,Number(best)+1)));cleared=Math.min(best,level-1);}
     try{startFight();return true;}
     catch(e){
       active=false;stage='ready';cleanup();
@@ -538,7 +561,7 @@ function install(){
     if(stage==='fighting'&&roundStarted&&!isGameOver){togglePlay();show();}
   });
   abandon.addEventListener('click',forfeit);
-  hero.addEventListener('change',show);
+  hero.addEventListener('change',()=>{level=1;cleared=0;show();});
    show();
   function paintBackground(ctx,canvas){
     if(!['ready','fighting','between','lost','won'].includes(stage)||

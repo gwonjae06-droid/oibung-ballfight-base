@@ -6,8 +6,8 @@
 (function(g){
 'use strict';
 const LIMITS=Object.freeze({
- regular:120*60,tower:170*60,stagnant:38*60,towerStagnant:55*60,
- pulse:120,deadline:120*60
+ regular:300*60,tower:420*60,stagnant:150*60,towerStagnant:180*60,
+ pulse:120,deadline:300*60
 });
 let elapsed=0,lastProgress=0,pressureStart=-1,before=new Map(),notice=false,expired=false,pulses=0,bonus=0;
 const fraction=p=>Math.max(0,Number(p.hp)||0)/Math.max(1,Number(p.maxHp)||1);

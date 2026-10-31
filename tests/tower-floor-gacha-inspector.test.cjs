@@ -87,15 +87,16 @@ test('each battleground draws a physically distinct 2D canvas motif without affe
   assert.match(tower,/screen\.dataset\.towerTheme=f\.scene/);
   assert.match(tower,/global\.ArenaScreenRouter\?\.active!=='tower'/,'independent PvE free matches do not use Tower backgrounds');
 });
-test('existing cosmetic roulette moves under character appearance without stock or mining',()=>{
+test('point roulette and per-fighter skins are removed from the active UI',()=>{
   const router=read('js/features/screen-router.js'),gacha=read('js/features/cosmetic-arcade.js');
-  assert.match(router,/cosmeticSlot\.append\(cosmetic\)/);
+  assert.match(router,/cosmetic\.hidden=true/);
   assert.ok(!router.includes('screens.mine.append(cosmetic)'));
   assert.ok(!router.includes('mineTab(mineView)'));
   assert.match(router,/global\.CharacterStudioWorkspace\?\.selectTab\?\./);
   assert.match(gacha,/cosmetic-draw-ten/);
   assert.match(gacha,/drawTen/);
-  assert.ok(read('index.html').includes('id="cosmetic-roulette"'));
+  assert.ok(!read('index.html').includes('src="js/features/cosmetic-arcade.js"'));
+  assert.match(read('css/streamlined-arena.css'),/#skin-editor/);
 });
 test('action inspector uses native collapsed details and keeps selection and edits',()=>{
   const block=read('js/features/block-forge.js'),css=read('css/tower-mine-ui.css');

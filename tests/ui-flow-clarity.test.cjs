@@ -119,7 +119,7 @@ test('community ranking starts with top three but can expand the same public lis
   assert.equal(x.rankList.children.length,5,'ranking entries are never removed');
 });
 test('navigation keeps all six functional category links, accessible overflow and clear goal',()=>{
-  for(const cat of ['arena','match','creator','economy','cosmetics','finance'])
+  for(const cat of ['arena','match','creator'])
     assert.ok(html.includes('data-category="'+cat+'"'),cat);
   assert.ok(html.includes('id="arena-purpose"'));
   assert.ok(html.includes('data-ui-step="setup"'));

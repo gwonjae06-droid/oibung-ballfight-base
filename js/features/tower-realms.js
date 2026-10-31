@@ -34,13 +34,13 @@ function floor(base,id){
  }[r.id];
  // Escalating endurance yields progressively longer boss fights without
  // changing any saved player stats or requiring a specific power build.
- const endurance=1+Math.pow((f.number-1)/9,1.65)*3.25;
+ const endurance=1+Math.pow((f.number-1)/9,1.55)*1.75;
  f.hp=Math.round((190+f.number*26+(f.boss?170:0))*balance.hp*endurance);
- f.towerDefense=1-Math.pow((f.number-1)/9,1.3)*.53;
+ f.towerDefense=1-Math.pow((f.number-1)/9,1.3)*.28;
  f.damage=Math.round((15+f.number*3)*balance.damage);
  f.speed=Math.min(5,(1.35+f.number*.14)*balance.speed);
  f.cooldown=Math.max(.45,(2.6-f.number*.12)*balance.cooldown);
- f.description+=(r.id==='storm'?' · 초고속 전투':r.id==='ice'?' · 높은 방어와 빙결':r.id==='forest'?' · 독과 소환수':r.id==='fire'?' · 치명적 화염 공격':r.id==='time'?' · 시간 능력 연속 발동':' · 중력과 별의 폭격');
+ f.description+=(r.id==='storm'?' · 초고속 전투':r.id==='ice'?' · 강한 방어와 빙결':r.id==='forest'?' · 독과 소환수':r.id==='fire'?' · 치명적 화염 공격':r.id==='time'?' · 시간 능력 연속 발동':' · 중력과 별의 폭격');
 
  return f;
 }

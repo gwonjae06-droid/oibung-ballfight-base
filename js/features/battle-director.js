@@ -123,6 +123,18 @@ function phrase(kind,args=[]){const list=variants[kind]||[];if(!list.length)retu
  if(sentence===lastSentence){const alt=list[(index+1)%list.length];sentence=typeof alt==='function'?alt(...args):alt;}
  return sentence;
 }
+function installAvatar(){const panel=g.document?.getElementById?.('arena-commentary');if(!panel||typeof panel.querySelector!=='function'||typeof g.document?.createElement!=='function'||panel.querySelector('.commentator-face'))return false;
+ const img=g.document.createElement('img');img.id='arena-commentator-face';img.className='commentator-face';
+ img.src='assets/commentator-neutral.svg';img.alt='경기 해설자';img.setAttribute('aria-hidden','true');
+ panel.prepend(img);return true;
+}
+if(!installAvatar())g.document?.addEventListener?.('DOMContentLoaded',installAvatar,{once:true});
+const EXPRESSIONS=Object.freeze({start:'neutral',cast:'talk',impact:'talk',control:'surprise',low:'surprise',heavy:'surprise',lead:'neutral',overtime:'grim',recovery:'talk',comeback:'talk'});
+function expression(kind){const img=g.document?.getElementById?.('arena-commentator-face');if(!img)return;
+ const mood=EXPRESSIONS[kind]||'neutral';img.src='assets/commentator-'+mood+'.svg';
+ img.alt='해설자 '+({neutral:'기본',talk:'열정',surprise:'놀람',grim:'긴장'}[mood]||'기본')+' 표정';
+ img.classList?.toggle?.('exclaim',mood==='surprise');
+}
 function speak(text){
  if(!text||text===lastSentence)return false;
  lastSentence=text;
@@ -149,11 +161,13 @@ function dispatch(){
  if(!queue.length)return;
  queue.sort((a,b)=>b.priority-a.priority||a.at-b.at);
  const choice=queue.shift(),sentence=phrase(choice.kind,choice.args);
+ expression(choice.kind);
  if(speak(sentence)){
   lastNarrated=frame;recent.push({key:choice.key,frame});if(recent.length>15)recent.shift();
  }
 }
 function reset(players=[]){
+ expression('start');
  frame=0;lastNarrated=0;roster=players.slice();history=new Map();overTimeWas=false;ended=false;
  queue=[];recent=[];actionNames=new WeakMap();lastSkillUsed=new WeakMap();skillTotals=new Map();confirmedHits=0;
  for(const p of roster)history.set(p,{previous:sample(p),lost:0,healed:0,biggest:0,last:0,low:false,controlled:false});

@@ -138,6 +138,7 @@ function geometry(realm,level,width,height,tick){
  return (geometryCache={key,platforms,peak:Math.max(22,...platforms.map(n=>n.z)),polygons:platforms.map(n=>footprint(realm,n))});
 }
 function heightAt(realm,level,x,y,width=500,height=500,tick=0){
+ if(g.ArenaTowerArchitecture)return 0; // All tower walkable islands share the same level.
  if(g.ArenaTowerArchitecture)return g.ArenaTowerArchitecture.heightAt(realm,level,x,y,width,height,tick);
  let z=0;const geo=geometry(realm,level,width,height,tick),platforms=geo.platforms;
  for(let i=0;i<platforms.length;i++){

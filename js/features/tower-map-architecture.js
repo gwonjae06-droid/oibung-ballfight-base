@@ -122,10 +122,10 @@ let cache=null;
 function getMap(realm,level=1,w=500,h=500,tick=0){
  if(!style[realm])return {realm,level,width:w,height:h,tick,surfaces:[],nav:[]};
  const key=[realm,level,w,h,tick].join(':');if(cache?.key===key)return cache.map;
- const surfaces=shapes(realm,tick,level).map(s=>({...s,vertices:geometry(s,w,h),
+ const surfaces=shapes(realm,tick,level).map(shape=>{const s={...shape,z:0,z0:0,z1:0};return {...s,vertices:geometry(s,w,h),
   bbox:(()=>{const vs=geometry(s,w,h);return {minX:Math.min(...vs.map(v=>v.x)),maxX:Math.max(...vs.map(v=>v.x)),minY:Math.min(...vs.map(v=>v.y)),maxY:Math.max(...vs.map(v=>v.y))};})(),
   cx:(s.from?s.from[0]+s.to[0]:s.points.reduce((a,p)=>a+p[0]*2,0)/s.points.length)*w/1000,
-  cy:(s.from?s.from[1]+s.to[1]:s.points.reduce((a,p)=>a+p[1]*2,0)/s.points.length)*h/1000}));
+  cy:(s.from?s.from[1]+s.to[1]:s.points.reduce((a,p)=>a+p[1]*2,0)/s.points.length)*h/1000};});
  const nav=surfaces.map(s=>({id:s.id,x:s.cx,y:s.cy,z:s.z,kind:s.kind}));
  const obstacles=(OBSTACLES[realm]||[]).map(([x,y,r])=>({x:x*w/500,y:y*h/500,r:r*Math.min(w,h)/500}));
  return (cache={key,map:{realm,level,width:w,height:h,tick,surfaces,nav,obstacles}}).map;
@@ -272,14 +272,14 @@ function paint(ctx,realm,level,w=500,h=500,tick=0){
  paintVoid(ctx,realm,w,h,tick);
  const terrain=map.surfaces.slice().sort((a,b)=>a.z-b.z);
  for(const s of terrain){const pts=s.vertices;
-  const meanZ=s.z,down=Math.max(7,Math.min(45,meanZ*.55));
+  const meanZ=0,down=3;
   ctx.save();ctx.globalAlpha=.25;ctx.fillStyle='#000';drawPoly(ctx,pts.map(p=>({x:p.x+7,y:p.y+down+9})));ctx.fill();ctx.restore();
-  const top=pts.map(p=>({x:p.x,y:p.y-(s.from?floorOnSurface(s,p.x,p.y,w,h):s.z)}));
-  // Painted vertical sides use the SAME elevation as the physics surface.
+  const top=pts.map(p=>({x:p.x,y:p.y}));
+  // Level ground: no elevated sides. Draw a narrow decorative edge only.
   ctx.fillStyle=st.side;
   for(let i=0;i<pts.length;i++){
    const j=(i+1)%pts.length,a=pts[i],b=pts[j],A=top[i],B=top[j];
-   if(b.x>=a.x)continue;ctx.beginPath();ctx.moveTo(A.x,A.y);ctx.lineTo(B.x,B.y);
+   if(b.x>=a.x||meanZ===0)continue;ctx.beginPath();ctx.moveTo(A.x,A.y);ctx.lineTo(B.x,B.y);
    ctx.lineTo(b.x,b.y);ctx.lineTo(a.x,a.y);ctx.closePath();ctx.fill();
   }
   ctx.fillStyle=s.kind==='energy'?'#64558f':s.kind==='swamp'?'#526f45':s.kind==='crater'?'#a44229':st.top;

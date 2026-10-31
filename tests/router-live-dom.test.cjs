@@ -69,8 +69,8 @@ test('actual router constructs all six routes and preserves original game widget
   assert.equal(x.tools.parent.id,'pve-free-slot');
   assert.equal(x.ranking.parent.id,'ranking-power');
   assert.equal(x.gallery.parent.id,'ranking-shared');
-  assert.equal(x.cosmetic.parent.id,'character-cosmetic-slot');
-  assert.ok(x.cosmetic.classList.contains('mine-gacha'));
+  assert.equal(x.cosmetic.parent.id,'container');
+  assert.equal(x.cosmetic.hidden,true);
   assert.equal(x.dialog.parent.id,'character-design-slot');
   const visited=[];
   for(const id of ['tower','pve','character','ranking','lobby']){
@@ -106,8 +106,8 @@ test('PvE is a standalone route; rankings keep their underlying data',()=>{
   }
   r.go('character');
   r.characterTab('cosmetics');
-  assert.equal(x.byId.get('character-cosmetic-slot').hidden,false);
-  assert.equal(x.cosmetic.hidden,false);
+  assert.equal(x.byId.get('character-cosmetic-slot').hidden,true);
+  assert.equal(x.cosmetic.hidden,true);
   r.characterTab('design');
   assert.equal(x.byId.get('character-design-slot').hidden,false);
   assert.equal(x.cosmetic.hidden,true);

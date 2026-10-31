@@ -70,9 +70,9 @@ test('economy restores signed balance and inventory, and the UI navigation is wi
   new vm.Script(codeText).runInContext(setup);
   assert.equal(vm.runInContext('coins',setup),-250);
   assert.equal(vm.runInContext('itemInventory.vitality',setup),3);
-  assert.ok(html.includes('src="js/features/cosmetic-arcade.js"'));
+  assert.ok(!html.includes('src="js/features/cosmetic-arcade.js"'), 'the point-based cosmetics script is no longer loaded');
   assert.ok(!html.includes('src="js/features/point-market.js"'));
-  assert.ok(html.includes('data-category="cosmetics"'));
+  assert.ok(!html.includes('data-category="cosmetics"'));
   assert.ok(html.includes('data-category="finance" hidden'));
   assert.ok(read('js/features/ui-categories.js').includes("'cosmetics','finance'"));
   assert.ok(read('js/core/render.js').includes('CosmeticArcade?.drawUnder'));

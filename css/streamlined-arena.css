@@ -1,0 +1,18 @@
+/* Retired point system and per-fighter equipment. Old saves remain accessible in storage. */
+#container .lobby-wallet,#container .screen-wallet,#container [data-wallet],
+#container .economy-card,#container .bf-fold,#container #point-finance,
+#container #cosmetic-arcade,#container #character-cosmetic-slot,
+#container #skin-editor,#container .skin-editor,#container [data-character-tab="cosmetics"],
+#container .coin-balance,#container .economy-head {display:none!important}
+#screen-tower .tower-floor-picker{margin-top:6px;font-size:12px;position:relative}
+#screen-tower .tower-floor-picker summary{cursor:pointer;border:1px solid #9aa8bb66;border-radius:8px;padding:7px 11px;background:#182638;color:#e8f4ff;list-style:none}
+#screen-tower .tower-floor-options{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;max-width:420px}
+#screen-tower .tower-floor-options button{border:1px solid #7699bd;border-radius:8px;background:#20364a;color:#f2f8ff;padding:7px 11px;cursor:pointer}
+#screen-tower .tower-floor-options button:disabled{opacity:.45;cursor:default}
+#arena-commentary .commentator-face{width:62px;height:68px;flex:0 0 62px;border:1px solid #85b7c3;border-radius:12px;background:#f9fbfe;object-fit:cover;object-position:top;transition:transform .22s ease;box-shadow:0 0 18px #3bd4ee25}
+#arena-commentary .commentator-face.exclaim{transform:scale(1.08) rotate(-3deg)}
+#arena-commentary .commentator-text{flex:1;min-width:0}
+@media(max-width:560px){#arena-commentary .commentator-face{width:47px;height:53px;flex-basis:47px}}
+@media(prefers-reduced-motion:reduce){#arena-commentary .commentator-face{transition:none!important}}
+
+#arena-commentary > div:first-of-type{flex:1;min-width:0}

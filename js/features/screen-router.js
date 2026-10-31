@@ -31,7 +31,7 @@ function install(){
   lobby.setAttribute('aria-label','오이붕 아레나 메인 로비');
   const top=node('div','lobby-top');
   if(header)top.append(header);
-  const wallet=node('div','lobby-wallet');wallet.innerHTML='<small>보유 포인트</small><strong id="lobby-wallet-amount">1,000 G</strong>';
+  const wallet=node('div','lobby-wallet');wallet.innerHTML='<strong id="lobby-wallet-amount" hidden></strong>';wallet.hidden=true;
   top.append(wallet);
   const settings=node('details','lobby-settings');
   settings.innerHTML='<summary>⚙ 설정 · 음악</summary><div class="lobby-settings-body"></div>';
@@ -50,7 +50,7 @@ function install(){
   cards.innerHTML=[
    ['pve','PvE · 자유 대전','원하는 파이터를 선택해 AI 전투를 즐기세요.','자유 대전 · 2~10인 · 실험 전투'],
    ['pvp','온라인 PvP','커스텀 파이터끼리 실시간 자동전투로 맞붙습니다.','1:1 랜덤 매칭 · 온라인 서버 필요'],
-   ['character','캐릭터 설계','블록으로 스킬을 만들고 외형을 꾸며 보세요.','스킬 코드 · 미리보기 · 가챠'],
+   ['character','캐릭터 설계','스킬을 설계하고 친구 챔피언을 만들어 보세요.','스킬 코드 · 캐릭터 미리보기'],
    ['ranking','캐릭터 랭킹','공유 파이터와 내 탑 기록을 확인하세요.','파워랭킹 · 기록 · 공유']
   ].map(([id,name,desc,meta])=>'<button type="button" class="lobby-card lobby-'+id+'" data-screen="'+id+'">'
     +'<span class="lobby-card-icon" aria-hidden="true">'+ICONS[id]+'</span>'
@@ -73,7 +73,7 @@ function install(){
       +'<div><span class="eyebrow">OIBUNG / '+id.toUpperCase()+'</span>'
       +'<h2 id="heading-'+id+'">'+ICONS[id]+' '+NAMES[id]+'</h2>'
       +'<p class="screen-deck">'+DECKS[id]+'</p></div>'
-      +'<strong class="screen-wallet" data-wallet>1,000 G</strong>';
+      +'<strong class="screen-wallet" data-wallet hidden></strong>';
     page.append(bar);
     screens[id]=page;mount.append(page);
   }
@@ -97,8 +97,7 @@ function install(){
   pve.append(pveArena,free);
   const designTabs=node('nav','screen-tabs character-route-tabs');
   designTabs.setAttribute('aria-label','캐릭터 설계 메뉴');
-  designTabs.innerHTML='<button type="button" data-character-tab="design">스킬 제작</button>'
-    +'<button type="button" data-character-tab="cosmetics">외형 꾸미기</button>';
+  designTabs.innerHTML='<button type="button" data-character-tab="design">스킬 제작</button>';
   screens.character.append(designTabs);
   const designSlot=node('div','character-design-slot');designSlot.id='character-design-slot';
   if(studio){
@@ -116,9 +115,7 @@ function install(){
    }
    screens.character.append(designSlot);
   const cosmeticSlot=node('div','character-cosmetic-slot');cosmeticSlot.id='character-cosmetic-slot';
-  cosmeticSlot.innerHTML='<div class="character-cosmetic-guide"><strong>새 꾸미기 아이템이 필요하신가요?</strong>'
-    +'<p>보유한 외형을 캐릭터별로 장착하거나 교체할 수 있습니다.</p>'
-    +'</div>';
+  cosmeticSlot.innerHTML='';cosmeticSlot.hidden=true;
   screens.character.append(cosmeticSlot);
   const score=node('section','tower-record-panel');score.id='tower-record-panel';
   score.innerHTML='<h3>내 브라우저 도전 기록</h3><p>온라인 기록이 아닙니다. 이 기기에 저장된 캐릭터별 최고 층입니다.</p>'
@@ -142,11 +139,11 @@ function install(){
   screens.ranking.append(rankingPower,score,shared,personal);
   // The arcade is still available in Appearance; click mining and stocks
   // are retired. Never remove saved cosmetics or reset a user's wallet.
-  if(cosmetic){cosmetic.classList.add('mine-gacha');cosmeticSlot.append(cosmetic);}
+  if(cosmetic){cosmetic.hidden=true;cosmetic.style.display='none';main.append(cosmetic);}
   // Keep the legacy wallet IDs and finance shell mounted; their backing
   // code accesses them via document.getElementById.
   finance.hidden=true;finance.style.display='none';main.append(finance);
-  function walletText(){return typeof global.formatGold==='function'?global.formatGold(coins):String(coins)+' G';}
+  function walletText(){return '';}
   function refresh(){
     const w=walletText();
     doc.getElementById('lobby-wallet-amount').textContent=w;
@@ -208,16 +205,16 @@ function install(){
   }
   function mineTab(){return false;} // retired route kept as compatibility hook
   function characterTab(id){
-    charTab=id==='cosmetics'?'cosmetics':'design';
-    designSlot.hidden=false;cosmeticSlot.hidden=charTab!=='cosmetics';
+    charTab='design';
+    designSlot.hidden=false;cosmeticSlot.hidden=true;
     for(const btn of designTabs.querySelectorAll('button')){
       btn.setAttribute('aria-pressed',String(btn.dataset.characterTab===charTab));
     }
-    if(cosmetic)cosmetic.hidden=charTab!=='cosmetics';
+    if(cosmetic)cosmetic.hidden=true;
     if(active==='character'){
       const d=doc.getElementById('character-studio-dialog');
       if(d&&!d.open)d.setAttribute('open','');
-      global.CharacterStudioWorkspace?.selectTab?.(charTab==='cosmetics'?'appearance':'skills');
+      global.CharacterStudioWorkspace?.selectTab?.('skills');
       global.dispatchEvent?.(new global.Event('studio:open'));
     }
   }

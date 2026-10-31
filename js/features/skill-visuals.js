@@ -390,6 +390,25 @@ function draw(ctx,options={}){
       if(e.kind==='cast'&&!low&&['cosmos','explosion','wave','time'].includes(e.family))
         fx.column(ctx,x,groundY,Math.min(23,e.radius*.18),Math.min(55,e.radius*.34),e.color,.26,e.family);
     }
+    // Major skills have distinct upright volumes, not just shared flat rings.
+    // All are visual-only: collision rules and player height remain unchanged.
+    if(fx&&!low){
+      const kind=e.type,phase=Math.max(0,1-e.age/e.life),radius=Math.min(75,e.radius*.35);
+      if(['erupt','nova','meteor','starfall'].includes(kind)){
+        fx.ground(ctx,x,groundY,radius*1.4,'#ff9847',phase*.55);
+        fx.column(ctx,x,groundY,radius*.58,(55+radius*.65)*phase,'#ffb35d',phase*.72,'flame');
+      }else if(['blackhole','orbit'].includes(kind)){
+        fx.ground(ctx,x,groundY,radius*1.55,'#9973e9',phase*.48);
+        fx.column(ctx,x,groundY,radius*.48,52*phase,'#be8dff',phase*.46,'cosmos');
+      }else if(['bolt','chain','beam'].includes(kind)){
+        fx.column(ctx,x,groundY,radius*.25,100*phase,'#b5efff',phase*.68,'lightning');
+      }else if(['zone','timestop','rewind'].includes(kind)){
+        fx.ground(ctx,x,groundY,radius,'#94d8ff',phase*.55,'warning');
+        fx.column(ctx,x,groundY,radius*.22,30*phase,'#c6e6ff',phase*.35,'energy');
+      }else if(['summon','lifebloom','wall'].includes(kind)){
+        fx.column(ctx,x,groundY,radius*.35,43*phase,'#88ddb0',phase*.45,'energy');
+      }
+    }
     if(e.family==='explosion'&&e.kind==='impact'){
       ctx.save();ctx.strokeStyle=e.color;ctx.globalAlpha=Math.max(0,1-e.age/e.life)*.42;
       const floor=global.ArenaTowerTerrain?.worldHeight?.(x,groundY)||0;

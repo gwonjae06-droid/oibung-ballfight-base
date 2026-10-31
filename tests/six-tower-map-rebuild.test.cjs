@@ -33,15 +33,15 @@ test('architecture renders the void plus elevated sidewalls; path exits actual p
  assert.ok(calls.rects>=6&&calls.fill>=24);
  assert.ok(calls.rects>=6,'each arena paints its own full-screen void backdrop');
 });
-test('height matches top surfaces, real ramps, and moving platform geometry',()=>{
+test('all tower ground surfaces are flat while distinct bridges and void still exist',()=>{
  const A=load().ArenaTowerArchitecture;
- assert.ok(A.heightAt('ice',10,253,131,500,500,60)>75);
- assert.ok(A.heightAt('space',10,380,180,500,500,60)>60);
- assert.ok(A.heightAt('fire',10,248,265,500,500,60)<30);
- const a=A.getMap('space',8,500,500,0),b=A.getMap('space',8,500,500,90);
- assert.notEqual(a.surfaces.find(s=>s.id==='northeast-isle').z,b.surfaces.find(s=>s.id==='northeast-isle').z);
- const before=A.heightAt('ice',8,250,393,500,500,400),after=A.heightAt('ice',8,250,393,500,500,440);
- assert.ok(after<before,'ice lake physically sinks on collapse');
+ for(const realm of ['time','space','fire','storm','ice','forest']){
+   for(const tick of [0,60,440]){const m=A.getMap(realm,10,500,500,tick);
+     assert.ok(m.surfaces.length>=6);
+     assert.ok(m.surfaces.every(s=>s.z===0&&(s.z0===undefined||s.z0===0)&&(s.z1===undefined||s.z1===0)));
+     assert.equal(A.heightAt(realm,10,250,250,500,500,tick),0);
+   }
+ }
 });
 test('bridges have usable waypoints and bounds bounce projectiles and fighters',()=>{
  const g=load(),A=g.ArenaTowerArchitecture;

@@ -29,7 +29,7 @@ test('all six Tower completions still gate the ancient boss, but locked players 
  assert.doesNotMatch(css,/#screen-tower \.ancient-unlock\[data-unlocked="false"\]\s*\{[^}]*display\s*:\s*none/);
  const html=read('index.html');
  assert.ok(html.indexOf('css/ancient-one-portrait.css')>html.indexOf('css/tower-gateway.css'));
- assert.match(html,/js\/features\/tower-challenge\.js\?v=(?:eldritch1|six-decks1)/);
+ assert.match(html,/js\/features\/tower-challenge\.js\?v=(?:eldritch1|six-decks1|flat-arcade3)/);
 });
 test('eldritch encounter CTA is mobile-friendly, keyboard accessible and respects motion preferences',()=>{
  const css=read('css/ancient-one-portrait.css');

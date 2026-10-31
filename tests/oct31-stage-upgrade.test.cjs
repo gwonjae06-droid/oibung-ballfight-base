@@ -24,7 +24,8 @@ test('endurance and defense increase floor duration without changing player PvP 
  const g=load(['tower-realms']);
  for(const realm of ['time','space','fire','storm','ice','forest']){
   const floor=n=>g.ArenaTowerRealms.floor({number:n,boss:n%5===0},realm);
-  assert.ok(floor(10).hp>floor(1).hp*8);
+  assert.ok(floor(10).hp>floor(1).hp*4);
+  assert.ok(floor(10).hp<floor(1).hp*8, 'high floors should be difficult but not damage sponges');
   assert.ok(floor(10).towerDefense<floor(1).towerDefense);
   assert.ok(floor(9).hp>floor(6).hp);
  }
