@@ -69,7 +69,8 @@ function tick(roster,tower=false){
  if(overdue>=LIMITS.deadline)expired=true;
  return true;
 }
-g.ArenaStalemate=Object.freeze({tick,reset,pulseRate,
+function finish(){status(false,0);g.BackgroundMusic?.setOvertime?.(false);}
+g.ArenaStalemate=Object.freeze({tick,reset,finish,pulseRate,
  get state(){return {elapsed,lastProgress,pressureStart,active:pressureStart>=0,notice,
    expired,pulses,percentage:display};},
  LIMITS});
