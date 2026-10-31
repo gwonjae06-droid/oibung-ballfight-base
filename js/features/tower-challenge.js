@@ -315,7 +315,7 @@ function install(){
     if(ancient){const info=doc.createElement('p');info.textContent=global.ArenaAncientOne?.names?.join(' · ')||'차징·격자·연쇄 공격';skillHost.append(info);}
     if(realms&&f.boss&&!ancient){
       const info=doc.createElement('p');
-      info.textContent=(global.ArenaEncounter?.patternNames?.(realmId)||[realm().pattern]).join(' · ');
+      info.textContent=(global.ArenaEncounter?.patternNames?.(realmId,level)||[realm().pattern]).join(' · ');
       skillHost.append(info);
     }
     for(const ability of (ancient?[]:makeEnemy(level).skills)){
