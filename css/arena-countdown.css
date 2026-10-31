@@ -1,0 +1,84 @@
+/* Ready / Fight overlay shared by local Arena, all Tower floors, and online PvP.
+ * Pointer-transparent, no image requests or extra animation loops. */
+.canvas-wrapper .arena-countdown,
+#pvp-match .arena-countdown{
+ position:absolute;inset:0;z-index:21;
+ display:grid;place-items:center;pointer-events:none;overflow:hidden;
+ isolation:isolate;color:#fef6e6;
+ background:radial-gradient(circle at 50% 50%,rgba(8,14,30,.38),rgba(3,8,17,.73) 85%);
+ -webkit-backdrop-filter:blur(2.5px);backdrop-filter:blur(2.5px);
+}
+#pvp-match{position:relative}
+.arena-countdown[hidden]{display:none!important}
+.arena-countdown::before{
+ content:"";position:absolute;left:50%;top:50%;
+ width:min(63%,340px);aspect-ratio:1;border:1px solid rgba(217,193,141,.36);
+ border-radius:50%;transform:translate(-50%,-50%) rotate(-14deg);
+ box-shadow:0 0 48px rgba(134,106,180,.18),inset 0 0 44px rgba(111,166,196,.1);
+}
+.arena-countdown-ring{
+ position:absolute;left:50%;top:50%;
+ width:min(72%,390px);aspect-ratio:1;
+ border:2px solid rgba(199,179,240,.36);
+ border-left-color:rgba(248,218,151,.78);
+ border-radius:50%;transform:translate(-50%,-50%);
+ box-shadow:0 0 42px rgba(124,132,208,.16);
+ animation:arena-ready-orbit 5s linear infinite;
+}
+.arena-countdown-content{
+ position:relative;z-index:1;display:grid;justify-items:center;
+ gap:9px;text-align:center;max-width:95%;padding:25px;
+ text-shadow:0 5px 16px rgba(0,0,0,.72);
+}
+.arena-countdown-kicker{
+ color:#e8c99d;font-size:clamp(9px,1.5vw,13px);font-weight:900;
+ letter-spacing:.34em;
+}
+.arena-countdown-number{
+ display:block;font-size:clamp(80px,19vw,175px);line-height:1;
+ letter-spacing:-.055em;font-weight:1000;color:#fff0d0;
+ -webkit-text-stroke:1px rgba(254,241,207,.65);
+ text-shadow:0 6px 0 #4c365380,0 16px 36px #000b,0 0 38px rgba(210,173,255,.65);
+}
+.arena-countdown-subtitle{
+ color:#d8e4f0;letter-spacing:.2em;font-weight:800;
+ font-size:clamp(11px,1.65vw,15px);
+}
+.arena-countdown[data-step="FIGHT!"]{
+ background:radial-gradient(circle at center,rgba(84,55,39,.38),rgba(5,9,18,.72) 80%);
+}
+.arena-countdown[data-step="FIGHT!"] .arena-countdown-number{
+ color:#ffe1a3;font-size:clamp(56px,12vw,116px);
+ letter-spacing:.02em;
+ text-shadow:0 7px 0 #6e3a2877,0 12px 38px #000c,
+   0 0 40px rgba(255,188,96,.72);
+}
+.arena-countdown-pop .arena-countdown-number{
+ animation:arena-ready-count .42s cubic-bezier(.18,.74,.32,1.12) both;
+}
+@keyframes arena-ready-count{
+ from{opacity:.15;transform:scale(1.48);filter:blur(8px)}
+ 65%{opacity:1;filter:blur(0)}
+ to{opacity:1;transform:scale(1);filter:blur(0)}
+}
+@keyframes arena-ready-orbit{
+ from{transform:translate(-50%,-50%) rotate(0)}
+ to{transform:translate(-50%,-50%) rotate(360deg)}
+}
+@media(max-width:640px){
+ .canvas-wrapper .arena-countdown,#pvp-match .arena-countdown{
+   -webkit-backdrop-filter:none;backdrop-filter:none;
+ }
+ .arena-countdown-content{gap:5px;padding:12px}
+ .arena-countdown-number{font-size:clamp(64px,22vw,130px)}
+ .arena-countdown-kicker{letter-spacing:.18em}
+ .arena-countdown-ring{width:min(83%,290px)}
+}
+@media(prefers-reduced-motion:reduce){
+ .arena-countdown-ring,.arena-countdown-pop .arena-countdown-number{
+   animation:none!important;
+ }
+ .canvas-wrapper .arena-countdown,#pvp-match .arena-countdown{
+   -webkit-backdrop-filter:none;backdrop-filter:none;
+ }
+}
