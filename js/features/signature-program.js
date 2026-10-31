@@ -10,7 +10,12 @@ const CONDITIONS=Object.freeze({
  dodge:'보스 공격을 실제로 피했다면',
  hpLow:'내 체력이 35% 이하라면',
  near:'상대가 140 거리 이내라면',
- far:'상대가 175 거리 밖이라면'
+ far:'상대가 175 거리 밖이라면',
+ hit:'이번 스킬이 적을 명중했다면',
+ guard:'보호막으로 공격을 막았다면',
+ move:'이동 동작이 완료되었다면',
+ status:'적에게 상태이상을 적용했다면',
+ charge3:'충전 변수가 3 이상이라면'
 });
 function validCondition(value){return Object.prototype.hasOwnProperty.call(CONDITIONS,value)?value:'always';}
 function danger(p,target){
