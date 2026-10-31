@@ -79,3 +79,17 @@ test('Scratch editor replaces old two-mode UI and supports nested drag/drop, key
  assert.ok(html.indexOf('signature-scratch.js')<html.indexOf('skill-forge.js'));
  assert.ok(html.indexOf('scratch-studio.js')>html.indexOf('studio-easy-designer.js'));
 });
+
+test('damage and defensive budgets count the strongest if-branch and repeated actions',()=>{
+ const g=harness();
+ vm.runInContext(read('js/features/arena-balance.js'),g);
+ const program=[{kind:'if',condition:'near',
+  then:[{kind:'repeat',times:3,body:[action('shot')]}],
+  else:[action('wave')]}];
+ const s={name:'교차 공격',trigger:'auto',cooldown:3,actions:[action('wave').action],program};
+ const single={...s,program:undefined};
+ assert.ok(g.ArenaBalance.skillPressure(s)>g.ArenaBalance.skillPressure(single));
+ const defense={kind:'action',action:{...action('wave').action,type:'shield',duration:2}};
+ const defender={...s,actions:[defense.action],program:[{kind:'repeat',times:3,body:[defense]}]};
+ assert.ok(g.ArenaBalance.defenseSkillPressure(defender)>g.ArenaBalance.defenseSkillPressure({...defender,program:undefined}));
+});
