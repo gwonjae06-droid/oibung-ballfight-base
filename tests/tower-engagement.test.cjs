@@ -48,7 +48,7 @@ test('successfully avoiding boss telegraphs opens a temporary real damage window
   enc.step();
   if(enc.weakpointFrames>0){
    seen=true;
-   assert.equal(boss.towerDefense,1.2);
+   assert.ok(Math.abs(boss.towerDefense-1.2)<1e-9);
    break;
   }
  }
