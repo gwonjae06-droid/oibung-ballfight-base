@@ -146,6 +146,6 @@ test('online battle loads the shared auto AI with cache-busted scripts',()=>{
  assert.match(html,/pvp-original-engine\.js\?v=clock-single2/);
  assert.match(html,/arena-auto-ai\.js\?v=realm-gimmicks2/);
  assert.match(frame,/arena-auto-ai\.js\?v=autofocus1/);
- assert.match(html,/arena-balance\.js\?v=charge1/);
- assert.match(frame,/arena-balance\.js\?v=charge1/);
+ assert.match(html,/arena-balance\.js\?v=defense-budget3/);
+ assert.match(frame,/arena-balance\.js\?v=defense-budget3/);
 });
