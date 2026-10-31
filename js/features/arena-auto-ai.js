@@ -161,11 +161,12 @@ function plan(p,foe,speed,evadeOnly=false){
    const a=i>=0?i*Math.PI*2/angles:0;
    let ux=i===-2?preferred.x:i===-1?0:Math.cos(a);
    let uy=i===-2?preferred.y:i===-1?0:Math.sin(a);
-   const predictedX=clamp(p.x+ux*base*18,pad,w-pad);
-   const predictedY=clamp(p.y+uy*base*18,pad,h-pad);
-   let safety=risk(p,foe,ux*base,uy*base,threats);
-   const border=clamp((pad-predictedX)/30,0,3)+clamp((predictedX-(w-pad))/30,0,3)
-     +clamp((pad-predictedY)/30,0,3)+clamp((predictedY-(h-pad))/30,0,3);
+   const rawX=p.x+ux*base*18,rawY=p.y+uy*base*18;
+   const predictedX=clamp(rawX,pad,w-pad),predictedY=clamp(rawY,pad,h-pad);
+   const safety=risk(p,foe,ux*base,uy*base,threats);
+   // Penalize the UNCLAMPED path. Testing clamped coordinates hid wall risk.
+   const border=clamp((pad-rawX)/30,0,3)+clamp((rawX-(w-pad))/30,0,3)
+     +clamp((pad-rawY)/30,0,3)+clamp((rawY-(h-pad))/30,0,3);
    // Safe combat positioning still matters; evasion is not aimless wandering.
    const projectedDistance=magnitude(foe.x-predictedX,foe.y-predictedY);
    const gap=Math.abs(projectedDistance-range(p));
