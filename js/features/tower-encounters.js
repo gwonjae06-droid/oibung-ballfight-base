@@ -39,7 +39,8 @@ function create({realm,level,width=500,height=500,hero,boss,damage,environmentMa
  const line=(x,y,angle,thickness=48)=>({shape:'line',x,y,angle,width:thickness,length:Math.hypot(width,height)});
  const ring=(x,y,inner,r)=>({shape:'ring',x,y,inner,r});
  function add(shape,kind,label,delay=90,life=30){
-  zones.push({...shape,id:++serial,kind,label,born:tick,fire:tick+delay,end:tick+delay+life,hits:new Set()});
+  zones.push({...shape,id:++serial,kind,label,born:tick,fire:tick+delay,end:tick+delay+life,
+    signature:kind==='boss'&&level===10&&ULTIMATES[realm]?.includes(label),hits:new Set()});
   if(zones.length>MAX_ZONES)zones.splice(0,zones.length-MAX_ZONES);
  }
  function terrain(){
