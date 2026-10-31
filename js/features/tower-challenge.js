@@ -387,18 +387,19 @@ function install(){
       players[1].towerLevel=level;
       if(!ancient)global.ArenaTowerTerrain?.step?.(realmId,level,players,canvas.width,canvas.height,0);
       // Environmental events share Tower's confirmed-hit damage adapter.
-      const hazardDamage=(p,amount)=>{
+      const hazardDamage=(p,amount,z)=>{
         if(p.invincible>0||(p.z||p.jumpHeight||0)>38)return false;
+        const status=z?.realm==='fire'?'fire':z?.realm==='forest'?'poison':'none';
         return global.SkillForge.hit(p===players[0]?players[1]:players[0],p,
-          {type:'wave',damage:amount,radius:0,knockback:0,status:'none',duration:0},
+          {type:'wave',damage:amount,radius:0,knockback:0,status,duration:1.5},
           1,global.AdvancedCombat?.height?.(p));
       };
       environment=!ancient?global.ArenaTowerEnvironment?.create?.({
         realm:realmId,level,width:canvas.width,height:canvas.height,roster:players,damage:hazardDamage
       }):null;
       encounter=(ancient?global.ArenaAncientOne:global.ArenaEncounter)?.create({realm:realmId,level,width:canvas.width,height:canvas.height,
-        hero:players[0],boss:players[1],environmentManaged:!!environment,damage(p,amount){
-          return hazardDamage(p,amount);
+        hero:players[0],boss:players[1],environmentManaged:!!environment,damage(p,amount,z){
+          return hazardDamage(p,amount,z);
         }});
     }
     // Fresh combatants; run-local blessings were applied above.
