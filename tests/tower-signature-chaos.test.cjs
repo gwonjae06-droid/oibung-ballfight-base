@@ -29,14 +29,17 @@ test('every final Tower boss actually summons its five multi-stage signatures',(
   const boss={x:250,y:430,radius:25,hp:3000,maxHp:3000};
   const hits=[];
   const e=E.create({realm,level:10,hero,boss,damage(p,n,z){hits.push(z.label);p.hp-=n;return true;}});
-  for(let i=0;i<1750;i++)e.step();
+  const used=new Set();
+  for(let i=0;i<1750;i++){
+   e.step();
+   for(const z of e.zones)if(z.signature)used.add(z.label);
+   assert.ok(e.zones.length<=30,'even 100x battles must limit VFX zone count');
+  }
   assert.ok(e.attackIndex>=5,realm);
-  const used=new Set(e.zones.map(z=>z.label));
-  // Lifetime is bounded, so count attacks when they are generated at source.
-  assert.ok(hits.length>=0);
-  assert.ok(e.zones.length<=30);
+  assert.deepEqual([...used].sort(),[...E.patternNames(realm,10)].sort(),
+    realm+' must actually execute all five advertised ultimate patterns');
   assert.ok(e.zones.every(z=>z.fire-z.born>=78),realm+' instant damage warning');
-  assert.ok(used.size>0,realm+' must present active signatures');
+  assert.ok(hits.length>=0);
  }
 });
 test('six normal enemy families rotate through a real third unique hazard',()=>{
