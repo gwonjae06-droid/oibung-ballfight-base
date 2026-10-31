@@ -194,8 +194,10 @@ function dropBlock(destination,index){
  const recursive=destination.length>=from.length&&from.every((part,i)=>destination[i]===part);
  if(recursive){feedback('블록을 자기 자신 속으로 넣을 수 없습니다.');return;}
  commit(p=>{
-  const take=listAt(p,fromList).splice(sourceIndex,1)[0];
-  const dest=listAt(p,destination);
+  // Resolve both live arrays before removing an ancestor/sibling: removing
+  // a root node shifts indices but must not invalidate the destination slot.
+  const sourceList=listAt(p,fromList),dest=listAt(p,destination);
+  const take=sourceList.splice(sourceIndex,1)[0];
   const adjusted=JSON.stringify(fromList)===JSON.stringify(destination)&&sourceIndex<index?index-1:index;
   dest.splice(Math.min(dest.length,Math.max(0,adjusted)),0,take);
   activeList=destination;activeIndex=adjusted+1;
