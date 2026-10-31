@@ -150,3 +150,6 @@
 @media(min-width:1500px){.scratch-studio-active .scratch-layout{grid-template-columns:minmax(170px,225px) minmax(0,1fr) minmax(155px,190px)}.scratch-studio-active .scratch-help{display:block}}
 @media(max-width:800px){.scratch-studio-active .scratch-layout{grid-template-columns:minmax(125px,.55fr) minmax(0,2fr);min-height:500px}.scratch-studio-active .scratch-script{min-height:380px}}
 @media(max-width:520px){.scratch-studio-active .scratch-layout{display:flex;flex-direction:column;min-height:0}.scratch-studio-active .scratch-script{min-height:310px;max-height:60dvh;padding:9px}.scratch-studio-active .scratch-node-line{padding:9px 7px}}
+
+.scratch-studio-active .scratch-inline-status{display:block;color:#b9eed8;font-size:.77rem;line-height:1.45;flex:1;min-width:140px}
+.scratch-studio-active .scratch-footer{flex-wrap:wrap;align-items:center}
