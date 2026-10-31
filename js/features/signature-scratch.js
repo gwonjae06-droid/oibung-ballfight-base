@@ -3,7 +3,8 @@
 (function(g){
 'use strict';
 const LIMIT=12,MAX_NODES=32,MAX_DEPTH=3,MAX_REPEAT=3;
-const KINDS=Object.freeze({action:'행동',if:'만약 / 아니면',repeat:'반복',wait:'기다리기'});
+const KINDS=Object.freeze({action:'행동',if:'만약 / 아니면',repeat:'반복',wait:'기다리기',
+ waitUntil:'조건까지 기다리기',repeatUntil:'조건까지 반복',set:'변수 정하기',change:'변수 바꾸기'});
 const clamp=(v,lo,hi,fallback)=>Number.isFinite(Number(v))?Math.max(lo,Math.min(hi,Number(v))):fallback;
 const allowed=()=>g.ActionRegistry?.TYPE||g.SkillForge?.TYPE||{shot:'투사체',wave:'충격파',dash:'돌진',shield:'방어막'};
 const cond=v=>g.SignatureProgram?.validCondition?.(v)||'always';
@@ -30,7 +31,9 @@ function normalize(program){
    nodes++;
    if(node.kind==='action')out.push({kind:'action',action:safeAction(node.action)});
    else if(node.kind==='wait')out.push({kind:'wait',seconds:clamp(node.seconds,.1,2,.4)});
-   else if(node.kind==='repeat')out.push({kind:'repeat',times:Math.round(clamp(node.times,2,MAX_REPEAT,2)),body:list(node.body,depth+1)});
+   else if(node.kind==='repeat'||node.kind==='repeatUntil')out.push({kind:node.kind,condition:cond(node.condition),times:Math.round(clamp(node.times,1,MAX_REPEAT,2)),body:list(node.body,depth+1)});
+   else if(node.kind==='waitUntil')out.push({kind:'waitUntil',condition:cond(node.condition),timeout:clamp(node.timeout,.5,5,3)});
+   else if(node.kind==='set'||node.kind==='change')out.push({kind:node.kind,value:Math.round(clamp(node.value,-10,10,1))});
    else out.push({kind:'if',condition:cond(node.condition),then:list(node.then,depth+1),else:list(node.else,depth+1)});
   }
   return out;
@@ -51,8 +54,9 @@ function compile(program,p,target,options={}){
   for(const node of blocks){
    if(result.length>=max||visited++>96)break;
    if(node.kind==='wait'){seconds=Math.min(8,seconds+node.seconds);continue;}
+   if(node.kind==='waitUntil'||node.kind==='set'||node.kind==='change')continue;
    if(node.kind==='if'){walk(check(node.condition)?node.then:node.else,depth+1);continue;}
-   if(node.kind==='repeat'){for(let j=0;j<node.times&&result.length<max;j++)walk(node.body,depth+1);continue;}
+   if(node.kind==='repeat'||node.kind==='repeatUntil'){for(let j=0;j<node.times&&result.length<max;j++)walk(node.body,depth+1);continue;}
    if(node.kind==='action'){
     const a={...node.action};
     a.delay=Math.min(8,Math.max(seconds,a.delay||0));
@@ -70,7 +74,7 @@ function worstPressure(program,weight){
   return list.reduce((sum,node)=>{
    if(node.kind==='action')return sum+Math.max(0,Number(score(node.action))||0);
    if(node.kind==='if')return sum+Math.max(walk(node.then),walk(node.else));
-   if(node.kind==='repeat')return sum+node.times*walk(node.body);
+   if(node.kind==='repeat'||node.kind==='repeatUntil')return sum+node.times*walk(node.body);
    return sum;
   },0);
  }
