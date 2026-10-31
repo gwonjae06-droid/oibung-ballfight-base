@@ -44,9 +44,11 @@ test('roster renders name, accessible deletion control, saved count and empty st
   assert.equal(elements['forge-custom-count'].textContent,'1 / 6');
   const row=elements['bf-custom-list'].children[0];
   assert.equal(row.children[0].textContent,'테스트 캐릭터');
-  assert.equal(row.children[1].textContent,'삭제');
-  assert.equal(row.children[1].dataset.forgeId,'forge_1');
-  assert.equal(row.children[1].attrs['aria-label'],'테스트 캐릭터 삭제');
+  const edit=row.children.find(c=>c.dataset?.editForgeId==='forge_1');
+  const remove=row.children.find(c=>c.dataset?.forgeId==='forge_1');
+  assert.equal(edit?.textContent,'스킬 수정');
+  assert.equal(remove?.textContent,'삭제');
+  assert.equal(remove?.attrs['aria-label'],'테스트 캐릭터 삭제');
   h.CUSTOM_DEFS.length=0;
   vm.runInContext('roster()',h);
   assert.equal(elements['forge-custom-count'].textContent,'0 / 6');
