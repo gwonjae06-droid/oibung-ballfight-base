@@ -84,30 +84,6 @@
 @media(max-width:600px){#screen-tower .tower-doorway{padding:53px 14px 18px;gap:12px}#screen-tower .tower-doorway-symbol{font-size:48px}#screen-tower .tower-realm-card{min-height:143px}}
 @media(prefers-reduced-motion:reduce){#screen-tower .tower-doorway-symbol,#screen-tower .tower-ambient-orb{animation:none}#screen-tower .tower-realm-card{transition:none}}
 
-/* The realm waiting chamber hides old PvE fighters until Start is pressed. */
-#tower-ready-preview[hidden]{display:none!important}
-#screen-tower[data-tower-view="interior"][data-tower-phase="ready"] #tower-arena-slot>.battle-screen,
-#screen-tower[data-tower-view="interior"][data-tower-phase="ready"] #tower-manual-hud,
-#screen-tower[data-tower-view="interior"][data-tower-phase="ready"] #tower-manual-controls{display:none!important}
-#screen-tower .tower-ready-preview{position:relative;min-height:clamp(250px,39vw,430px);overflow:hidden;isolation:isolate;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;color:#fff;border:2px solid var(--realm-color);border-radius:16px;background:radial-gradient(ellipse at 50% 43%,color-mix(in srgb,var(--realm-color) 23%,transparent),transparent 60%),linear-gradient(160deg,var(--tower-dark,#1b253b),#090e18);padding:25px}
-#screen-tower .tower-ready-preview:before,#screen-tower .tower-ready-preview:after{content:"";position:absolute;width:42%;aspect-ratio:1;min-width:190px;border:2px solid var(--realm-color);border-radius:50%;opacity:.3;pointer-events:none}
-#screen-tower .tower-ready-preview:before{transform:rotate(25deg) scale(1.2);box-shadow:0 0 50px var(--realm-color)}
-#screen-tower .tower-ready-preview:after{transform:rotate(-25deg) scale(.65);border-style:dashed}
-#screen-tower .tower-ready-architecture{position:relative;z-index:1;width:130px;height:130px;display:grid;place-items:center;border-radius:50%;background:radial-gradient(circle,color-mix(in srgb,var(--realm-color) 36%,transparent),transparent 69%);filter:drop-shadow(0 0 22px var(--realm-color))}
-#screen-tower .tower-ready-rune{font-size:clamp(62px,9vw,100px);color:var(--realm-color);line-height:1}
-#screen-tower .tower-ready-narrative{position:relative;z-index:1;max-width:700px}
-#screen-tower .tower-ready-narrative span{font-size:11px;letter-spacing:.24em;color:var(--realm-color)}
-#screen-tower .tower-ready-narrative h3{font-size:clamp(25px,5vw,40px);margin:6px 0}
-#screen-tower .tower-ready-narrative p{font-size:14px;line-height:1.7;color:#e1e8f3}
-#screen-tower .tower-ready-narrative small{font-size:12px;color:#c8d2e2}
-#screen-tower[data-tower-realm="fire"] .tower-ready-preview{background:radial-gradient(at 50% 85%,#b8483059,transparent 65%),#1e130f}
-#screen-tower[data-tower-realm="space"] .tower-ready-preview{background:radial-gradient(at 50% 40%,#9466c34d,transparent 65%),#100e28}
-#screen-tower[data-tower-realm="storm"] .tower-ready-preview{background:linear-gradient(135deg,#112e3b,#0a141b 60%,#256b7855)}
-#screen-tower[data-tower-realm="ice"] .tower-ready-preview{background:linear-gradient(145deg,#1c455d,#0e202c 70%,#9edafa33)}
-#screen-tower[data-tower-realm="forest"] .tower-ready-preview{background:radial-gradient(at 40% 60%,#4d954633,transparent 70%),#132219}
-#screen-tower[data-tower-realm="time"] .tower-ready-preview{background:radial-gradient(at 50% 50%,#b095443d,transparent 70%),#211b14}
-@media(max-width:600px){#screen-tower .tower-ready-preview{min-height:250px;padding:15px}#screen-tower .tower-ready-architecture{height:90px;width:90px}#screen-tower .tower-ready-rune{font-size:58px}}
-
 /* Ancient One unlock, shown only after all six realm clears. */
 .ancient-unlock{margin:20px 0 4px;padding:18px;border:1px solid #9e5dba;background:linear-gradient(120deg,#180e2b,#331743);border-radius:16px;text-align:center;color:#f0d9ff}
 .ancient-unlock p{margin:0 0 12px;font-weight:700}
@@ -115,3 +91,91 @@
 .ancient-unlock button:hover{filter:brightness(1.2)}
 .ancient-unlock [hidden]{display:none!important}
 @media(max-width:600px){.ancient-unlock{margin:12px 0;padding:12px}.ancient-unlock button:not([hidden]){min-height:48px;font-size:1rem}}
+
+/* Tower interior v3: one clear path from encounter overview to action. */
+#screen-tower[data-tower-view="interior"] #tower-challenge{
+  display:grid;gap:11px;min-width:0;
+  padding:clamp(12px,2vw,20px);
+}
+#screen-tower .tower-doorway{
+  min-height:108px;gap:14px;
+  padding:42px 18px 14px;
+  border-radius:13px;
+}
+#screen-tower .tower-doorway-symbol{font-size:44px;flex:none}
+#screen-tower .tower-doorway-text h2{
+  font-size:clamp(21px,3vw,29px);line-height:1.2;margin:0;
+}
+#screen-tower .tower-doorway-text p{
+  font-size:12px;font-weight:500;margin:4px 0 0;color:#d9e3ef;
+}
+#screen-tower .tower-return{min-height:30px;padding:5px 10px;font-size:12px}
+#screen-tower .tower-head{
+  display:flex;justify-content:space-between;align-items:center;
+  gap:12px;padding:0 1px 8px;border-bottom:1px solid #65758b75;
+}
+#screen-tower .tower-head-current{display:flex;align-items:baseline;gap:10px}
+#screen-tower .tower-head h2 span{font-size:clamp(22px,3vw,28px)}
+#screen-tower .tower-kicker{font-size:11px;color:#cbd6e5}
+#screen-tower #tower-best{font-size:11px;padding:6px 10px;border-radius:8px}
+#screen-tower #tower-rule{
+  margin:-4px 1px 2px;color:#b9cbdc;
+  font-size:12px;line-height:1.5;max-width:none;
+}
+#screen-tower .tower-fighter-pick{
+  display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);
+  align-items:start;gap:10px;
+}
+#screen-tower .tower-hero-choice{
+  display:flex;flex-direction:column;gap:7px;min-width:0;
+  color:#d5e1ee;font-size:12px;font-weight:800;
+}
+#screen-tower #tower-hero{height:50px;color:#fff}
+#screen-tower details.tower-opponent{
+  display:block;min-width:0;margin:0;
+  border:1px solid color-mix(in srgb,var(--realm-color) 48%,#52677e);
+  border-radius:10px;overflow:hidden;background:#192839;
+}
+#screen-tower .tower-opponent>.tower-enemy{
+  display:flex;justify-content:space-between;align-items:center;
+  gap:9px;min-height:70px;cursor:pointer;
+  border:0;border-radius:0;margin:0;padding:9px 12px;
+  background:transparent;list-style:none;
+}
+#screen-tower .tower-opponent>.tower-enemy::-webkit-details-marker{display:none}
+#screen-tower .tower-opponent>.tower-enemy:focus-visible{
+  outline:2px solid #f5d89c;outline-offset:-3px;
+}
+#screen-tower .tower-opponent-name{display:grid;gap:4px;min-width:0}
+#screen-tower .tower-opponent-name small{font-size:11px;color:#aebed0}
+#screen-tower .tower-opponent-name strong{
+  color:#fff2dd;font-size:clamp(13px,1.5vw,16px);
+  white-space:normal;overflow-wrap:anywhere;
+}
+#screen-tower .tower-opponent-skills{
+  display:flex;gap:7px;align-items:center;flex:none;
+  color:var(--realm-color);font-size:11px;font-weight:800;
+}
+#screen-tower .tower-chevron{font-size:19px;line-height:1;transition:transform .15s}
+#screen-tower .tower-opponent[open] .tower-chevron{transform:rotate(180deg)}
+#screen-tower .tower-opponent-detail{
+  border-top:1px solid #4a6079;padding:10px 11px 12px;
+  color:#dce7f3;
+}
+#screen-tower .tower-opponent-detail>p{margin:0 0 9px;font-size:12px;line-height:1.5;color:#c4d4e3}
+#screen-tower .tower-opponent-detail>.tower-enemy-skills{margin:0;gap:6px}
+#screen-tower .tower-buttons{margin-top:1px}
+#screen-tower #tower-start{min-height:50px}
+#screen-tower .tower-feedback{margin:0}
+#screen-tower #tower-arena-slot[hidden]{display:none!important}
+@media(max-width:600px){
+  #screen-tower .tower-doorway{min-height:100px;padding:42px 12px 12px;gap:10px}
+  #screen-tower .tower-doorway-symbol{font-size:35px}
+  #screen-tower .tower-head-current{gap:8px}
+  #screen-tower .tower-fighter-pick{grid-template-columns:1fr;gap:9px}
+  #screen-tower .tower-opponent>.tower-enemy{min-height:59px}
+  #screen-tower .tower-opponent-detail>.tower-enemy-skills{grid-template-columns:1fr}
+}
+@media(prefers-reduced-motion:reduce){
+  #screen-tower .tower-chevron{transition:none}
+}
