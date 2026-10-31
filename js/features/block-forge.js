@@ -229,7 +229,7 @@ function actionRow(a,i,j,count,signature=false){
     category==='defense'?'보호·회복':'특수 동작';
   return (signature?'<div class="signature-condition"><label>만약 · 실행 조건</label><select data-edit="condition" data-skill="'+i+'" data-index="'+j+'" aria-label="'+(j+1)+'번 블록 조건">'+options(CONDITIONS,a.condition||'always')+'</select></div>':'')
     +(j?'<div class="block-quick-link"><span aria-hidden="true">↓</span><select data-edit="link" data-skill="'+i+'" data-index="'+j+'" aria-label="앞 동작과 연결 방식">'+options(signature?{and:LINKS.and,after:LINKS.after,with:LINKS.with}:LINKS,a.link||'and')+'</select></div>':'')
-    +'<div class="block-quick-action block-family-'+category+(chosen?' is-inspected':'')+'" style="--block-accent:'+escape(definition?.visual?.color||'#8396ab')+'">'
+    +'<div class="block-quick-action block-family-'+category+(chosen?' is-inspected':'')+'" style="--block-accent:'+escape(definition?.visual?.color||'#8396ab')+'"'+(signature?' draggable="true" data-draggable-skill="'+i+'" data-draggable-index="'+j+'"':'')+'>'
     +'<button type="button" class="block-quick-inspect" data-op="inspect" data-skill="'+i+'" data-index="'+j+'" aria-pressed="'+String(chosen)+'" aria-label="'+escape(type)+' 세부 능력 편집">'
     +'<span class="block-quick-icon" aria-hidden="true">'+icon+'</span>'
     +'<span class="block-quick-name"><strong>'+escape(type)+'</strong><small>'+escape(stats)+'</small></span></button>'
@@ -332,6 +332,32 @@ function mount(){
       apply({kind:'move',fromSkill:si,fromIndex:ai,skill:si,at:ai+(dir<0?-1:2)});
     }
   });
+  // Desktop: drag an action block to reorder. The existing up/down buttons
+  // provide the same behavior via keyboard, touch screens, and screen readers.
+  let dragSource=null;
+  const clearDrop=()=>root.querySelectorAll('.signature-drop-target').forEach(n=>n.classList.remove('signature-drop-target'));
+  root.addEventListener('dragstart',e=>{
+    const item=e.target.closest?.('[data-draggable-index]');
+    if(!item||forge.getDraft().signatureVersion!==1)return;
+    dragSource={skill:Number(item.dataset.draggableSkill),index:Number(item.dataset.draggableIndex)};
+    e.dataTransfer?.setData('text/plain','signature-action');
+    if(e.dataTransfer)e.dataTransfer.effectAllowed='move';
+  });
+  root.addEventListener('dragover',e=>{
+    const item=e.target.closest?.('[data-draggable-index]');
+    if(!dragSource||!item||Number(item.dataset.draggableSkill)!==dragSource.skill)return;
+    e.preventDefault();clearDrop();item.classList.add('signature-drop-target');
+  });
+  root.addEventListener('drop',e=>{
+    const item=e.target.closest?.('[data-draggable-index]');
+    if(!dragSource||!item)return;
+    e.preventDefault();clearDrop();
+    const dest=Number(item.dataset.draggableIndex),src=dragSource;
+    dragSource=null;
+    if(src.index===dest)return;
+    apply({kind:'move',fromSkill:src.skill,fromIndex:src.index,skill:src.skill,at:src.index<dest?dest+1:dest});
+  });
+  root.addEventListener('dragend',()=>{dragSource=null;clearDrop();});
   root.addEventListener('change',e=>{
     const el=e.target;if(!el.dataset.edit)return;
     const skill=Number(el.dataset.skill),index=Number(el.dataset.index);
