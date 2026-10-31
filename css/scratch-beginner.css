@@ -67,7 +67,8 @@
 .scratch-friendly-mode button:hover{filter:brightness(1.1)}
 .scratch-friendly-mode button:focus-visible{outline:3px solid #ffe699;outline-offset:3px}
 .scratch-friendly-mode button:disabled{opacity:.5;cursor:not-allowed}
-.scratch-friendly-mode .scratch-main-nav{display:none!important}
+.scratch-friendly-mode .scratch-main-nav{display:flex!important;gap:7px!important;align-items:center!important;padding:5px!important;background:#182b40!important}
+.scratch-friendly-mode .scratch-main-nav button{flex:1;min-height:48px!important;font-size:15px!important;font-weight:850!important}
 @media(max-width:1360px){
  .scratch-friendly-mode .kid-easy-body{grid-template-columns:minmax(195px,1fr) minmax(240px,1.2fr)}
  .scratch-friendly-mode .kid-plan-section{grid-column:1/-1}
