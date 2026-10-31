@@ -225,7 +225,10 @@ function hit(p,e,action,multiplier=1,attackZ) {
   if(!e||e===p||e.hp<=0)return false;
   // Post-impact grace is not defense. A shield or a distinct invulnerability
   // lasts longer than this tag and must still block every attempted strike.
-  if(e.invincible>0 && (!(e._forgeImpactGrace>0)||e.invincible>e._forgeImpactGrace))return false;
+  if(e.invincible>0 && (!(e._forgeImpactGrace>0)||e.invincible>e._forgeImpactGrace)){
+    if(e._scratchShieldUntil>=(Number(e._forgeActionClock)||0))global.SignatureLive?.record?.(e,'guard');
+    return false;
+  }
   if(global.AdvancedCombat&&!AdvancedCombat.canHit(p,e,attackZ))return false;
   if(!global.AdvancedCombat&&e.jumpState&&e.jumpState!=='ground')return false;
   const d=Math.max(0,Math.round((action.damage||0)*multiplier*(global.ForgeExpansion?.damageScale(p,e)||1)*
@@ -274,6 +277,8 @@ function hit(p,e,action,multiplier=1,attackZ) {
     action.status==='fire'&&e.bfDot>0?'fire':
     action.status==='poison'&&e.bfDot>0?'poison':
     e.forgeEffects?.[action.status]?.time>0?action.status:'none';
+  if(d>0)global.SignatureLive?.record?.(p,'hit');
+  if(appliedStatus!=='none')global.SignatureLive?.record?.(p,'status');
   global.ArenaBattleDirector?.skillHit?.(p,e,action,Math.min(hpBeforeHit,d),appliedStatus);
   if(action.knockback>0&&!global.ImpactPhysics){const dx=e.x-p.x,dy=e.y-p.y,dist=Math.hypot(dx,dy)||1;e.vx+=dx/dist*action.knockback;e.vy+=dy/dist*action.knockback;}
   global.SkillVisuals?.impact(p,e,action); // Only after damage/status actually connects.
@@ -289,6 +294,16 @@ const transitionLead={leap:14,hover:12,glide:12,erupt:12,uppercut:7,
   arcshot:7,splitshot:7,dive:8,wall:5,portal:5,summon:5,turret:5};
 const cooldownFrames=(p,s)=>Math.max(12,Math.round((p.forgeRush?Math.min(1,s.cooldown):s.cooldown)*60));
 function cast(p,s,target,index){
+  // A Scratch program is a coroutine: evaluate each branch AFTER the previous
+  // action has actually executed, never by flattening conditions at cast time.
+  if(p.forge?.signatureVersion===1&&Array.isArray(s.program)){
+    if(p.forgeScratchRun&&!p.forgeScratchRun.finished)return false;
+    const run=global.SignatureLive?.begin?.(s.program,p);
+    if(!run)return false;
+    p.forgeScratchRun=run;
+    global.BattleFX?.caption?.(p,s.name,(p.forge.effectColor||p.forge.color));
+    return true;
+  }
   // Only executable branches enter the real combat queue. Skipped branches
   // cannot silently deal damage, consume a separate cooldown, or emit VFX.
   const actions=p.forge?.signatureVersion===1&&Array.isArray(s.program)?
@@ -331,6 +346,19 @@ function tickSkills(p,blocked=false){
 }
 function tickQueue(p,target){
   const blocked=!!global.ForgeExpansion?.blocked(p);
+  // Exactly one program action may be queued at a time; this preserves a
+  // genuine opportunity to observe hit/movement/guard events before branching.
+  const run=p.forgeScratchRun;
+  if(run&&!run.finished&&!blocked){
+    const a=global.SignatureLive?.step?.(run,p,target);
+    if(a){
+      const windup=global.ArenaTelegraph?.leadFrames?.(a)||0;
+      p.forgeQueue.push({remaining:Math.max(windup,Math.round((Number(a.delay)||0)*60)),
+        step:Math.max(0,run.actions-1),castId:p.forgeSerial,skillIndex:0,
+        steps:Math.min(12,run.actions),a,targetNum:target?.playerNum??null,
+        windup,waitApex:false,scratch:true});
+    }
+  }
   for(let i=0;i<p.forgeQueue.length;){
     const q=p.forgeQueue[i];
     if(q.remaining>0)q.remaining--;
@@ -356,6 +384,12 @@ function tickQueue(p,target){
     const castTarget=players.find(e=>e.playerNum===q.targetNum&&e.hp>0)||target;
     global.ArenaBattleDirector?.skillUsed?.(p,castTarget,q.a,p.forge?.skills?.[q.skillIndex]?.name);
     execute(p,q.a,castTarget);
+    if(q.scratch){
+      if(q.a.type==='shield'&&p.invincible>0)
+        p._scratchShieldUntil=(Number(p._forgeActionClock)||0)+Math.min(480,p.invincible);
+      if(MOVEMENT_ONLY.has(q.a.type))global.SignatureLive?.beginMove?.(p,q.a);
+      global.SignatureLive?.performed?.(p.forgeScratchRun);
+    }
     global.ForgeComboFX?.cast?.(p,q.a,{castId:q.castId,step:q.step,steps:q.steps,link:q.a.link},castTarget);
     if(aerialLink)p.uppercutFollow=false;
     p.forgeQueue.splice(i,1);
@@ -448,6 +482,7 @@ function execute(p,a,target) {
 }
 function update(p,target){
   p._forgeActionClock=(p._forgeActionClock||0)+1;
+  global.SignatureLive?.tickMove?.(p);
   const loss=p.forgeLastHp-p.hp;p.forgeLastHp=p.hp;
   const cruise=p.forge.speed*(p.speedMultiplier||1),v=Math.hypot(p.vx,p.vy);
   if(p.forgeDash>0){
@@ -706,7 +741,8 @@ function register(value,{towerEnemy=false}={}){
         return profile.allAbilities?Math.max(0,cd-((i*13+23)%Math.max(1,cd))):
           Math.min(cd,Math.round(s.cooldown*15)+i*14);
       }),forgeSerial:0,forgeClock:0,forgeCursor:0,
-      forgeQueue:[],forgeShots:[],forgeZones:[],forgeOrbs:[],
+      forgeQueue:[],forgeShots:[],forgeZones:[],forgeOrbs:[],forgeScratchRun:null,
+      _scratchEvents:Object.create(null),_scratchMove:null,_scratchShieldUntil:-1,
       getImage:()=>CHARACTER_PHOTOS[id]||null,
       getDisplayName(){return this.name;},
       getTag(){return {text:profile.allAbilities?'전체 '+runtime.skills.length+'개 능력':profile.skills.map(s=>s.name).join(' · ').slice(0,70)};}
