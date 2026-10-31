@@ -82,5 +82,5 @@ test('overtime accelerates existing and incoming battle music without overriding
  assert.equal(h.p.current.audio.playbackRate,1.25,'new track inherits overtime urgency');
  h.p.setBattle(false);await h.fade();
  assert.equal(h.p.overtime,false);
- assert.ok(h.audio.every(a=>a.playbackRate===1));
+ assert.ok([...h.p.voices].every(v=>v.audio.playbackRate===1));
 });
