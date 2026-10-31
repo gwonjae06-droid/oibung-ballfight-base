@@ -188,7 +188,7 @@ test('PvP instant effects and health bars use matching perspective projection',(
  assert.match(rt,/ArenaDepth\?\.elevatedPoint\?\./);
  for(const html of [read('index.html'),read('pvp-runtime.html')])
   assert.match(html,/arena-depth\.js\?v=stone25d1/);
- assert.match(read('index.html'),/pvp-original-engine\.js\?v=fight-countdown1/);
+ assert.match(read('index.html'),/pvp-original-engine\.js\?v=realm-chaos1/);
 });
 test('airborne figures project vertically without moving their physics footprint',()=>{
  const {w}=depthWorld(),arena={width:500,height:500};
