@@ -234,6 +234,7 @@ function draw(){
   selectedAction=Math.max(0,Math.min(selectedAction,skills[selectedSkill].actions.length-1));
   const allNotice=d.allAbilities?'<p class="block-quick-note">전체 능력 모드입니다. <button type="button" data-op="enable">일반 스킬 조합으로 전환</button></p>':'';
   const budget=global.ArenaBalance?.summary(d);
+  const defense=global.ArenaBalance?.defenseSummary?.(d);
   const example=d.skills.flatMap(s=>s.actions).find(a=>global.ArenaBalance?.actionPressure(a)>0);
   const preview=example?' · 예: '+example.damage+' 입력 피해 → 약 '+Math.round(example.damage*(budget?.multiplier??1))+' 적용':'';
   const balanceNotice=budget?'<div class="block-power-budget" role="status" aria-label="스킬 밸런스">'
@@ -241,7 +242,12 @@ function draw(){
     +'<div class="block-power-meter"><i style="width:'+Math.round(Math.min(100,budget.pressure/budget.budget*100))+'%"></i></div>'
     +'<p>'+(budget.excess?'과도한 화력이 겹쳐 실제 피해가 약 '+budget.percent+'% 적용됩니다.':'기본 피해가 100% 적용됩니다.')
     +preview+'. 설정한 피해량·쿨타임·효과는 그대로 저장됩니다. 범위·개수·지속 효과를 고려한 근사치이므로 실제 DPS는 명중률에 따라 달라집니다.</p></div>':'';
-  workspace.innerHTML=allNotice+balanceNotice+skills.map((s,i)=>
+  const defensiveNotice=defense&&defense.pressure>0?
+    '<div class="block-power-budget" role="status" aria-label="회복·보호 밸런스">'
+    +'<strong>🛡 회복·보호 밸런스</strong><span>유지력 지수 '+defense.pressure+' / 기준 '+defense.budget+'</span>'
+    +'<p>'+(defense.excess?'회복량·보호막 지속시간·방어 효율에 약 '+defense.percent+'%가 적용됩니다.':'유지력 효과가 100% 적용됩니다.')
+    +' 스킬 설정값은 그대로 저장되며, 방어형 조합과 지속 보호막은 계속 사용할 수 있습니다.</p></div>':'';
+  workspace.innerHTML=allNotice+balanceNotice+defensiveNotice+skills.map((s,i)=>
     '<section class="block-quick-skill '+(i===selectedSkill?'is-selected':'')+'">'
     +'<div class="block-quick-skill-head">'
     +'<button type="button" class="block-quick-select" data-op="select" data-skill="'+i+'" aria-pressed="'+String(i===selectedSkill)+'">'+(i===selectedSkill?'◆ ':'◇ ')+'스킬 '+(i+1)+'</button>'
