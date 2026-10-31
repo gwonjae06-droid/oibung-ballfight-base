@@ -90,6 +90,8 @@ function normalize(value,{towerEnemy=false}={}){
     skills:value.skills.slice(0,towerEnemy?6:signature?1:4).map((s,i)=>{
       if(!Array.isArray(s.actions)||!s.actions.length)throw Error((i+1)+'번 스킬에 동작이 없습니다.');
       return {name:clean(s.name,18)||'스킬 '+(i+1),
+        // Block program is an inert, validated AST; saved and exported with the fighter.
+        program:signature&&Array.isArray(s.program)?global.SignatureScratch?.normalize?.(s.program):undefined,
         trigger:TRIGGER[s.trigger]?s.trigger:'auto',
         cooldown:number(s.cooldown,.2,30,3),threshold:number(s.threshold,5,95,40),
         actions:s.actions.slice(0,signature?global.SignatureProgram?.MAX_ACTIONS||12:3).map(a=>({
@@ -289,7 +291,9 @@ const cooldownFrames=(p,s)=>Math.max(12,Math.round((p.forgeRush?Math.min(1,s.coo
 function cast(p,s,target,index){
   // Only executable branches enter the real combat queue. Skipped branches
   // cannot silently deal damage, consume a separate cooldown, or emit VFX.
-  const actions=p.forge?.signatureVersion===1?
+  const actions=p.forge?.signatureVersion===1&&Array.isArray(s.program)?
+    global.SignatureScratch.compile(s.program,p,target):
+    p.forge?.signatureVersion===1?
     s.actions.filter(a=>global.SignatureProgram?.condition?.(p,target,a.condition)!==false):
     s.actions;
   if(!actions.length)return false;
