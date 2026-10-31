@@ -36,7 +36,7 @@ const signed=(x,y,z,pad=0)=>{
  return magnitude(dx,dy)-finite(z.r,finite(z.radius,65))-pad;
 };
 function loadout(p){
- const skills=(p.forge?.skills||[]).slice(0,6),actions=skills.flatMap(s=>(s.actions||[]).slice(0,3));
+ const skills=(p.forge?.skills||[]).slice(0,6),actions=skills.flatMap(s=>(s.actions||[]).slice(0,p.forge?.signatureVersion===1?12:3));
  const close=actions.filter(a=>MELEE.has(a.type));
  const far=actions.filter(a=>RANGED.has(a.type)||['zone','blackhole','turret','summon'].includes(a.type));
  const sustain=actions.filter(a=>HEAL.has(a.type)||SUPPORT.has(a.type));
