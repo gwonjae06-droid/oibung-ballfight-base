@@ -137,6 +137,11 @@ test('ten floors require explicit starts, have no rewards and record completion'
       assert.equal(x.world.isPlaying,false);
       assert.equal(x.world.roundStarted,false);
       assert.equal(x.world.players[0].maxHp,220,'no between-floor HP reward');
+      if([3,6,8].includes(floor)){
+        assert.equal(x.tower.begin(),false,'branch choice must be made first');
+        assert.equal(x.tower.chooseRoute('rush'),true);
+        assert.equal(x.tower.chooseRoute('rush'),false,'route can only be chosen once');
+      }
       assert.equal(x.tower.begin(),true,'pressing Start begins next floor');
       assert.equal(x.tower.stage,'fighting');
       assert.equal(x.world.isPlaying,true);
@@ -278,6 +283,11 @@ for(const realm of ['time','space','fire','storm','ice','forest'])test(realm+' t
        assert.equal(x.tower.chooseBlessing('invalid'),false);
        assert.equal(x.tower.chooseBlessing(offer),true);
        assert.equal(x.tower.chooseBlessing(offer),false,'cannot apply twice');
+     }
+     if([3,6,8].includes(floor)){
+       assert.equal(x.tower.state.routePending,true);
+       assert.equal(x.tower.begin(),false,'branch selection is mandatory');
+       assert.equal(x.tower.chooseRoute('rush'),true);
      }
      assert.equal(x.tower.begin(),true);
    }
