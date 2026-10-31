@@ -80,6 +80,7 @@ function closeConnection(message=''){
   }
   cleanup();searching=false;matched=false;latest=null;view=null;
   visualEffects.length=0;flecks.length=0;lastHealth.fill(null);
+  global.ArenaCountdown?.syncRemote?.($('pvp-match'),0);
   $('pvp-lobby').hidden=false;$('pvp-match').hidden=true;
   $('pvp-search').hidden=false;$('pvp-cancel').hidden=true;
   $('pvp-fighter').disabled=false;
@@ -90,7 +91,7 @@ function showMatch(data){
   $('pvp-lobby').hidden=true;$('pvp-match').hidden=false;
   $('pvp-match-type').textContent='자동전투 · PvP';
   $('pvp-result').hidden=true;$('pvp-again').hidden=true;
-  $('pvp-round-state').textContent='상대 발견 · 경기 진행';
+  $('pvp-round-state').textContent='상대 발견 · 전투 준비';
   $('pvp-forfeit').hidden=false;
   visualEffects.length=0;flecks.length=0;lastHealth.fill(null);
   global.PvpOriginalEngine.show();
@@ -99,8 +100,11 @@ function showMatch(data){
 function renderState(data){
   if(data.events?.length)spawnEffects(data.events,data.players);
   latest=data;
+  const remaining=Number(data.startInMs)||0;
+  global.ArenaCountdown?.syncRemote?.($('pvp-match'),remaining);
+  if(remaining>0)$('pvp-round-state').textContent='3 · 2 · 1 · 결전 준비';
   if(data.finished)global.PvpOriginalEngine.paint();
-  $('pvp-round-state').textContent='AI 자동전투 · 실시간 대결';
+  if(remaining<=0)$('pvp-round-state').textContent='AI 자동전투 · 실시간 대결';
   $('pvp-clock').textContent=Math.floor(Math.max(0,data.clock)/60)+':'+
     String(Math.floor(Math.max(0,data.clock)%60)).padStart(2,'0');
   const own=data.players[side],other=data.players[1-side];
@@ -115,6 +119,7 @@ function renderState(data){
 }
 function finish(winner,reason){
   matched=false;searching=false;cleanup();
+  global.ArenaCountdown?.syncRemote?.($('pvp-match'),0);
   $('pvp-result').hidden=false;
   $('pvp-result').textContent=reason||(winner===-1?'무승부':winner===side?'승리!':'패배');
   $('pvp-round-state').textContent='경기 종료';
@@ -164,6 +169,7 @@ function animate(){
   const loop=()=>{
     if(!matched){frame=null;return;}
     global.PvpOriginalEngine.paint();
+    global.ArenaCountdown?.progressRemote?.();
     frame=global.requestAnimationFrame(loop);
   };
   frame=global.requestAnimationFrame(loop);
