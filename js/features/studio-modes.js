@@ -32,7 +32,7 @@ picker.setAttribute('aria-label','캐릭터 스킬 제작 방법 선택');
 picker.innerHTML='<div class="studio-mode-intro"><span class="eyebrow">SKILL WORKSHOP</span><h3>어떤 방식으로 스킬을 만들까요?</h3><p>무작위로 네 가지 스킬을 뽑거나, 블록을 직접 연결해 나만의 기술을 설계하세요.</p></div>'
   +'<div class="studio-mode-choices">'
   +'<button type="button" data-studio-open="random" class="studio-mode-choice"><span class="studio-mode-icon" aria-hidden="true">🎲</span><strong>랜덤 생성기</strong><small>전체 동작을 섞어 스킬 4개 자동 생성<br>언제든 다시 뽑기 · 왼쪽 동작 시연</small><span class="studio-mode-cta">랜덤 스킬 만들기</span></button>'
-  +'<button type="button" data-studio-open="compose" class="studio-mode-choice"><span class="studio-mode-icon" aria-hidden="true">⚡</span><strong>스킬 조합하기</strong><small>블록과 발동 조건을 직접 편집<br>연속 동작 · 세부 수치 · 왼쪽 실시간 미리보기</small><span class="studio-mode-cta">직접 조합하기</span></button></div>';
+  +'<button type="button" data-studio-open="compose" class="studio-mode-choice"><span class="studio-mode-icon" aria-hidden="true">⚡</span><strong>직접 설계하기</strong><small>쉬운 설계로 스킬 4개를 정하고<br>원하면 전문가 설정까지 자유롭게 편집</small><span class="studio-mode-cta">직접 조합하기</span></button></div>';
 
 const randomView=document.createElement('section');
 randomView.id='studio-mode-random';
@@ -89,7 +89,7 @@ function showMode(next,{keepTab=false}={}){
   if(mode==='random'){
     if(!hasRolled)rollFour();
     else workspace.selectPreviewSkill?.('all');
-  }else if(mode==='compose')workspace.selectPreviewSkill?.(0);
+  }else if(mode==='compose'){workspace.selectPreviewSkill?.(0);global.StudioEasyDesigner?.refresh?.();}
   else if(mode==='choose'&&dialog.open)picker.querySelector('[data-studio-open]')?.focus?.({preventScroll:true});
 }
 function renderResults(profile){
