@@ -68,28 +68,36 @@ test('engine resets the overtime supervisor and only ticks it on active fights',
  assert.ok(html.indexOf('arena-stalemate.js')<html.indexOf('core/engine.js'));
 });
 
-test('overtime cannot bypass shields, invulnerability, regeneration or max HP',()=>{
+test('slow max-HP percentage pulses ignore shields fairly without changing maximum HP',()=>{
  const S=world('js/features/arena-stalemate.js').ArenaStalemate;
  const p=[{hp:200,maxHp:200,invincible:9999},{hp:1500,maxHp:1500,invincible:9999}];
- for(let i=0;i<S.LIMITS.stagnant+S.LIMITS.pulse*3;i++)S.tick(p);
- assert.equal(S.state.active,true);
- assert.equal(S.state.pulses,3);
- assert.deepEqual(p.map(a=>a.hp),[200,1500],'no unavoidable neutral damage');
- assert.deepEqual(p.map(a=>a.maxHp),[200,1500],'no forced HP cap');
- assert.ok(S.attackFactor()>1,'only actual offensive damage receives a mild bonus');
+ for(let i=0;i<S.LIMITS.stagnant;i++)S.tick(p);
+ const old=p.map(a=>a.hp),caps=p.map(a=>a.maxHp);
+ for(let i=0;i<S.LIMITS.pulse;i++)S.tick(p);
+ assert.equal(S.state.pulses,1);
+ const lost=p.map((a,i)=>(old[i]-a.hp)/caps[i]*100);
+ assert.ok(Math.abs(lost[0]-lost[1])<1e-6,'both take equal relative damage');
+ assert.ok(lost[0]>=1&&lost[0]<2,'first overtime pulse stays gentle');
+ assert.deepEqual(p.map(a=>a.maxHp),caps);
+ assert.ok(p.every(a=>a.hp>0));
 });
-test('overtime offense grows gradually, never heals or decides draws by current HP',()=>{
+test('overtime true damage ramps slowly while attack bonus also rises, with a guaranteed draw cap',()=>{
  const S=world('js/features/arena-stalemate.js').ArenaStalemate;
  const fighters=[{hp:200,maxHp:200},{hp:800,maxHp:800}];
  assert.equal(S.attackFactor(),1);
  for(let i=0;i<S.LIMITS.stagnant;i++)S.tick(fighters);
  assert.equal(Number(S.attackFactor().toFixed(2)),1.08);
- for(let i=0;i<30*60;i++)S.tick(fighters);
+ for(let i=0;i<30*60;i++){
+   fighters.forEach(p=>p.hp=p.maxHp);S.tick(fighters);
+ }
  assert.equal(Number(S.attackFactor().toFixed(2)),1.15);
- for(let i=0;i<S.LIMITS.deadline;i++)S.tick(fighters);
- assert.equal(S.state.expired,true);
- assert.deepEqual(fighters.map(p=>p.hp),[200,800],
-   'both invincible fighters draw; winner is never chosen by base HP');
+ assert.ok(S.pulseRate(30*60)>S.pulseRate(0));
+ for(let i=0;i<S.LIMITS.deadline;i++){
+   fighters.forEach(p=>p.hp=p.maxHp);S.tick(fighters);
+   if(S.state.expired)break;
+ }
+ assert.equal(S.state.expired,true,'persistent healing cannot stall the game forever');
+ assert.ok(fighters.every(p=>p.hp>0),'persistent healing is still a tactical option');
 });
 test('overtime tick plays urgency music only at activation and restores it on reset',()=>{
  const calls=[],w={Math,Map,Set,Number,console,BackgroundMusic:{setOvertime(v){calls.push(v)}}};
