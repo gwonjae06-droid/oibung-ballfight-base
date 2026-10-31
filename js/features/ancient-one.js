@@ -45,11 +45,57 @@ function create({width:w,height:h,hero,boss,damage}){
  function draw(ctx){
   ctx.save();
   const cx=w/2,top=h*.02;
-  // Giant silhouette appears beyond the rear rim of the battlefield.
-  ctx.globalAlpha=.82;ctx.fillStyle='#170d2d';ctx.strokeStyle='#b37af6';ctx.lineWidth=3;
-  ctx.beginPath();ctx.ellipse(cx,top+30,w*.30,h*.24,0,Math.PI,0,true);ctx.fill();ctx.stroke();
-  for(let i=0;i<7;i++){const x=cx+(i-3)*w*.095;ctx.beginPath();ctx.moveTo(cx,top+40);ctx.quadraticCurveTo(x,top+80+Math.sin(tick*.025+i)*16,x,top+125);ctx.strokeStyle='#7444a5';ctx.lineWidth=9;ctx.stroke();}
-  ctx.fillStyle='#f17cff';for(const offset of [-30,30]){ctx.beginPath();ctx.ellipse(cx+offset,top+45,10,5,0,0,Math.PI*2);ctx.fill();}
+  // The final boss is visually the same colossal multi-eyed void deity as
+  // the six-seal challenge illustration. Keep its torso BEHIND the arena,
+  // leaving the actual targetable arm/body and hitbox unchanged.
+  const wide=Math.min(w*.30,170),headY=top+Math.min(72,h*.14);
+  const sway=Math.sin(tick*.018),glow=phase===3?'#ff99da':'#74f6f5';
+  ctx.globalAlpha=.82;
+  for(let i=0;i<8;i++){
+    const side=i%2?1:-1,a=Math.floor(i/2),from=cx+side*wide*.48,
+      end=cx+side*(wide*.8+a*wide*.32),
+      lift=Math.sin(tick*.022+i)*13;
+    ctx.beginPath();ctx.moveTo(from,headY+28);
+    ctx.bezierCurveTo(cx+side*(wide*.9+a*12),headY-72+lift,
+      end+side*54,headY+65+lift,end,headY+145);
+    ctx.strokeStyle='#070e21';ctx.lineWidth=24-a*3;ctx.lineCap='round';ctx.stroke();
+    ctx.strokeStyle=i%3===0?'#50718a':'#493a67';
+    ctx.lineWidth=15-a*2;ctx.stroke();
+  }
+  ctx.fillStyle='#12152c';ctx.strokeStyle='#4b4a7c';ctx.lineWidth=5;
+  ctx.beginPath();ctx.ellipse(cx,headY+154,wide*1.08,h*.21,0,Math.PI,Math.PI*2);ctx.fill();ctx.stroke();
+  // Non-human elongated cephalopod skull, not a standing humanoid fighter.
+  ctx.beginPath();ctx.ellipse(cx,headY,wide*.65,h*.177,0,0,Math.PI*2);
+  ctx.fillStyle='#22243b';ctx.strokeStyle='#8094ac';ctx.lineWidth=4;ctx.fill();ctx.stroke();
+  ctx.beginPath();ctx.ellipse(cx-wide*.14,headY-h*.05,wide*.39,h*.074,-.4,0,Math.PI*2);
+  ctx.fillStyle='#34465d';ctx.globalAlpha=.48;ctx.fill();ctx.globalAlpha=.91;
+  ctx.beginPath();ctx.moveTo(cx,headY-h*.17);ctx.lineTo(cx,headY+h*.11);
+  ctx.strokeStyle='#719bab';ctx.lineWidth=2;ctx.stroke();
+  // Each eye is an illuminated aperture in the skull, not a separate attack.
+  const eyes=[[0,.07,1.1],[-.33,.09,.68],[.33,.09,.68],
+    [-.44,-.16,.62],[.44,-.16,.62],[-.18,-.25,.50],[.18,-.25,.50],
+    [-.51,.29,.43],[.51,.29,.43],[-.22,.40,.63],[.22,.40,.63],
+    [0,-.42,.52],[-.34,-.40,.39],[.34,-.40,.39]];
+  ctx.shadowColor=glow;ctx.shadowBlur=7;
+  for(const [ex,ey,scale] of eyes){
+    const x=cx+ex*wide,y=headY+ey*h*.15,
+      r=(4.5+phase*.9)*scale;
+    ctx.beginPath();ctx.ellipse(x,y,r*.76,r*1.16,0,0,Math.PI*2);
+    ctx.fillStyle='#a0fff8';ctx.fill();
+    ctx.beginPath();ctx.ellipse(x,y,r*.28,r*.8,0,0,Math.PI*2);
+    ctx.fillStyle='#06415a';ctx.fill();
+  }
+  ctx.shadowBlur=0;
+  // Face tendrils curl visibly in front of the eyes and trail behind the rim.
+  for(let i=0;i<9;i++){
+    const offset=(i-4)*wide*.125,x=cx+offset,
+      bend=Math.sin(tick*.024+i)*9;
+    ctx.beginPath();ctx.moveTo(x,headY+h*.072);
+    ctx.bezierCurveTo(x-offset*.35,headY+h*.16,x+offset*.36+bend,
+      headY+h*.25,x+offset*.48+bend*1.8,headY+h*.34);
+    ctx.strokeStyle='#0a1228';ctx.lineWidth=15-i%3*2;ctx.stroke();
+    ctx.strokeStyle=i%2?'#5d637d':'#426e7f';ctx.lineWidth=8-i%3;ctx.stroke();
+  }
   ctx.globalAlpha=1;
   for(const z of zones){
    const live=tick>=z.fire,remain=Math.max(0,z.fire-tick);
