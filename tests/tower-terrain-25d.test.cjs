@@ -49,7 +49,8 @@ test('terrain visual shapes draw unique full arenas and named themed stone engra
  for(const realm of Object.keys(names)){
   const {c,calls}=painter();
   assert.equal(T.paint(c,realm,5,500,500,90),true);
-  assert.ok(calls.ellipses>=9);
+  assert.ok(calls.ellipses>=3);
+  assert.ok(calls.shapes>=12,'raised platforms must contain visible top surfaces and side walls');
   assert.ok(calls.words.length>=3);
   icons.push(calls.words[0]);
  }
@@ -62,7 +63,7 @@ test('terrain height follows fighters but never permanently modifies their saved
  assert.ok(p.towerGroundZ>0);
  const first=p.towerGroundZ;
  for(let i=2;i<15;i++)T.step('fire',4,[p],500,500,i);
- assert.ok(p.towerGroundZ>first);
+ assert.equal(p.towerGroundZ,first,'the terrain height must not lag behind unchanged geometry');
  assert.equal(p.z,0);assert.equal(p.vz,0);
  T.clear([p]);assert.equal(p.towerGroundZ,undefined);
  assert.equal(p.z,0);
@@ -135,7 +136,7 @@ test('dynamic terrain heights are synchronized between movement and rendered pla
  const p={x:clock1.x,y:clock1.y,hp:100,z:0,vx:1,vy:0};
  T.step('time',8,[p],500,500,210);
  const expected=T.heightAt('time',8,p.x,p.y,500,500,210);
- assert.ok(Math.abs(p.towerGroundZ-expected*.16)<.001);
+ assert.ok(Math.abs(p.towerGroundZ-expected)<.001);
 });
 
 test('2.5D warnings stand above the projected arena instead of being flat text',()=>{

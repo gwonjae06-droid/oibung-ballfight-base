@@ -4,6 +4,7 @@
 const TAU=Math.PI*2,C={time:'#ffd77f',space:'#b898ff',fire:'#ff793f',storm:'#9ceaff',ice:'#c3f7ff',forest:'#9bde71'};
 const names={time:['천체 시계','역행하는 기억','멈춘 세계'],space:['사건의 지평선','태초의 빅뱅','은하 절단'],fire:['종말 운석','화산의 심장','화염 회오리'],storm:['허리케인의 눈','천공의 심판','천둥새 강하'],ice:['거울 아래의 나','절대영도','빙창 눈보라'],forest:['세계수의 뿌리','식충림 만개','자연의 부름']};
 const cap=(x,a,b)=>Math.max(a,Math.min(b,x));
+const METEOR_COUNTDOWN=12*60, METEOR_BLAST=48;
 function create({realm,level,width:w,height:h,hero,boss,damage}){
  const temporal=realm==='time'?g.ArenaTowerTemporal?.create([hero,boss]):null;
  let tick=0,turn=0,event=null,history=[];const entities=[];let entitySerial=100;const zones=[],cx=w/2,cy=h/2;
@@ -30,7 +31,15 @@ function create({realm,level,width:w,height:h,hero,boss,damage}){
    if(!variant)zone({shape:'circle',x:cx,y:cy,r:55,pull:true},120,330);
    else for(let i=0;i<5;i++)zone({shape:'ring',x:cx,y:cy,inner:30+i*40,r:48+i*40},150+i*48,28);
   }else if(realm==='fire'){
-   if(!variant){event.meteor=spawn('meteor',cx,cy,level===10?100:65);event.deadline=tick+480;event.end=tick+600;event.hint='종말 운석을 직접 공격해 파괴 · 제한시간 8초';}
+   if(!variant){
+    // The extinction meteor is a WORLD-SCALE boss deadline, not an enemy.
+    // Attacking it or applying status effects can never destroy the visual.
+    event.deadline=tick+METEOR_COUNTDOWN;
+    event.impactTick=event.deadline+METEOR_BLAST;
+    event.end=event.impactTick+20;
+    event.remaining=METEOR_COUNTDOWN/60;
+    event.hint='종말 운석 강림 · 제한시간 안에 화염탑 보스를 쓰러뜨리세요!';
+   }
    else for(let i=0;i<7;i++){const a=i*TAU/7;zone({shape:'circle',x:cx+Math.cos(a)*w*.28,y:cy+Math.sin(a)*h*.28,r:48},150+i*38,65);}
   }else if(realm==='storm'){
    if(!variant)zone({shape:'ring',x:cx,y:cy,inner:90,r:Math.min(w,h)*.48,wind:true},150,270);
@@ -45,7 +54,7 @@ function create({realm,level,width:w,height:h,hero,boss,damage}){
   }
  }
  function step(){
-  if(hero.hp<=0||boss.hp<=0){clear();return;}
+  if(hero.hp<=0||(!event?.failed&&boss.hp<=0)){clear();return;}
   tick++;
   for(const e of entities){if(e.hp<=0)continue;if(e.invincible>0)e.invincible--;g.ForgeExpansion?.tick(e);if(e.kind!=='meteor'&&tick>e.born+90){const dx=hero.x-e.x,dy=hero.y-e.y,d=Math.hypot(dx,dy)||1,speed=e.kind==='golem'?.6:e.kind==='swarm'?1.8:1;e.x=cap(e.x+dx/d*speed,e.radius,w-e.radius);e.y=cap(e.y+dy/d*speed,e.radius,h-e.radius);if(d<e.radius+hero.radius+12&&tick%65===0)damage(hero,e.kind==='golem'?14:8,{realm,kind:'boss',label:e.name});}}
   for(let i=entities.length-1;i>=0;i--)if(entities[i].hp<=0||tick>entities[i].expires)entities.splice(i,1);
@@ -53,7 +62,7 @@ function create({realm,level,width:w,height:h,hero,boss,damage}){
   if(level%5!==0)return;
   if(!event&&tick>240&&(tick-241)%900===0)begin();
   if(!event)return;
-  event.progress=(tick-event.start)/(event.end-event.start);
+  event.progress=cap((tick-event.start)/((event.deadline||event.end)-event.start),0,1);
   const age=tick-event.start;
   if(realm==='time'&&event.variant===1&&age===120)temporal?.begin();
   if(realm==='time'&&event.variant===0&&age>=360&&age<420&&Math.hypot(hero.x-cx,hero.y-cy)>65)
@@ -61,7 +70,24 @@ function create({realm,level,width:w,height:h,hero,boss,damage}){
   if(realm==='storm'&&event.variant===2)boss.z=35*Math.max(0,Math.sin(Math.PI*age/540));
   if(realm==='forest'&&event.variant===2&&age>120&&age%60===0&&entities.some(e=>e.hp>0))boss.hp=Math.min(boss.maxHp,boss.hp+boss.maxHp*.015);
   if(realm==='space'&&event.variant===2&&age>120&&age<440){hero.vx=(hero.vx||0)*1.008;hero.vy=(hero.vy||0)*1.008;}
-  if(event.deadline){event.remaining=Math.max(0,event.meteor.hp);event.broken=event.remaining<=0;if(tick===event.deadline&&!event.broken){event.exploded=true;event.failed=true;event.meteor.hp=0;}if(tick===event.deadline+45&&event.failed)damage(hero,hero.maxHp*4,{realm,kind:'boss',label:event.title});}
+  if(event.deadline){
+   event.remaining=Math.max(0,Math.ceil((event.deadline-tick)/60));
+   if(tick===event.deadline){
+    event.exploded=true;event.failed=true;
+    // At zero the challenge is lost. The boss cannot be defeated during
+    // the short blast animation to retroactively cancel the deadline.
+    boss.invincible=Math.max(boss.invincible||0,METEOR_BLAST+2);
+   }
+   if(event.failed&&boss.hp<=0)boss.hp=1;
+   if(tick===event.impactTick&&event.failed&&boss.hp>0){
+    // A FAILED boss-check is an explicit defeat. The normal hazard adapter
+    // rejects shield, jump and post-hit protection, so it cannot implement
+    // an unavoidable cinematic wipe; this is intentionally separate.
+    hero.forgeRevived=true; // no resurrection may undo the extinction wipe
+    hero.hp=0;
+    g.addFloatingText?.('종말 운석 · 전멸',hero.x,hero.y-45,'#ffca8b',23);
+   }
+  }
   for(const z of zones){
    if(z.spin)z.angle+=z.spin;
    if(z.tornado!==undefined){const a=(tick-event.start)*.009+z.tornado*TAU/3;z.x=cx+Math.cos(a)*w*.25;z.y=cy+Math.sin(a)*h*.25;}
@@ -86,10 +112,10 @@ function create({realm,level,width:w,height:h,hero,boss,damage}){
    ctx.restore();g.ArenaTowerSpectacleArt?.zone(ctx,z,realm,tick);
   }
   if(realm==='time'){ctx.save();ctx.translate(cx,cy);ctx.beginPath();ctx.arc(0,0,65,0,TAU);ctx.stroke();ctx.strokeStyle=C.time;for(let i=0;i<12;i++){const a=i*TAU/12;ctx.beginPath();ctx.moveTo(Math.cos(a)*w*.37,Math.sin(a)*h*.37);ctx.lineTo(Math.cos(a)*w*.4,Math.sin(a)*h*.4);ctx.stroke();}ctx.restore();}
-  for(const e of entities){ctx.save();ctx.translate(e.x,e.y);ctx.globalAlpha=tick<e.born+60?.35:1;if(e.kind==='mirror'){ctx.fillStyle=hero.themeColor||'#78d3ed';ctx.globalAlpha=.65;ctx.beginPath();ctx.arc(0,0,e.radius,0,TAU);ctx.fill();ctx.strokeStyle='#dbfcff';ctx.lineWidth=3;ctx.stroke();ctx.fillStyle='#fff';ctx.font='bold 18px system-ui';ctx.textAlign='center';ctx.fillText((hero.name||'나')[0],0,6);}
+  for(const e of entities){if(e.kind==='meteor')continue;ctx.save();ctx.translate(e.x,e.y);ctx.globalAlpha=tick<e.born+60?.35:1;if(e.kind==='mirror'){ctx.fillStyle=hero.themeColor||'#78d3ed';ctx.globalAlpha=.65;ctx.beginPath();ctx.arc(0,0,e.radius,0,TAU);ctx.fill();ctx.strokeStyle='#dbfcff';ctx.lineWidth=3;ctx.stroke();ctx.fillStyle='#fff';ctx.font='bold 18px system-ui';ctx.textAlign='center';ctx.fillText((hero.name||'나')[0],0,6);}
    else if(e.kind==='swarm'){ctx.fillStyle='#d6e8b1';for(const side of [-1,1]){ctx.beginPath();ctx.ellipse(side*12,-4,12,4+Math.abs(Math.sin(tick*.4))*7,side*.5,0,TAU);ctx.fill();}ctx.fillStyle='#c6a636';ctx.beginPath();ctx.ellipse(0,0,8,14,0,0,TAU);ctx.fill();ctx.strokeStyle='#3b3420';ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(-6,0);ctx.lineTo(6,0);ctx.stroke();}
    else g.ArenaTowerCreatures?.draw(ctx,{towerEnemy:true,towerRealm:e.kind==='meteor'?'fire':realm,towerBossTier:0,towerEnemyType:e.kind==='golem'?1:2,forgeClock:tick},e.radius);ctx.fillStyle='#111827';ctx.fillRect(-e.radius,e.radius+10,e.radius*2,6);ctx.fillStyle='#9af0ac';ctx.fillRect(-e.radius,e.radius+10,e.radius*2*Math.max(0,e.hp/e.maxHp),6);ctx.restore();}
-  ctx.fillStyle='#fff';ctx.strokeStyle='#111';ctx.lineWidth=4;ctx.font='bold 16px system-ui';ctx.textAlign='center';const label=event.hint?event.hint+(event.deadline?' · HP '+Math.ceil(event.remaining||0)+' / '+Math.max(0,Math.ceil((event.deadline-tick)/60))+'초':''):event.title;ctx.font='bold 12px system-ui';let lines=[''];for(const word of label.split(' ')){const i=lines.length-1;if(ctx.measureText(lines[i]+' '+word).width>w-35)lines.push(word);else lines[i]+=(lines[i]?' ':'')+word;}lines.slice(0,3).forEach((line,i)=>{const y=h-16-(Math.min(3,lines.length)-1-i)*16;ctx.strokeText(line,cx,y);ctx.fillText(line,cx,y);});ctx.restore();
+  ctx.fillStyle='#fff';ctx.strokeStyle='#111';ctx.lineWidth=4;ctx.font='bold 16px system-ui';ctx.textAlign='center';const label=event.hint?event.hint+(event.deadline?' · '+(event.failed?'폭발!':event.remaining+'초 남음'):''):event.title;ctx.font='bold 12px system-ui';let lines=[''];for(const word of label.split(' ')){const i=lines.length-1;if(ctx.measureText(lines[i]+' '+word).width>w-35)lines.push(word);else lines[i]+=(lines[i]?' ':'')+word;}lines.slice(0,3).forEach((line,i)=>{const y=h-16-(Math.min(3,lines.length)-1-i)*16;ctx.strokeText(line,cx,y);ctx.fillText(line,cx,y);});ctx.restore();
  }
  return {step,draw,targets,temporal,clear,get entities(){return entities;},get zones(){return zones;},get event(){return event;},get tick(){return temporal?.active?tick-temporal.age:tick;}};
 }
@@ -116,8 +142,11 @@ function page(event,tick){
  c.globalAlpha=.3*Math.sin(Math.PI*Math.min(1,event.progress));
  g.ArenaTowerSpectacleArt?.viewport(c,event,t,w,h);
   g.ArenaTowerPageReality?.render?.(c,event,t,w,h,reduced);
- if(event.realm==='fire'&&event.deadline&&!event.broken){c.save();c.globalAlpha=.7;const box=document.getElementById('arena')?.getBoundingClientRect();const x=box?box.left+box.width*.5:w*.5,y=box?box.top-100+Math.min(1,event.progress/.8)*(box.height*.5+100):event.progress*h*.7;c.translate(x,y);c.fillStyle='#ff8e35';c.beginPath();c.moveTo(-35,0);c.quadraticCurveTo(-65,-90,-15,-180);c.quadraticCurveTo(60,-100,35,0);c.fill();c.fillStyle='#53312c';c.strokeStyle='#ffbd73';c.lineWidth=3;c.beginPath();for(let i=0;i<11;i++){const a=i*TAU/11,r=38+(i%3)*5;i?c.lineTo(Math.cos(a)*r,Math.sin(a)*r):c.moveTo(Math.cos(a)*r,Math.sin(a)*r);}c.closePath();c.fill();c.stroke();for(let i=0;i<4;i++){c.beginPath();c.moveTo(-25+i*16,-30);c.lineTo(-15+i*10,0);c.lineTo(-30+i*18,30);c.stroke();}c.restore();}
- if(event.exploded){const phase=cap((tick-event.deadline)/45,0,1);c.fillStyle='#ff6828';c.globalAlpha=(reduced?.1:.38)*(1-phase*.5);c.beginPath();c.arc(w/2,h/2,Math.hypot(w,h)*phase,0,TAU);c.fill();c.strokeStyle='#ffd390';c.lineWidth=20*(1-phase)+2;c.stroke();}
+ // Viewport art leaves the old subtle vignette alpha behind; the meteor
+ // must NOT inherit it or disappear at progress 0/1.
+ c.globalAlpha=1;
+ if(event.realm==='fire'&&event.deadline)g.ArenaTowerMeteorArt?.draw?.(c,event,t,w,h,reduced);
+
 }
 g.ArenaTowerSpectacle={create,glyph,page};
 })(globalThis);

@@ -52,25 +52,27 @@ function paint(ctx,realm,level,width=500,height=500,frame=0){
  const theme=C[realm];if(!theme||!ctx)return false;
  const platforms=nodes(realm,level,width,height,frame);
  ctx.save();
- // Realm-specific low-ground structure and visible 2.5D platform sidewalls.
+  // The top physically sits z units above the ground footprint. Draw
+  // the unprojected circular footprint here: ArenaDepth.projectWorld turns
+  // it into the same perspective ellipse used for the fighter's feet.
  for(const n of platforms){
-   const r=n.r,depth=n.z*.38;
-   ctx.fillStyle='#00000036';ctx.beginPath();ctx.ellipse(n.x+7,n.y+depth+7,r*1.1,r*.67,0,0,PI*2);ctx.fill();
+   const r=n.r,topY=n.y-n.z;
+   ctx.fillStyle='#00000036';ctx.beginPath();ctx.ellipse(n.x+7,n.y+8,r*1.12,r*.94,0,0,PI*2);ctx.fill();
    ctx.fillStyle=theme.side;
-   ctx.beginPath();ctx.ellipse(n.x,n.y+depth,r,r*.63,0,0,PI*2);ctx.fill();
-   ctx.beginPath();ctx.moveTo(n.x-r,n.y);ctx.lineTo(n.x-r,n.y+depth);
-   ctx.ellipse(n.x,n.y+depth,r,r*.63,PI,0,true);
-   ctx.lineTo(n.x+r,n.y);ctx.closePath();ctx.fill();
-   ctx.beginPath();ctx.ellipse(n.x,n.y,r,r*.63,0,0,PI*2);
+   ctx.beginPath();ctx.arc(n.x,n.y,r,0,PI*2);ctx.fill();
+   // Front wall exposes the full real elevation, not a decorative fraction.
+   ctx.beginPath();ctx.moveTo(n.x+r,topY);ctx.arc(n.x,topY,r,0,PI);
+   ctx.lineTo(n.x-r,n.y);ctx.arc(n.x,n.y,r,PI,0,true);ctx.closePath();ctx.fill();
+   ctx.beginPath();ctx.arc(n.x,topY,r,0,PI*2);
    ctx.fillStyle=theme.top;ctx.globalAlpha=.84;ctx.fill();ctx.globalAlpha=1;
    ctx.strokeStyle=theme.rim;ctx.lineWidth=2.7;ctx.stroke();
    ctx.strokeStyle='#ffffff46';ctx.lineWidth=1.2;
-   ctx.beginPath();ctx.ellipse(n.x,n.y-r*.10,r*.85,r*.46,0,PI*1.1,PI*1.9);ctx.stroke();
+   ctx.beginPath();ctx.arc(n.x,topY-r*.12,r*.72,PI*1.08,PI*1.92);ctx.stroke();
    // Theme glyph is a floor engraving, not a character sprite.
    ctx.fillStyle=theme.base;ctx.globalAlpha=.50;
    ctx.textAlign='center';ctx.textBaseline='middle';
    ctx.font='bold '+Math.round(r*.47)+'px system-ui';
-   ctx.fillText(theme.symbol,n.x,n.y-4);ctx.globalAlpha=1;
+   ctx.fillText(theme.symbol,n.x,topY-4);ctx.globalAlpha=1;
  }
  // Realm architecture painted behind combatants, without changing collision.
  ctx.save();ctx.lineWidth=2;ctx.globalAlpha=.68;
@@ -106,7 +108,10 @@ function step(realm,level,roster,width=500,height=500,tick=0){
  for(const p of roster||[]){
   if(!p||p.hp<=0)continue;
   const goal=heightAt(realm,level,p.x,p.y,width,height,tick);
-  p.towerGroundZ=(Number(p.towerGroundZ)||0)+(goal-(Number(p.towerGroundZ)||0))*.16;
+  // A single, authoritative world-space floor height powers collisions,
+  // jump origins and the drawn raised platform. Smooth SDF ramps already
+  // interpolate at the edges; a second lerp here made actors hover and miss.
+  p.towerGroundZ=goal;
   // Terrain owns only height; the separate environment engine paints and
   // applies clearly telegraphed realm effects. No hidden passive debuffs.
  }

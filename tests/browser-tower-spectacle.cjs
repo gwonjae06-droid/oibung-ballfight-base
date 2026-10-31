@@ -20,7 +20,7 @@ try{browser=await chromium.launch({channel:'msedge',headless:true});const page=a
   assert.equal(result.level,10);assert.ok(result.title,realm+' ultimate missing');
   await page.locator('#arena').scrollIntoViewIfNeeded();await page.screenshot({path:path.join(out,realm+'.png')});
   if(realm==='fire'){
-   const hit=await page.evaluate(()=>{const s=ArenaTower.encounter.spectacle,e=s.event.meteor;players[0].x=e.x-30;players[0].y=e.y;e.invincible=0;const before=e.hp;SkillForge.hit(players[0],e,{type:'wave',damage:30,knockback:0,status:'none'},1,AdvancedCombat.height(e));return {before,after:e.hp,target:getClosestAliveEnemy(players[0])===e};});assert.ok(hit.after<hit.before);assert.equal(hit.target,true);
+   const result=await page.evaluate(()=>{const s=ArenaTower.encounter.spectacle;return {deadline:s.event.deadline,seconds:s.event.remaining,targets:s.targets(players[0]).length,hasMeteorArt:!!ArenaTowerMeteorArt,hasGiantOverlay:[...document.querySelectorAll('canvas')].some(e=>e.style.position==='fixed'&&!e.hidden)};});assert.ok(result.seconds>0);assert.equal(result.targets,0);assert.equal(result.hasMeteorArt,true);assert.equal(result.hasGiantOverlay,true);
   }
   if(realm==='time'){const played=await page.evaluate(()=>{isPlaying=true;let active=0;for(let i=0;i<1200;i++){update();if(ArenaTower.encounter.spectacle.temporal.active)active++;}isPlaying=false;return active;});assert.ok(played>=170,'temporal playback must run through real update loop');}
   const paused=await page.evaluate(()=>{const t=ArenaTower.encounter.spectacle.tick;update();return t===ArenaTower.encounter.spectacle.tick;});assert.ok(paused);
@@ -28,5 +28,5 @@ try{browser=await chromium.launch({channel:'msedge',headless:true});const page=a
   assert.equal(await page.locator('canvas[aria-hidden="true"]').evaluateAll(nodes=>nodes.filter(n=>n.style.position==='fixed'&&!n.hidden).length),0);
  }
  await page.setViewportSize({width:390,height:844});await page.evaluate(()=>{ArenaTower.selectRealm('ice');ArenaTower.begin();draw();});await page.screenshot({path:path.join(out,'mobile.png')});
- assert.deepEqual(errors,[]);console.log('PASS: six real 10F encounters, meteor direct hit/targeting, pause, forfeit cleanup, mobile render');
+ assert.deepEqual(errors,[]);console.log('PASS: six real 10F encounters, meteor full-viewport countdown, pause, forfeit cleanup, mobile render');
 }finally{await browser?.close();server.close();}})().catch(e=>{console.error(e);process.exitCode=1;});
