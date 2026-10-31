@@ -81,7 +81,7 @@ function normalize(value,{towerEnemy=false}={}){
     name:clean(value.name,14)||'커스텀 파이터',blurb:clean(value.blurb,90),
     artKey:clean(value.artKey||'',52).replace(/[^a-zA-Z0-9_-]/g,''),
     archetype,
-    basicAttack:base?global.BasicAttacks?.normalize?.(value.basicAttack,archetype):undefined,
+    basicAttack:signature&&base?global.BasicAttacks?.normalize?.(value.basicAttack,archetype):undefined,
     color:color(value.color),effectColor:color(value.effectColor||value.color),
     hp:base?base.hp:Math.round(number(value.hp,140,towerEnemy?8000:500,250)),
     speed:base?base.speed:number(value.speed,.6,5,1.8),
