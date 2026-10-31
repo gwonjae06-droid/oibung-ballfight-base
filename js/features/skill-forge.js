@@ -758,6 +758,7 @@ function initializeUI(){
   $('bf-custom-list').addEventListener('click',e=>{
     const editId=e.target.closest('button')?.dataset.editForgeId;
      if(editId){if(roundStarted&&!isGameOver){report('전투 종료 후 수정할 수 있습니다.');return;}const d=CUSTOM_DEFS.find(d=>d.id===editId&&d.forgeData);if(!d)return;editingId=editId;draft=normalize(d.forgeData);refreshForm();global.BlockForge?.refresh?.();global.CharacterStudioModes?.select?.('compose');
+       global.StudioEasyDesigner?.selectMode?.('simple');global.StudioEasyDesigner?.refresh?.();
        $('bf-create').textContent='변경 내용 저장';$('forge-cancel-edit').hidden=false;
        report(d.name+'의 스킬을 불러왔습니다. 아래에서 스킬을 수정하고 변경 내용을 저장하세요.');
        document.getElementById('studio-mode-compose')?.scrollIntoView?.({block:'nearest',behavior:'smooth'});
