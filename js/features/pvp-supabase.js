@@ -22,7 +22,7 @@ class SupabasePvpTransport{
   this.closed=false;this.room=null;this.channel=null;this.poll=null;this.sim=null;
   this.readyTicker=null;this.watchdog=null;this.current=null;this.side=-1;
   this.mode=null;this.profile=null;this.lastBroadcast=0;this.lastFull=0;
-  this.lastFx=0;this.fxTimer=null;this.fxSending=false;
+  this.lastFx=0;this.fxTimer=null;this.fxSending=false;this.fxRecent=[];
   this.peerReady=false;this.lastStep=0;this.lastPeer=Date.now();
   this.checkFailures=0;this.checkBusy=false;this.connected=false;this.done=false;
   this.pendingControls=new Map();this.seenControls=new Set();this.controlSequence=0;
@@ -181,10 +181,14 @@ class SupabasePvpTransport{
   const events=this.rule?.drainFx?.(24)||[];
   if(!events.length)return;
   this.lastFx=Date.now();
-  // No full-state serialization here: these are the original VFX silhouettes
-  // in only a few small fields. Avoid blocking physics on network promises.
+  // Re-send the previous six tiny FX descriptors once, alongside fresh
+  // effects. Supabase broadcast is best-effort; the guest deduplicates IDs.
+  // Packet loss can no longer make a whole authored attack invisible.
+  const recent=this.fxRecent||[];
+  const redundant=recent.filter(e=>!events.some(v=>v.id===e.id)).slice(-6);
+  this.fxRecent=events.slice(-6);
   Promise.resolve(this.channel.send({
-   type:'broadcast',event:'fx',payload:{type:'fx',events}
+   type:'broadcast',event:'fx',payload:{type:'fx',events:[...redundant,...events]}
   })).catch(()=>{});
   if(events.length>=24)this.scheduleFx();
  }
