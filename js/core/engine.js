@@ -292,6 +292,9 @@ function update() {
     if(f.alpha<=0)floatingTexts.splice(i,1);
   }
   players.forEach(p=>globalThis.ForgeExpansion?.revive(p));
+  // Long heal/shield loops and zero-offense builds must eventually conclude.
+  // Only active physics ticks count; paused matches never advance overtime.
+  globalThis.ArenaStalemate?.tick?.(players,!!globalThis.ArenaTower?.active);
   const finalAlive=players.filter(p=>p.hp>0);
   if(finalAlive.length<=1){isGameOver=true;isPlaying=false;globalThis.BackgroundMusic?.setBattle(false);settleRound(finalAlive.length===1?finalAlive[0]:null);document.getElementById('btn-start').innerText='다음 경기';document.getElementById('btn-start').dataset.state='finished';syncStopButton();globalThis.ArenaTower?.onBattleEnd?.(finalAlive.length===1?finalAlive[0]:null);}
   if(!globalThis.ArenaSpeedControl?.deferUI)updateUI();
