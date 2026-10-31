@@ -22,7 +22,8 @@ test('all six Tower completions still gate the ancient boss, but locked players 
  assert.match(src,/allRealmsCleared\(\)/);
  assert.match(src,/el\('ancient-start'\)\.hidden=done!==6/);
  assert.match(src,/el\('ancient-lock-note'\)\.hidden=done===6/);
- assert.match(src,/selector\.querySelector\('\.ancient-unlock'\)\.dataset\.unlocked=done===6/);
+ assert.match(src,/const ancientCard=selector\.querySelector\('\.ancient-unlock'\)/);
+ assert.match(src,/ancientCard\.dataset\.unlocked=done===6/);
  assert.match(css,/data-unlocked="false"/);
  assert.match(css,/data-unlocked="true"/);
  assert.doesNotMatch(css,/#screen-tower \.ancient-unlock\[data-unlocked="false"\]\s*\{[^}]*display\s*:\s*none/);
