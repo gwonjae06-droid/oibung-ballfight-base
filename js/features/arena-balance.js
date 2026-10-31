@@ -60,14 +60,14 @@ function defenseSkillPressure(s){
  const perAction=a=>{
   const duration=cap(n(a.duration,1.5),.2,8),power=cap(n(a.damage),0,120);
   switch(a.type){
-   case 'heal':return sum+power/cd;
-   case 'shield':return sum+105*duration/cd;
-   case 'regen':return sum+(power*.50)*Math.min(1,duration/cd);
-   case 'lifebloom':return sum+power*.47*duration/cd;
-   case 'fortify':return sum+40*duration/cd;
-   case 'drain':return sum+power*.25/cd;
-   case 'rewind':return sum+25*duration/cd;
-   default:return sum;
+   case 'heal':return power/cd;
+   case 'shield':return 105*duration/cd;
+   case 'regen':return (power*.50)*Math.min(1,duration/cd);
+   case 'lifebloom':return power*.47*duration/cd;
+   case 'fortify':return 40*duration/cd;
+   case 'drain':return power*.25/cd;
+   case 'rewind':return 25*duration/cd;
+   default:return 0;
   }
  };
  const pressure=Array.isArray(s?.program)&&g.SignatureScratch?.worstPressure?
