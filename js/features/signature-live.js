@@ -24,7 +24,7 @@ function observed(p,event,baseline){
  return !!info&&info.count>(baseline?.[event]||0);
 }
 function condition(p,target,id,run){
- if(id==='hit'||id==='guard'||id==='move'||id==='status'||id==='dodge'){
+ if(id==='hit'||id==='guard'||id==='move'||id==='status'||id==='dodge'||id==='basicHit'||id==='basicStatus'){
    if(id==='dodge'&&Number(p?._forgeDodgeSerial||0)>Number(run?.dodgeBaseline||0))return true;
    return observed(p,id,run?.baseline);
  }
