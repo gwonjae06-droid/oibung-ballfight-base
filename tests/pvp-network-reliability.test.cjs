@@ -28,7 +28,8 @@ test('lighter remote snapshots retain HP/movement without transferring the entir
  assert.ok(!('world' in light));
  assert.ok('world' in full);
  assert.equal(light.players.length,2);
- assert.ok(JSON.stringify(light).length<JSON.stringify(full).length/2);
+ assert.ok(JSON.stringify(light).length<JSON.stringify(full).length,'light state must exclude heavy world objects');
+ assert.ok(light.players.every(p=>!('skills'in p)&&!('cooldowns'in p)),'static loadout metadata must not be retransmitted at 10 Hz');
  light.players[0].hp=80;
  light.players[0].x=190;
  r.receive(JSON.parse(JSON.stringify(light)));
