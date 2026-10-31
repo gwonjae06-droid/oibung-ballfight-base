@@ -1,12 +1,12 @@
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
 const txt=p=>fs.readFileSync(__dirname+'/../'+p,'utf8');
-test('overtime begins later and draw requires longer active combat',()=>{
+test('free battle stays long while tower uses a faster overtime window',()=>{
  const g={};vm.createContext(g);vm.runInContext(txt('js/features/arena-stalemate.js'),g);
  const s=g.ArenaStalemate,l=s.LIMITS;
- assert.ok(l.regular>=300*60&&l.tower>=l.regular);
- assert.ok(l.stagnant>=150*60&&l.towerStagnant>=l.stagnant);
- assert.ok(l.deadline>=300*60);
+ assert.ok(l.regular>=300*60&&l.tower>=90*60&&l.tower<l.regular);
+ assert.ok(l.stagnant>=150*60&&l.towerStagnant<l.stagnant);
+ assert.ok(l.deadline>=300*60&&l.towerDeadline<l.deadline);
  const fighters=[{hp:200,maxHp:200},{hp:200,maxHp:200}];
  for(let i=0;i<38*60;i++)s.tick(fighters);assert.equal(s.state.active,false);
 });
