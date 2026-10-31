@@ -70,7 +70,7 @@ test('random button generates bounded meaningful nested executable blocks',()=>{
 test('Scratch editor replaces old two-mode UI and supports nested drag/drop, keyboard and mobile insertion',()=>{
  const editor=read('js/features/scratch-studio.js'),css=read('css/scratch-studio.css'),html=read('index.html');
  for(const symbol of ['scratch-palette','scratch-block-tree','scratch-insert-zone',
-  'data-scratch-target','dragstart','dragover','drop','data-scratch-command="up"',
+  'data-scratch-target','pointerdown','pointermove','pointerup','dragTarget','scratch-live-drop-guide','data-scratch-command="up"',
   'data-scratch-command="down"','data-scratch-command="random"','data-scratch-field="condition"',
   "setProfile(result", "skills.prepend(root)"])assert.ok(editor.includes(symbol),symbol);
  assert.match(css,/\.scratch-cavity/);
