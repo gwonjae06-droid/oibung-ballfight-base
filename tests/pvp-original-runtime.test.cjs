@@ -82,7 +82,7 @@ test('online host physically freezes both fighters before the shared FIGHT times
  const snapshot=P.snapshot(room,false);
  assert.ok(snapshot.startInMs>0&&snapshot.startInMs<=3600,
   'guests receive the actual remaining ready time');
- room.startAt=now+3500;
+ room.startAt=now-100;
  P.step(room,.15,now+3600);
  assert.ok(room.elapsed>0,'physics begins only after FIGHT');
  assert.equal(P.snapshot(room,false).startInMs,undefined,
