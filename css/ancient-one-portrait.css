@@ -1,0 +1,127 @@
+/* THE ANCIENT ONE — unlocked by all six Towers.
+ * Original SVG art, no image fetch beyond bundled same-origin asset.
+ * Kept outside the six-tower panorama to preserve its mobile swipe layout.
+ */
+#screen-tower .ancient-unlock{
+  display:block;max-width:1020px;margin:22px auto 8px;padding:0;
+  text-align:left;border:1px solid rgba(134,115,195,.62);
+  border-radius:20px;overflow:hidden;
+  background:#0a1023;
+  box-shadow:0 24px 65px #02050ca6,0 0 37px rgba(117,70,183,.21),
+             inset 0 1px 0 rgba(228,217,255,.20);
+  color:#f4e9ff;isolation:isolate;
+}
+#screen-tower .ancient-portrait{position:relative;min-height:353px;display:flex;align-items:center;isolation:isolate}
+#screen-tower .ancient-portrait-art{
+  position:absolute;inset:0;width:100%;height:100%;
+  object-fit:cover;object-position:71% 40%;pointer-events:none;
+  transition:transform .7s ease,filter .6s ease;
+}
+#screen-tower .ancient-portrait::before{
+  content:"";position:absolute;inset:0;z-index:1;pointer-events:none;
+  background:
+    linear-gradient(90deg,rgba(5,11,25,.97) 0%,rgba(8,14,31,.94) 22%,rgba(9,15,30,.75) 40%,rgba(8,13,27,.14) 76%,rgba(8,10,25,.18) 100%),
+    linear-gradient(0deg,rgba(8,10,25,.62),transparent 42%);
+}
+#screen-tower .ancient-portrait::after{
+  content:"";position:absolute;inset:12px;z-index:3;pointer-events:none;
+  border:1px solid rgba(213,187,247,.18);border-radius:11px;
+}
+#screen-tower .ancient-portrait-aura{
+  position:absolute;inset:0;z-index:1;pointer-events:none;opacity:.6;
+  background:radial-gradient(ellipse 35% 50% at 78% 44%,rgba(43,216,236,.14),transparent 83%);
+  animation:ancient-breath 7s ease-in-out infinite alternate;
+}
+@keyframes ancient-breath{from{opacity:.40}to{opacity:.85}}
+#screen-tower .ancient-portrait-copy{
+  position:relative;z-index:4;
+  box-sizing:border-box;width:min(60%,590px);
+  min-width:0;display:grid;justify-items:start;gap:10px;
+  padding:clamp(23px,4vw,45px);
+}
+#screen-tower .ancient-portrait-eyebrow{
+  color:#b9dbed;font-size:clamp(9px,1.1vw,12px);
+  letter-spacing:.23em;font-weight:900;
+  text-shadow:0 0 15px rgba(114,216,236,.6);
+}
+#screen-tower .ancient-portrait-copy h3{
+  margin:0;font:900 clamp(35px,4.9vw,61px)/1.12 Georgia,"Noto Serif KR",serif;
+  letter-spacing:-.045em;color:#fcf6ff;
+  text-shadow:0 3px 16px #020b23,0 0 35px rgba(170,119,244,.52);
+}
+#screen-tower .ancient-portrait-copy .ancient-portrait-desc{
+  margin:0;color:#d0c8e0;font-size:clamp(12px,1.4vw,15px);
+  line-height:1.75;font-weight:500;
+  text-shadow:0 2px 8px #020816;
+}
+#screen-tower .ancient-portrait-progress{
+  display:inline-flex;align-items:center;gap:8px;
+  margin:5px 0 0;padding:7px 13px;
+  border:1px solid rgba(174,168,207,.34);
+  border-radius:40px;
+  color:#eadcf5;background:rgba(17,24,47,.78);
+  font-size:12px;font-weight:850;line-height:1.5;
+  letter-spacing:.005em;
+}
+#screen-tower .ancient-portrait-progress::before{
+  content:"✦";color:#a5edf4;font-size:12px;
+}
+#screen-tower .ancient-portrait-lock{
+  display:inline-flex;gap:8px;align-items:center;
+  padding:10px 12px;border:1px solid rgba(190,175,216,.37);
+  border-radius:9px;background:rgba(16,21,43,.85);
+  color:#d0c1e1;font-size:12px;font-weight:700;line-height:1.5;
+}
+#screen-tower .ancient-unlock[data-unlocked="false"] .ancient-portrait-art{
+  filter:brightness(.78) saturate(.86);
+}
+#screen-tower .ancient-unlock[data-unlocked="true"]{
+  border-color:rgba(120,218,232,.65);
+  box-shadow:0 25px 73px #02050cba,0 0 45px rgba(83,167,213,.22);
+}
+#screen-tower .ancient-unlock[data-unlocked="true"] .ancient-portrait-art{
+  filter:brightness(1.05) saturate(1.15);
+}
+#screen-tower .ancient-unlock[data-unlocked="true"]:hover .ancient-portrait-art{
+  transform:scale(1.035);
+}
+#screen-tower .ancient-unlock #ancient-start:not([hidden]){
+  display:inline-flex!important;align-items:center;justify-content:center;
+  gap:12px;width:auto;max-width:100%;min-height:54px;
+  margin:5px 0 0;padding:13px 20px;
+  border:1px solid #9af1fd;border-radius:10px;
+  background:linear-gradient(125deg,#126a83 0%,#455b9e 48%,#7d42a7 100%);
+  color:#fffef8;font:900 clamp(12px,1.3vw,16px)/1.2 system-ui,sans-serif;
+  letter-spacing:.025em;cursor:pointer;
+  box-shadow:inset 0 1px 0 #fff7,0 10px 26px #000a,0 0 29px #83e6f341;
+  transition:transform .2s ease,box-shadow .2s ease,filter .2s ease;
+}
+#screen-tower .ancient-unlock #ancient-start:hover{
+  transform:translateY(-3px);filter:brightness(1.16);
+  box-shadow:inset 0 1px 0 #fff9,0 15px 35px #000b,0 0 35px #83e6f388;
+}
+#screen-tower .ancient-unlock #ancient-start:active{transform:translateY(1px)}
+#screen-tower .ancient-unlock #ancient-start:focus-visible{
+  outline:3px solid #ffe4a0;outline-offset:4px;
+}
+#screen-tower .ancient-unlock [hidden]{display:none!important}
+@media(max-width:700px){
+ #screen-tower .ancient-unlock{margin:16px 4px 8px;border-radius:14px}
+ #screen-tower .ancient-portrait{min-height:390px;align-items:flex-end}
+ #screen-tower .ancient-portrait-art{object-position:80% center}
+ #screen-tower .ancient-portrait::before{
+   background:linear-gradient(0deg,rgba(5,8,21,.97) 0%,rgba(5,10,22,.90) 27%,rgba(6,10,24,.30) 60%,rgba(5,8,18,.15) 100%);
+ }
+ #screen-tower .ancient-portrait-copy{width:100%;padding:24px 22px 21px;gap:8px}
+ #screen-tower .ancient-portrait-copy h3{font-size:clamp(32px,7vw,47px)}
+ #screen-tower .ancient-portrait-copy .ancient-portrait-desc{font-size:12px}
+ #screen-tower .ancient-portrait-progress{font-size:11px;padding:6px 10px}
+ #screen-tower .ancient-portrait-lock{font-size:11px;padding:8px 10px}
+ #screen-tower .ancient-unlock #ancient-start:not([hidden]){width:100%;min-height:51px;font-size:13px}
+}
+@media(prefers-reduced-motion:reduce){
+ #screen-tower .ancient-portrait-aura{animation:none}
+ #screen-tower .ancient-portrait-art,
+ #screen-tower .ancient-unlock #ancient-start{transition:none!important}
+ #screen-tower .ancient-unlock:hover .ancient-portrait-art{transform:none}
+}
