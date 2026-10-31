@@ -7,7 +7,7 @@ function world(){
    createHitParticles(){},addFloatingText(){},getClosestAliveEnemy(){return null;}};
  h.window=h;vm.createContext(h);
  for(const path of ['js/features/action-registry.js','js/features/forge-expansion.js',
-   'js/features/advanced-combat.js','js/features/skill-forge.js',
+   'js/features/advanced-combat.js','js/features/signature-program.js','js/features/skill-forge.js',
    'js/features/block-forge.js','js/features/studio-easy-designer.js'])vm.runInContext(read(path),h,{filename:path});
  return h;
 }
@@ -16,13 +16,14 @@ test('guided designer is valid JS and exposes distinct presets without DOM',()=>
  assert.ok(api&&api.presetPlan&&api.change);
  assert.deepEqual(Object.keys(api.PLANS).sort(),['agile','assault','balanced','control','guardian'].sort());
 });
-test('all guided templates use 4 validated, playable independent skills',()=>{
+test('all guided templates use one signature skill with four validated action blocks',()=>{
  const h=world(),api=h.StudioEasyDesigner,original=h.SkillForge.getDraft();
  for(const type of Object.keys(api.PLANS)){
   const p=api.presetPlan(type,original);
-  assert.equal(p.skills.length,4,type);
+  assert.equal(p.skills.length,1,type);
+  assert.equal(p.signatureVersion,1,type);
   assert.equal(p.allAbilities,false,type);
-  assert.ok(p.skills.every(s=>s.actions.length===1),type);
+  assert.equal(p.skills[0].actions.length,4,type);
   assert.ok(p.skills.every(s=>s.cooldown>=.2&&s.cooldown<=30),type);
   assert.ok(p.skills.every(s=>s.actions.every(a=>h.SkillForge.TYPE[a.type])),type);
  }
@@ -36,13 +37,13 @@ test('choosing a starter style retains saved character name, appearance and HP',
  const result=api.presetPlan('guardian',p);
  for(const key of ['name','color','effectColor','hp','speed','artKey'])assert.equal(result[key],p[key],key);
  assert.equal(result.skills[0].actions[0].type,'shield');
- assert.equal(result.skills[1].actions[0].type,'heal');
- assert.equal(result.skills[2].actions[0].type,'fortify');
+ assert.equal(result.skills[0].actions[1].type,'heal');
+ assert.equal(result.skills[0].actions[2].type,'fortify');
 });
 test('simple edits modify exactly the same recipe accepted by the expert BlockForge',()=>{
  const h=world(),easy=h.StudioEasyDesigner,block=h.BlockForge;
  let p=easy.presetPlan('balanced',h.SkillForge.getDraft());
- const untouched=JSON.stringify(p.skills[1]);
+ const untouched=JSON.stringify(p.skills[0].actions[1]);
  p=easy.change(p,'type',0,'bolt');
  assert.equal(p.skills[0].actions[0].type,'bolt');
  p=easy.change(p,'cooldown',0,'2.7');
@@ -53,12 +54,12 @@ test('simple edits modify exactly the same recipe accepted by the expert BlockFo
  assert.equal(p.skills[0].cooldown,2.7);
  assert.equal(p.skills[0].trigger,'lowhp');
  assert.equal(p.skills[0].threshold,35);
- assert.equal(JSON.stringify(p.skills[1]),untouched,'editing first skill must not overwrite others');
+ assert.equal(JSON.stringify(p.skills[0].actions[1]),untouched,'editing first block must not overwrite other actions');
  p=block.modify(p,{kind:'add',skill:0,type:'zone'});
- assert.equal(p.skills[0].actions.length,2);
+ assert.equal(p.skills[0].actions.length,5);
  p=easy.change(p,'type',0,'wave');
- assert.equal(p.skills[0].actions.length,2,'simple edit must not discard expert chain');
- assert.equal(p.skills[0].actions[1].type,'zone');
+ assert.equal(p.skills[0].actions.length,5,'simple edit must not discard expert chain');
+ assert.equal(p.skills[0].actions[4].type,'zone');
 });
 test('adding/removing respects 4-skill limit while retaining extra expert options',()=>{
  const h=world(),easy=h.StudioEasyDesigner;
