@@ -65,7 +65,7 @@ drawCharacter=p=>{
 };
 // Both peers use core/render's ground pass and depth-sorted air queue.
 global.ArenaFXLayer={draw(painter){
- SkillVisuals.draw(painter);
+ SkillVisuals.draw(painter,{skipForegroundTime:true});
  global.ArenaTelegraph?.draw?.(painter,players);
 }};
 // Cache the detailed Tower scene at its native canvas resolution.
