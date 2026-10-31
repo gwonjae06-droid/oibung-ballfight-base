@@ -234,6 +234,7 @@ function hit(p,e,action,multiplier=1,attackZ) {
     // A DoT lasts as long as requested; its half-second damage ticks are
     // handled by the single existing simulation loop.
     e.bfDot=Math.max(e.bfDot||0,Math.max(30,Math.min(480,Math.round(seconds*60))));
+    e._forgeDotKind=action.status;
     e.bfDotDamage=Math.max(e.bfDotDamage||2,Math.min(6,Math.max(1,Math.round(d*.12))));
   }
   global.ForgeExpansion?.applyStatus(p,e,action);

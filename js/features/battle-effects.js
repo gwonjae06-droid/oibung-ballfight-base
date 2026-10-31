@@ -166,6 +166,7 @@
     if(globalThis.AdvancedCombat){AdvancedCombat.setAlpha(alpha);AdvancedCombat.setReduced(gentle.checked);}
     window.ArenaMotion?.setAlpha?.(alpha);
     window.SkillVisuals?.setReduced(gentle.checked);
+    window.ArenaStatusVFX?.setReduced?.(gentle.checked);
     window.ImpactPhysics?.setReduced?.(gentle.checked);
     window.ArenaResolution?.sync?.();
     if(!globalThis.ArenaScreenRouter?.enabled||['tower','pve'].includes(globalThis.ArenaScreenRouter.active))draw();

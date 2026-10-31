@@ -11,7 +11,7 @@ function revive(p){
   if(p.hp>0||p.forgeRevived||!p.forge?.skills.some(s=>s.actions.some(a=>a.type==='resurrect')))return false;
   p.forgeRevived=true;p.hp=Math.max(1,Math.round(p.maxHp*.35));p.invincible=90;
   p._forgeImpactGrace=0;
-  p.forgeEffects={};p.bfDot=0;p.slowTimer=0;p.slowMultiplier=1;p.forgePhase=null;p.forgeHistory=[];
+  p.forgeEffects={};p.bfDot=0;p._forgeDotKind=null;p.slowTimer=0;p.slowMultiplier=1;p.forgePhase=null;p.forgeHistory=[];
   addFloatingText('부활',p.x,p.y-35,'#047857',18);return true;
 }
 const active=(p,key)=>(p.forgeEffects?.[key]?.time||0)>0;
@@ -74,7 +74,7 @@ function tick(p){
       global.addFloatingText?.('-'+amount,p.x,p.y-30,'#a75f2b',14);
     }
   }
-  if(p.bfDot<=0)p._forgeDotClock=0;
+  if(p.bfDot<=0){p._forgeDotClock=0;p._forgeDotKind=null;}
   if(p.hp<=0)return;
   if(p.forge){p.forgeHistory ||= [];p.forgeHistory.push({x:p.x,y:p.y,hp:p.hp});if(p.forgeHistory.length>181)p.forgeHistory.shift();}
   if(p.forgePhase?.time>0){p.forgePhase.time--;p.invincible=Math.max(p.invincible||0,2);p._forgeImpactGrace=0;}
@@ -113,7 +113,7 @@ function execute(p,a,target,api){
   if(['cleanse','haste','regen','fortify','timeburst'].includes(a.type)){
     if(a.type==='cleanse'){
       for(const key of Object.keys(STATUSES))if(p.forgeEffects)delete p.forgeEffects[key];
-      p.slowTimer=0;p.slowMultiplier=1;p.bfDot=0;
+      p.slowTimer=0;p.slowMultiplier=1;p.bfDot=0;p._forgeDotKind=null;
     }else effect(p,a.type,a.duration*60,p,a.damage);
     show(p.x,p.y,p.radius+12);return true;
   }
@@ -374,9 +374,12 @@ function draw(p,renderCtx){
   }
   if(p.forgePhase){ink.setLineDash([5,4]);ink.beginPath();ink.ellipse(p.x,p.y+8,p.radius+6,12,0,0,Math.PI*2);ink.stroke();ink.setLineDash([]);}
 
-  ink.font='11px sans-serif';ink.textAlign='center';
-  const names=Object.keys(p.forgeEffects||{}).map(k=>STATUSES[k]||TYPES[k]).filter(Boolean);
-  if(names.length)ink.fillText(names.slice(0,3).join(' · '),p.x,p.y+p.radius+16);
+  // Keep the old plain-text fallback if the dedicated status renderer is not loaded.
+  if(!global.ArenaStatusVFX){
+    ink.font='11px sans-serif';ink.textAlign='center';
+    const names=Object.keys(p.forgeEffects||{}).map(k=>STATUSES[k]||TYPES[k]).filter(Boolean);
+    if(names.length)ink.fillText(names.slice(0,3).join(' · '),p.x,p.y+p.radius+16);
+  }
   ink.restore();
 }
 global.ForgeExpansion={revive,active,TYPES,STATUSES,DESCRIPTIONS,STATUS_HELP,applyStatus,damageScale,legacy,heal,tick,movement,blocked,execute,update,draw};

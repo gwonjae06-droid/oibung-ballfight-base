@@ -84,6 +84,9 @@ drawRoundedRect(ctx,labelX-tagWidth/2,labelY-16,tagWidth,23,6);
 ctx.strokeStyle='rgba(250,252,253,.38)';ctx.lineWidth=.8;ctx.stroke();
 ctx.fillStyle='#fff';ctx.textAlign='center';ctx.textBaseline='middle';
 ctx.fillText(name,labelX,labelY-4);ctx.restore();
+// Persistent status effects follow the final air-projected fighter sprite.
+// Badges and particle rings are presentation-only and never change hitboxes.
+globalThis.ArenaStatusVFX?.draw?.(ctx,p,{x:p.x,y:p.y+offset,radius:radius*scale,canvasWidth:canvas.width,canvasHeight:canvas.height});
 }
 function draw(){
 ctx.save();

@@ -246,7 +246,7 @@ function create({realm,level,width=500,height=500,hero,boss,damage,environmentMa
             const dx=cx-p.x,dy=cy-p.y,d=Math.max(1,Math.hypot(dx,dy));
             p.vx=(p.vx||0)+dx/d*1.4;p.vy=(p.vy||0)+dy/d*1.4;
           }
-          if(realm==='fire'){p.bfDot=Math.max(p.bfDot||0,90);p.bfDotDamage=Math.max(p.bfDotDamage||0,2+Math.floor(level/5));}
+          if(realm==='fire'){p.bfDot=Math.max(p.bfDot||0,90);p.bfDotDamage=Math.max(p.bfDotDamage||0,2+Math.floor(level/5));p._forgeDotKind='fire';}
           if(realm==='storm'){p.vx=(p.vx||0)+(p.x<cx?-2:2);p.vy=(p.vy||0)+(p.y<cy?-2:2);}
           if(realm==='ice'){p.slowTimer=Math.max(p.slowTimer||0,90);p.slowMultiplier=.5;}
           if(realm==='forest'){p.poisonTimer=Math.max(p.poisonTimer||0,120);p.slowTimer=Math.max(p.slowTimer||0,45);p.slowMultiplier=.7;}
