@@ -45,7 +45,7 @@ panel.innerHTML='<div class="kid-top"><div><span class="kid-overline">MY SPECIAL
  +'<section class="kid-section" aria-labelledby="kid-step-one"><div class="kid-step-heading"><span class="kid-step-no">1</span><div><h4 id="kid-step-one">언제 기술을 쓸까?</h4><p>기술을 쓸 순간을 정해요.</p></div></div><div class="kid-trigger-options"></div></section>'
  +'<section class="kid-section" aria-labelledby="kid-step-two"><div class="kid-step-heading"><span class="kid-step-no">2</span><div><h4 id="kid-step-two">무엇을 할까?</h4><p>블록을 누르면 내 기술에 차례대로 추가돼요.</p></div></div><div class="kid-action-grid"></div></section>'
  +'<section class="kid-section kid-plan-section" aria-labelledby="kid-step-three"><div class="kid-step-heading"><span class="kid-step-no">3</span><div><h4 id="kid-step-three">완성한 기술 확인하기</h4><p>위에서 아래로 순서대로 실행돼요.</p></div></div>'
- +'<div class="kid-skill-summary"><div class="kid-plan"></div><div class="kid-count"></div></div>'
+ +'<label class="kid-name-label">내 필살기 이름<input id="kid-skill-name" type="text" maxlength="18" placeholder="예: 번개 돌진"></label><div class="kid-skill-summary"><div class="kid-plan"></div><div class="kid-count"></div></div>'
  +'<div class="kid-tempo"><strong>얼마나 자주 사용할까?</strong><div role="group" class="kid-tempo-options"><button type="button" data-kid-cooldown="3">⚡ 자주</button><button type="button" data-kid-cooldown="5">⚖️ 보통</button><button type="button" data-kid-cooldown="8">🌙 가끔</button></div></div>'
  +'<button type="button" class="kid-preview-action" data-kid-command="preview">▶ 내 기술 움직임 보기</button></section>'
  +'<section class="kid-templates" aria-labelledby="kid-templates-title"><div class="kid-templates-heading"><h4 id="kid-templates-title">무엇부터 만들지 모르겠나요?</h4><p>마음에 드는 예시를 누르면 블록이 자동으로 채워져요. 나중에 바꿀 수도 있어요.</p></div><div class="kid-template-grid"></div><button type="button" class="kid-random" data-kid-command="random">🎲 아무거나 재미있는 기술 만들기</button></section>'
@@ -78,7 +78,7 @@ function changeFields(fields){if(!migrate())return;S.applyFields(fields,'기술�
 function add(id){
  if(!migrate())return;
  const code=program();
- if(code.length>=compiler.MAX_NODES){tell('블록이 너무 많아요. 몇 개를 빼고 다시 추가해 보세요.');return;}
+ if(code.length>=compiler.MAX_NODES||compiler.preview(code).length>=compiler.LIMIT){tell('한 번에 쓸 수 있는 행동이 가득 찼어요! 블록을 빼거나 자세히 보기에서 고쳐 보세요.');return;}
  code.push(nodeOf(id));
  setProgram(code,{},'좋아요! '+(actions.find(x=>x.id===id)?.name||'행동')+' 블록을 추가했어요.');
  g.CharacterStudioWorkspace?.selectPreviewSkill?.('all');
@@ -116,6 +116,7 @@ function refresh(){
   '<button type="button" class="kid-trigger" data-kid-trigger="'+s.id+'" aria-pressed="'+(fighter.skills[0].trigger===s.id)+'"><span class="kid-trigger-icon" aria-hidden="true">'+s.icon+'</span><strong>'+s.name+'</strong><small>'+s.tip+'</small></button>').join('');
  $('.kid-action-grid').innerHTML=actions.map(a=>'<button type="button" class="kid-action kid-action-'+a.group+'" data-kid-add="'+a.id+'" title="'+escape(a.tip)+'">'
    +'<span class="kid-action-icon" aria-hidden="true">'+a.icon+'</span><strong>'+a.name+'</strong><small>'+a.tip+'</small><span class="kid-action-plus" aria-hidden="true">＋</span></button>').join('');
+ $('#kid-skill-name').value=fighter.skills[0].name;
  const code=program();$('.kid-plan').innerHTML=code.length?displayPlan(code):'<div class="kid-empty">아직 블록이 없어요. 왼쪽(또는 위)의 색깔 블록을 눌러 주세요!</div>';
  $('.kid-count').textContent='현재 '+code.length+'개 블록 · 기술당 최대 '+compiler.LIMIT+'회 행동';
  const cooldown=fighter.skills[0].cooldown;
@@ -159,6 +160,12 @@ panel.addEventListener('click',e=>{
  if(command==='random'){replaceWithTemplate(templates[Math.floor(Math.random()*templates.length)],true);return;}
  if(command==='preview'){g.CharacterStudioWorkspace?.selectPreviewSkill?.('all');tell('왼쪽의 훈련 미리보기를 확인해 보세요.');return;}
  if(command==='convert')migrate();
+});
+panel.addEventListener('change',event=>{
+ if(event.target.id!=='kid-skill-name')return;
+ if(!migrate())return;
+ S.applyFields({name:event.target.value.trim()||'나만의 필살기'},'필살기 이름을 바꿨어요!');
+ tell('멋진 이름이에요! 이제 기술을 시험해 보세요.');
 });
 S.onChange=refresh;
 refresh();chooseMode('easy');
