@@ -2,7 +2,7 @@
 (function(global){
 'use strict';
 const STORE='oibung-forge-v3', TYPE=global.ActionRegistry?.TYPE||{wave:'충격파',shot:'투사체',beam:'레이저',bolt:'낙뢰',dash:'돌진',blink:'순간이동',heal:'회복',shield:'방어막',pull:'흡입',orbit:'회전 소환체',zone:'지속 장판'};
-const TRIGGER={auto:'주기적으로',lowhp:'체력 이하',contact:'접촉 시',damaged:'피격 시'};
+const TRIGGER={auto:'주기적으로',lowhp:'체력 이하',contact:'접촉 시',damaged:'피격 시',danger:'보스 패턴 예고 시',dodge:'보스 패턴 회피 성공 시'};
 const STATUS={none:'없음',ice:'둔화',fire:'화상',poison:'중독'};
 Object.assign(TYPE,global.ForgeExpansion?.TYPES||{});
 Object.assign(TYPE,global.AdvancedCombat?.TYPES||{});
@@ -71,21 +71,28 @@ function normalize(value,{towerEnemy=false}={}){
   // transient tower opponents keep their original authored HP/speed intact.
   const archetype=!towerEnemy&&global.ForgeArchetypes?.get?.(value.archetype)?value.archetype:'legacy';
   const base=global.ForgeArchetypes?.get?.(archetype);
+  const signature=!towerEnemy&&Number(value.signatureVersion)===1;
   return {
+    signatureVersion:signature?1:0,
+    legacySkills:signature&&Array.isArray(value.legacySkills)?value.legacySkills.slice(0,4).map(s=>({
+      ...s,actions:(s.actions||[]).slice(0,3).map(a=>({...a}))
+    })):undefined,
+    legacyAllAbilities:signature&&value.legacyAllAbilities===true,
     name:clean(value.name,14)||'커스텀 파이터',blurb:clean(value.blurb,90),
     artKey:clean(value.artKey||'',52).replace(/[^a-zA-Z0-9_-]/g,''),
     archetype,
     color:color(value.color),effectColor:color(value.effectColor||value.color),
     hp:base?base.hp:Math.round(number(value.hp,140,towerEnemy?8000:500,250)),
     speed:base?base.speed:number(value.speed,.6,5,1.8),
-    allAbilities:value.allAbilities===true,
-    // Only transient Tower enemies may exceed the four-skill player limit.
-    skills:value.skills.slice(0,towerEnemy?6:4).map((s,i)=>{
+    allAbilities:signature?false:value.allAbilities===true,
+    // Signature fighters have one skill/program with up to twelve action blocks.
+    // Legacy profiles and transient tower enemies retain their original slots.
+    skills:value.skills.slice(0,towerEnemy?6:signature?1:4).map((s,i)=>{
       if(!Array.isArray(s.actions)||!s.actions.length)throw Error((i+1)+'번 스킬에 동작이 없습니다.');
       return {name:clean(s.name,18)||'스킬 '+(i+1),
         trigger:TRIGGER[s.trigger]?s.trigger:'auto',
         cooldown:number(s.cooldown,.2,30,3),threshold:number(s.threshold,5,95,40),
-        actions:s.actions.slice(0,3).map(a=>({
+        actions:s.actions.slice(0,signature?global.SignatureProgram?.MAX_ACTIONS||12:3).map(a=>({
           type:TYPE[a.type]?a.type:'wave',
           pattern:global.AbilityAtlas?.PATTERNS[a.pattern]?a.pattern:'direct',
           target:global.AbilityAtlas?.TARGETS[a.target]?a.target:'nearest',
@@ -94,7 +101,8 @@ function normalize(value,{towerEnemy=false}={}){
           speed:number(a.speed,2,14,5),duration:number(a.duration,.2,8,1.5),
           status:STATUS[a.status]?a.status:'none',
           knockback:number(a.knockback,0,9,2),delay:number(a.delay,0,2,0),
-          link:['and','after','with'].includes(a.link)?a.link:'and'
+          link:['and','after','with'].includes(a.link)?a.link:'and',
+          condition:signature?global.SignatureProgram?.validCondition?.(a.condition)||'always':'always'
         })).map(a=>MOVEMENT_ONLY.has(a.type)?{...a,damage:0,status:'none',knockback:0}:a)};
     })
   };
@@ -279,27 +287,33 @@ const transitionLead={leap:14,hover:12,glide:12,erupt:12,uppercut:7,
   arcshot:7,splitshot:7,dive:8,wall:5,portal:5,summon:5,turret:5};
 const cooldownFrames=(p,s)=>Math.max(12,Math.round((p.forgeRush?Math.min(1,s.cooldown):s.cooldown)*60));
 function cast(p,s,target,index){
-  // The queue uses independent cast IDs; casts from two skills may overlap.
+  // Only executable branches enter the real combat queue. Skipped branches
+  // cannot silently deal damage, consume a separate cooldown, or emit VFX.
+  const actions=p.forge?.signatureVersion===1?
+    s.actions.filter(a=>global.SignatureProgram?.condition?.(p,target,a.condition)!==false):
+    s.actions;
+  if(!actions.length)return false;
   const castId=++p.forgeSerial;
   let start=0;
-  for(let step=0;step<s.actions.length;step++){
-    const a=s.actions[step];
+  for(let step=0;step<actions.length;step++){
+    const a=actions[step],previous=actions[Math.max(0,step-1)];
     const requested=Math.max(0,Math.round(a.delay*60));
-    const lead=transitionLead[s.actions[Math.max(0,step-1)].type]||6;
-    start=step>0&&s.actions[step-1].type==='charge'?
-      Math.max(requested,start+(global.ArenaCharge?.framesOf?.(s.actions[step-1])||60)+2):
+    const lead=transitionLead[previous.type]||6;
+    start=step>0&&previous.type==='charge'?
+      Math.max(requested,start+(global.ArenaCharge?.framesOf?.(previous)||60)+2):
       step===0?Math.max(requested,global.ArenaTelegraph?.leadFrames?.(a)||0):
       a.link==='with'?start:
       a.link==='after'?Math.max(requested,start+Math.max(24,lead)):
       Math.max(requested,start+lead);
-    p.forgeQueue.push({remaining:start,step,castId,skillIndex:index,steps:s.actions.length,
+    p.forgeQueue.push({remaining:start,step,castId,skillIndex:index,steps:actions.length,
       a,targetNum:target?.playerNum??null,
       windup:global.ArenaTelegraph?.leadFrames?.(a)||0,
-      waitApex:step>0&&['leap','glide','hover','uppercut'].includes(s.actions[step-1].type)&&
+      waitApex:step>0&&['leap','glide','hover','uppercut'].includes(previous.type)&&
         ['dive','aircombo','slash','spinslash','thrust'].includes(a.type)});
   }
   if(p.forgeQueue.length>48)p.forgeQueue.splice(0,p.forgeQueue.length-48);
   global.BattleFX?.caption?.(p,s.name,(p.forge.effectColor||p.forge.color));
+  return true;
 }
 function tickSkills(p,blocked=false){
   const speed=global.ForgeExpansion?.active(p,'timeburst')?2:1;
@@ -429,6 +443,7 @@ function execute(p,a,target) {
   }
 }
 function update(p,target){
+  p._forgeActionClock=(p._forgeActionClock||0)+1;
   const loss=p.forgeLastHp-p.hp;p.forgeLastHp=p.hp;
   const cruise=p.forge.speed*(p.speedMultiplier||1),v=Math.hypot(p.vx,p.vy);
   if(p.forgeDash>0){
@@ -464,7 +479,8 @@ function update(p,target){
         const i=(p.forgeCursor+tries)%skills.length,s=skills[i];
         if(p.forgeTicks[i]<cooldownFrames(p,s)||
           global.ArenaAutoAI?.canCast?.(p,target,s)===false)continue;
-        p.forgeTicks[i]=0;cast(p,s,target,i);
+        if(!cast(p,s,target,i))continue;
+        p.forgeTicks[i]=0;
         p.forgeCursor=(i+1)%skills.length;
         break;
       }
@@ -473,9 +489,13 @@ function update(p,target){
     p.forge.skills.forEach((s,i)=>{
       if(global.ForgeExpansion?.blocked(p))return;
       if(p.forgeTicks[i]<cooldownFrames(p,s))return;
-      const active=(s.trigger==='auto'&&target)||(s.trigger==='lowhp'&&p.hp/p.maxHp*100<=s.threshold)
-        ||(s.trigger==='damaged'&&loss>0);
-      if(active&&global.ArenaAutoAI?.canCast?.(p,target,s)!==false){p.forgeTicks[i]=0;cast(p,s,target,i);}
+      const active=global.SignatureProgram?.eligible?.(p,target,s,loss)??
+        ((s.trigger==='auto'&&target)||(s.trigger==='lowhp'&&p.hp/p.maxHp*100<=s.threshold)
+        ||(s.trigger==='damaged'&&loss>0));
+      if(active&&global.ArenaAutoAI?.canCast?.(p,target,s)!==false&&cast(p,s,target,i)){
+        p.forgeTicks[i]=0;
+        if(s.trigger==='dodge')p._forgeDodgeConsumed=p._forgeDodgeSerial||0;
+      }
     });
   }
   advanceWorld(p,target);
@@ -723,7 +743,7 @@ function persist(){
 }
 const escape=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const options=(values,selected)=>Object.entries(values).map(([k,v])=>'<option value="'+k+'"'+(k===selected?' selected':'')+'>'+v+'</option>').join('');
-let draft={name:'',blurb:'',color:'#a78bfa',effectColor:'#a78bfa',archetype:'melee',hp:285,speed:2.35,skills:[skill()]};
+let draft={name:'',blurb:'',color:'#a78bfa',effectColor:'#a78bfa',archetype:'melee',hp:285,speed:2.35,signatureVersion:1,skills:[skill()]};
 let refreshList=()=>{}, refreshForm=()=>{},editingId=null;
 function field(key,value,attrs){
   return '<input data-field="'+key+'" '+attrs+' value="'+escape(value)+'">';
@@ -858,7 +878,7 @@ function initializeUI(){
   refreshList=roster;
   $('forge-roster-filter')?.addEventListener('input',roster);
   refreshForm=()=>{refreshBasics();render();};
-   function cancelEdit(){editingId=null;draft=normalize({name:'',color:'#a78bfa',effectColor:'#a78bfa',archetype:'melee',skills:[skill()]});refreshForm();global.BlockForge?.refresh?.();$('bf-create').textContent='캐릭터 생성';$('forge-cancel-edit').hidden=true;}
+   function cancelEdit(){editingId=null;draft=normalize({name:'',color:'#a78bfa',effectColor:'#a78bfa',archetype:'melee',signatureVersion:1,skills:[skill()]});refreshForm();global.BlockForge?.refresh?.();$('bf-create').textContent='캐릭터 생성';$('forge-cancel-edit').hidden=true;}
    $('forge-cancel-edit').addEventListener('click',()=>{cancelEdit();report('편집 취소');});
   $('bf-custom-list').addEventListener('click',e=>{
     const editId=e.target.closest('button')?.dataset.editForgeId;
