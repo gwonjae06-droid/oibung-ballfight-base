@@ -39,6 +39,9 @@ root.innerHTML='<div class="scratch-heading"><div><span class="scratch-eyebrow">
  +'<div class="scratch-script" aria-label="조립한 스킬 블록"><div class="scratch-block-tree"></div></div>'
  +'<div class="scratch-footer"><span class="scratch-counter" aria-live="polite"></span><button type="button" data-scratch-command="clear">프로그램 비우기</button></div></main>'
  +'<aside class="scratch-help" aria-label="사용 안내"><strong>코딩 도움말</strong><p>노란색: 조건에 따라 실행</p><p>주황색: 반복과 기다리기</p><p>파란색: 이동 / 보라색: 공격</p><p>조건 블록 속에 다른 블록을 넣으면 해당 조건에서만 실행됩니다.</p><div class="scratch-status" role="status" aria-live="polite">블록을 추가해 보세요.</div></aside></div>';
+const inlineStatus=make('span','scratch-inline-status');
+inlineStatus.setAttribute('role','status');inlineStatus.setAttribute('aria-live','polite');
+root.querySelector('.scratch-footer').prepend(inlineStatus);
 skills.prepend(root);studio.insertBefore(header,studio.querySelector('.studio-category-tabs'));
 studio.classList.add('scratch-studio-active');
 const $=selector=>root.querySelector(selector);
@@ -62,7 +65,8 @@ function programOf(p){
  const skill=p.skills[0];
  return Array.isArray(skill?.program)?engine.normalize(skill.program):engine.fromActions(skill?.actions||[]);
 }
-function feedback(message){const el=$('.scratch-status');if(el)el.textContent=message;}
+function feedback(message){const el=$('.scratch-status');if(el)el.textContent=message;
+ if(inlineStatus)inlineStatus.textContent=message;}
 function setProfile(program,skillFields={},message='블록 코딩이 반영되었습니다.'){
  const old=current(),prev=old.skills[0];
  const normalized=engine.normalize(program),preview=engine.preview(normalized);
