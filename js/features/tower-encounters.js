@@ -40,7 +40,7 @@ function create({realm,level,width=500,height=500,hero,boss,damage,environmentMa
  const ring=(x,y,inner,r)=>({shape:'ring',x,y,inner,r});
  function add(shape,kind,label,delay=90,life=30){
   zones.push({...shape,id:++serial,kind,label,born:tick,fire:tick+delay,end:tick+delay+life,
-    signature:kind==='boss'&&level===10&&ULTIMATES[realm]?.includes(label),hits:new Set()});
+    signature:kind==='boss'&&((level===10&&ULTIMATES[realm]?.includes(label))||(level===5&&NAMES[realm]?.includes(label))),hits:new Set()});
   if(zones.length>MAX_ZONES)zones.splice(0,zones.length-MAX_ZONES);
  }
  function terrain(){
@@ -127,6 +127,17 @@ function create({realm,level,width=500,height=500,hero,boss,damage,environmentMa
       add(circle(width-x,height-y,70),'boss','가시의 분열',delay+66);}
     break;
   }
+  // Even a 5F guardian is a terrifying multi-stage encounter rather than
+  // a single colored circle. These echoes reuse that guardian's OWN pattern
+  // names, so the 5F/10F and cross-realm overlap limit still holds.
+  const name=NAMES[realm][turn];
+  if(realm==='time')add(ring(cx,cy,100,161),'boss',name,delay+74,24);
+  if(realm==='space')add(circle(width-x,height-y,64),'boss',name,delay+78,26);
+  if(realm==='fire')add(circle(x,y,68),'boss',name,delay+74,28);
+  if(realm==='storm')add(line(cx,cy,turn%2?Math.PI/2:Math.PI/4,43),'boss',name,delay+76,23);
+  if(realm==='ice')add(circle(width-x,height-y,69),'boss',name,delay+81,29);
+  if(realm==='forest')for(let k=0;k<2;k++){const a=k*Math.PI+bossTurn*.2;
+    add(circle(cx+Math.cos(a)*115,cy+Math.sin(a)*115,58),'boss',name,delay+76+k*36,27);}
  }
  function ultimate(turn,delay,x,y,rapid){
   // A 10F boss attacks with *composed* layouts that build up across time.
