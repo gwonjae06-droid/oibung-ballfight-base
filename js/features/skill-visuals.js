@@ -433,7 +433,7 @@ function drawForeground(ctx,canvas){
     const leftFits=at.x-spacing-outer-7>0;
     const direction=rightFits||!leftFits?1:-1;
     const x=clamp(at.x+direction*spacing,outer+7,canvas.width-outer-7);
-    const y=clamp(cy,outer+16,canvas.height-outer-12);
+    const y=clamp(cy,outer+16,canvas.height-58*scale-8);
     const age=e.age/Math.max(1,e.life);
     const fade=clamp(Math.min(1,age*9,(1-age)*5),0,1);
     const color=e.type==='timestop'?'#8feaff':e.type==='timeburst'?'#ffdc72':'#d0a6ff';
