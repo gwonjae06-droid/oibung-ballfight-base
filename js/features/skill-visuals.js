@@ -360,7 +360,7 @@ function tick(){
   ghosts=ghosts.filter(g=>++g.age<g.life);
   // WeakMap keys are live fighter objects and require no round-roster scans.
 }
-function draw(ctx){
+function draw(ctx,options={}){
   if(!ctx)return;
   ctx.save();ctx.globalCompositeOperation='source-over';
   if(!low)for(const g of ghosts){
@@ -369,6 +369,9 @@ function draw(ctx){
     ctx.beginPath();ctx.arc(g.x,g.y,g.r,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.restore();
   }
   for(const e of effects){
+    // In gameplay the caster-bound clock is painted once above the fighter.
+    // Editor previews and position-only replays retain the original world pass.
+    if(options.skipForegroundTime&&e.family==='time'&&e.kind==='cast'&&e.source)continue;
     // Character-bound effects use the SAME interpolation as their owner.
     // AoE attacks with fixed hit locations remain in world coordinates.
     const pos=e.source?(global.ArenaMotion?.position?.(e.source)||e.source):null;
@@ -409,9 +412,8 @@ function draw(ctx){
   }
   ctx.restore();
 }
-/* Screen-space time watch pass: WORLD effects are underneath 2.5D fighters,
- * so a second bright watch sits beside its owner AFTER the character pass.
- * This only reads live effects. It never creates attacks or alters gameplay. */
+/* Screen-space time pass: one clock over its caster after fighter billboards.
+ * No second copy in the world pass. This never changes gameplay state. */
 function drawForeground(ctx,canvas){
   if(!ctx||!canvas)return;
   const watchByOwner=new Map();
@@ -427,31 +429,21 @@ function drawForeground(ctx,canvas){
     const at=global.ArenaDepth?.screenPoint?.(pos.x,pos.y,canvas)||{x:pos.x,y:pos.y};
     const scale=clamp(global.ArenaDepth?.spriteScale?.(pos,canvas)||1,.75,1.15);
     const height=global.AdvancedCombat?.visibleHeight?.(owner)||0;
-    const cy=at.y-height*scale+9*scale;
-    const outer=44*scale,spacing=(owner.radius||27)*scale+outer+10;
-    const rightFits=at.x+spacing+outer+7<canvas.width;
-    const leftFits=at.x-spacing-outer-7>0;
-    const direction=rightFits||!leftFits?1:-1;
-    const x=clamp(at.x+direction*spacing,outer+7,canvas.width-outer-7);
-    const y=clamp(cy,outer+16,canvas.height-58*scale-8);
+    // Project exactly onto the fighter's centre. Clamping only applies at edges.
+    const outer=35*scale;
+    const x=clamp(at.x,outer+6,canvas.width-outer-6);
+    const y=clamp(at.y-height*scale,outer+12,canvas.height-52*scale-5);
     const age=e.age/Math.max(1,e.life);
     const fade=clamp(Math.min(1,age*9,(1-age)*5),0,1);
     const color=e.type==='timestop'?'#8feaff':e.type==='timeburst'?'#ffdc72':'#d0a6ff';
     const title=e.type==='timestop'?'시간정지':e.type==='timeburst'?'시간가속':'시간역행';
-    ctx.save();ctx.globalCompositeOperation='source-over';ctx.globalAlpha=fade;
-    // Dark/light double outline guarantees contrast against every realm.
+    ctx.save();ctx.globalCompositeOperation='source-over';ctx.globalAlpha=fade*.94;
     ctx.translate(x,y);ctx.scale(scale,scale);ctx.rotate(e.angle);
-    ctx.shadowColor=color;ctx.shadowBlur=low?0:15;
-    ctx.fillStyle='rgba(6,15,31,.65)';
-    ctx.beginPath();ctx.arc(0,0,38,0,Math.PI*2);ctx.fill();
-    ctx.shadowBlur=0;
-    ctx.strokeStyle='rgba(3,12,24,.86)';ctx.lineWidth=7;
-    arc(ctx,0,0,38,0,Math.PI*2);
-    ctx.strokeStyle=color;ctx.lineWidth=2.5;
-    arc(ctx,0,0,38,0,Math.PI*2);
+    // One watch only: its dedicated renderer already draws the rim and hands.
+    ctx.shadowColor=color;ctx.shadowBlur=low?0:10;
     renderFamily(ctx,e);
     ctx.rotate(-e.angle);
-    // Badge is outside the watch, never over the fighter's face.
+    // Compact caption sits under the watch, not as a separate floating effect.
     ctx.font='bold 11px "Noto Sans KR",system-ui,sans-serif';
     ctx.textAlign='center';ctx.textBaseline='middle';
     ctx.lineWidth=4;ctx.strokeStyle='#081121';ctx.fillStyle='#fff';
