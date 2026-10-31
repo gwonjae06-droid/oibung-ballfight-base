@@ -575,7 +575,6 @@ function drawFighter(p,renderCtx){
   ink.restore();
 }
 function register(value,{towerEnemy=false}={}){
-  if(CUSTOM_DEFS.length>=6&&!towerEnemy)throw Error('캐릭터는 최대 6명까지 만들 수 있습니다.');
   const profile=normalize(value,{towerEnemy}),id='forge_'+(++sequence);
   if(!profile.artKey)profile.artKey='art'+Date.now().toString(36)+Math.random().toString(36).slice(2,9);
   let runtime=profile.allAbilities?{...profile,skills:allSkillset()}:profile;
@@ -617,7 +616,7 @@ function setDraft(value){
   draft=normalize(value);refreshForm();global.BlockForge?.refresh?.();global.NaturalForge?.refreshGenerated?.(draft);return draft;
 }
 function saved(){
-  try{const v=JSON.parse(localStorage.getItem(STORE)||'[]');return Array.isArray(v)?v.slice(0,6):[];}catch(_){return [];}
+  try{const v=JSON.parse(localStorage.getItem(STORE)||'[]');return Array.isArray(v)?v:[];}catch(_){return [];}
 }
 function persist(){
   try{localStorage.setItem(STORE,JSON.stringify(CUSTOM_DEFS.filter(d=>d.forgeData).map(d=>d.forgeData)));}catch(_){}
@@ -720,7 +719,11 @@ function initializeUI(){
     const target=$('bf-custom-list');if(!target)return;
     const owned=CUSTOM_DEFS.filter(d=>d.forgeData);
     const count=$('forge-custom-count');
-    if(count)count.textContent=owned.length+' / 6';
+    if(count)count.textContent=owned.length+'명 저장됨';
+    const search=String($('forge-roster-filter')?.value||'').trim().toLocaleLowerCase();
+    const visible=search?owned.filter(d=>d.name.toLocaleLowerCase().includes(search)):owned;
+    const result=$('forge-roster-filter-status');
+    if(result)result.textContent=search?visible.length+'명 검색됨':'';
     global.CosmeticArcade?.refreshStudio?.();
     target.replaceChildren();
     if(!owned.length){
@@ -729,23 +732,36 @@ function initializeUI(){
       target.appendChild(empty);
       return;
     }
-    for(const def of owned){
+    if(!visible.length){
+      const empty=document.createElement('p');empty.className='forge-roster-empty';
+      empty.textContent='검색 결과가 없습니다. 다른 이름으로 검색해 보세요.';
+      target.appendChild(empty);return;
+    }
+    for(const def of visible){
       const row=document.createElement('div');row.className='forge-saved-row';
-      const name=document.createElement('span');name.textContent=def.name;
-      const edit=document.createElement('button');edit.type='button';edit.textContent='스킬 수정';edit.dataset.editForgeId=def.id;edit.className='forge-add';
-       const remove=document.createElement('button');remove.type='button';remove.textContent='삭제';
-      remove.dataset.forgeId=def.id;remove.className='forge-delete';
+      const name=document.createElement('span');name.className='forge-saved-name';name.textContent=def.name;
+      const actions=document.createElement('div');actions.className='forge-saved-actions';
+      const edit=document.createElement('button');edit.type='button';edit.textContent='✎ 스킬 수정';
+      edit.dataset.editForgeId=def.id;edit.className='forge-saved-edit';
+      edit.setAttribute('aria-label',def.name+' 스킬 수정');
+      const remove=document.createElement('button');remove.type='button';remove.textContent='삭제';
+      remove.dataset.forgeId=def.id;remove.className='forge-saved-remove';
       remove.setAttribute('aria-label',def.name+' 삭제');
-      row.append(name,edit,remove);target.appendChild(row);
+      actions.append(edit,remove);row.append(name,actions);target.appendChild(row);
     }
   }
   refreshList=roster;
+  $('forge-roster-filter')?.addEventListener('input',roster);
   refreshForm=()=>{refreshBasics();render();};
    function cancelEdit(){editingId=null;draft=normalize({name:'',color:'#a78bfa',effectColor:'#a78bfa',hp:250,speed:1.8,skills:[skill()]});refreshForm();global.BlockForge?.refresh?.();$('bf-create').textContent='캐릭터 생성';$('forge-cancel-edit').hidden=true;}
    $('forge-cancel-edit').addEventListener('click',()=>{cancelEdit();report('편집 취소');});
   $('bf-custom-list').addEventListener('click',e=>{
     const editId=e.target.closest('button')?.dataset.editForgeId;
-     if(editId){if(roundStarted&&!isGameOver){report('전투 종료 후 수정할 수 있습니다.');return;}const d=CUSTOM_DEFS.find(d=>d.id===editId&&d.forgeData);if(!d)return;editingId=editId;draft=normalize(d.forgeData);refreshForm();global.BlockForge?.refresh?.();$('bf-create').textContent='변경 내용 저장';$('forge-cancel-edit').hidden=false;report(d.name+'의 스킬을 불러왔습니다.');return;}
+     if(editId){if(roundStarted&&!isGameOver){report('전투 종료 후 수정할 수 있습니다.');return;}const d=CUSTOM_DEFS.find(d=>d.id===editId&&d.forgeData);if(!d)return;editingId=editId;draft=normalize(d.forgeData);refreshForm();global.BlockForge?.refresh?.();global.CharacterStudioModes?.select?.('compose');
+       $('bf-create').textContent='변경 내용 저장';$('forge-cancel-edit').hidden=false;
+       report(d.name+'의 스킬을 불러왔습니다. 아래에서 스킬을 수정하고 변경 내용을 저장하세요.');
+       document.getElementById('studio-mode-compose')?.scrollIntoView?.({block:'nearest',behavior:'smooth'});
+       return;}
      const id=e.target.dataset.forgeId;
     if(!id)return;
     if(roundStarted&&!isGameOver){report('경기 종료 후 삭제할 수 있습니다.');return;}
