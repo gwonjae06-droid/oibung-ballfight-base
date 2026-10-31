@@ -198,14 +198,36 @@ function groundImpactZ(target){
 function hitGround(attacker,target,action,multiplier=1){
  return hit(attacker,target,action,multiplier,groundImpactZ(target));
 }
+// A hit's 12-frame recovery prevents the SAME hitbox from striking twice,
+// but cannot cancel other authored combo blocks merely because the first hit
+// applied a status. Shields/revival/dashes still grant true invincibility.
+const IMPACT_GRACE_FRAMES=12;
 function hit(p,e,action,multiplier=1,attackZ) {
   if(MOVEMENT_ONLY.has(action?.type))return false;
-  if(!e||e===p||e.hp<=0||e.invincible>0)return false;
+  if(!e||e===p||e.hp<=0)return false;
+  // Post-impact grace is not defense. A shield or a distinct invulnerability
+  // lasts longer than this tag and must still block every attempted strike.
+  if(e.invincible>0 && (!(e._forgeImpactGrace>0)||e.invincible>e._forgeImpactGrace))return false;
   if(global.AdvancedCombat&&!AdvancedCombat.canHit(p,e,attackZ))return false;
   if(!global.AdvancedCombat&&e.jumpState&&e.jumpState!=='ground')return false;
-  const d=Math.round((action.damage||0)*multiplier*(global.ForgeExpansion?.damageScale(p,e)||1)*
-  (global.ArenaBalance?.factorOf?.(p)??1)*(global.ArenaStalemate?.attackFactor?.()??1));
-  if(d){const tint=p.forge?.effectColor||p.forge?.color||p.themeColor||'#58687a';e.hp=Math.max(0,e.hp-d);e.invincible=12;createHitParticles(e.x,e.y,tint,d>=25?22:14);addFloatingText('-'+d,e.x,e.y-30,tint,17);global.ImpactPhysics?.hit?.(p,e,d,{knockback:action.knockback||0,color:tint,type:action.type});}
+  const d=Math.max(0,Math.round((action.damage||0)*multiplier*(global.ForgeExpansion?.damageScale(p,e)||1)*
+    (global.ArenaBalance?.factorOf?.(p)??1)*(global.ArenaStalemate?.attackFactor?.()??1)));
+  const frame=Number(p._forgeBalanceFrame)||0;
+  if(e.invincible<=0){e._forgeImpactGrace=0;e._forgeImpactStamps=new WeakMap();}
+  const stamps=e._forgeImpactStamps;
+  const last=stamps&&action&&typeof action==='object'?stamps.get(action):null;
+  if(d>0&&last&&last.attacker===p&&frame>=last.frame&&
+     frame-last.frame<IMPACT_GRACE_FRAMES)return false;
+  if(d){
+    (e._forgeImpactStamps||=new WeakMap()).set(action,{attacker:p,frame});
+    const tint=p.forge?.effectColor||p.forge?.color||p.themeColor||'#58687a';
+    e.hp=Math.max(0,e.hp-d);
+    e.invincible=IMPACT_GRACE_FRAMES;
+    e._forgeImpactGrace=IMPACT_GRACE_FRAMES;
+    createHitParticles(e.x,e.y,tint,d>=25?22:14);
+    addFloatingText('-'+d,e.x,e.y-30,tint,17);
+    global.ImpactPhysics?.hit?.(p,e,d,{knockback:action.knockback||0,color:tint,type:action.type});
+  }
   if(action.status==='ice'){e.slowTimer=Math.max(e.slowTimer||0,90);e.slowMultiplier=.5;}
   if(action.status==='fire'||action.status==='poison'){
     const seconds=Number.isFinite(action.duration)?action.duration:(action.status==='fire'?2:3);
@@ -355,7 +377,9 @@ function execute(p,a,target) {
     visual('heal');addFloatingText('+'+Math.round(Math.max(0,p.hp-oldHp)),p.x,p.y-26,'#8bf2af',17);
   } else if(a.type==='shield'){
     const durationFrames=Math.max(1,Math.round(a.duration*60*(global.ArenaBalance?.defenseFactorOf?.(p)??1)));
-   p.invincible=global.ArenaBalance?.shieldWindow?.(p,durationFrames)??Math.max(p.invincible,durationFrames);visual('shield');
+   p.invincible=global.ArenaBalance?.shieldWindow?.(p,durationFrames)??Math.max(p.invincible,durationFrames);
+   p._forgeImpactGrace=0; // Shields are defense, never impact grace.
+   visual('shield');
   } else if(a.type==='pull'){
     visual('wave',{radius:a.radius});
     within(p.x,p.y,a.radius).forEach(e=>{

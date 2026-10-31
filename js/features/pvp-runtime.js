@@ -164,7 +164,7 @@ function beginBlitzExecution(room,b,now){
  p.inputX=move==='left'?-dy:move==='right'?dy:dx*dir;
  p.inputY=move==='left'?dx:move==='right'?-dx:dy*dir;
  p.inputAt=now;
- if(move==='hold')p.invincible=Math.max(p.invincible||0,18);
+ if(move==='hold'){p.invincible=Math.max(p.invincible||0,18);p._forgeImpactGrace=0;}
  if(plan.slots.length)cast(room,i,plan.slots[0],true);
 }
 function finishBlitz(room){

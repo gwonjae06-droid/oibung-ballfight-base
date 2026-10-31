@@ -55,7 +55,7 @@ function direction(){
 function dash(){
  if(!running()||!owner||owner.hp<=0||dashCooldown>0||global.ForgeExpansion?.blocked(owner))return false;
  const d=direction()||{x:lastX,y:lastY};dashX=d.x;dashY=d.y;
- dashFrames=12;dashCooldown=180;owner.invincible=Math.max(owner.invincible||0,12);
+ dashFrames=12;dashCooldown=180;owner.invincible=Math.max(owner.invincible||0,12);owner._forgeImpactGrace=0;
  owner.movementOnlyFrames=Math.max(owner.movementOnlyFrames||0,13);
  owner.vx=dashX*11;owner.vy=dashY*11;
  hint.textContent='회피 대시 · 3초 뒤 재사용';refresh();return true;

@@ -77,7 +77,7 @@ function beginExecution(){
  const move=choice.move,sign=move==='retreat'?-1:move==='hold'?0:1;
  p.blitzX=move==='left'?-dy:move==='right'?dy:dx*sign;
  p.blitzY=move==='left'?dx:move==='right'?-dx:dy*sign;
- if(move==='hold')p.invincible=Math.max(p.invincible||0,18);
+ if(move==='hold'){p.invincible=Math.max(p.invincible||0,18);p._forgeImpactGrace=0;}
  if(choice.slots.length)global.SkillForge.manualCast(p,choice.slots[0],e);
  refresh();
 }

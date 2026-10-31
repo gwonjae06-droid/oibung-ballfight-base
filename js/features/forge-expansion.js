@@ -10,6 +10,7 @@ Object.assign(DESCRIPTIONS,{flight:'최대 3초간 공중에서 직접 공격 �
 function revive(p){
   if(p.hp>0||p.forgeRevived||!p.forge?.skills.some(s=>s.actions.some(a=>a.type==='resurrect')))return false;
   p.forgeRevived=true;p.hp=Math.max(1,Math.round(p.maxHp*.35));p.invincible=90;
+  p._forgeImpactGrace=0;
   p.forgeEffects={};p.bfDot=0;p.slowTimer=0;p.slowMultiplier=1;p.forgePhase=null;p.forgeHistory=[];
   addFloatingText('부활',p.x,p.y-35,'#047857',18);return true;
 }
@@ -58,6 +59,8 @@ function heal(p,amount){if(p.hp<=0)return 0;
  const before=p.hp;p.hp=Math.min(p.maxHp,p.hp+Math.max(0,n));return p.hp-before;}
 function tick(p){
   if(p?.forge||p?.forgeEffects)p._forgeBalanceFrame=(p._forgeBalanceFrame||0)+1;
+  // Keep the visual/post-hit grace in step with the engine's invincible clock.
+  if(p._forgeImpactGrace>0)p._forgeImpactGrace--;
   global.ArenaBalance?.tickShield?.(p);
   global.ArenaBalance?.tickHealing?.(p);
   revive(p);if(p.hp<=0)return;
@@ -74,7 +77,7 @@ function tick(p){
   if(p.bfDot<=0)p._forgeDotClock=0;
   if(p.hp<=0)return;
   if(p.forge){p.forgeHistory ||= [];p.forgeHistory.push({x:p.x,y:p.y,hp:p.hp});if(p.forgeHistory.length>181)p.forgeHistory.shift();}
-  if(p.forgePhase?.time>0){p.forgePhase.time--;p.invincible=Math.max(p.invincible||0,2);}
+  if(p.forgePhase?.time>0){p.forgePhase.time--;p.invincible=Math.max(p.invincible||0,2);p._forgeImpactGrace=0;}
   for(const [key,v] of Object.entries(p.forgeEffects||{})){
     v.age++;v.time--;
     if(v.age%30===0){
