@@ -12,6 +12,7 @@ const forge=global.SkillForge;
 if(!dialog||!studio||!shell||!skills||!looks||!workspace||!forge)return;
 
 const name=studio.querySelector('.forge-name');
+const rolePicker=studio.querySelector('#forge-role-picker');
 const create=studio.querySelector('.forge-primary-actions');
 const manager=studio.querySelector('.studio-roster-manager');
 const saved=studio.querySelector('.forge-saved');
@@ -79,6 +80,7 @@ function showMode(next,{keepTab=false}={}){
   randomView.hidden=mode!=='random';
   composeView.hidden=mode!=='compose';
   name.hidden=mode==='choose';
+  if(rolePicker)rolePicker.hidden=mode==='choose';
   create.hidden=mode==='choose';
   saved.hidden=mode==='choose';
   if(helper)helper.hidden=mode!=='compose';
