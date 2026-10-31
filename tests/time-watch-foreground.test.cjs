@@ -30,7 +30,7 @@ test('the time clock overlay is painted AFTER projected fighter billboards but B
   const effects=read('js/features/skill-visuals.js');
   assert.match(effects,/function drawForeground\(ctx,canvas\)/);
   assert.match(effects,/ArenaDepth\?\.screenPoint\?\.\(pos\.x,pos\.y,canvas\)/);
-  assert.match(effects,/const rightFits=at\.x\+spacing\+outer\+7<canvas\.width/);
+  assert.match(effects,/const x=clamp\(at\.x,outer\+6,canvas\.width-outer-6\)/);
 });
 test('time stop, acceleration and reversal all draw distinct front-layer clocks',()=>{
   for(const [type,label] of [['timestop','시간정지'],['timeburst','시간가속'],['rewind','시간역행']]){
@@ -46,7 +46,7 @@ test('time stop, acceleration and reversal all draw distinct front-layer clocks'
     assert.equal(fx.active,1,'rendering never creates extra combat effects');
   }
 });
-test('the clock remains beside the actor and inside viewport edges',()=>{
+test('one time watch is centred ON the fighter while staying inside viewport edges',()=>{
   for(const x of [25,250,475]){
     const {fx,ctx,calls,actor,canvas}=harness();actor.x=x;
     fx.cast(actor,{type:'timeburst',radius:160});
@@ -54,7 +54,7 @@ test('the clock remains beside the actor and inside viewport edges',()=>{
     const translate=calls.find(c=>c.kind==='translate'&&c.args.length===2);
     assert.ok(translate,'foreground painter must position a clock');
     assert.ok(translate.args[0]>=40&&translate.args[0]<=460,'clock stays inside viewport');
-    assert.ok(Math.abs(translate.args[0]-actor.x)>=50,'clock cannot hide behind the actor');
+    if(x===250)assert.ok(Math.abs(translate.args[0]-actor.x)<.01,'clock must not move away from fighter');
   }
 });
 test('multiple active clocks from one fighter are collapsed to one front badge',()=>{
@@ -69,4 +69,24 @@ test('multiple active clocks from one fighter are collapsed to one front badge',
   fx.clear();
   calls.length=0;fx.drawForeground(ctx,canvas);
   assert.equal(calls.length,0,'no ghosts remain after resetting the match');
+});
+
+test('main game suppresses the UNDER-player clock while drawing one OVER-player clock',()=>{
+  const {fx,ctx,calls,actor,canvas}=harness();
+  assert.equal(fx.cast(actor,{type:'timestop',radius:140}),true);
+  fx.draw(ctx,{skipForegroundTime:true});
+  assert.equal(calls.filter(c=>c.kind==='arc').length,0,'no duplicated world clock');
+  fx.drawForeground(ctx,canvas);
+  assert.ok(calls.some(c=>c.kind==='arc'),'the front watch must still be visible');
+  assert.equal(calls.filter(c=>c.kind==='fillText'&&c.args[0]==='시간정지').length,1);
+  // Single-pass preview contexts preserve the existing motif renderer.
+  calls.length=0;fx.draw(ctx);
+  assert.ok(calls.some(c=>c.kind==='arc'),'preview still draws its original time clock');
+  assert.equal(fx.active,1,'render choices do not duplicate effects in simulation');
+});
+test('both local and PvP renderers disable the under-character clock pass',()=>{
+  const local=read('js/features/battle-effects.js');
+  const online=read('js/features/pvp-runtime.js');
+  assert.match(local,/SkillVisuals\?\.draw\?\.\(worldCtx,\{skipForegroundTime:true\}\)/);
+  assert.match(online,/SkillVisuals\.draw\(painter,\{skipForegroundTime:true\}\)/);
 });
