@@ -46,7 +46,7 @@ function create({realm,level,width=500,height=500,hero,boss,damage,environmentMa
  }
  function pattern(){
   const turn=bossTurn++%4,strong=level===10,rapid=phase===2;
-  const cadence={time:[54,68],space:[87,104],fire:[72,82],storm:[48,60],ice:[112,126],forest:[76,90]}[realm]||[78,96];
+  const cadence={time:[82,94],space:[87,104],fire:[72,82],storm:[80,92],ice:[112,126],forest:[76,90]}[realm]||[78,96];
   const delay=rapid?cadence[0]:cadence[1];
   const x=clamp(hero.x,65,width-65),y=clamp(hero.y,65,height-65);
   const extra=strong||rapid;
