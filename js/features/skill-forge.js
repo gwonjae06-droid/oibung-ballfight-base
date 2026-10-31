@@ -575,7 +575,7 @@ function drawFighter(p,renderCtx){
   ink.restore();
 }
 function register(value,{towerEnemy=false}={}){
-  const profile=normalize(value,{towerEnemy}),id='forge_'+(++sequence);
+  let profile=normalize(value,{towerEnemy}),id='forge_'+(++sequence);
   if(!profile.artKey)profile.artKey='art'+Date.now().toString(36)+Math.random().toString(36).slice(2,9);
   let runtime=profile.allAbilities?{...profile,skills:allSkillset()}:profile;
   const def={id,name:profile.name,forgeData:profile,createInstance(n){
@@ -594,7 +594,13 @@ function register(value,{towerEnemy=false}={}){
       getTag(){return {text:profile.allAbilities?'전체 '+runtime.skills.length+'개 능력':profile.skills.map(s=>s.name).join(' · ').slice(0,70)};}
     };
   }};
-  def.updateProfile=next=>{Object.assign(profile,next,{artKey:profile.artKey});runtime=profile.allAbilities?{...profile,skills:allSkillset()}:profile;def.name=profile.name;};
+  // Swap future battle definitions rather than mutating a profile that a
+  // currently running/paused match may still reference.
+  def.updateProfile=next=>{
+    profile=normalize({...next,artKey:profile.artKey});
+    runtime=profile.allAbilities?{...profile,skills:allSkillset()}:profile;
+    def.forgeData=profile;def.name=profile.name;
+  };
   CUSTOM_DEFS.push(def);
   global.CharacterStudioArt?.restore?.(id,profile.artKey);
   BEHAVIORS[id]={order:7,update,onContact:contact};
@@ -757,7 +763,7 @@ function initializeUI(){
    $('forge-cancel-edit').addEventListener('click',()=>{cancelEdit();report('편집 취소');});
   $('bf-custom-list').addEventListener('click',e=>{
     const editId=e.target.closest('button')?.dataset.editForgeId;
-     if(editId){if(roundStarted&&!isGameOver){report('전투 종료 후 수정할 수 있습니다.');return;}const d=CUSTOM_DEFS.find(d=>d.id===editId&&d.forgeData);if(!d)return;editingId=editId;draft=normalize(d.forgeData);refreshForm();global.BlockForge?.refresh?.();global.CharacterStudioModes?.select?.('compose');
+     if(editId){const d=CUSTOM_DEFS.find(d=>d.id===editId&&d.forgeData);if(!d)return;editingId=editId;draft=normalize(d.forgeData);refreshForm();global.BlockForge?.refresh?.();global.CharacterStudioModes?.select?.('compose');
        global.StudioEasyDesigner?.selectMode?.('simple');global.StudioEasyDesigner?.refresh?.();
        $('bf-create').textContent='변경 내용 저장';$('forge-cancel-edit').hidden=false;
        report(d.name+'의 스킬을 불러왔습니다. 아래에서 스킬을 수정하고 변경 내용을 저장하세요.');
@@ -807,7 +813,6 @@ function initializeUI(){
     }catch(e){report(e.message);}
   });
   $('bf-create').addEventListener('click',()=>{
-    if(roundStarted&&!isGameOver){report('경기 종료 후 생성할 수 있습니다.');return;}
     try{
       sync();const config=normalize(draft),old=editingId?CUSTOM_DEFS.find(d=>d.id===editingId&&d.forgeData):null;
        if(editingId&&!old)throw Error('수정할 캐릭터가 없습니다.');
@@ -815,11 +820,16 @@ function initializeUI(){
        if(old)old.updateProfile(config);
       persist();
       if(!old)global.CharacterStudioArt?.commit?.(id);
-      reRollMatch();
-      const first=$('bf-pick-0');
-      if(first){first.value=id;globalThis.applyFighterPicks?.();}
+      const fighting=typeof roundStarted!=='undefined'&&roundStarted&&!isGameOver;
+      // Never reroll fighters or replace active AI/HP in a live Tower battle.
+      if(!fighting){
+        reRollMatch();
+        const first=$('bf-pick-0');
+        if(first){first.value=id;globalThis.applyFighterPicks?.();}
+      }
       const budget=global.ArenaBalance?.summary(config);
-      roster();report(config.name+(old?' 수정 완료 · P1 적용':' 생성 완료 · P1 적용')+
+      roster();report(config.name+(old?' 수정 완료':' 생성 완료')+
+        (fighting?' · 진행 중인 전투는 그대로 유지되며 다음 경기부터 적용됩니다.':' · 다음 경기 P1에 적용')+
         (budget?.excess?' · 실제 피해 약 '+budget.percent+'% 적용 (입력값은 보존됨)':''));
       if(old)cancelEdit();global.ArenaCategories?.hideStudio?.();
     }catch(e){report(e.message);}
