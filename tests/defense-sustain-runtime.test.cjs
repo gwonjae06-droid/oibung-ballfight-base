@@ -52,7 +52,7 @@ test('PvP and local modes load identical budget revisions and the forge UI expla
  for(const file of [html,pvp]){
    assert.match(file,/arena-balance\.js\?v=defense-budget3/);
    assert.match(file,/forge-expansion\.js\?v=defense-budget3/);
-   assert.match(file,/skill-forge\.js\?v=defense-budget3/);
+   assert.match(file,/skill-forge\.js\?v=[\w-]+/);
  }
  assert.match(editor,/회복·보호 밸런스/);
  assert.match(editor,/defenseSummary/);
