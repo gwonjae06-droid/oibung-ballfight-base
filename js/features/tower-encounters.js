@@ -157,8 +157,9 @@ function create({realm,level,width=500,height=500,hero,boss,damage,environmentMa
    g.ArenaTowerPattern3D?.draw?.(ctx,z,realm,tick,width,height);
    const y=clamp(z.y,24,height-18),x=clamp(z.x,90,width-90);
    ctx.font='bold 13px system-ui';ctx.textAlign='center';ctx.lineWidth=3;ctx.strokeStyle='#101520';ctx.fillStyle='#ffffff';
-   const label=live?'위험!':z.label+' '+(warning/60).toFixed(1)+'s';
-   ctx.strokeText(label,x,y);ctx.fillText(label,x,y);
+   const raised=!live&&g.ArenaTowerPattern3D?.warning?.(ctx,z,realm,tick,width,height);
+   if(!raised&&!live){const label=z.label+' '+(warning/60).toFixed(1)+'s';
+     ctx.strokeText(label,x,y);ctx.fillText(label,x,y);}
   }
   if(isBoss){ctx.font='bold 14px system-ui';ctx.textAlign='center';ctx.fillStyle='#ffffff';ctx.fillText('PHASE '+phase+' · '+(phase===2?'격화':'탐색'),width/2,24);}
   ctx.restore();
