@@ -82,7 +82,8 @@ test('tower uses original 2-person combat engine with transient real Forge enemi
   assert.ok(src.includes('reRollMatch([selected,enemy])'));
   assert.ok(src.includes('if(!isPlaying)togglePlay({towerBattle:true})'));
   assert.ok(engine.includes('globalThis.ArenaTower?.isTransientDef?.(d)'));
-  assert.ok(engine.includes('globalThis.ArenaTower?.onBattleEnd?.(finalAlive.length===1?finalAlive[0]:null)'));
+  assert.ok(engine.includes("const winner=finalAlive.length===1?finalAlive[0]:null"));
+  assert.ok(engine.includes("globalThis.ArenaTower?.onBattleEnd?.(winner,expired?'timeout':undefined)"));
   assert.ok(engine.includes("globalThis.ArenaTower?.onBattleEnd?.(null,'stopped')"));
   assert.ok(src.includes("winner.playerNum!==1"));
   assert.ok(!src.includes('chooseReward'),'reward selection is gone');
