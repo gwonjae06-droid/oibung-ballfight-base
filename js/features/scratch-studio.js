@@ -144,14 +144,15 @@ function block(n,path,depth){
   inside='<span>만약</span><label><select data-scratch-field="condition" data-scratch-node="'+encoded+'" aria-label="조건">'+selectOptions(g.SignatureProgram?.CONDITIONS||{always:'항상 실행'},n.condition)+'</select></label>';
  }
  const controls='<span class="scratch-node-controls"><button type="button" data-scratch-command="up" data-scratch-node="'+encoded+'" title="위로">↑</button><button type="button" data-scratch-command="down" data-scratch-node="'+encoded+'" title="아래로">↓</button><button type="button" data-scratch-command="remove" data-scratch-node="'+encoded+'" title="삭제">×</button></span>';
+ let nested='';
  if(kind==='if'){
-  inside+='<div class="scratch-cavity"><div class="scratch-cavity-label">참이면 실행</div>'+drawList(n.then,[...path,'then'],depth+1)
+  nested='<div class="scratch-cavity"><div class="scratch-cavity-label">참이면 실행</div>'+drawList(n.then,[...path,'then'],depth+1)
    +'<div class="scratch-cavity-label">아니면 실행</div>'+drawList(n.else,[...path,'else'],depth+1)+'</div>';
  }else if(kind==='repeat'){
-  inside+='<div class="scratch-cavity"><div class="scratch-cavity-label">반복할 블록</div>'+drawList(n.body,[...path,'body'],depth+1)+'</div>';
+  nested='<div class="scratch-cavity"><div class="scratch-cavity-label">반복할 블록</div>'+drawList(n.body,[...path,'body'],depth+1)+'</div>';
  }
  return '<div class="scratch-node scratch-node-'+kind+(kind==='action'?' scratch-action-'+esc(n.action.type):'')+'" draggable="true" data-scratch-node="'+encoded+'" data-scratch-depth="'+depth+'">'
- +'<div class="scratch-node-line"><span class="scratch-drag-grip" title="블록 잡아 이동" aria-hidden="true">⠿</span>'+inside.replace('<div class="scratch-cavity">','<div class="scratch-cavity">')+controls+'</div></div>';
+ +'<div class="scratch-node-line"><span class="scratch-drag-grip" title="블록 잡아 이동" aria-hidden="true">⠿</span>'+inside+controls+'</div>'+nested+'</div>';
 }
 function drawList(list,path,depth){
  let result='<div class="scratch-code-list" data-scratch-list="'+encode(path)+'">';
