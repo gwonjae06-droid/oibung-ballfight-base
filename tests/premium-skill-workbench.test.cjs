@@ -8,8 +8,8 @@ function editor(){
   h.window=h;vm.createContext(h);
   vm.runInContext(read('js/features/action-registry.js'),h);
   vm.runInContext(read('js/features/skill-forge.js'),h);
-  const exposed=block.replace('global.BlockForge={modify,action,josa,phrase,refresh:',
-    'global.BlockForge={modify,action,josa,phrase,inspector,actionRow,refresh:');
+  const exposed=block.replace('global.BlockForge={modify,action,josa,phrase,',
+    'global.BlockForge={modify,action,josa,phrase,inspector,actionRow,');
   assert.notEqual(exposed,block,'test adapter exposes the same production view helpers');
   vm.runInContext(exposed,h);
   return h;
