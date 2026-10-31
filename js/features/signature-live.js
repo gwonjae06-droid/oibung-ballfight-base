@@ -35,7 +35,7 @@ function begin(program,p){
  const nodes=g.SignatureScratch?.normalize?.(program)||[];
  if(!nodes.length)return null;
  return {stack:[{nodes,index:0}],wait:0,until:null,pending:false,
-  ticks:0,actions:0,charge:0,finished:false,baseline:snapshot(p),
+  ticks:0,actions:0,charge:Math.max(0,Math.min(10,Number(p?._scratchCharge)||0)),finished:false,baseline:snapshot(p),
   dodgeBaseline:Number(p?._forgeDodgeSerial)||0};
 }
 function stop(run){if(run)run.finished=true;}
@@ -74,7 +74,8 @@ function step(run,p,target){
    continue;
   }
   if(node.kind==='set'||node.kind==='change'){
-   run.charge=Math.max(0,Math.min(10,node.kind==='set'?node.value:run.charge+node.value));continue;
+   run.charge=Math.max(0,Math.min(10,node.kind==='set'?node.value:run.charge+node.value));
+   p._scratchCharge=run.charge;continue;
   }
   if(node.kind==='if'){
    const side=condition(p,target,node.condition,run)?node.then:node.else;
