@@ -204,7 +204,17 @@ function install(){
          +'<span class="tower-realm-card-caption"><span class="tower-realm-icon" aria-hidden="true">'+r.icon+'</span><strong>'+r.name+'</strong><small class="tower-realm-progress">0 / 10F</small></span></button>').join('')
       +'</div></div></div>'
       +'<p class="tower-panorama-swipe">각 탑을 누르면 해당 탑으로 들어갑니다. <span>모바일에서는 좌우로 밀어서 선택하세요.</span></p>'
-      +'<div class="ancient-unlock"><p id="ancient-progress"></p><button id="ancient-start" type="button" hidden>☽ 고대의 존재 도전</button></div>'
+      +'<div class="ancient-unlock" data-unlocked="false">'
+      +'<div class="ancient-portrait">'
+      +'<img class="ancient-portrait-art" src="assets/ancient-one-portrait.svg" loading="lazy" decoding="async" alt="보랏빛 우주에서 깨어난 거대한 고대 존재. 촉수로 뒤덮인 얼굴과 수많은 청록색 눈이 빛난다.">'
+      +'<div class="ancient-portrait-aura" aria-hidden="true"></div>'
+      +'<div class="ancient-portrait-copy"><span class="ancient-portrait-eyebrow">THE ANCIENT ONE · FINAL ENCOUNTER</span>'
+      +'<h3>고대의 존재</h3>'
+      +'<p class="ancient-portrait-desc">여섯 탑의 봉인 아래 잠든 존재.<br>마지막 관문을 마주할 준비가 되었는가?</p>'
+      +'<p id="ancient-progress" class="ancient-portrait-progress" role="status"></p>'
+      +'<button id="ancient-start" type="button" hidden><span aria-hidden="true">⚔</span> 고대의 존재에게 도전 <span aria-hidden="true">↗</span></button>'
+      +'<span id="ancient-lock-note" class="ancient-portrait-lock"><span aria-hidden="true">♜</span> 여섯 탑을 정복하면 봉인이 해제됩니다</span>'
+      +'</div></div></div>'
       +'<p id="tower-realm-hint" class="tower-gateway-description"></p>';
     mount.prepend(selector);
     selector.addEventListener('click',e=>{const id=e.target.closest?.('[data-realm]')?.dataset.realm;if(id)selectRealm(id);});selector.querySelector('#ancient-start')?.addEventListener('click',beginAncient);
@@ -295,6 +305,8 @@ function install(){
       const done=realms.REALMS.filter(r=>Object.entries(read(global.localStorage).records).some(([id,v])=>id.startsWith(r.id+'_')&&Number(v.best)>=FINISH)).length;
       el('ancient-progress').textContent=done+' / 6개 탑 정복'+(done===6?' · 봉인이 해제됐습니다!':' · 모든 탑 10층을 클리어하세요.');
       el('ancient-start').hidden=done!==6;
+      el('ancient-lock-note').hidden=done===6;
+      selector.querySelector('.ancient-unlock').dataset.unlocked=done===6?'true':'false';
       screen.style.setProperty('--realm-color',realm().color);
     }
     const choiceHost=el('tower-blessing-choices');
