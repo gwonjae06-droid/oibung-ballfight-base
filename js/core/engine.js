@@ -219,6 +219,7 @@ function handleCombat(pA,pB) {
 }
 function update() {
   if(!isPlaying||isGameOver)return;
+  const healthAtStart=players.map(p=>p.hp);
   players.forEach(p=>{
     if(p.movementOnlyFrames>0)p.movementOnlyFrames--;
     globalThis.ForgeExpansion?.tick(p);
@@ -295,8 +296,28 @@ function update() {
   // Long heal/shield loops and zero-offense builds must eventually conclude.
   // Only active physics ticks count; paused matches never advance overtime.
   globalThis.ArenaStalemate?.tick?.(players,!!globalThis.ArenaTower?.active);
+  // Track actual lost HP once per physics tick, even at 100x when HUD writes
+  // are batched. This includes DoT and fair percentage overtime damage.
+  players.forEach((p,i)=>{
+    const lost=Math.max(0,(healthAtStart[i]||0)-(p.hp||0));
+    if(lost>0.001){
+      p._hudHitSerial=(p._hudHitSerial||0)+1;
+      p._hudLastHit=Math.min(1,lost/Math.max(1,p.maxHp||1));
+    }
+  });
   const finalAlive=players.filter(p=>p.hp>0);
-  if(finalAlive.length<=1){isGameOver=true;isPlaying=false;globalThis.BackgroundMusic?.setBattle(false);settleRound(finalAlive.length===1?finalAlive[0]:null);document.getElementById('btn-start').innerText='다음 경기';document.getElementById('btn-start').dataset.state='finished';syncStopButton();globalThis.ArenaTower?.onBattleEnd?.(finalAlive.length===1?finalAlive[0]:null);}
+  const expired=!!globalThis.ArenaStalemate?.state?.expired;
+  if(finalAlive.length<=1||expired){
+    isGameOver=true;isPlaying=false;
+    if(expired&&finalAlive.length>1)roundStopped=true;
+    globalThis.BackgroundMusic?.setBattle(false);
+    const winner=finalAlive.length===1?finalAlive[0]:null;
+    settleRound(winner,expired?'timeout':undefined);
+    const startButton=document.getElementById('btn-start');
+    if(startButton){startButton.innerText='다음 경기';startButton.dataset.state='finished';}
+    syncStopButton();
+    globalThis.ArenaTower?.onBattleEnd?.(winner,expired?'timeout':undefined);
+  }
   if(!globalThis.ArenaSpeedControl?.deferUI)updateUI();
 }
 // Identical fighters are distinguished by their match slot, not by
@@ -318,7 +339,7 @@ function updateUI() {
       section.className='player-section';section.id='sec-p'+n;
       section.innerHTML='<div class="player-header"><div class="fighter-name"><span class="fighter-number">P'+n+'</span><span class="player-title" id="p'+n+'-name"></span></div>'+
         '<span class="hp-text"><span id="p'+n+'-hp-text"></span><span class="hp-max"> / <span id="p'+n+'-maxhp"></span></span></span></div>'+
-        '<div class="hp-bar-track"><div id="p'+n+'-hp-bar" class="hp-bar-fill"></div></div>'+
+        '<div class="hp-bar-track"><div id="p'+n+'-hp-trail" class="hp-bar-trail"></div><div id="p'+n+'-hp-bar" class="hp-bar-fill"></div></div>'+
         '<span id="p'+n+'-tag" class="mode-tag" style="display:none"></span>';
       hudContainer.append(section);
     });
@@ -330,11 +351,25 @@ function updateUI() {
     el.innerText=getArenaFighterName(p);
     document.getElementById(`p${n}-hp-text`).innerText=Math.ceil(p.hp);
     document.getElementById(`p${n}-maxhp`).innerText=p.maxHp;
-    document.getElementById(`p${n}-hp-bar`).style.width=(Math.max(0,p.hp)/p.maxHp*100)+'%';
+    const hpPct=Math.max(0,Math.min(100,p.hp/Math.max(1,p.maxHp)*100));
+    document.getElementById(`p${n}-hp-bar`).style.width=hpPct+'%';
+    const trail=document.getElementById(`p${n}-hp-trail`);
+    if(trail)trail.style.width=hpPct+'%';
     const tag=p.getTag(),te=document.getElementById(`p${n}-tag`);
     if(tag&&p.hp>0){te.style.display='inline-block';te.textContent=tag.text+(p.itemLabels&&p.itemLabels.length?` · ${p.itemLabels.join(' · ')}`:'');}
     else te.style.display='none';
     const hud=document.getElementById('sec-p'+n);
+    if(hud){
+      const current=String(p._hudHitSerial||0);
+      if(hud.dataset.hitSerial!==current){
+        hud.dataset.hitSerial=current;
+        if(p._hudHitSerial){
+          hud.classList.remove('hp-impact-0','hp-impact-1','hp-impact-2');
+          hud.classList.add('hp-impact-'+(p._hudHitSerial%3));
+          hud.style.setProperty('--hp-hit-scale',String(Math.min(1.8,.65+(p._hudLastHit||.05)*7)));
+        }
+      }
+    }
     if(p.forge&&hud&&globalThis.SkillForge){
       let meters=hud.querySelector?.('.forge-cooldown-list');
       if(!meters){
