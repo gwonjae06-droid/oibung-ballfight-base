@@ -6,8 +6,9 @@ function world(){
    CHARACTER_PHOTOS:{},canvas:{width:500,height:500},
    createHitParticles(){},addFloatingText(){},getClosestAliveEnemy(){return null;}};
  h.window=h;vm.createContext(h);
- for(const path of ['js/features/skill-forge.js','js/features/block-forge.js',
-   'js/features/studio-easy-designer.js'])vm.runInContext(read(path),h,{filename:path});
+ for(const path of ['js/features/action-registry.js','js/features/forge-expansion.js',
+   'js/features/advanced-combat.js','js/features/skill-forge.js',
+   'js/features/block-forge.js','js/features/studio-easy-designer.js'])vm.runInContext(read(path),h,{filename:path});
  return h;
 }
 test('guided designer is valid JS and exposes distinct presets without DOM',()=>{
