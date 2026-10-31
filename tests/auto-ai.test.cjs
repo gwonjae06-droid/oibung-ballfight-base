@@ -40,3 +40,63 @@ test('authored dash and movement-only actions are not overridden by AI',()=>{
  p.forgeDash=0;p.movementOnlyFrames=5;
  assert.equal(a.steer(p,e,2.5),false);
 });
+
+test('tower warning uses the TRUE circular, rotated-line and donut danger geometry',()=>{
+ const a=world();
+ const ring={shape:'ring',x:250,y:250,inner:95,r:165};
+ assert.ok(a.signed(250,250,ring,20)>0,'ring centre is genuinely safe');
+ assert.ok(a.signed(350,250,ring,20)<0,'ring band is dangerous');
+ assert.ok(a.signed(480,250,ring,20)>0,'outside of ring is safe');
+ const line={shape:'line',x:250,y:250,angle:Math.PI/4,width:48,length:600};
+ assert.ok(a.signed(300,300,line,20)<0,'on the diagonal beam');
+ assert.ok(a.signed(300,200,line,20)>0,'sideways escape from a beam');
+});
+test('Tower AI anticipates locked boss attacks and chooses a safer lane',()=>{
+ const a=world(),p=fighter('shot',344,250),foe={x:250,y:420,hp:400,maxHp:400,radius:30,forgeShots:[]};
+ p.towerHero=true;
+ // A real 90px–165px annulus, with the centre as a possible escape.
+ const zone={shape:'ring',x:250,y:250,inner:90,r:165,fire:45,end:90,kind:'boss'};
+ const encounter={tick:0,zones:[zone]};
+ // The isolated test window is the one consulted by ArenaAutoAI.
+ const sandbox={};
+ // world() returns the controller; the instance's global is its closure,
+ // so pass a fresh realm through the existing window-scoped API.
+ const w={window:null,console,Math,Number,Set,canvas:{width:500,height:500},
+  ArenaTower:{active:true,encounter}};w.window=w;
+ const vm=require('node:vm'),f=require('node:fs');
+ vm.createContext(w);vm.runInContext(f.readFileSync('js/features/arena-auto-ai.js','utf8'),w);
+ const director=w.ArenaAutoAI,choice=director.plan(p,foe,3);
+ assert.ok(choice&&Number.isFinite(choice.x));
+ const stationary=director.risk(p,foe,0,0);
+ const escaping=director.risk(p,foe,choice.x*3,choice.y*3);
+ assert.ok(escaping<stationary,'AI selects lower incoming pattern exposure');
+});
+test('both competing forge fighters dodge incoming shots without changing HP or damage',()=>{
+ const a=world();
+ for(const num of [1,2]){
+   const p=fighter('shot',120,200);p.playerNum=num;
+   const e=fighter('shot',360,200);
+   e.forgeShots=[{x:148,y:205,vx:-2,vy:0,life:32}];
+   const hp=p.hp,damage=p.forge.skills[0].actions[0].damage;
+   assert.equal(a.steer(p,e,3),true);
+   assert.equal(p.hp,hp);assert.equal(p.forge.skills[0].actions[0].damage,damage);
+   assert.ok(Number.isFinite(p.vx)&&Number.isFinite(p.vy));
+ }
+});
+test('legacy fighters only evade visible threats; no baseline movement override',()=>{
+ const a=world(),p=fighter(),e=fighter('shot',330,200);
+ delete p.forge;p.vx=1.5;p.vy=0;
+ assert.equal(a.react(p,e),false);
+ assert.equal(p.vx,1.5);
+ e.forgeShots=[{x:114,y:220,vx:0,vy:0,life:45}];
+ assert.equal(a.react(p,e),true);
+ assert.ok(Number.isFinite(p.vx)&&Number.isFinite(p.vy));
+});
+test('AI saves pure healing for missing health while mixed authored combos remain usable',()=>{
+ const a=world(),p=fighter(),e={x:165,y:200,hp:200,radius:20};
+ const heal={actions:[{type:'heal',damage:30}]};
+ assert.equal(a.canCast(p,e,heal),false);
+ p.hp=120;assert.equal(a.canCast(p,e,heal),true);
+ p.hp=200;
+ assert.equal(a.canCast(p,e,{actions:[{type:'heal'},{type:'shot'}]}),true);
+});
