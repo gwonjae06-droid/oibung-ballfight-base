@@ -9,6 +9,11 @@ const RANGED=new Set(['shot','homing','pierce','boomerang','arcshot','splitshot'
 const MOBILITY=new Set(['dash','blink','leap','retreat','swap','burrowdash','flight','portal','glide','hover']);
 const HEAL=new Set(['heal','regen','lifebloom']);
 const SUPPORT=new Set(['shield','fortify','haste','timestop']);
+// Intention is persistent for a short window: AI does not change its mind every frame.
+// All calculations are deterministic simulation ticks (including at 100x).
+let roster=[];
+function setRoster(fighters){roster=Array.isArray(fighters)?fighters:[];}
+const getRoster=()=>roster;
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const finite=(v,f=0)=>Number.isFinite(Number(v))?Number(v):f;
 const magnitude=(x,y)=>Math.hypot(x,y);
@@ -30,12 +35,43 @@ const signed=(x,y,z,pad=0)=>{
  }
  return magnitude(dx,dy)-finite(z.r,finite(z.radius,65))-pad;
 };
-function range(p){
- const actions=(p.forge?.skills||[]).slice(0,5).flatMap(s=>(s.actions||[]).slice(0,3));
- const melee=actions.filter(a=>MELEE.has(a.type)).length,ranged=actions.filter(a=>RANGED.has(a.type)).length;
- if(melee>ranged)return 78;
- if(ranged)return actions.some(a=>HEAL.has(a.type)||SUPPORT.has(a.type))?168:145;
- return 110;
+function loadout(p){
+ const skills=(p.forge?.skills||[]).slice(0,6),actions=skills.flatMap(s=>(s.actions||[]).slice(0,3));
+ const close=actions.filter(a=>MELEE.has(a.type));
+ const far=actions.filter(a=>RANGED.has(a.type)||['zone','blackhole','turret','summon'].includes(a.type));
+ const sustain=actions.filter(a=>HEAL.has(a.type)||SUPPORT.has(a.type));
+ const ready=skills.some((s,i)=>s.trigger==='auto'&&
+   (p.forgeTicks?.[i]??0)>=Math.max(12,Math.round((s.cooldown||3)*60))*.80);
+ const hp=clamp(finite(p.hp,1)/Math.max(1,finite(p.maxHp,1)),0,1);
+ const role=far.length>close.length?'ranged':close.length>far.length?'melee':
+   far.length?'hybrid':sustain.length?'support':'melee';
+ // The authored reach matters; no global 145px rule for an 80px weapon.
+ const reach=far.length?clamp(far.reduce((n,a)=>n+finite(a.radius,120),0)/far.length,80,260):0;
+ const preferred=role==='ranged'?clamp(reach*.83,122,216):
+   role==='hybrid'?clamp(92+reach*.22,103,148):role==='support'?148:74;
+ return {role,hp,ready,hasHeal:actions.some(a=>HEAL.has(a.type)),preferred,
+   attacking:actions.some(a=>MELEE.has(a.type)||RANGED.has(a.type))};
+}
+function range(p){return loadout(p).preferred;}
+function targetFor(p,fallback){
+ if(!p||p.hp<=0||!fallback||!roster.length||g.ArenaTower?.active)return fallback;
+ const candidates=roster.filter(e=>e&&e!==p&&e.hp>0);
+ if(candidates.length<2)return fallback;
+ const previous=candidates.find(e=>e.playerNum===p._aiTargetNum);
+ // Reconsider about twice a second, but immediately when a target dies.
+ if(previous&&(p._aiTargetHold||0)>0){p._aiTargetHold--;return previous;}
+ let best=fallback,bestScore=Infinity;
+ for(const e of candidates){
+   const d=magnitude(e.x-p.x,e.y-p.y);
+   const pct=clamp(finite(e.hp,1)/Math.max(1,finite(e.maxHp,e.hp)),0,1);
+   // Nearby low-HP opponents are worth finishing, but don't chase a dying
+   // opponent right across the map or switch on every single frame.
+   const score=d+35*pct-(e===previous?26:0)+
+     (e.forgeCharge?.phase==='charging'?13:0);
+   if(score<bestScore){best=e;bestScore=score;}
+ }
+ p._aiTargetNum=best.playerNum;p._aiTargetHold=30+(p.playerNum||1)%10;
+ return best;
 }
 function projectiles(foe,p){
  const list=[];
@@ -146,71 +182,120 @@ function risk(p,foe,vx=0,vy=0,known){
  }
  return value;
 }
-function desired(p,foe){
- const dx=foe.x-p.x,dy=foe.y-p.y,d=magnitude(dx,dy)||1;
- const ux=dx/d,uy=dy/d,preferred=range(p);
- const forward=d>preferred+20?1:d<preferred-32?-.85:0;
- // Orbit direction is tied to fighter slot. All AI uses the same rules.
- const spin=(p.playerNum||1)%2===0?-1:1;
- const orbit=forward===0?.65:.23;
- return {x:ux*forward-uy*spin*orbit,y:uy*forward+ux*spin*orbit};
+function stance(p,foe,data){
+ const profile=loadout(p),dx=foe.x-p.x,dy=foe.y-p.y,d=magnitude(dx,dy)||1;
+ const enemyClosing=(finite(foe.vx)*dx+finite(foe.vy)*dy)<-.3;
+ const threat=g.ArenaTelegraph?.preview?.(foe)?.[0];
+ const windup=threat&&threat.remaining<=threat.lead&&
+   (threat.kind==='melee'||threat.kind==='area')&&d<145;
+ let mode=d>profile.preferred+40?'approach':d<profile.preferred-28?'reposition':'strafe';
+ if(profile.role==='melee'&&d>100)mode='approach';
+ if(profile.hasHeal&&profile.hp<.48&&d<160)mode='recover';
+ else if(profile.role!=='melee'&&(windup||enemyClosing&&d<profile.preferred+4))mode='bait';
+ else if(profile.role==='melee'&&!profile.ready&&d<85)mode='reposition';
+ // No indefinite stalling: even under low HP a melee-only fighter fights.
+ if(profile.role==='melee'&&d>125)mode='approach';
+ const pressure=mode==='approach'?1:mode==='bait'?-.84:mode==='recover'?-.8:
+   mode==='reposition'?-.58:d>profile.preferred+9?.16:0;
+ // Commit to one flank until a new tactical beat, not a direction flip each tick.
+ const tick=finite(p._aiClock),beat=Math.floor((tick+(p.playerNum||1)*23)/95);
+ const spin=((beat+(p.playerNum||1))%2)?1:-1;
+ const sidestep=mode==='approach'?.26:mode==='bait'?.48:mode==='recover'?.36:
+   mode==='reposition'?.60:.9;
+ const sideX=-dy/d*spin,sideY=dx/d*spin;
+ let x=dx/d*pressure+sideX*sidestep,y=dy/d*pressure+sideY*sidestep;
+ // When both fighters are too close, lateral separation beats collision spam.
+ if(d<safeRadius(p)+safeRadius(foe)+14){x-=dx/d*.80;y-=dy/d*.80;}
+ return {x,y,mode,profile,distance:d,preferred:profile.preferred};
 }
 function plan(p,foe,speed,evadeOnly=false){
- const threats=sense(p,foe),pref=desired(p,foe);
- const pnorm=magnitude(pref.x,pref.y)||1;
- const preferred={x:pref.x/pnorm,y:pref.y/pnorm};
+ const threats=sense(p,foe),intent=stance(p,foe,threats);
+ const pn=magnitude(intent.x,intent.y)||1;
+ const preferred={x:intent.x/pn,y:intent.y/pn};
  const pad=safeRadius(p)+18,w=dimension('width'),h=dimension('height');
  const base=clamp(finite(speed,2),.6,8);
  const oldX=finite(p.vx),oldY=finite(p.vy),oldSpeed=magnitude(oldX,oldY);
  const baseline=risk(p,foe,oldX,oldY,threats);
  const urgent=baseline>.34;
- // Avoid overriding authored legacy movement when nothing threatens it.
  if(evadeOnly&&!urgent)return null;
- const angles=12;
+ const terrain=g.ArenaTower?.active?g.ArenaTowerTerrain:null;
+ const baseZ=terrain?.worldHeight?.(p.x,p.y)||0;
+ const role=intent.profile.role;
+ const others=roster.filter(e=>e&&e!==p&&e!==foe&&e.hp>0);
  let best=null,bestScore=-Infinity;
- for(let i=-2;i<angles;i++){
-   const a=i>=0?i*Math.PI*2/angles:0;
-   let ux=i===-2?preferred.x:i===-1?0:Math.cos(a);
-   let uy=i===-2?preferred.y:i===-1?0:Math.sin(a);
+ for(let i=-2;i<12;i++){
+   const angle=i*Math.PI/6;
+   let ux=i===-2?preferred.x:i===-1?0:Math.cos(angle);
+   let uy=i===-2?preferred.y:i===-1?0:Math.sin(angle);
    const rawX=p.x+ux*base*18,rawY=p.y+uy*base*18;
-   const predictedX=clamp(rawX,pad,w-pad),predictedY=clamp(rawY,pad,h-pad);
+   const futureX=clamp(rawX,pad,w-pad),futureY=clamp(rawY,pad,h-pad);
    const safety=risk(p,foe,ux*base,uy*base,threats);
-   // Penalize the UNCLAMPED path. Testing clamped coordinates hid wall risk.
    const border=clamp((pad-rawX)/30,0,3)+clamp((rawX-(w-pad))/30,0,3)
      +clamp((pad-rawY)/30,0,3)+clamp((rawY-(h-pad))/30,0,3);
-   // Safe combat positioning still matters; evasion is not aimless wandering.
-   const projectedDistance=magnitude(foe.x-predictedX,foe.y-predictedY);
-   const gap=Math.abs(projectedDistance-range(p));
+   const projectedDistance=magnitude(foe.x-futureX,foe.y-futureY);
+   const gap=Math.abs(projectedDistance-intent.preferred);
    const preference=ux*preferred.x+uy*preferred.y;
    const inertia=oldSpeed>0?(ux*oldX+uy*oldY)/oldSpeed:0;
-   const score=-safety*15-border*12-gap*.008+preference*(urgent?.7:2.5)+inertia*.22;
-   if(score>bestScore){bestScore=score;best={x:ux,y:uy,threat:baseline,danger:safety};}
+   let separation=0;
+   for(const other of others){
+     const dist=magnitude(other.x-futureX,other.y-futureY);
+     if(dist<safeRadius(other)+pad+27)separation+=
+       (safeRadius(other)+pad+27-dist)/25;
+   }
+   let elevation=0;
+   if(terrain?.worldHeight){
+     const candidateZ=terrain.worldHeight(futureX,futureY);
+     const drop=baseZ-candidateZ;
+     // Prefer high ground for ranged shots, but don't leap off a ledge to flee.
+     elevation=clamp((candidateZ-baseZ)/30,-1.2,1.2)*(role==='ranged'?.85:.28);
+     if(drop>18)elevation-=clamp((drop-18)/12,0,3)*1.6;
+     // Simple line-of-sight estimate: terrain halfway along the lane is cover.
+     if(role==='ranged'&&projectedDistance<350){
+       const midX=(futureX+foe.x)/2,midY=(futureY+foe.y)/2;
+       const midZ=terrain.worldHeight(midX,midY),targetZ=finite(foe.towerGroundZ);
+       if(midZ>Math.max(candidateZ,targetZ)+13)elevation-=2.4;
+     }
+   }
+   const still=ux===0&&uy===0;
+   const score=-safety*(urgent?17:15)-border*12-gap*.009+
+     preference*(urgent?.75:3.1)+inertia*.38-separation*2.3+elevation+
+     (still&&intent.mode==='strafe'?-1:0);
+   if(score>bestScore){bestScore=score;best={x:ux,y:uy,threat:baseline,danger:safety,
+     mode:intent.mode,score};}
  }
  return best;
 }
 function steer(p,foe,speed){
  if(!p||p.hp<=0||!foe||foe.hp<=0||p.forgeDash>0||
-   p.movementOnlyFrames>0||(p.jumpState&&p.jumpState!=='ground'))return false;
+   p.movementOnlyFrames>0||p.manualTower||p.impactSpeed>5||
+   (p.jumpState&&p.jumpState!=='ground'))return false;
+ p._aiClock=(p._aiClock||0)+1;
  const base=clamp(finite(speed,2),.6,8),choice=plan(p,foe,base);
  if(!choice)return false;
  const tx=choice.x*base,ty=choice.y*base,oldX=finite(p.vx),oldY=finite(p.vy);
- const smoothing=choice.threat>.34?.24:.11;
+ const smoothing=choice.threat>.34?.29:.115;
  p.vx=oldX+(tx-oldX)*smoothing;p.vy=oldY+(ty-oldY)*smoothing;
- const v=magnitude(p.vx,p.vy),max=clamp(base*1.28,1,8.5);
+ const v=magnitude(p.vx,p.vy),max=clamp(base*1.22,1,8.5);
  if(v>max){p.vx=p.vx/v*max;p.vy=p.vy/v*max;}
- p.aiDanger=choice.threat;return true;
+ p.aiDanger=choice.threat;p.aiManeuver=choice.mode;
+ return true;
 }
 function react(p,foe){
- // Legacy fighters keep their authored movement and skills. Only adjust
- // velocity to avoid REAL threats. This doesn't spawn a skill or a hit.
+ // Legacy character skills remain authoritative; guide only ordinary movement.
+ // Scripted dashes, launches, knockback and manual input are never overwritten.
  if(!p||!foe||p.hp<=0||foe.hp<=0||p.forge||
    p.forgeDash>0||p.movementOnlyFrames>0||p.manualTower||
+   p.towerPatternBoss||p.impactSpeed>4||
    p.jumpState&&p.jumpState!=='ground')return false;
- const speed=clamp(magnitude(finite(p.vx),finite(p.vy))||2,1.5,4.8);
- const choice=plan(p,foe,speed,true);
+ const oldX=finite(p.vx),oldY=finite(p.vy),oldSpeed=magnitude(oldX,oldY);
+ if(oldSpeed>5.4)return false;
+ p._aiClock=(p._aiClock||0)+1;
+ const speed=clamp(oldSpeed||2,1.5,4.2),choice=plan(p,foe,speed);
  if(!choice)return false;
- p.vx=finite(p.vx)*.55+choice.x*speed*.45;
- p.vy=finite(p.vy)*.55+choice.y*speed*.45;
+ const strength=choice.threat>.34?.44:.18;
+ p.vx=oldX*(1-strength)+choice.x*speed*strength;
+ p.vy=oldY*(1-strength)+choice.y*speed*strength;
+ p.aiManeuver=choice.mode;p.aiDanger=choice.threat;
  return true;
 }
 function canCast(p,target,skill){
@@ -229,9 +314,21 @@ function canCast(p,target,skill){
    const reach=Math.max(...offensive.map(a=>clamp(finite(a.radius,100),50,180)));
    return distance<=reach+safeRadius(target)+15;
  }
- if(actions.every(a=>['dash','leap','burrowdash'].includes(a.type))&&distance<55)
+ // A mobility-only dash is repositioning, not an automatic ram. Don't
+ // charge into a body overlap or a visible danger zone. Combo skills that
+ // deliberately link a dash with an attack keep their authored behavior.
+ const pureMovement=actions.every(a=>MOBILITY.has(a.type));
+ const rushing=actions.some(a=>['dash','burrowdash','flight'].includes(a.type));
+ if(pureMovement&&rushing){
+   if(distance<safeRadius(p)+safeRadius(target)+22)return false;
+   const dx=(target.x-p.x)/Math.max(1,distance),dy=(target.y-p.y)/Math.max(1,distance);
+   const dash=actions.find(a=>['dash','burrowdash','flight'].includes(a.type));
+   const speed=clamp(finite(dash?.speed,5),2,9);
+   if(risk(p,target,dx*speed,dy*speed)>risk(p,target,0,0)+.48)return false;
+ }
+ if(offensive.length&&!otherOffense&&g.AdvancedCombat?.canHit?.(p,target)===false)
    return false;
  return true;
 }
-g.ArenaAutoAI=Object.freeze({range,steer,react,canCast,plan,risk,signed});
+g.ArenaAutoAI=Object.freeze({range,steer,react,canCast,plan,risk,signed,loadout,stance,targetFor,setRoster,getRoster});
 })(typeof window!=='undefined'?window:globalThis);

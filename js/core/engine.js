@@ -143,26 +143,27 @@ function stopMatch(){
 }
 function updateCharacter(self) {
   if(self.hp<=0)return;
+  const foe=globalThis.ArenaAutoAI?.targetFor?.(self,getClosestAliveEnemy(self))||getClosestAliveEnemy(self);
   if(globalThis.ForgeExpansion?.blocked(self)){
     // Stun/silence suspends casting, not the independent skill clocks.
     if(self.forge){
       // Stun blocks fresh actions and movement, not effects already created.
       globalThis.SkillForge?.advanceTimers(self);
-      globalThis.SkillForge?.advanceWorld(self,getClosestAliveEnemy(self));
+      globalThis.SkillForge?.advanceWorld(self,foe);
     }
     return;
   }
   // Tower pattern bosses use stationary arena mechanics, not roaming AI.
   // Keep their actual defensive Forge skill clock running.
   if(globalThis.ArenaTower?.active&&self.towerPatternBoss){
-    if(self.forge)globalThis.SkillForge?.autoUpdate?.(self,getClosestAliveEnemy(self));
+    if(self.forge)globalThis.SkillForge?.autoUpdate?.(self,foe);
     self.vx=0;self.vy=0;
     return;
   }
   if(globalThis.ArenaTower?.active&&self.towerHero&&self.forge){
-    globalThis.SkillForge?.autoUpdate?.(self,getClosestAliveEnemy(self));return;
+    globalThis.SkillForge?.autoUpdate?.(self,foe);return;
   }
-  const b=BEHAVIORS[self.id],foe=getClosestAliveEnemy(self);
+  const b=BEHAVIORS[self.id];
   if(b&&b.update){
     if(globalThis.ForgeExpansion&&!self.forge)globalThis.ForgeExpansion.legacy(self,()=>b.update(self,foe));
     else b.update(self,foe);
@@ -243,6 +244,7 @@ function update() {
   });
   if(screenShake>0.5)screenShake*=0.88;
   globalThis.ImpactPhysics?.tick?.();
+  globalThis.ArenaAutoAI?.setRoster?.(players);
   players.forEach(updateCharacter);
   players.forEach(p=>{
     if(p.hp>0&&(!p.jumpState||p.jumpState==='ground')){

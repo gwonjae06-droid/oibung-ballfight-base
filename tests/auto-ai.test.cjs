@@ -83,14 +83,19 @@ test('both competing forge fighters dodge incoming shots without changing HP or 
    assert.ok(Number.isFinite(p.vx)&&Number.isFinite(p.vy));
  }
 });
-test('legacy fighters only evade visible threats; no baseline movement override',()=>{
+test('legacy fighters now strafe tactically, but preserve scripted bursts and airborne moves',()=>{
  const a=world(),p=fighter(),e=fighter('shot',330,200);
  delete p.forge;p.vx=1.5;p.vy=0;
- assert.equal(a.react(p,e),false);
- assert.equal(p.vx,1.5);
+ assert.equal(a.react(p,e),true);
+ assert.ok(p.vx<1.5&&p.vx>0,'ordinary movement blends without an abrupt turn');
+ assert.ok(Math.abs(p.vy)>0,'a lateral motion develops');
  e.forgeShots=[{x:114,y:220,vx:0,vy:0,life:45}];
  assert.equal(a.react(p,e),true);
  assert.ok(Number.isFinite(p.vx)&&Number.isFinite(p.vy));
+ p.vx=9;p.vy=0;
+ assert.equal(a.react(p,e),false,'scripted high-speed dash remains authoritative');
+ p.vx=2;p.jumpState='rising';
+ assert.equal(a.react(p,e),false,'jumping behavior remains authoritative');
 });
 test('AI saves pure healing for missing health while mixed authored combos remain usable',()=>{
  const a=world(),p=fighter(),e={x:165,y:200,hp:200,radius:20};
