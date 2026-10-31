@@ -73,6 +73,7 @@ function reRollMatch(forcedDef) {
   }
   players=placeFighters(defs);
   globalThis.ArenaStalemate?.reset?.();
+  globalThis.ArenaCountdown?.cancel?.();
   openingCollisionPairs.clear();
   particles=[];floatingTexts=[];shockwaves=[];screenShake=0;
   globalThis.ImpactPhysics?.reset?.();
@@ -101,8 +102,11 @@ function togglePlay({towerBattle=false}={}) {
     }else if(!beginRoundEconomy())return false;
     roundStarted=true;
     globalThis.CosmeticArcade?.startRound?.(players);
+    globalThis.ArenaCountdown?.start?.(document.querySelector('.canvas-wrapper'));
   }
   isPlaying=!isPlaying;
+  if(isPlaying)globalThis.ArenaCountdown?.resume?.();
+  else globalThis.ArenaCountdown?.pause?.();
   globalThis.BackgroundMusic?.setBattle(true,!isPlaying);
   syncStopButton();
   const b=document.getElementById('btn-start');
@@ -124,6 +128,7 @@ function stopMatch(){
   isPlaying=false;
   isGameOver=true;
   roundStopped=true;
+  globalThis.ArenaCountdown?.cancel?.();
   globalThis.ArenaStalemate?.finish?.();
   globalThis.BackgroundMusic?.setBattle(false);
   screenShake=0;
