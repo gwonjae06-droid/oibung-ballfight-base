@@ -73,6 +73,7 @@ test('premium UI supports hierarchy, skill visibility, mobile and reduced motion
   assert.match(style,/@media\(max-width:730px\)/);
   assert.match(style,/@media\(prefers-reduced-motion:reduce\)/);
   assert.match(style,/focus-visible/);
-  assert.match(read('js/features/tower-challenge.js'),/tower-floor-track/);
-  assert.match(read('js/features/tower-challenge.js'),/is-current/);
+  assert.match(read('js/features/tower-challenge.js'),/id="tower-floor"/);
+  assert.match(read('js/features/tower-challenge.js'),/tower-opponent/);
+  assert.doesNotMatch(read('js/features/tower-challenge.js'),/tower-floor-track/);
 });
