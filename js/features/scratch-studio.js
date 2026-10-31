@@ -12,7 +12,7 @@ const encode=path=>encodeURIComponent(JSON.stringify(path));
 const decode=s=>{try{const p=JSON.parse(decodeURIComponent(s));return Array.isArray(p)?p:[];}catch(_){return [];}};
 const actionName=id=>forge.TYPE[id]||id||'동작';
 const groupDefs=[
- {id:'control',label:'제어',color:'control',items:[['if','만약 / 아니면'],['repeat','반복하기'],['wait','기다리기']]},
+ {id:'control',label:'제어',color:'control',items:[['if','만약 / 아니면'],['repeat','반복하기'],['wait','기다리기'],['waitUntil','조건까지 기다리기'],['repeatUntil','조건까지 반복'],['set','충전 변수 정하기'],['change','충전 변수 바꾸기']]},
  {id:'attacks',label:'공격',color:'attacks'}, {id:'mobility',label:'이동',color:'mobility'},
  {id:'defense',label:'방어',color:'defense'}, {id:'special',label:'특수',color:'special'}
 ];
@@ -22,11 +22,11 @@ const fallbackGroups={attacks:['wave','shot','bolt','beam','slash','nova','chain
  special:['zone','orbit','summon','timestop','blackhole']};
 const registry=g.ActionRegistry?.GROUPS||{};
 const typesFor=id=>(registry[id]?.types||fallbackGroups[id]||[]).filter(type=>forge.TYPE[type]);
-let category='control',query='',activeList=[],activeIndex=0,drag=null,undo=[],redo=[],lastChecksum='';
+let category='control',query='',activeList=[],activeIndex=0,drag=null,undo=[],redo=[],lastChecksum='',lastDragEnded=0;
 const header=make('nav','scratch-main-nav','<button type="button" data-scratch-tab="code" aria-pressed="true">🧩 고유 스킬 코딩</button><button type="button" data-scratch-tab="looks" aria-pressed="false">🎨 외형 꾸미기</button>');
 const root=make('section','scratch-workbench');
 root.id='scratch-workbench';root.setAttribute('aria-label','고유 스킬 블록 프로그래밍 작업실');
-root.innerHTML='<div class="scratch-heading"><div><span class="scratch-eyebrow">OIBUNG / BLOCK PROGRAMMING</span><h3>고유 스킬 코딩</h3><p>왼쪽 블록을 끌어다 가운데 코드에 끼워 보세요. 클릭하거나 ↑↓로도 조립할 수 있습니다.</p></div><div class="scratch-heading-actions"><button type="button" data-scratch-command="random">🎲 랜덤 블록 생성</button><button type="button" data-scratch-command="undo" aria-label="블록 되돌리기">↶</button><button type="button" data-scratch-command="redo" aria-label="블록 다시하기">↷</button></div></div>'
+root.innerHTML='<div class="scratch-heading"><div><span class="scratch-eyebrow">OIBUNG / BLOCK PROGRAMMING</span><h3>고유 스킬 코딩</h3><p>왼쪽 블록을 끌어다 가운데 코드에 끼워 보세요. 클릭하거나 ↑↓로도 조립할 수 있습니다.</p></div><div class="scratch-heading-actions"><button type="button" data-scratch-command="random">🎲 랜덤 블록 생성</button><button type="button" data-scratch-command="expand" aria-pressed="false">⛶ 작업공간 확대</button><button type="button" data-scratch-command="undo" aria-label="블록 되돌리기">↶</button><button type="button" data-scratch-command="redo" aria-label="블록 다시하기">↷</button></div></div>'
  +'<div class="scratch-layout">'
  +'<aside class="scratch-library" aria-label="블록 팔레트"><div class="scratch-library-title">블록 팔레트</div>'
  +'<div class="scratch-categories" role="group" aria-label="블록 종류"></div>'
@@ -93,6 +93,9 @@ function getNode(kind,type){
  if(kind==='action')return {kind:'action',action:engine.safeAction({type,damage:18,link:'after'})};
  if(kind==='wait')return {kind:'wait',seconds:.4};
  if(kind==='repeat')return {kind:'repeat',times:2,body:[]};
+ if(kind==='repeatUntil')return {kind:'repeatUntil',times:3,condition:'hit',body:[]};
+ if(kind==='waitUntil')return {kind:'waitUntil',condition:'move',timeout:3};
+ if(kind==='set'||kind==='change')return {kind,value:1};
  return {kind:'if',condition:'danger',then:[],else:[]};
 }
 const blockLabel=n=>n.kind==='action'?actionName(n.action.type):({if:'만약 / 아니면',repeat:'반복하기',wait:'기다리기'})[n.kind];
@@ -103,7 +106,7 @@ function renderPalette(){
  if(category==='control')blocks=groupDefs[0].items.map(([kind,label])=>({kind,label}));
  else blocks=typesFor(category).map(type=>({kind:'action',type,label:actionName(type)}));
  if(query.trim())blocks=blocks.filter(b=>b.label.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase()));
- palette.innerHTML=blocks.map(({kind,label,type})=>'<button type="button" class="scratch-palette-block scratch-kind-'+kind+' scratch-color-'+category+'" data-palette-kind="'+kind+'" '+(type?'data-palette-type="'+esc(type)+'"':'')+' draggable="true" title="드래그하거나 눌러 추가"><span class="scratch-palette-glyph" aria-hidden="true">⊕</span>'+esc(label)+'</button>').join('')||'<p class="scratch-no-blocks">이름에 맞는 블록이 없습니다.</p>';
+ palette.innerHTML=blocks.map(({kind,label,type})=>'<button type="button" class="scratch-palette-block scratch-kind-'+kind+' scratch-color-'+category+'" data-palette-kind="'+kind+'" '+(type?'data-palette-type="'+esc(type)+'"':'')+' draggable="false" title="마우스로 끌거나 클릭해 추가"><span class="scratch-palette-glyph" aria-hidden="true">⊕</span>'+esc(label)+'</button>').join('')||'<p class="scratch-no-blocks">이름에 맞는 블록이 없습니다.</p>';
 }
 function selectOptions(options,chosen){
  return Object.entries(options).map(([id,label])=>'<option value="'+esc(id)+'"'+(id===chosen?' selected':'')+'>'+esc(label)+'</option>').join('');
@@ -138,8 +141,14 @@ function block(n,path,depth){
    +'</div></details>';
  }else if(kind==='wait'){
   inside='<span>기다리기</span><label><input data-scratch-field="seconds" data-scratch-node="'+encoded+'" type="number" min=".1" max="2" step=".1" value="'+Number(n.seconds)+'"> 초</label>';
- }else if(kind==='repeat'){
-  inside='<span>반복하기</span><label><select data-scratch-field="times" data-scratch-node="'+encoded+'">'+selectOptions({'2':'2번','3':'3번'},String(n.times))+'</select></label>';
+ }else if(kind==='repeat'||kind==='repeatUntil'){
+  inside='<span>'+(kind==='repeat'?'반복하기':'조건까지 반복')+'</span><label><select data-scratch-field="times" data-scratch-node="'+encoded+'">'+selectOptions({'1':'최대 1번','2':'최대 2번','3':'최대 3번'},String(n.times))+'</select></label>'
+   +(kind==='repeatUntil'?'<label>종료 조건<select data-scratch-field="condition" data-scratch-node="'+encoded+'">'+selectOptions(g.SignatureProgram?.CONDITIONS||{always:'항상 실행'},n.condition)+'</select></label>':'');
+ }else if(kind==='waitUntil'){
+  inside='<span>조건을 만족할 때까지 기다리기</span><label><select data-scratch-field="condition" data-scratch-node="'+encoded+'">'+selectOptions(g.SignatureProgram?.CONDITIONS||{always:'항상 실행'},n.condition)+'</select></label>'
+   +'<label>최대 <input type="number" min=".5" max="5" step=".5" data-scratch-field="timeout" data-scratch-node="'+encoded+'" value="'+n.timeout+'">초</label>';
+ }else if(kind==='set'||kind==='change'){
+  inside='<span>'+(kind==='set'?'충전값 정하기':'충전값 바꾸기')+'</span><label><input type="number" min="-10" max="10" step="1" data-scratch-field="value" data-scratch-node="'+encoded+'" value="'+n.value+'"></label>';
  }else{
   inside='<span>만약</span><label><select data-scratch-field="condition" data-scratch-node="'+encoded+'" aria-label="조건">'+selectOptions(g.SignatureProgram?.CONDITIONS||{always:'항상 실행'},n.condition)+'</select></label>';
  }
@@ -148,10 +157,10 @@ function block(n,path,depth){
  if(kind==='if'){
   nested='<div class="scratch-cavity"><div class="scratch-cavity-label">참이면 실행</div>'+drawList(n.then,[...path,'then'],depth+1)
    +'<div class="scratch-cavity-label">아니면 실행</div>'+drawList(n.else,[...path,'else'],depth+1)+'</div>';
- }else if(kind==='repeat'){
+ }else if(kind==='repeat'||kind==='repeatUntil'){
   nested='<div class="scratch-cavity"><div class="scratch-cavity-label">반복할 블록</div>'+drawList(n.body,[...path,'body'],depth+1)+'</div>';
  }
- return '<div class="scratch-node scratch-node-'+kind+(kind==='action'?' scratch-action-'+esc(n.action.type):'')+'" draggable="true" data-scratch-node="'+encoded+'" data-scratch-depth="'+depth+'">'
+ return '<div class="scratch-node scratch-node-'+kind+(kind==='action'?' scratch-action-'+esc(n.action.type):'')+'" draggable="false" data-scratch-node="'+encoded+'" data-scratch-depth="'+depth+'">'
  +'<div class="scratch-node-line"><span class="scratch-drag-grip" title="블록 잡아 이동" aria-hidden="true">⠿</span>'+inside+controls+'</div>'+nested+'</div>';
 }
 function drawList(list,path,depth){
@@ -205,13 +214,19 @@ function dropBlock(destination,index){
 }
 root.addEventListener('click',e=>{
  const palette=e.target.closest('[data-palette-kind]');
- if(palette){insert(palette.dataset.paletteKind,palette.dataset.paletteType);return;}
+ if(palette&&Date.now()-lastDragEnded>280){insert(palette.dataset.paletteKind,palette.dataset.paletteType);return;}
  const categoryButton=e.target.closest('[data-scratch-category]');
  if(categoryButton){category=categoryButton.dataset.scratchCategory;renderPalette();return;}
  const target=e.target.closest('[data-scratch-target]');
  if(target){activeList=decode(target.dataset.scratchTarget);activeIndex=target.dataset.scratchAt==='end'?listAt(programOf(current()),activeList).length:Number(target.dataset.scratchAt);render();feedback('선택한 위치에 팔레트의 블록을 클릭해 추가하세요.');return;}
  const button=e.target.closest('[data-scratch-command]');if(!button)return;
  const cmd=button.dataset.scratchCommand;
+ if(cmd==='expand'){
+  const wide=studio.classList.toggle('scratch-studio-wide');
+  button.setAttribute('aria-pressed',String(wide));
+  button.textContent=wide?'◱ 미리보기 보이기':'⛶ 작업공간 확대';
+  return;
+ }
  if(cmd==='random'){
   if(programOf(current()).length>1&&!g.confirm?.('현재 블록 구성을 랜덤 조합으로 바꿀까요? 되돌리기로 복구할 수 있습니다.'))return;
   const base=current();
@@ -248,6 +263,7 @@ root.addEventListener('change',e=>{
    const node=nodeAt(program,path);
    if(field==='condition')node.condition=input.value;
    else if(field==='times')node.times=Number(input.value);
+   else if(field==='timeout'||field==='value')node[field]=Number(input.value);
    else if(field==='seconds')node.seconds=Number(input.value);
    else if(node.kind==='action')node.action[field]=['type','status','target','pattern'].includes(field)?input.value:Number(input.value);
   },'블록 수치를 조정했습니다.');
@@ -262,29 +278,93 @@ root.addEventListener('change',e=>{
  }
 });
 $('#scratch-search').addEventListener('input',e=>{query=e.target.value;renderPalette();});
-root.addEventListener('dragstart',e=>{
- const item=e.target.closest('[data-palette-kind]'),node=e.target.closest('[data-scratch-node]');
- if(item)drag={kind:item.dataset.paletteKind,type:item.dataset.paletteType};
- else if(node)drag={path:decode(node.dataset.scratchNode)};
- else return;
- e.dataTransfer?.setData('text/plain','scratch-block');
- if(e.dataTransfer)e.dataTransfer.effectAllowed=item?'copy':'move';
+// Stable pointer drag: grip/header or palette initiates, 6px movement threshold,
+// whole-block half-height is the hit target (not a 10px gap). Inputs/selects
+// remain editable, and an overlay marker never shifts block layout.
+let gesture=null,guide=null,ghost=null;
+const clearDragUI=()=>{
+ if(guide){guide.remove();guide=null;}
+ if(ghost){ghost.remove();ghost=null;}
+ root.querySelectorAll('.scratch-dragging').forEach(n=>n.classList.remove('scratch-dragging'));
+};
+function dragTarget(x,y){
+ const element=doc.elementFromPoint?.(x,y);
+ if(!element||!root.contains(element))return null;
+ let list=element.closest?.('.scratch-code-list');
+ if(!list&&element.closest?.('.scratch-cavity'))
+   list=element.closest('.scratch-cavity').querySelector('.scratch-code-list');
+ if(!list&&element.closest?.('.scratch-script'))list=root.querySelector('.scratch-block-tree > .scratch-code-list');
+ if(!list)return null;
+ const path=decode(list.dataset.scratchList),nodes=Array.from(list.children).filter(n=>n.classList.contains('scratch-node'));
+ let index=nodes.length;
+ for(let i=0;i<nodes.length;i++){
+  const node=nodes[i],rect=node.getBoundingClientRect();
+  if(y<rect.top+rect.height/2){index=i;break;}
+ }
+ const rect=list.getBoundingClientRect(),before=nodes[index]?.getBoundingClientRect(),prev=nodes[index-1]?.getBoundingClientRect();
+ const top=before?before.top:prev?prev.bottom:Math.max(rect.top,Math.min(y,rect.bottom));
+ return {path,index,left:rect.left,top,width:Math.max(60,rect.width)};
+}
+function showGuide(at){
+ if(!guide){
+  guide=doc.createElement('div');guide.className='scratch-live-drop-guide';
+  doc.body.append(guide);
+ }
+ guide.style.left=at.left+'px';guide.style.top=at.top+'px';guide.style.width=at.width+'px';
+}
+function finishPointer(e,cancel=false){
+ if(!gesture||e.pointerId!==gesture.id)return;
+ const active=gesture.active,point=gesture.point;
+ gesture=null;
+ if(active){
+  if(!cancel&&point){
+   drag=active;
+   dropBlock(point.path,point.index);
+  }
+  lastDragEnded=Date.now();
+ }
+ drag=null;clearDragUI();
+}
+root.addEventListener('pointerdown',e=>{
+ if(e.pointerType==='touch'||e.button!==0||gesture)return; // touch: tap + ↑↓ accessible fallback
+ if(e.target.closest('input,select,textarea,button:not([data-palette-kind]),summary,details,label'))return;
+ const palette=e.target.closest('[data-palette-kind]');
+ const line=e.target.closest('.scratch-node-line');
+ const node=line?.closest('.scratch-node');
+ if(!palette&&!node)return;
+ if(node&&!e.target.closest('.scratch-drag-grip,.scratch-block-title,.scratch-node-line'))return;
+ const active=palette?{kind:palette.dataset.paletteKind,type:palette.dataset.paletteType}:
+   {path:decode(node.dataset.scratchNode)};
+ gesture={id:e.pointerId,x:e.clientX,y:e.clientY,active:null,source:active,point:null,label:palette?.textContent?.trim()||node?.querySelector('.scratch-block-title')?.textContent||'블록'};
+ // Pointer events on the document keep tracking when the cursor leaves the palette.
 });
-root.addEventListener('dragover',e=>{
- const slot=e.target.closest('[data-scratch-target]');
- if(slot&&drag){e.preventDefault();slot.classList.add('scratch-drop-hover');}
-});
-root.addEventListener('dragleave',e=>{e.target.closest('[data-scratch-target]')?.classList.remove('scratch-drop-hover');});
-root.addEventListener('drop',e=>{
- const slot=e.target.closest('[data-scratch-target]');
- if(!slot||!drag)return;
+doc.addEventListener('pointermove',e=>{
+ if(!gesture||e.pointerId!==gesture.id)return;
+ if(!gesture.active){
+  if(Math.hypot(e.clientX-gesture.x,e.clientY-gesture.y)<6)return;
+  gesture.active=gesture.source;
+  ghost=doc.createElement('div');ghost.className='scratch-drag-ghost';
+  ghost.textContent=gesture.label;doc.body.append(ghost);
+ }
  e.preventDefault();
- const where=decode(slot.dataset.scratchTarget);
- const index=slot.dataset.scratchAt==='end'?listAt(programOf(current()),where).length:Number(slot.dataset.scratchAt);
- dropBlock(where,index);
- root.querySelectorAll('.scratch-drop-hover').forEach(n=>n.classList.remove('scratch-drop-hover'));
-});
-root.addEventListener('dragend',()=>{drag=null;root.querySelectorAll('.scratch-drop-hover').forEach(n=>n.classList.remove('scratch-drop-hover'));});
+ ghost.style.left=(e.clientX+16)+'px';ghost.style.top=(e.clientY+13)+'px';
+ const at=dragTarget(e.clientX,e.clientY);
+ const source=gesture.active;
+ const forbidden=at&&source.path&&at.path.length>=source.path.length&&source.path.every((v,i)=>v===at.path[i]);
+ gesture.point=at&&!forbidden?at:null;
+ if(gesture.point)showGuide(gesture.point);
+ else if(guide){guide.remove();guide=null;}
+ // Gently scroll the script while dragging near its top/bottom bounds.
+ const scroller=root.querySelector('.scratch-script'),r=scroller.getBoundingClientRect();
+ if(e.clientX>=r.left&&e.clientX<=r.right&&e.clientY>=r.top&&e.clientY<=r.bottom){
+  if(e.clientY<r.top+34)scroller.scrollTop-=18;
+  else if(e.clientY>r.bottom-34)scroller.scrollTop+=18;
+ }
+},{passive:false});
+doc.addEventListener('pointerup',e=>finishPointer(e));
+doc.addEventListener('pointercancel',e=>finishPointer(e,true));
+doc.addEventListener('keydown',e=>{if(e.key==='Escape'&&gesture){gesture=null;drag=null;clearDragUI();}});
+g.addEventListener?.('blur',()=>{gesture=null;drag=null;clearDragUI();});
 function openTab(tab){
  const looks=tab==='looks';
  g.CharacterStudioWorkspace?.selectTab?.(looks?'appearance':'skills');
