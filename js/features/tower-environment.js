@@ -6,11 +6,11 @@
 const TWO=Math.PI*2,clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const COLORS={time:'#ffe09c',space:'#c9a6ff',fire:'#ff854e',storm:'#a5f2ff',ice:'#bdefff',forest:'#aceda4'};
 const LABELS={
- time:['가속 시계판','시간 정체대'],
- space:['특이점 중력 우물','역중력 궤도'],
- fire:['용암 균열','분화하는 화구'],
- storm:['순환 돌풍','낙뢰 전선'],
- ice:['얼음 미끄럼판','동결 빙정'],
+ time:['가속 시계판','시간 정체대','역행 폭풍'],
+ space:['특이점 중력 우물','역중력 궤도','위성 파편 폭풍'],
+ fire:['용암 균열','분화하는 화구','마그마 분출 기둥'],
+ storm:['순환 돌풍','낙뢰 전선','연쇄 낙뢰 장벽'],
+ ice:['얼음 미끄럼판','동결 빙정','빙정 파편 폭격'],
  forest:['맹독 포자숲','덩굴 파수목','뿌리 속박']
 };
 function contains(z,p){
@@ -35,31 +35,38 @@ function create({realm,level,width=500,height=500,roster=[],damage}){
  const ring=(x,y,inner,r)=>({shape:'ring',x,y,inner,r});
  const within=(p,ms)=>clamp(p,ms,ms===width?width:height-ms);
  function spawn(){
-  const kind=turn++% (realm==='forest'?3:2),flip=turn%2===0;
+  const kind=turn++%3,flip=turn%2===0;
   const px=width*(flip?.65:.35),py=height*(kind===1?.60:.39);
   let shape,mode,notice=72,duration=110,amount=0;
   switch(realm){
    case 'time':
     mode=kind===0?'fast':'slow';
-    shape=circle(px,py,units*.165);duration=148;break;
+    shape=kind===2?line(width*.5,py,Math.PI/4,units*.105,width*.75):circle(px,py,units*.165);
+    if(kind===2){mode='reverse';notice=92;duration=98;}else duration=148;break;
    case 'space':
     mode=kind===0?'gravity':'antigravity';
-    shape=circle(px,py,units*.205);notice=84;duration=132;break;
+    shape=kind===2?ring(width*.5,height*.5,units*.16,units*.31):circle(px,py,units*.205);
+    if(kind===2){mode='debris';notice=100;duration=96;amount=13+level*2;}else{notice=84;duration=132;}break;
    case 'fire':
     mode=kind===0?'lava':'eruption';
     shape=kind===0?line(px,height*.52,Math.PI/2,units*.1,height*.69):
-      circle(px,py,units*.136);
-    notice=100;duration=kind===0?46:36;amount=Math.round(18+level*3.3);break;
+      kind===2?line(width*.5,py,0,units*.12,width*.73):circle(px,py,units*.136);
+    if(kind===2)mode='slag';
+    notice=100;duration=kind===2?60:kind===0?46:36;amount=Math.round(18+level*3.3);break;
    case 'storm':
     mode=kind===0?'wind':'lightning';
     shape=kind===0?line(width*.50,py,0,units*.23,width*.78):
-      circle(px,py,units*.145);
-    notice=kind===0?66:85;duration=kind===0?130:30;
+      kind===2?line(width*.50,py,Math.PI/3,units*.11,width*.85):circle(px,py,units*.145);
+    if(kind===2)mode='chainlightning';
+    notice=kind===0?66:85;duration=kind===0?130:kind===2?48:30;
     amount=Math.round(14+level*2.2);break;
    case 'ice':
     mode=kind===0?'slip':'frost';
-    shape=kind===0?circle(px,py,units*.19):ring(width*.5,height*.50,units*.11,units*.27);
-    notice=80;duration=136;break;
+    shape=kind===0?circle(px,py,units*.19):kind===2?
+      circle(width*.5,height*.5,units*.19):ring(width*.5,height*.50,units*.11,units*.27);
+    if(kind===2)mode='shatter';
+    notice=kind===2?100:80;duration=kind===2?52:136;
+    amount=Math.round(12+level*1.8);break;
    case 'forest':
     mode=['spores','sapling','roots'][kind];
     shape=kind===1?circle(px,py,units*.10):kind===2?
@@ -107,11 +114,27 @@ function create({realm,level,width=500,height=500,roster=[],damage}){
    case 'lava':
    case 'eruption':
    case 'lightning':
+   case 'slag':
+   case 'chainlightning':
+   case 'shatter':
     if(!boss&&!z.hits.has(p)&&damage?.(p,z.amount,z)!==false){
       z.hits.add(p);
-      if(z.mode!=='lightning')poison(p,60); // heat burn using the existing bounded DOT
+      if(['lava','eruption','slag'].includes(z.mode))poison(p,60); // bounded heat burn
+      if(z.mode==='shatter'){p.slowTimer=Math.max(p.slowTimer||0,70);p.slowMultiplier=.54;}
+      if(z.mode==='chainlightning'){p.vx=(p.vx||0)+(p.x<z.x?-1.5:1.5);}
     }
     break;
+   case 'reverse':
+    p.vx=clamp((p.vx||0)*-.88,-8,8);p.vy=clamp((p.vy||0)*-.88,-8,8);
+    p.slowTimer=Math.max(p.slowTimer||0,5);p.slowMultiplier=.72;
+    if(p.forgeTicks&&tick%3===0)p.forgeTicks=p.forgeTicks.map(t=>Math.max(0,t-2));
+    break;
+   case 'debris':{
+    // A timed orbital shrapnel field, not a hidden continuous damage zone.
+    const wave=Math.floor(age/34),last=z.affected.get(p);
+    if(!boss&&age>=15&&wave!==last&&damage?.(p,z.amount,z)!==false)z.affected.set(p,wave);
+    break;
+   }
    case 'wind':
     p.vx=clamp((p.vx||0)+(turn%2?-.14:.14),-8,8);
     p.vy=clamp((p.vy||0)+(age%24<12?.025:-.025),-8,8);
@@ -161,7 +184,7 @@ function create({realm,level,width=500,height=500,roster=[],damage}){
     if(!p||p.hp<=0||!contains(z,p))continue;
     // Ground hazards can be jumped. Passive time, space and wind fields are
     // volume effects and therefore affect airborne fighters as well.
-    if(['lava','eruption','lightning','frost','spores','sapling','roots'].includes(z.mode)&&
+    if(['lava','eruption','lightning','slag','chainlightning','shatter','debris','frost','spores','sapling','roots'].includes(z.mode)&&
        (p.z||p.jumpHeight||0)>38)continue;
     touch(z,p);
    }
