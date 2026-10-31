@@ -59,7 +59,7 @@ test('fire and lightning only hurt after a long telegraph and hit once per burst
   assert.equal(hits.length,2);
   for(let i=0;i<20;i++)env.step();
   assert.equal(hits.length,2,'one event cannot deal multiple direct hits');
- });
+ }
 });
 test('time gears accelerate or decelerate real individual skill clocks',()=>{
  const {env,roster}=setup('time');
