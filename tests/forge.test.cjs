@@ -87,7 +87,7 @@ test('saved roster restores every profile instead of cutting off after 6',()=>{
   assert.ok(start>=0&&end>start);
   const profiles=Array.from({length:35},(_,i)=>profile({name:'캐릭터 '+i}));
   const store={getItem(){return JSON.stringify(profiles);}};
-  const context=vm.createContext({localStorage:store,JSON,Array});
+  const context=vm.createContext({localStorage:store,JSON,Array,STORE:'oibung-forge-v3'});
   const loaded=vm.runInContext(source.slice(start,end)+'saved()',context);
   assert.equal(loaded.length,35);
   assert.equal(loaded[34].name,'캐릭터 34');
