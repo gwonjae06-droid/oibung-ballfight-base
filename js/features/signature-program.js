@@ -15,7 +15,9 @@ const CONDITIONS=Object.freeze({
  guard:'보호막으로 공격을 막았다면',
  move:'이동 동작이 완료되었다면',
  status:'적에게 상태이상을 적용했다면',
- charge3:'충전 변수가 3 이상이라면'
+ charge3:'충전 변수가 3 이상이라면',
+ basicHit:'기본 공격이 명중했다면',
+ basicStatus:'기본 공격으로 상태이상을 걸었다면'
 });
 function validCondition(value){return Object.prototype.hasOwnProperty.call(CONDITIONS,value)?value:'always';}
 function danger(p,target){
@@ -42,6 +44,8 @@ function eligible(p,target,skill,loss=0){
  const trigger=skill.trigger||'auto';
  if(trigger==='danger')return danger(p,target);
  if(trigger==='dodge')return condition(p,target,'dodge')&&Number(p._forgeDodgeSerial||0)!==Number(p._forgeDodgeConsumed||0);
+ if(trigger==='basicHit')return (p?._scratchEvents?.basicHit?.count||0)>(p?._scratchBasicHitConsumed||0);
+ if(trigger==='basicStatus')return (p?._scratchEvents?.basicStatus?.count||0)>(p?._scratchBasicStatusConsumed||0);
  if(trigger==='lowhp')return p.hp/Math.max(1,p.maxHp)*100<=(skill.threshold||40);
  if(trigger==='damaged')return loss>0;
  return trigger==='auto'&&!!target; // Contact handling stays in SkillForge.contact.

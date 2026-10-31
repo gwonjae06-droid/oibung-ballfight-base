@@ -23,7 +23,9 @@ const starters=[
  {id:'auto',icon:'⚔️',name:'싸우는 동안',tip:'준비되면 자동으로 사용'},
  {id:'lowhp',icon:'❤️',name:'체력이 적을 때',tip:'위험할 때 기술 사용'},
  {id:'danger',icon:'🚨',name:'보스가 공격할 때',tip:'보스의 큰 공격을 보고 반응'},
- {id:'dodge',icon:'💨',name:'보스 공격을 피한 뒤',tip:'회피 성공 후 반격'}
+ {id:'dodge',icon:'💨',name:'보스 공격을 피한 뒤',tip:'회피 성공 후 반격'},
+ {id:'basicHit',icon:'🎯',name:'기본 공격이 맞은 뒤',tip:'기본 공격 다음에 필살기 연계'},
+ {id:'basicStatus',icon:'❄️',name:'기본 공격으로 느려지면',tip:'상태이상에 성공하면 필살기'}
 ];
 const templates=[
  {id:'brawler',icon:'⚔️',name:'달려가서 공격!',desc:'돌진 → 베기 → 충격파',trigger:'auto',sequence:['dash','slash','wave']},

@@ -1,0 +1,34 @@
+/* Clear base-attack creator above the one-signature Scratch workbench. */
+.scratch-friendly-mode .basic-attack-designer{margin:0 0 16px;min-width:0;color:#f2f8ff;border:1px solid #5d7996;border-radius:16px;overflow:hidden;background:#1c2d44}
+.scratch-friendly-mode .base-head{display:flex;justify-content:space-between;gap:12px;padding:17px 19px;background:linear-gradient(105deg,#294965,#24364e);border-bottom:1px solid #4b6884}
+.scratch-friendly-mode .base-head h3{margin:4px 0 7px;font-weight:900;font-size:clamp(20px,2.5vw,26px);color:#fff}
+.scratch-friendly-mode .base-head p{font-size:13px;line-height:1.5;color:#d1e5f7;margin:0}
+.scratch-friendly-mode .base-step{font-size:11px;color:#b6e1ff;font-weight:800;letter-spacing:.04em}
+.scratch-friendly-mode .base-counter{white-space:nowrap;align-self:flex-start;border:1px solid #76a0c6;padding:6px 10px;border-radius:100px;color:#cde8fa;font-size:11px;font-weight:850}
+.scratch-friendly-mode .base-body{display:grid;grid-template-columns:minmax(0,1.9fr) minmax(210px,.8fr);gap:13px;padding:15px}
+.scratch-friendly-mode .base-body[hidden],.scratch-friendly-mode .base-no-role[hidden]{display:none!important}
+.scratch-friendly-mode .base-role-title{display:flex;align-items:center;gap:9px;flex-wrap:wrap;background:#27405b;border-radius:10px;padding:11px 13px;margin-bottom:13px}
+.scratch-friendly-mode .base-role-title>span{font-size:24px}.scratch-friendly-mode .base-role-title>strong{font-size:15px}.scratch-friendly-mode .base-role-title>small{color:#bad2e7;font-size:11px}
+.scratch-friendly-mode .base-choices{display:grid;gap:13px}
+.scratch-friendly-mode .base-choice{min-width:0}
+.scratch-friendly-mode .base-choice h4{font-size:15px;color:#f2f8ff;margin:0 0 8px;font-weight:850}
+.scratch-friendly-mode .base-style-options,.scratch-friendly-mode .base-effect-options,.scratch-friendly-mode .base-tempo-options{display:grid;grid-template-columns:repeat(auto-fit,minmax(125px,1fr));gap:8px}
+.scratch-friendly-mode .base-choice button{display:flex;min-width:0;flex-direction:column;align-items:flex-start;justify-content:center;text-align:left;gap:5px;min-height:75px;padding:11px 12px;border:2px solid #597694;background:#304863;border-radius:10px;color:#f2f9ff;cursor:pointer}
+.scratch-friendly-mode .base-choice button[aria-pressed=true]{background:#275f82;border-color:#9eebfd;box-shadow:inset 0 0 0 1px #7bd1f3}
+.scratch-friendly-mode .base-choice button>span{font-size:14px;font-weight:850;line-height:1.4}
+.scratch-friendly-mode .base-choice button small{font-size:11px;line-height:1.4;color:#d3e3f2}
+.scratch-friendly-mode .base-preview{display:flex;flex-direction:column;align-items:stretch;gap:8px;padding:17px;background:#14283e;border:1px solid #547696;border-radius:13px}
+.scratch-friendly-mode .base-preview-label{text-align:center;font-size:12px;font-weight:800;color:#b7d8f2}
+.scratch-friendly-mode .base-preview-icon{font-size:43px;text-align:center}
+.scratch-friendly-mode .base-preview-name{text-align:center;font-size:18px;line-height:1.35;color:#fff}
+.scratch-friendly-mode .base-preview-hint{text-align:center;font-size:12px;color:#c9ddf0;line-height:1.5;margin:0 0 6px}
+.scratch-friendly-mode .base-preview-stats{display:grid;gap:7px}
+.scratch-friendly-mode .base-preview-stats>span{display:flex;justify-content:space-between;gap:8px;padding:9px 11px;background:#263e56;border-radius:8px;color:#c5d9e9;font-size:12px}
+.scratch-friendly-mode .base-preview-stats strong{color:#f3fbff;font-size:14px}
+.scratch-friendly-mode .base-preview-notice{color:#b6cede;font-size:12px;line-height:1.6;margin:auto 0 0}
+.scratch-friendly-mode .base-bridge{padding:12px 17px;background:#203a39;border-top:1px solid #426d64;color:#d9f5e9;font-size:13px;line-height:1.55}
+.scratch-friendly-mode .base-no-role{padding:15px 17px;font-size:14px;color:#dbeafa;line-height:1.6}
+.scratch-friendly-mode .base-choice button:hover{filter:brightness(1.12)}
+.scratch-friendly-mode .base-choice button:focus-visible{outline:3px solid #ffe699;outline-offset:2px}
+@media(max-width:1050px){.scratch-friendly-mode .base-body{grid-template-columns:1fr}.scratch-friendly-mode .base-preview{display:grid;grid-template-columns:70px minmax(0,1fr);align-items:center}.scratch-friendly-mode .base-preview-label{grid-column:1/-1}.scratch-friendly-mode .base-preview-stats,.scratch-friendly-mode .base-preview-notice{grid-column:1/-1}}
+@media(max-width:570px){.scratch-friendly-mode .base-body{padding:10px}.scratch-friendly-mode .base-head{padding:13px}.scratch-friendly-mode .base-style-options,.scratch-friendly-mode .base-effect-options,.scratch-friendly-mode .base-tempo-options{grid-template-columns:repeat(2,minmax(0,1fr))}.scratch-friendly-mode .base-choice button{min-height:76px}}
