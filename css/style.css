@@ -2106,3 +2106,60 @@ body.arena-welcome-open{overflow:hidden}
 @media(prefers-reduced-motion:reduce){
  .cosmetic-ten-card{animation:none!important}
 }
+
+/* Overtime phase: deliberately separate from speed/stop buttons in the upper right. */
+.canvas-wrapper .arena-overtime-banner{
+  position:absolute;top:clamp(8px,3%,22px);left:50%;transform:translateX(-50%);
+  z-index:14;display:flex;align-items:center;justify-content:center;gap:8px;
+  flex-wrap:wrap;max-width:min(65%,390px);
+  padding:7px 13px;border:1px solid #ffbd75;border-radius:12px;
+  color:#fff4dc;background:linear-gradient(115deg,rgba(58,14,25,.96),rgba(105,30,19,.91));
+  box-shadow:0 2px 20px #ff5f3540,inset 0 0 12px #ffaf302e;
+  pointer-events:none;text-align:center;line-height:1.35;
+  animation:arena-overtime-glow 1.75s ease-in-out infinite alternate;
+}
+.canvas-wrapper .arena-overtime-banner[hidden]{display:none!important}
+.arena-overtime-banner strong{font-size:clamp(12px,2.4vw,17px);letter-spacing:.035em;white-space:nowrap}
+.arena-overtime-banner .arena-overtime-rate{font-size:clamp(9px,1.35vw,11px);font-weight:750;color:#ffd8ae}
+@keyframes arena-overtime-glow{
+ from{box-shadow:0 2px 13px #ff5f3533,inset 0 0 9px #ffaf3020}
+ to{box-shadow:0 2px 25px #ff5f3588,inset 0 0 18px #ffaf3044}
+}
+/* Health gauges: slow red damage trail + instant filled loss + brief section flash. */
+.hp-bar-track{
+ position:relative;isolation:isolate;height:9px;
+ border:1px solid #4c5866;border-radius:7px;
+ background:linear-gradient(#29303a,#20252c);overflow:hidden;
+}
+.hp-bar-trail,.hp-bar-fill{
+ position:absolute;left:0;top:0;bottom:0;display:block;
+ border-radius:inherit;
+}
+.hp-bar-trail{
+ z-index:1;width:100%;
+ background:linear-gradient(90deg,#ed484c,#ffb483 90%,#fff0c2);
+ box-shadow:0 0 10px #ff4b55a0;
+ transition:width .65s cubic-bezier(.19,.65,.2,1);
+}
+.hp-bar-fill{
+ z-index:2;background:linear-gradient(90deg,var(--hp-color),var(--hp-color));
+ box-shadow:inset 0 1px 1px #ffffff30;
+ transition:width .12s linear;
+}
+.player-section.hp-impact-0{animation:arena-hp-flash-0 .38s ease-out}
+.player-section.hp-impact-1{animation:arena-hp-flash-1 .38s ease-out}
+.player-section.hp-impact-2{animation:arena-hp-flash-2 .38s ease-out}
+@keyframes arena-hp-flash-0{0%{box-shadow:0 0 0 calc(1px * var(--hp-hit-scale,1)) #ff6666, inset 0 0 17px #ff575766}100%{box-shadow:none}}
+@keyframes arena-hp-flash-1{0%{box-shadow:0 0 0 calc(1px * var(--hp-hit-scale,1)) #ff6666, inset 0 0 17px #ff575766}100%{box-shadow:none}}
+@keyframes arena-hp-flash-2{0%{box-shadow:0 0 0 calc(1px * var(--hp-hit-scale,1)) #ff6666, inset 0 0 17px #ff575766}100%{box-shadow:none}}
+@media(max-width:580px){
+ .canvas-wrapper .arena-overtime-banner{
+   top:43px;max-width:83%;gap:2px 6px;padding:5px 9px;
+ }
+ .arena-overtime-banner .arena-overtime-rate{width:100%}
+}
+@media(prefers-reduced-motion:reduce){
+ .canvas-wrapper .arena-overtime-banner,
+ .player-section.hp-impact-0,.player-section.hp-impact-1,.player-section.hp-impact-2{animation:none}
+ .hp-bar-trail,.hp-bar-fill{transition:none}
+}
