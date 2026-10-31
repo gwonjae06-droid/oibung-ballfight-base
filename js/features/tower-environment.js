@@ -198,11 +198,16 @@ function create({realm,level,width=500,height=500,roster=[],damage}){
     if(realm==='forest')for(let j=0;j<5;j++){const a=j*TWO/5;ctx.beginPath();ctx.arc(Math.cos(a)*20,Math.sin(a)*20,5,0,TWO);ctx.stroke();}
    }
    ctx.restore();
-   const x=clamp(z.x,65,width-65),y=clamp(z.y-16,20,height-18);
-   ctx.font='bold 12px system-ui';ctx.textAlign='center';
-   ctx.lineWidth=3;ctx.strokeStyle='#07111d';ctx.fillStyle='#fff';
-   const label=live?z.label:z.label+' '+(remaining/60).toFixed(1)+'s';
-   ctx.strokeText(label,x,y);ctx.fillText(label,x,y);
+   // Warning posts and countdown are rendered as upright elevated objects,
+   // depth-sorted with the fighters (not flattened into the floor texture).
+   const raised=!live&&g.ArenaTowerPattern3D?.warning?.(ctx,z,realm,tick,width,height);
+   if(!live&&!raised){
+     const x=clamp(z.x,65,width-65),y=clamp(z.y-16,20,height-18);
+     ctx.font='bold 12px system-ui';ctx.textAlign='center';
+     ctx.lineWidth=3;ctx.strokeStyle='#07111d';ctx.fillStyle='#fff';
+     ctx.strokeText(z.label+' '+(remaining/60).toFixed(1)+'s',x,y);
+     ctx.fillText(z.label+' '+(remaining/60).toFixed(1)+'s',x,y);
+   }
   }
   ctx.restore();
  }
