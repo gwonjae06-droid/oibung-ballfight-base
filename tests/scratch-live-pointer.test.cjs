@@ -75,7 +75,7 @@ test('confirmed shield, dodge and movement events publish to live scripts',()=>{
  const moveRun=g.SignatureLive.begin([{kind:'waitUntil',condition:'move',timeout:2},action('shot')],owner);
  owner._scratchMove=null;
  g.SignatureLive.beginMove(owner,{type:'blink',duration:.2});
- owner.movementOnlyFrames=1;owner.forgeDash=0;
+ owner.movementOnlyFrames=0;owner.forgeDash=0;
  owner._forgeActionClock++;g.SignatureLive.tickMove(owner);
  assert.equal(tick(g,moveRun,owner,{x:70,y:0}).type,'shot');
 });
