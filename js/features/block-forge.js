@@ -297,7 +297,7 @@ function mount(){
     const b=e.target.closest('button[data-op]');if(!b||!root.contains(b))return;
     const op=b.dataset.op,si=Number(b.dataset.skill),ai=Number(b.dataset.index);
     if(op==='select'){selectedSkill=si;selectedAction=0;draw();global.CharacterStudioWorkspace?.previewSkill?.(si,-1);return;}
-    if(op==='inspect'){selectedSkill=si;selectedAction=ai;draw();global.CharacterStudioWorkspace?.previewSkill?.(si,ai);return;}
+    if(op==='inspect'){selectedSkill=si;selectedAction=ai;inspectorOpen=true;draw();global.CharacterStudioWorkspace?.previewSkill?.(si,ai);return;}
     if(op==='preview'){selectedSkill=si;selectedAction=ai;draw();global.CharacterStudioWorkspace?.previewSkill?.(si,ai);return;}
     if(op==='add'){apply({kind:'add',skill:selectedSkill,type:movePicker.value});global.CharacterStudioWorkspace?.previewSkill?.(selectedSkill,selectedAction);return;}
     if(op==='enable'){apply({kind:'enable'});return;}
@@ -322,6 +322,13 @@ function mount(){
     else if(el.dataset.edit==='param'){selectedSkill=skill;selectedAction=index;apply({kind:'param',skill,index,key:el.dataset.key,value:el.value});global.CharacterStudioWorkspace?.previewSkill?.(skill,index);}
   });
 }
-global.BlockForge={modify,action,josa,phrase,refresh:()=>{refreshTypes();draw();}};
+global.BlockForge={modify,action,josa,phrase,
+  inspectSkill:(si,ai=0)=>{const d=forge.getDraft();
+    selectedSkill=Math.max(0,Math.min(Number(si)||0,d.skills.length-1));
+    selectedAction=Math.max(0,Math.min(Number(ai)||0,d.skills[selectedSkill].actions.length-1));
+    inspectorOpen=true;draw();
+    global.CharacterStudioWorkspace?.selectPreviewSkill?.(selectedSkill,selectedAction);
+  },
+  refresh:()=>{refreshTypes();draw();}};
 if(typeof document!=='undefined'&&document.querySelector('.forge-studio'))mount();
 })(window);
