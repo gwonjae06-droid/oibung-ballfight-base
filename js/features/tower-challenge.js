@@ -163,46 +163,30 @@ function install(){
   if(!screen)return null;
   const mount=doc.getElementById('tower-mode-slot')||screen;
   const panel=doc.createElement('section');panel.id='tower-challenge';panel.className='tower-challenge';
-  panel.innerHTML='<div class="tower-head"><div class="tower-head-current">'
-   +'<span class="tower-kicker">현재 층</span>'
-   +'<h2><span id="tower-floor">1 / 10F</span></h2>'
-   +'<p id="tower-rule"></p></div>'
+  // A compact single flow: floor → fighter/opponent → action. Details stay optional.
+  panel.innerHTML='<div class="tower-head">'
+   +'<div class="tower-head-current"><span class="tower-kicker">현재 층</span>'
+   +'<h2><span id="tower-floor">1 / 10F</span></h2></div>'
    +'<strong id="tower-best">최고 0F</strong></div>'
-   +'<div class="tower-fighter-pick"><label for="tower-hero">내 파이터'
-   +'<select id="tower-hero"></select></label>'
-   +'<div class="tower-enemy"><small>상대</small><strong id="tower-enemy">훈련의 문</strong></div></div>'
-   +'<p class="tower-auto-notice">⚔ 자동전투 · 캐릭터의 AI와 스킬 조합으로 10층을 돌파하세요.</p>'
+   +'<p class="tower-rule" id="tower-rule"></p>'
+   +'<div class="tower-fighter-pick">'
+   +'<label class="tower-hero-choice" for="tower-hero"><span>출전 캐릭터</span><select id="tower-hero"></select></label>'
+   +'<details class="tower-opponent" id="tower-enemy-details">'
+   +'<summary class="tower-enemy"><span class="tower-opponent-name"><small>상대</small><strong id="tower-enemy">훈련의 문</strong></span>'
+   +'<span class="tower-opponent-skills"><span id="tower-skill-count">스킬 2개</span><span class="tower-chevron" aria-hidden="true">⌄</span></span></summary>'
+   +'<div class="tower-opponent-detail"><p id="tower-enemy-info"></p>'
+   +'<div class="tower-enemy-skills" id="tower-enemy-skills" aria-label="상대 스킬 상세"></div></div></details>'
+   +'</div>'
    +'<div class="tower-buttons"><button id="tower-start" type="button">1층 시작</button>'
    +'<button id="tower-pause" type="button" hidden>⏸ 일시정지</button>'
    +'<button id="tower-abandon" type="button" hidden>도전 포기</button></div>'
-   +'<p class="tower-feedback" id="tower-feedback" role="status" aria-live="polite" hidden></p>'
-   +'<div class="tower-folds">'
-   +'<details class="tower-disclosure" id="tower-progress-details">'
-   +'<summary>전체 층 진행도 <span id="tower-progress-label">0 / 10</span></summary>'
-   +'<div class="tower-floor-track" aria-label="도전의 탑 10개 층 진행도">'
-   +Array.from({length:FINISH},(_,i)=>'<div class="tower-floor-chip" id="tower-chip-'+(i+1)+'"'
-   +' aria-label="'+(i+1)+'층'+((i+1)%5===0?' 보스':'')+'"><strong>'
-   +(i+1)+'F</strong>'+((i+1)%5===0?'<small>보스</small>':'<small>층</small>')+'</div>').join('')
-   +'</div></details>'
-   +'<details class="tower-disclosure" id="tower-enemy-details">'
-   +'<summary>상대 스킬·상세 정보</summary>'
-   +'<div class="tower-disclosure-body"><div class="tower-scene-identity">'
-   +'<span id="tower-scene-name">황혼의 수련장</span>'
-   +'<span id="tower-skill-count">2개 스킬</span></div>'
-   +'<p id="tower-enemy-info"></p>'
-   +'<div class="tower-enemy-skills" id="tower-enemy-skills" aria-label="상대 스킬 상세"></div></div>'
-   +'</details>'
-   +'<details class="tower-disclosure" id="tower-help-details">'
-   +'<summary>조작 방법</summary>'
-   +'<div class="tower-disclosure-body">직접 조종: WASD/방향키 이동 · Q/E/R/F 스킬 · Space/Shift 대시(3초 쿨다운, 0.2초 회피) · 모바일은 조이스틱과 대시 버튼. 기연은 이 도전에서만 적용되며, 포기하거나 종료하면 사라집니다.</div>'
-   +'</details></div>';
+   +'<p class="tower-feedback" id="tower-feedback" role="status" aria-live="polite" hidden></p>';
   mount.append(panel);
   const doorway=doc.createElement('div');doorway.className='tower-doorway';
   doorway.innerHTML='<button type="button" id="tower-back-selection" class="tower-return">← 다른 탑 선택</button>'
     +'<div class="tower-doorway-symbol" id="tower-doorway-symbol" aria-hidden="true">◷</div>'
-    +'<div class="tower-doorway-text"><span>REALM CHALLENGE · 10 FLOORS</span>'
-    +'<h2 id="tower-doorway-title">시간의 탑</h2>'
-    +'<p id="tower-doorway-subtitle"></p><small id="tower-doorway-hint"></small></div>'
+    +'<div class="tower-doorway-text"><h2 id="tower-doorway-title">시간의 탑</h2>'
+    +'<p id="tower-doorway-subtitle"></p></div>'
     +'<div class="tower-ambient-orb" aria-hidden="true"></div>';
   panel.prepend(doorway);
   let selector=null;
@@ -241,13 +225,7 @@ function install(){
     +'<div id="tower-blessing-choices" class="tower-blessing-choices"></div>'
     +'<button id="tower-next-start" type="button">다음 층 시작</button></div>';
   doc.querySelector?.('#tower-arena-slot .canvas-wrapper')?.append(clearOverlay);
-  const readyPreview=doc.createElement('section');
-  readyPreview.id='tower-ready-preview';readyPreview.className='tower-ready-preview';
-  readyPreview.setAttribute('aria-label','선택한 탑 내부 전장');
-  readyPreview.innerHTML='<div class="tower-ready-architecture" aria-hidden="true"><div class="tower-ready-rune" id="tower-ready-rune">◷</div></div>'
-    +'<div class="tower-ready-narrative"><span>ENTER THE REALM</span><h3 id="tower-ready-title">시간의 탑</h3>'
-    +'<p id="tower-ready-desc"></p><small>출전 파이터와 전투 방식을 정한 뒤 시작 버튼을 누르세요.</small></div>';
-  doc.getElementById('tower-arena-slot')?.prepend(readyPreview);
+
   const nextStart=el('tower-next-start');
   let active=false,stage='ready',level=1,cleared=0,selected=null,temporary=null,mode='auto';
   let blessings=[],offers=[],encounter=null,view='selection',ancient=false;
@@ -292,21 +270,13 @@ function install(){
     screen.dataset.towerView=active?'interior':view;
     screen.dataset.towerRealm=realmId;
     panel.hidden=screen.dataset.towerView==='selection';
-    const arenaSlot=el('tower-arena-slot');if(arenaSlot)arenaSlot.hidden=panel.hidden;
-    if(readyPreview){
-      readyPreview.hidden=stage!=='ready'||panel.hidden;
-      if(realms){
-        el('tower-ready-rune').textContent=realm().icon;
-        el('tower-ready-title').textContent=realm().name;
-        el('tower-ready-desc').textContent=realm().subtitle+' · '+floor(level).description;
-      }
-    }
+    const arenaSlot=el('tower-arena-slot');if(arenaSlot)arenaSlot.hidden=panel.hidden||stage==='ready';
+
     if(realms){
       const r=realm();
       el('tower-doorway-title').textContent=ancient?'고대의 존재':r.name;
       el('tower-doorway-symbol').textContent=r.icon;
       el('tower-doorway-subtitle').textContent=ancient?'여섯 탑의 봉인 너머 · 마지막 존재':r.subtitle+' · '+r.terrain;
-      el('tower-doorway-hint').textContent=r.hint;
       el('tower-back-selection').hidden=active;
     }
     if(selector){
@@ -332,14 +302,12 @@ function install(){
     nextStart.disabled=offers.length>0;
     const f=floor(level),best=read(global.localStorage).records[recordKey(selectedDef())]?.best||0;
     el('tower-floor').textContent=ancient?'최종 보스':level+' / '+FINISH+'F';
-    el('tower-rule').textContent=ancient?'HP 3000 · 공격당 약 200 피해 · 팔과 촉수를 공격하세요.':(realm()?realm().name+' · ':'')+f.difficulty+' · '+f.description+(blessings.length?' · 기연 '+blessings.length+'개 적용':'');
+    el('tower-rule').textContent=ancient?'보스 HP 3,000 · 팔과 촉수를 공격':realm()?.terrain+(blessings.length?' · 기연 '+blessings.length+'개':'');
     el('tower-enemy').textContent=ancient?'☽ 고대의 존재':(f.boss?'👑 ':'')+f.name;
-    el('tower-enemy-info').textContent=ancient?'HP 3000 · 16종 패턴 · 3페이즈 · 팔/촉수 피격은 본체 HP에 적용':realms&&f.boss?'체력 '+f.hp+' · 패턴 기본 피해 '+(20+level*2)+' · 고정형 보스':'체력 '+f.hp+' · 공격 '+f.damage+' · 이동 '+f.speed.toFixed(1);
+    el('tower-enemy-info').textContent=ancient?'HP 3,000 · 3페이즈 · 팔·촉수 공격 가능':realms&&f.boss?'HP '+f.hp+' · 패턴 공격 · 2페이즈':'HP '+f.hp+' · 공격 '+f.damage+' · 속도 '+f.speed.toFixed(1);
     el('tower-best').textContent='최고 '+best+'F';
-    el('tower-progress-label').textContent=cleared+' / '+FINISH+' 완료';
     screen.dataset.towerTheme=f.scene;
-    el('tower-scene-name').textContent=realm()?.subtitle||global.ArenaTowerScenes?.SCENES[level-1]?.name||f.name;
-    el('tower-skill-count').textContent=ancient?'16종 패턴 · 3페이즈':realms&&f.boss?'패턴 전투 · 2페이즈':makeEnemy(level).skills.length+'개 스킬';
+    el('tower-skill-count').textContent=ancient?'16종 패턴':realms&&f.boss?'보스 패턴':makeEnemy(level).skills.length+'개 스킬';
     const skillHost=el('tower-enemy-skills');
     skillHost.replaceChildren();
     // Use the same generated enemy profile that is registered for combat:
@@ -347,7 +315,7 @@ function install(){
     if(ancient){const info=doc.createElement('p');info.textContent=global.ArenaAncientOne?.names?.join(' · ')||'차징·격자·연쇄 공격';skillHost.append(info);}
     if(realms&&f.boss&&!ancient){
       const info=doc.createElement('p');
-      info.textContent=(global.ArenaEncounter?.patternNames?.(realmId)||[realm().pattern]).join(' · ')+' · 고정된 예고 지점에 최소 1.3초 뒤 공격합니다. HP 50% 이하에서는 패턴이 강해집니다. 보스층에는 일반 지형 공격을 겹치지 않습니다.';
+      info.textContent=(global.ArenaEncounter?.patternNames?.(realmId)||[realm().pattern]).join(' · ');
       skillHost.append(info);
     }
     for(const ability of (ancient||(realms&&f.boss)?[]:makeEnemy(level).skills)){
@@ -363,14 +331,6 @@ function install(){
       const metadata=doc.createElement('p');metadata.className='tower-enemy-skill-meta';
       metadata.textContent=info.tags.join(' · ');
       body.append(explanation,metadata);card.append(summary,body);skillHost.append(card);
-    }
-    for(let i=1;i<=FINISH;i++){
-      const chip=el('tower-chip-'+i);
-      if(!chip)continue;
-      chip.className='tower-floor-chip'+(i<=cleared?' is-cleared':'')+
-        (i===level?' is-current':'');
-      chip.setAttribute('aria-current',String(i===level));
-      chip.setAttribute('data-boss',String(i%5===0));
     }
     start.textContent=ancient&&stage==='ready'?'▶ 고대의 존재 도전':stage==='between'?'▶ '+level+'층 시작':
       stage==='fighting'?'전투 진행 중':stage==='ready'?'▶ 1층 시작':'▶ 다시 도전';
