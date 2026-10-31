@@ -84,7 +84,8 @@ test('retired manual and Blitz features are not loaded by the playable game',()=
  assert.doesNotMatch(html,/tower-controls\.js|tower-blitz\.js|blitz-ui\.css/);
  assert.doesNotMatch(ui,/pvp-blitz|pvp-pad|name="pvp-mode"/);
  assert.match(ui,/mode='auto'/);
- assert.match(tower,/tower-auto-notice/);
+ assert.match(tower,/players\[0\]\.manualTower=false/);
+ assert.doesNotMatch(tower,/tower-auto-notice/);
  assert.doesNotMatch(tower,/tower-play-mode" value="manual"/);
 });
 function towerWorld(){
