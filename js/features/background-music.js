@@ -17,7 +17,7 @@
       this.cancel=options.cancel||(id=>clearInterval(id));
       this.now=options.now||(()=>performance.now());
       this.changed=options.changed||(()=>{});
-      this.mode='menu';this.paused=false;this.enabled=true;this.muted=false;
+      this.mode='menu';this.paused=false;this.enabled=true;this.muted=false;this.overtime=false;
       this.volume=.35;this.unlocked=false;this.blocked=false;this.lastError='';this.failed=new Set();
       this.voices=new Set();this.menu=null;this.current=null;this.timer=null;this.revision=0;
     }
@@ -29,6 +29,8 @@
       if(!track)return null;
       const audio=this.makeAudio(track.src),v={track,audio,gain:0};
       audio.preload='metadata';audio.loop=false;audio.volume=0;
+      audio.playbackRate=this.overtime?1.25:1;
+      if('preservesPitch' in audio)audio.preservesPitch=true;
       audio.addEventListener('ended',()=>{if(this.current===v)this.next();});
       audio.addEventListener('error',()=>this.failure(v));
       this.voices.add(v);return v;
@@ -99,6 +101,7 @@
       this.transition(v);
     }
     setBattle(active,paused=false){
+      if(!active)this.setOvertime(false);
       const mode=active?'battle':'menu';
       if(mode===this.mode){this.setPaused(active&&paused);return;}
       this.mode=mode;this.paused=active&&paused;
@@ -109,6 +112,16 @@
         if(!this.menu||this.menu.audio.ended)this.menu=this.voice(this.pick([this.current?.track]));
         this.transition(this.menu);
       }
+    }
+    setOvertime(active){
+      const enabled=!!active&&this.mode==='battle';
+      if(this.overtime===enabled)return;
+      this.overtime=enabled;
+      for(const voice of this.voices){
+        voice.audio.playbackRate=enabled?1.25:1;
+        if('preservesPitch' in voice.audio)voice.audio.preservesPitch=true;
+      }
+      this.changed();
     }
     setPaused(value){
       if(this.paused===!!value)return;
