@@ -147,7 +147,13 @@ function updateCharacter(self) {
     }
     return;
   }
-  // Arena combat is AI-controlled in every playable mode.  if(globalThis.ArenaTower?.active&&self.towerPatternBoss){self.vx=0;self.vy=0;return;}
+  // Tower pattern bosses use stationary arena mechanics, not roaming AI.
+  // Keep their actual defensive Forge skill clock running.
+  if(globalThis.ArenaTower?.active&&self.towerPatternBoss){
+    if(self.forge)globalThis.SkillForge?.autoUpdate?.(self,getClosestAliveEnemy(self));
+    self.vx=0;self.vy=0;
+    return;
+  }
   if(globalThis.ArenaTower?.active&&self.towerHero&&self.forge){
     globalThis.SkillForge?.autoUpdate?.(self,getClosestAliveEnemy(self));return;
   }
