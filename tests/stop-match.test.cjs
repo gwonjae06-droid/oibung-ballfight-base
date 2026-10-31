@@ -25,7 +25,7 @@ test('stop is disabled before the fight starts; stopping before a fight is a no-
   assert.equal(h.run('roundStopped'),false);
   assert.equal(h.run('isGameOver'),false);
 });
-test('stopping during a match ends in a draw and refunds the wager exactly once',()=>{
+test('stopping during a match ends in a draw without any point settlement',()=>{
   const h=boot();
   h.run("roundStarted=true;isPlaying=true;coins=850;activeBet={wager:150,playerNum:1,characterName:'투사',multiplier:2};syncStopButton()");
   assert.equal(h.document.getElementById('btn-stop').disabled,false);
@@ -34,13 +34,13 @@ test('stopping during a match ends in a draw and refunds the wager exactly once'
   assert.equal(h.run('isGameOver'),true);
   assert.equal(h.run('roundStopped'),true);
   assert.equal(h.run('roundSettled'),true);
-  assert.equal(h.run('coins'),1000);
+  assert.equal(h.run('coins'),850);
   assert.equal(h.document.getElementById('btn-stop').disabled,true);
   assert.equal(h.document.getElementById('btn-start').innerText,'다음 경기');
   assert.equal(h.document.getElementById('btn-start').dataset.state,'finished');
-  assert.match(h.document.getElementById('economy-message').textContent,/경기 중단.*150 G.*반환/);
+  assert.equal(h.document.getElementById('economy-message').textContent,'');
   assert.equal(h.run('stopMatch()'),false);
-  assert.equal(h.run('coins'),1000);
+  assert.equal(h.run('coins'),850);
 });
 test('stopping a paused game works, without awarding a winner or coins',()=>{
   const h=boot();
@@ -48,7 +48,7 @@ test('stopping a paused game works, without awarding a winner or coins',()=>{
   assert.equal(h.run('stopMatch()'),true);
   assert.equal(h.run('coins'),1000);
   assert.equal(h.run('roundStopped'),true);
-  assert.match(h.document.getElementById('economy-message').textContent,/승자는 없습니다/);
+  assert.equal(h.document.getElementById('economy-message').textContent,'');
 });
 test('starting another match resets the stopped state and disables the stop control',()=>{
   const h=boot();h.run('roundStarted=true;isPlaying=true;stopMatch()');

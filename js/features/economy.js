@@ -1,37 +1,15 @@
-/* 베팅·상점. 원본 코드를 그대로 옮겼습니다. */
-function formatGold(v){
-  const n=Number.isFinite(Number(v))?Math.trunc(Number(v)):0;
-  return n.toLocaleString('ko-KR')+' G';
-}
-// Shared persistent wallet. Never record wagers, UI timers, or raw markup.
-function saveEconomyState(){
-  try{
-    localStorage.setItem(ECONOMY_KEY,JSON.stringify({
-      coins:Math.round(coins),
-      items:Object.fromEntries(Object.keys(itemInventory).map(id=>[id,itemInventory[id]]))
-    }));
-    globalThis.ArenaScreenRouter?.refresh?.(); // one shared wallet across every view
-    return true;
-  }catch(_){return false;}
-}
-
-function setEconomyMessage(msg,tone='normal'){const e=document.getElementById('economy-message');if(!e)return;e.textContent=msg;e.dataset.tone=tone;}
-
-function selectBetPlayer(n){if(roundStarted)return;selectedBetPlayerNum=n;const p=players.find(x=>x.playerNum===n);if(p)setEconomyMessage('');renderEconomyUI();}
-
-function setMaxBet(){if(roundStarted)return;document.getElementById('wager-input').value=Math.max(0,coins);renderEconomyUI();}
-
-function buyItem(id){const it=SHOP_ITEMS[id];if(coins<it.price){setEconomyMessage(`${it.name} 구매에 ${formatGold(it.price-coins)}가 부족합니다.`,'bad');return;}coins-=it.price;itemInventory[id]++;saveEconomyState();setEconomyMessage(`${it.name} 구매 완료 · 적용 대상 선택`,'good');renderEconomyUI();}
-
-function toggleItemTarget(id,n){if(roundStarted){setEconomyMessage('진행 중에는 예약을 바꿀 수 없습니다.','bad');return;}const list=reservedItems[id],i=list.indexOf(n),p=players.find(x=>x.playerNum===n);if(i>=0){list.splice(i,1);setEconomyMessage('');}
-else{if(list.length>=itemInventory[id]){setEconomyMessage(`${SHOP_ITEMS[id].name} 여유 수량이 없습니다. 한 개 더 구매하세요.`,'bad');return;}list.push(n);setEconomyMessage('');}renderEconomyUI();}
-
-function applyReservedItem(p,id){p.itemLabels=p.itemLabels||[];if(id==='skillRush'){if(p.forge)p.forgeRush=true;['skillCooldown','modeDuration','charmCooldown','shootCooldown','poisonTearCooldown','pokeCooldown','runeDuration','jumpCooldown','minJumpCooldown','suneungCooldown'].forEach(k=>{if(typeof p[k]==='number')p[k]=Math.min(p[k],60);});}else if(id==='vitality'){p.maxHp+=75;p.hp=p.maxHp;}else if(id==='speed'){p.speedMultiplier=(p.speedMultiplier||1)*1.35;p.vx*=1.35;p.vy*=1.35;}p.itemLabels.push(SHOP_ITEMS[id].label);}
-
-function beginRoundEconomy(){const input=document.getElementById('wager-input'),w=Math.max(0,Math.floor(Number(input.value)||0));input.value=w;if(w>coins){setEconomyMessage(`보유 재화는 ${formatGold(coins)}입니다.`,'bad');return false;}if(w>0&&selectedBetPlayerNum===null){setEconomyMessage('베팅할 캐릭터를 먼저 선택하세요.','bad');return false;}if(w>0){const p=players.find(x=>x.playerNum===selectedBetPlayerNum);coins-=w;activeBet={playerNum:p.playerNum,characterName:p.name,wager:w,multiplier:players.length};}else activeBet=null;
-Object.keys(reservedItems).forEach(id=>{reservedItems[id].forEach(n=>{const p=players.find(x=>x.playerNum===n);if(p&&itemInventory[id]>0){itemInventory[id]--;applyReservedItem(p,id);}});});roundSettled=false;saveEconomyState();setEconomyMessage(activeBet?`${activeBet.characterName} · ${formatGold(w)} 베팅`:'',activeBet?'warn':'normal');renderEconomyUI();updateUI();return true;}
-
-function settleRound(w,reason){if(roundSettled)return;roundSettled=true;if(!activeBet){setEconomyMessage(reason==='stopped'?'경기가 중단되었습니다. 승자는 없습니다.':'');saveEconomyState();renderEconomyUI();return;}if(!w){coins+=activeBet.wager;setEconomyMessage(reason==='stopped'?`경기 중단 · 베팅금 ${formatGold(activeBet.wager)} 반환`:`무승부로 ${formatGold(activeBet.wager)}를 반환했습니다.`);}else if(w.playerNum===activeBet.playerNum){const pay=activeBet.wager*activeBet.multiplier;coins+=pay;setEconomyMessage(`적중! ${formatGold(pay)} 수령 · 순이익 ${formatGold(pay-activeBet.wager)}!`,'good');}else setEconomyMessage(`${w.name} 승리. ${formatGold(activeBet.wager)}를 잃었습니다.`,'bad');saveEconomyState();renderEconomyUI();}
-
-function renderEconomyUI(){const bal=document.getElementById('coin-balance'),box=document.getElementById('bet-players'),input=document.getElementById('wager-input');if(!bal||!box)return;bal.textContent=formatGold(coins);box.innerHTML='';players.forEach(p=>{const b=document.createElement('button');b.type='button';b.className=`bet-player-btn${selectedBetPlayerNum===p.playerNum?' selected':''}`;b.textContent=`P${p.playerNum} · ${p.name}`;b.setAttribute('aria-pressed',String(selectedBetPlayerNum===p.playerNum));b.disabled=roundStarted;b.onclick=()=>selectBetPlayer(p.playerNum);box.appendChild(b);});const wager=Math.max(0,Math.floor(Number(input.value)||0)),pick=players.find(p=>p.playerNum===selectedBetPlayerNum);document.getElementById('odds-text').textContent=wager===0?'':pick?`적중 시 ${formatGold(wager*players.length)} · 순이익 ${formatGold(wager*(players.length-1))}`:'우승 예상 캐릭터를 선택하세요';input.disabled=roundStarted;document.getElementById('btn-max-bet').disabled=roundStarted;
-const summary=[];Object.keys(SHOP_ITEMS).forEach(id=>{document.getElementById(`inv-${id}`).textContent=`보유 ${itemInventory[id]} · 예약 ${reservedItems[id].length}`;const area=document.getElementById(`targets-${id}`);area.innerHTML='';players.forEach(p=>{const on=reservedItems[id].includes(p.playerNum),b=document.createElement('button');b.type='button';b.className=`target-chip${on?' assigned':''}`;b.textContent=`${on?'✓ ':''}P${p.playerNum} ${p.name}`;b.setAttribute('aria-pressed',String(on));b.disabled=roundStarted;b.onclick=()=>toggleItemTarget(id,p.playerNum);area.appendChild(b);if(on)summary.push(`${SHOP_ITEMS[id].label} → ${p.name}`);});});document.getElementById('reserved-list').textContent=summary.length?`적용 예정 · ${summary.join(' / ')}`:'';globalThis.CosmeticArcade?.refresh?.();globalThis.PointMarket?.refresh?.();}
+/* Compatibility-only financial hooks. The points, wager, shop and item
+ * reservation systems have been retired. The old localStorage save is left
+ * intact deliberately, but nothing reads, changes or earns currency here.
+ * The battle engine still calls these names, so keep inert functions. */
+function formatGold(){return '';}
+function saveEconomyState(){return true;}
+function setEconomyMessage(){}
+function selectBetPlayer(){return false;}
+function setMaxBet(){return false;}
+function buyItem(){return false;}
+function toggleItemTarget(){return false;}
+function applyReservedItem(){return false;}
+function beginRoundEconomy(){activeBet=null;roundSettled=false;return true;}
+function settleRound(){roundSettled=true;activeBet=null;}
+function renderEconomyUI(){}

@@ -48,3 +48,11 @@ test('floor 10 remains harder than floor 1, without the old extreme resistance',
   assert.ok(high.hp>low.hp*4);assert.ok(high.towerDefense>=.7);assert.ok(high.towerDefense<1);
  }
 });
+
+test('retired economy does not spend, earn, bet or modify inventory',()=>{
+ const g={activeBet:{wager:90},roundSettled:false,coins:100,SHOP_ITEMS:{},itemInventory:{},reservedItems:{}};vm.createContext(g);
+ vm.runInContext(txt('js/features/economy.js'),g);
+ assert.equal(g.beginRoundEconomy(),true);assert.equal(g.activeBet,null);
+ assert.equal(g.buyItem('any'),false);g.settleRound({playerNum:1},'won');
+ assert.equal(g.coins,100);assert.equal(g.roundSettled,true);
+});

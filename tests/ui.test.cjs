@@ -51,7 +51,8 @@ test('control wording is short and start state is managed by CSS', () => {
   assert.ok(engine.includes("dataset.state='playing'") || engine.includes("b.dataset.state=isPlaying?'playing':'paused'"));
   assert.ok(!render.includes('하단의 [▶ 경기 시작]'));
   assert.ok(style.includes('#btn-start[data-state="playing"]'));
-  assert.ok(economy.includes('e.dataset.tone=tone'));
+  assert.match(economy,/function beginRoundEconomy\(\)/);
+  assert.match(economy,/function settleRound\(\)/);
 });
 
 test('responsive HUD and input accessibility are preserved', () => {
