@@ -43,13 +43,15 @@ function loadout(p){
  const ready=skills.some((s,i)=>s.trigger==='auto'&&
    (p.forgeTicks?.[i]??0)>=Math.max(12,Math.round((s.cooldown||3)*60))*.80);
  const hp=clamp(finite(p.hp,1)/Math.max(1,finite(p.maxHp,1)),0,1);
- const role=far.length>close.length?'ranged':close.length>far.length?'melee':
+ const classId=p.forge?.archetype;
+ const natural=far.length>close.length?'ranged':close.length>far.length?'melee':
    far.length?'hybrid':sustain.length?'support':'melee';
+ const role=({melee:'melee',ranged:'ranged',defense:'melee',mobility:'hybrid',control:'ranged'})[classId]||natural;
  // The authored reach matters; no global 145px rule for an 80px weapon.
  const reach=far.length?clamp(far.reduce((n,a)=>n+finite(a.radius,120),0)/far.length,80,260):0;
- const preferred=role==='ranged'?clamp(reach*.83,122,216):
-   role==='hybrid'?clamp(92+reach*.22,103,148):role==='support'?148:74;
- return {role,hp,ready,hasHeal:actions.some(a=>HEAL.has(a.type)),preferred,
+ const preferred=g.ForgeArchetypes?.get?.(classId)?.reach??(role==='ranged'?clamp(reach*.83,122,216):
+   role==='hybrid'?clamp(92+reach*.22,103,148):role==='support'?148:74);
+ return {role,classId,hp,ready,hasHeal:actions.some(a=>HEAL.has(a.type)),preferred,
    attacking:actions.some(a=>MELEE.has(a.type)||RANGED.has(a.type))};
 }
 function range(p){return loadout(p).preferred;}
@@ -195,6 +197,12 @@ function stance(p,foe,data){
  else if(profile.role==='melee'&&!profile.ready&&d<85)mode='reposition';
  // No indefinite stalling: even under low HP a melee-only fighter fights.
  if(profile.role==='melee'&&d>125)mode='approach';
+ // Fixed combat archetypes remain legible even when their unique skill mixes
+ // multiple ranges: range/control seek space, defense holds an approach lane.
+ if(profile.classId==='defense'&&d>112)mode='approach';
+ if(profile.classId==='ranged'&&d<profile.preferred-12)mode='reposition';
+ if(profile.classId==='control'&&d<profile.preferred-15)mode='bait';
+ if(profile.classId==='mobility'&&windup)mode='bait';
  // Tactical does not mean sterile: occasionally *commit* to a real-body
  // collision at a favorable moment. The normal collision solver owns bounce.
  if(profile.role==='melee'&&profile.ready&&d>=58&&d<135&&!windup&&
@@ -208,6 +216,7 @@ function stance(p,foe,data){
  const tick=finite(p._aiClock),beat=Math.floor((tick+(p.playerNum||1)*23)/95);
  const spin=((beat+(p.playerNum||1))%2)?1:-1;
  const sidestep=order==='attack'?.12:order==='evade'?.65:order==='hold'?.85:
+   profile.classId==='mobility'?.98:profile.classId==='control'?.86:
    mode==='clash'?.14:mode==='approach'?.26:mode==='bait'?.48:mode==='recover'?.36:
    mode==='reposition'?.60:.9;
  const sideX=-dy/d*spin,sideY=dx/d*spin;

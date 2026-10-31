@@ -14,6 +14,52 @@ const blocks=pick('.block-forge'),tuning=pick('.forge-tuning'),library=pick('.fo
 const appearance=pick('.character-art-editor');
 const basics=Array.from(studio.children).find(n=>n.tagName==='DETAILS'&&n.querySelector('summary')?.textContent.includes('외형'));
 const create=pick('.forge-primary-actions'),saved=pick('.forge-saved');
+// Base archetype is selected independently of the authored skill code.
+// Existing saved fighters without an archetype retain their legacy stats.
+const classes=global.ForgeArchetypes;
+const rolePicker=document.createElement('section');
+rolePicker.id='forge-role-picker';rolePicker.className='forge-role-picker';
+rolePicker.setAttribute('aria-label','캐릭터 기본 전투 유형');
+rolePicker.innerHTML='<h3>기본 전투 유형 선택</h3>'
+ +'<p>다섯 유형의 기본 체력·속도·공격·방어·제어 능력이 다릅니다. 스킬 블록은 유형에 관계없이 자유롭게 조합할 수 있습니다.</p>'
+ +'<div class="forge-role-options" role="group" aria-label="전투 유형 다섯 가지">'
+ +Object.entries(classes?.TYPES||{}).map(([id,r])=>
+   '<button type="button" class="forge-role-option" data-archetype="'+id+'" aria-pressed="false">'
+   +'<span aria-hidden="true">'+r.icon+'</span><span>'+r.name+'</span></button>').join('')
+ +'</div><div class="forge-role-stat-grid" aria-live="polite"></div>'
+ +'<p class="forge-role-current" aria-live="polite"></p>'
+ +'<button class="forge-role-legacy" type="button" hidden>기존 저장 능력치 유지</button>';
+function refreshRole(){
+ const d=global.SkillForge.getDraft(),r=classes?.get?.(d.archetype);
+ rolePicker.querySelectorAll('[data-archetype]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.archetype===d.archetype)));
+ const values=r?[
+   ['체력',String(r.hp)],['이동속도',r.speed.toFixed(2)],
+   ['공격력',Math.round(r.attack*100)+'%'],
+   ['받는 피해',Math.round(r.received*100)+'%'],
+   ['제어 지속',Math.round(r.control*100)+'%']
+ ]:[['체력',String(d.hp)],['이동속도',Number(d.speed).toFixed(2)],['공격력','100%'],['받는 피해','100%'],['제어 지속','100%']];
+ const statHost=rolePicker.querySelector('.forge-role-stat-grid');
+ if(statHost){statHost.replaceChildren();for(const [label,value] of values){
+   const cell=document.createElement('div');cell.className='forge-role-stat';
+   const head=document.createElement('small');head.textContent=label;
+   const body=document.createElement('strong');body.textContent=value;
+   cell.append(head,body);statHost.append(cell);
+ }}
+ const current=rolePicker.querySelector('.forge-role-current');
+ if(current)current.textContent=r?r.name+' · '+r.hint:'기존 캐릭터 · 저장된 체력과 이동속도를 그대로 사용합니다.';
+ const legacyButton=rolePicker.querySelector('.forge-role-legacy');
+ if(legacyButton)legacyButton.hidden=!!r;
+}
+rolePicker.addEventListener('click',event=>{
+ const id=event.target.closest?.('[data-archetype]')?.dataset.archetype;
+ if(!classes?.get?.(id))return;
+ const next=classes.apply(global.SkillForge.getDraft(),id);
+ global.SkillForge.setDraft(next);
+ global.StudioEasyDesigner?.refresh?.();
+ global.CharacterStudioWorkspace?.refresh?.();
+});
+global.CharacterStudioArchetypes={refresh:refreshRole,element:rolePicker};
+
 // The existing roster lived inside a collapsed JSON/share drawer, so even
 // saved fighters had no visible delete control. Move the original, already
 // event-bound list into a compact always-visible section near the top.
@@ -46,6 +92,8 @@ looks.hidden=true;
 // Keep live code blocks at the beginning of the editing column. The saved
 // fighter manager stays accessible below the primary Save action.
 studio.replaceChildren(...[name,tabs,skills,looks,create,manager,saved].filter(Boolean));
+studio.insertBefore(rolePicker,tabs);
+refreshRole();
 // Refresh the count and rows after moving their original DOM container.
 global.SkillForge.refreshList?.();
 let motion=null;

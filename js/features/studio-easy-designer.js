@@ -118,7 +118,7 @@ function refresh(){
    '<button type="button" class="studio-easy-preset'+(lastStyle===key?' is-active':'')+'" data-easy-preset="'+key+'" aria-pressed="'+String(lastStyle===key)+'">'
    +'<span aria-hidden="true">'+p.icon+'</span><strong>'+E(p.name)+'</strong><small>'+E(p.hint)+'</small></button>').join('');
  simple.innerHTML='<div class="studio-easy-step"><div class="studio-easy-step-title"><b>1</b>'
-   +'<div><h4>전투 스타일 선택 <small>선택 사항</small></h4><p>처음이라면 추천 조합으로 시작하세요. 선택하면 현재 4개 스킬이 교체됩니다.</p></div></div>'
+   +'<div><h4>추천 스킬 구성 <small>선택 사항</small></h4><p>기본 전투 유형과 별개인 스킬 추천입니다. 선택하면 현재 4개 스킬이 교체됩니다.</p></div></div>'
    +'<div class="studio-easy-presets">'+styles+'</div></div>'
    +'<div class="studio-easy-step"><div class="studio-easy-step-title"><b>2</b>'
    +'<div><h4>스킬 설정 <small>'+profile.skills.length+' / 4</small></h4>'
