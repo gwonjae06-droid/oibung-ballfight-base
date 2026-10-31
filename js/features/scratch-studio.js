@@ -121,10 +121,21 @@ function block(n,path,depth){
  const encoded=encode(path),kind=n.kind;
  let inside='';
  if(kind==='action'){
-  inside='<span class="scratch-block-title">'+esc(actionName(n.action.type))+'</span>'
-   +'<label>위력 <input data-scratch-field="damage" data-scratch-node="'+encoded+'" type="number" min="0" max="120" step="1" value="'+Number(n.action.damage||0)+'"></label>'
-   +'<label>범위 <input data-scratch-field="radius" data-scratch-node="'+encoded+'" type="number" min="30" max="300" step="5" value="'+Number(n.action.radius||120)+'"></label>'
-   +'<button type="button" data-scratch-command="configure" data-scratch-node="'+encoded+'" title="스킬 세부 설정">⚙</button>';
+  const type=n.action.type;
+  const permitted=key=>forge.supportedParameter?.(type,key)??true;
+  const num=(key,label,min,max,step)=>permitted(key)?'<label>'+label+'<input data-scratch-field="'+key+'" data-scratch-node="'+encoded+'" type="number" min="'+min+'" max="'+max+'" step="'+step+'" value="'+Number(n.action[key]||0)+'"></label>':'';
+  const choice=(key,label,opts)=>permitted(key)?'<label>'+label+'<select data-scratch-field="'+key+'" data-scratch-node="'+encoded+'">'+selectOptions(opts,n.action[key])+'</select></label>':'';
+  inside='<span class="scratch-block-title">'+esc(actionName(type))+'</span>'
+   +num('damage','위력',0,120,1)+num('radius','범위',30,300,5)
+   +'<details class="scratch-advanced" draggable="false"><summary title="추가 설정">⚙ 세부 조정</summary><div class="scratch-advanced-fields">'
+   +'<label>행동<select data-scratch-field="type" data-scratch-node="'+encoded+'">'+selectOptions(forge.TYPE,type)+'</select></label>'
+   +choice('pattern','공격 형태',g.AbilityAtlas?.PATTERNS||{direct:'직접'})
+   +choice('target','대상',g.AbilityAtlas?.TARGETS||{nearest:'가장 가까운 적'})
+   +choice('status','상태이상',forge.STATUS)
+   +num('count','개수',1,8,1)+num('speed','속도',2,14,.5)
+   +num('duration','지속',.2,8,.1)+num('knockback','넉백',0,9,.5)
+   +num('delay','발동 지연',0,2,.1)
+   +'</div></details>';
  }else if(kind==='wait'){
   inside='<span>기다리기</span><label><input data-scratch-field="seconds" data-scratch-node="'+encoded+'" type="number" min=".1" max="2" step=".1" value="'+Number(n.seconds)+'"> 초</label>';
  }else if(kind==='repeat'){
@@ -224,11 +235,7 @@ root.addEventListener('click',e=>{
   if(to<0||to>=list.length)return;
   [list[from],list[to]]=[list[to],list[from]];
  },'블록 순서를 변경했습니다.');
- if(cmd==='configure'){
-  const p=current(),node=nodeAt(programOf(p),path);
-  const type=String(g.prompt?.('동작 종류 입력 (예: shot, wave, dash, shield)',node.action.type)||'').trim();
-  if(type&&forge.TYPE[type])commit(program=>{nodeAt(program,path).action.type=type;},'블록 동작을 변경했습니다.');
- }
+
 });
 root.addEventListener('change',e=>{
  const input=e.target,field=input.dataset.scratchField;
@@ -239,7 +246,7 @@ root.addEventListener('change',e=>{
    if(field==='condition')node.condition=input.value;
    else if(field==='times')node.times=Number(input.value);
    else if(field==='seconds')node.seconds=Number(input.value);
-   else if(node.kind==='action')node.action[field]=Number(input.value);
+   else if(node.kind==='action')node.action[field]=['type','status','target','pattern'].includes(field)?input.value:Number(input.value);
   },'블록 수치를 조정했습니다.');
   return;
  }
