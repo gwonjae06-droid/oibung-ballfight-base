@@ -183,7 +183,7 @@ test('camera floor framing is lightweight and adapts to tower and default arena'
 test('PvP instant effects and health bars use matching perspective projection',()=>{
  const rt=read('js/features/pvp-runtime.js').replace(/\r/g,'');
  assert.match(rt,/ArenaFXLayer=\{draw\(painter\)/);
- assert.match(rt,/SkillVisuals.draw\(painter\)/);
+ assert.match(rt,/SkillVisuals.draw\(painter,\{skipForegroundTime:true\}\)/);
  assert.ok(!rt.includes("layer?.(canvas,'instantfx')"),'remote FX share fighter occlusion and screen shake');
  assert.match(rt,/ArenaDepth\?\.elevatedPoint\?\./);
  for(const html of [read('index.html'),read('pvp-runtime.html')])
