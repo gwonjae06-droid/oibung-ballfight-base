@@ -73,10 +73,22 @@ test('ability conditions do not fire automatically while above HP threshold',()=
   state.BEHAVIORS[id].update(hero,target);
   assert.ok(target.hp<250);
 });
-test('character cap protects performance and input cannot execute arbitrary code',()=>{
+test('custom fighter count is unrestricted while profile text is sanitized',()=>{
   const {state,api}=create();
-  for(let i=0;i<6;i++)api.register(profile({name:'p'+i}));
-  assert.throws(()=>api.register(profile()),/최대 6/);
+  for(let i=0;i<40;i++)api.register(profile({name:'파이터 '+i}));
+  assert.equal(api.list().length,40);
+  assert.equal(state.CUSTOM_DEFS.filter(d=>d.forgeData).length,40);
+  assert.equal(new Set(state.CUSTOM_DEFS.map(d=>d.id)).size,40);
   const s=api.normalize(profile({name:'<script>alert(1)</script>'}));
   assert.ok(!s.name.includes('<'));
+});
+test('saved roster restores every profile instead of cutting off after 6',()=>{
+  const start=source.indexOf('function saved(){'),end=source.indexOf('function persist(){',start);
+  assert.ok(start>=0&&end>start);
+  const profiles=Array.from({length:35},(_,i)=>profile({name:'캐릭터 '+i}));
+  const store={getItem(){return JSON.stringify(profiles);}};
+  const context=vm.createContext({localStorage:store,JSON,Array});
+  const loaded=vm.runInContext(source.slice(start,end)+'saved()',context);
+  assert.equal(loaded.length,35);
+  assert.equal(loaded[34].name,'캐릭터 34');
 });
