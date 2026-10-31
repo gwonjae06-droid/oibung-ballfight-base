@@ -241,18 +241,26 @@ function install(){
     +'<h3 id="tower-clear-title">층 클리어!</h3>'
     +'<p id="tower-clear-next">다음 층이 준비됐습니다.</p>'
     +'<div id="tower-blessing-choices" class="tower-blessing-choices"></div>'
+   +'<div id="tower-route-choices" class="tower-route-choices" hidden></div>'
     +'<button id="tower-next-start" type="button">다음 층 시작</button></div>';
   doc.querySelector?.('#tower-arena-slot .canvas-wrapper')?.append(clearOverlay);
+  global.ArenaTowerTactics?.mount?.();
 
   const nextStart=el('tower-next-start');
   let active=false,stage='ready',level=1,cleared=0,selected=null,temporary=null,mode='auto';
   let blessings=[],offers=[],encounter=null,environment=null,view='selection',ancient=false;
+  let routePending=false,routeSelected='';
+  const ROUTES=Object.freeze({
+    rush:{name:'⚡ 위험한 속공',description:'다음 층 적 HP -20% · 적 공격 +25% · 내 공격 +12%'},
+    steady:{name:'🛡 안전한 장기전',description:'다음 층 적 HP +22% · 적 공격 -18% · 내 최대 HP +14%'}
+  });
+  const WEAKPOINT={time:'시계 패턴',space:'중력 패턴',fire:'화염 패턴',storm:'낙뢰 패턴',ice:'빙결 패턴',forest:'덩굴 패턴'};
   const pool=()=>[...CHARACTER_DEFS,...CUSTOM_DEFS];
   function selectedDef(){return pool().find(d=>d.id===hero.value)||pool()[0]||null;}
-  function current(){return {ancient,active,stage,level,cleared,boss:floor(level).boss,selected:key(selected),mode,realm:realmId,blessings:[...blessings],offers:offers.map(x=>({...x}))};}
+  function current(){return {ancient,active,stage,level,cleared,boss:floor(level).boss,selected:key(selected),mode,realm:realmId,blessings:[...blessings],offers:offers.map(x=>({...x})),routePending,routeSelected};}
   function selectRealm(id){
     if(active||!realms?.REALMS.some(r=>r.id===id))return false;
-    ancient=false;realmId=id;view='interior';stage='ready';level=1;cleared=0;blessings=[];offers=[];encounter=null;environment?.clear?.();environment=null;
+    ancient=false;realmId=id;view='interior';stage='ready';level=1;cleared=0;blessings=[];offers=[];routePending=false;routeSelected='';encounter=null;environment?.clear?.();environment=null;
     message.textContent='';clearReport();show();return true;
   }
   function moveToFloor(target){
@@ -262,7 +270,7 @@ function install(){
     const best=Number(read(global.localStorage).records[recordKey(selectedDef())]?.best)||0;
     if(!(dest>=1&&dest<=Math.min(FINISH,best+1)))return false;
     if(active){cleanup();active=false;selected=null;encounter=null;environment=null;}
-    level=dest;cleared=Math.min(best,dest-1);stage='ready';blessings=[];offers=[];
+    level=dest;cleared=Math.min(best,dest-1);stage='ready';blessings=[];offers=[];routePending=false;routeSelected='';
     clearReport();message.textContent=dest+'층 도전을 선택했습니다.';
     show();return true;
   }
@@ -280,6 +288,29 @@ function install(){
     realms.apply(players[0],realmId,[id]);
     show();return true;
   }
+  function changeAttack(f,scale){
+    if(!f?.forge?.skills)return;
+    // Prepared runtime only: never mutate the underlying saved custom profile.
+    f.forge=JSON.parse(JSON.stringify(f.forge));
+    for(const skill of f.forge.skills)for(const a of skill.actions||[]){
+      if(Number(a.damage)>0)a.damage=Math.max(1,Math.round(a.damage*scale));
+    }
+  }
+  function chooseRoute(id){
+    if(!active||stage!=='between'||!routePending||routeSelected||!ROUTES[id])return false;
+    const self=players?.[0],foe=players?.[1];if(!self||!foe)return false;
+    if(id==='rush'){
+      foe.maxHp=Math.max(1,Math.round(foe.maxHp*.8));foe.hp=Math.min(foe.hp,foe.maxHp);
+      changeAttack(foe,1.25);changeAttack(self,1.12);
+    }else{
+      foe.maxHp=Math.max(1,Math.round(foe.maxHp*1.22));foe.hp=foe.maxHp;
+      changeAttack(foe,.82);self.maxHp=Math.max(1,Math.round(self.maxHp*1.14));self.hp=self.maxHp;
+    }
+    routeSelected=id;show();return true;
+  }
+  el('tower-route-choices')?.addEventListener('click',e=>{
+    const id=e.target.closest?.('[data-route]')?.dataset.route;if(id)chooseRoute(id);
+  });
   el('tower-blessing-choices')?.addEventListener('click',e=>{
     const id=e.target.closest?.('[data-blessing]')?.dataset.blessing;if(id)chooseBlessing(id);
   });
@@ -332,7 +363,12 @@ function install(){
     }
     const choiceHost=el('tower-blessing-choices');
     if(choiceHost)choiceHost.innerHTML=offers.length?'<strong>기연을 만났습니다 · 하나를 선택하세요</strong>'+offers.map(o=>'<button type="button" data-blessing="'+o.id+'"><b>'+o.name+'</b><small>'+o.description+'</small></button>').join(''):'';
-    nextStart.disabled=offers.length>0;
+    const routeHost=el('tower-route-choices');
+    if(routeHost){
+      routeHost.hidden=!(stage==='between'&&routePending&&!routeSelected);
+      routeHost.innerHTML=routeHost.hidden?'':'<strong>다음 층의 길을 선택하세요 · 한 층만 적용</strong>'+Object.entries(ROUTES).map(([id,r])=>'<button type="button" data-route="'+id+'"><b>'+r.name+'</b><small>'+r.description+'</small></button>').join('');
+    }
+    nextStart.disabled=offers.length>0||(routePending&&!routeSelected);
     const f=floor(level),best=read(global.localStorage).records[recordKey(selectedDef())]?.best||0;
     el('tower-floor').textContent=ancient?'최종 보스':level+' / '+FINISH+'F';
     const picker=el('tower-floor-picker'),options=el('tower-floor-options');
@@ -342,7 +378,11 @@ function install(){
         b.textContent=f+'층'+(f<=best?' ✓':' · 다음');b.disabled=f===level;
         options.append(b);
       }}}
-    el('tower-rule').textContent=ancient?'보스 HP 3,000 · 팔과 촉수를 공격':realm()?.terrain+(blessings.length?' · 기연 '+blessings.length+'개':'');
+    el('tower-rule').textContent=ancient?'보스 HP 3,000 · 팔과 촉수를 공격':realm()?.terrain+(blessings.length?' · 기연 '+blessings.length+'개':'')+(routeSelected?' · '+ROUTES[routeSelected].name:'');
+    let weakpoint=el('tower-weakpoint-hint');
+    if(!weakpoint){weakpoint=doc.createElement('p');weakpoint.id='tower-weakpoint-hint';weakpoint.className='tower-weakpoint-hint';el('tower-rule')?.after(weakpoint);}
+    weakpoint.hidden=ancient||!f.boss;
+    if(!weakpoint.hidden)weakpoint.textContent='보스 약점: '+(WEAKPOINT[realmId]||'특수')+'의 위험 지대를 연속 두 번 피하면 3초 동안 받는 피해가 50% 증가합니다.';
     el('tower-enemy').textContent=ancient?'☽ 고대의 존재':(f.boss?'👑 ':'')+f.name;
     el('tower-enemy-info').textContent=ancient?'HP 3,000 · 3페이즈 · 팔·촉수 공격 가능':realms&&f.boss?'HP '+f.hp+' · 패턴 공격 · 2페이즈':'HP '+f.hp+' · 공격 '+f.damage+' · 속도 '+f.speed.toFixed(1);
     el('tower-best').textContent='최고 '+best+'F';
@@ -388,6 +428,7 @@ function install(){
     abandon.hidden=!active;
     hero.disabled=active;
     // Automatic combat has no movement or turn-selection controls.
+    global.ArenaTowerTactics?.update?.();
   }
   function cleanup(){
     encounter?.spectacle?.clear();
@@ -468,6 +509,7 @@ function install(){
     if(!isPlaying)togglePlay({towerBattle:true});
     if(!isPlaying||!roundStarted)throw Error('전투 엔진이 시작되지 않았습니다. 자유 대전 상태를 초기화하고 다시 시도해 주세요.');
     stage='fighting';
+    global.ArenaTowerTactics?.reset?.();
     global.ArenaBattleDirector?.floorReady?.(level,ancient?'고대의 존재':realm()?.name);
     message.textContent='';clearReport();
     show();
@@ -480,7 +522,7 @@ function install(){
   }
   function begin(){
     if(stage==='between'&&active){
-      if(offers.length)return false;
+      if(offers.length||(routePending&&!routeSelected))return false;
       if(isPlaying||isGameOver)return false;
       try{return startPrepared();}
       catch(e){
@@ -492,7 +534,7 @@ function install(){
     const who=selectedDef();
     if(!who){message.textContent='캐릭터가 없습니다. 캐릭터 설계에서 먼저 만들어 주세요.';return false;}
     if(roundStarted&&!isGameOver){message.textContent='진행 중인 자유 대전을 먼저 종료해 주세요.';return false;}
-    blessings=[];offers=[];encounter=null;
+    blessings=[];offers=[];routePending=false;routeSelected='';encounter=null;
     clearReport();message.textContent='';selected=who;active=true;view='interior';stage='ready';
     if(ancient){level=10;cleared=0;}else{const best=read(global.localStorage).records[recordKey(who)]?.best||0;
       level=Math.max(1,Math.min(level,Math.min(FINISH,Number(best)+1)));cleared=Math.min(best,level-1);}
@@ -526,6 +568,7 @@ function install(){
     level++;
     try{
       prepareFight();
+      routePending=[3,6,8].includes(cleared);routeSelected='';
       stage='between';
       retainReport(justFinished);
       if(realms&&[2,4,7].includes(cleared))offers=realms.choices(realmId,blessings);
@@ -572,6 +615,7 @@ function install(){
     return painted;
   }
   function tickEncounter(){if(active&&stage==='fighting'){
+    global.ArenaTowerTactics?.tick?.();
     encounter?.step();
     environment?.step?.();
     if(!ancient)global.ArenaTowerTerrain?.step?.(realmId,level,players,canvas.width,canvas.height,encounter?.tick||0,(p,amount,zone)=>{
@@ -582,7 +626,7 @@ function install(){
     });
   }}
   function drawEncounter(ctx){if(!active||stage!=='fighting')global.ArenaTowerSpectacle?.page(null);if(active&&stage==='fighting'){global.ArenaTowerAtmosphere?.particles?.(ctx,canvas.width,canvas.height,realmId,encounter?.tick||0);environment?.draw?.(ctx);encounter?.draw(ctx,realm()?.color);}}
-  const api={beginAncient,allRealmsCleared,selectRealm,openSelection,chooseBlessing,tickEncounter,drawEncounter,get encounter(){return encounter;},get environment(){return environment;},floor,makeEnemy,read,updateRecord,records,begin,forfeit,paintBackground,
+  const api={beginAncient,allRealmsCleared,selectRealm,openSelection,chooseBlessing,chooseRoute,tickEncounter,drawEncounter,get encounter(){return encounter;},get environment(){return environment;},floor,makeEnemy,read,updateRecord,records,begin,forfeit,paintBackground,
     onBattleEnd,isTransientDef,pauseAway,refresh:show,setMode,get mode(){return mode;},get active(){return active;},
     get stage(){return stage;},get view(){return active?'interior':view;},get state(){return current();}};
   global.ArenaTower=api;return api;
