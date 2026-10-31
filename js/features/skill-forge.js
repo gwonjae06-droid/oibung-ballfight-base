@@ -217,6 +217,7 @@ function hit(p,e,action,multiplier=1,attackZ) {
   global.ForgeExpansion?.applyStatus(p,e,action);
   if(action.knockback>0&&!global.ImpactPhysics){const dx=e.x-p.x,dy=e.y-p.y,dist=Math.hypot(dx,dy)||1;e.vx+=dx/dist*action.knockback;e.vy+=dy/dist*action.knockback;}
   global.SkillVisuals?.impact(p,e,action); // Only after damage/status actually connects.
+  global.ForgeComboFX?.impact?.(p,e,action);
   if(d>0&&action.charged)global.SkillVisuals?.impact?.(p,e,{type:'charge',radius:90,damage:d});
   return true;
 }
@@ -241,7 +242,7 @@ function cast(p,s,target,index){
       a.link==='with'?start:
       a.link==='after'?Math.max(requested,start+Math.max(24,lead)):
       Math.max(requested,start+lead);
-    p.forgeQueue.push({remaining:start,step,castId,skillIndex:index,
+    p.forgeQueue.push({remaining:start,step,castId,skillIndex:index,steps:s.actions.length,
       a,targetNum:target?.playerNum??null,
       windup:global.ArenaTelegraph?.leadFrames?.(a)||0,
       waitApex:step>0&&['leap','glide','hover','uppercut'].includes(s.actions[step-1].type)&&
@@ -284,7 +285,9 @@ function tickQueue(p,target){
     const aerialLink=q.a.type==='uppercut'&&p.forgeQueue.some(next=>
       next.castId===q.castId&&next.step>q.step&&next.a.type==='aircombo');
     if(aerialLink)p.uppercutFollow=true;
-    execute(p,q.a,players.find(e=>e.playerNum===q.targetNum&&e.hp>0)||target);
+    const castTarget=players.find(e=>e.playerNum===q.targetNum&&e.hp>0)||target;
+    execute(p,q.a,castTarget);
+    global.ForgeComboFX?.cast?.(p,q.a,{castId:q.castId,step:q.step,steps:q.steps,link:q.a.link},castTarget);
     if(aerialLink)p.uppercutFollow=false;
     p.forgeQueue.splice(i,1);
   }

@@ -358,6 +358,7 @@ function tick(){
     if(++e.age>=e.life)effects.splice(i,1);
   }
   ghosts=ghosts.filter(g=>++g.age<g.life);
+  global.ForgeComboFX?.tick?.();
   // WeakMap keys are live fighter objects and require no round-roster scans.
 }
 function draw(ctx,options={}){
@@ -410,6 +411,7 @@ function draw(ctx,options={}){
       global.ArenaDepth.air(ctx,{x,y:groundY},lift,paintEffect,Math.min(30,e.radius*.25));
     else paintEffect(ctx);
   }
+  global.ForgeComboFX?.draw?.(ctx);
   ctx.restore();
 }
 /* Screen-space time pass: one clock over its caster after fighter billboards.
@@ -465,6 +467,7 @@ function previewFrame(ctx,options={}){
   ctx.rotate(e.angle);ctx.strokeStyle=e.color;ctx.fillStyle=e.color;
   ctx.globalAlpha=.8;ctx.lineWidth=2.8;ctx.lineJoin='round';ctx.lineCap='round';
   if(!renderFamily(ctx,e))drawMotif(ctx,e.type,e.age,e.life);
+  global.ForgeComboFX?.preview?.(ctx,{type,status:options.status,link:options.link,progress:t,color:e.color});
   ctx.restore();return true;
 }
 function replay(event,fighters=[]){
@@ -488,8 +491,8 @@ function replay(event,fighters=[]){
   effects.push(safe);
   return true;
 }
-function clear(){effects.length=0;ghosts=[];poses=new WeakMap();activePoses.clear();frame=0;}
-function setReduced(v){low=!!v;}
+function clear(){effects.length=0;ghosts=[];poses=new WeakMap();activePoses.clear();frame=0;global.ForgeComboFX?.clear?.();}
+function setReduced(v){low=!!v;global.ForgeComboFX?.setReduced?.(low);}
 global.SkillVisuals={exportEffects:()=>effects,importEffects:value=>{effects=value;},
   setSpawnListener:fn=>{spawnListener=typeof fn==='function'?fn:null;},replay,catalog,get TYPES(){return global.ActionRegistry?.ids()||TYPES;},FAMILIES,ARM_IDLE_FRAMES,cast,impact,contact,detonate,previewFrame,drawAction,tick,draw,drawForeground,clear,setReduced,
   get active(){return effects.length;}};

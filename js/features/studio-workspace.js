@@ -197,7 +197,7 @@ function render(time){
       // Reuse the SAME family renderer as live combat, without casting or
       // producing sound/HP/particles in the live simulation.
       global.SkillVisuals?.previewFrame?.(ctx,{type:skillType,phase:kind,progress:q,x,y,
-        angle:0,radius:clamp(Number(e.action.radius)||95,35,125),color});
+        angle:0,radius:clamp(Number(e.action.radius)||95,35,125),color,status:e.action.status,link:e.link});
     }
     if(kind==='cast'&&isRanged(skillType)&&!['bolt','meteor','starfall','chain','beam'].includes(skillType)){
       const px=hx+(tx-hx)*q,py=hy+(ty-hy)*q-(skillType==='arcshot'?34:5)*Math.sin(Math.PI*q);
