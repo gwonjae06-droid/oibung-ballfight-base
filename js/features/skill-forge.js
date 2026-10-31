@@ -315,7 +315,7 @@ function cast(p,s,target,index){
   // action has actually executed, never by flattening conditions at cast time.
   if(p.forge?.signatureVersion===1&&Array.isArray(s.program)){
     if(p.forgeScratchRun&&!p.forgeScratchRun.finished)return false;
-    const run=global.SignatureLive?.begin?.(s.program,p);
+    const run=global.SignatureLive?.begin?.(s.program,p,s.trigger);
     if(!run)return false;
     p.forgeScratchRun=run;
     global.BattleFX?.caption?.(p,s.name,(p.forge.effectColor||p.forge.color));
