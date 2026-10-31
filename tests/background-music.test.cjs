@@ -71,3 +71,16 @@ test('the playlist ships five distinct MP3 files rather than missing placeholder
   const hashes=tracks.map(t=>{const bytes=fs.readFileSync(path.join(__dirname,'..',t.src));assert.ok(bytes.length>800000);return crypto.createHash('sha256').update(bytes).digest('hex');});
   assert.equal(new Set(hashes).size,5);
 });
+
+test('overtime accelerates existing and incoming battle music without overriding user mute',async()=>{
+ const h=setup();h.p.unlock();await h.fade();h.p.setBattle(true);await h.fade();
+ const battle=h.p.current.audio;
+ h.p.setMuted(true);h.p.setOvertime(true);
+ assert.equal(battle.playbackRate,1.25);
+ assert.ok(h.audio.every(a=>a.muted));
+ h.p.next();await h.fade();
+ assert.equal(h.p.current.audio.playbackRate,1.25,'new track inherits overtime urgency');
+ h.p.setBattle(false);await h.fade();
+ assert.equal(h.p.overtime,false);
+ assert.ok(h.audio.every(a=>a.playbackRate===1));
+});
