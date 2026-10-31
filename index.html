@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#090a0c">
   <meta name="description" content="오이붕 아레나 — 자유형 스킬 제작, 리메이크된 5인의 자동 배틀과 전투 이펙트.">
   <title>오이붕 아레나 | OIBUNG ARENA</title>
-  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/style.css?v=overtime-percent2">
   <link rel="stylesheet" href="css/ui-clarity.css?v=powerbudget1">
   <link rel="stylesheet" href="css/app-shell.css">
   <link rel="stylesheet" href="css/premium-ui.css">
@@ -67,6 +67,10 @@
       </div>
       <div class="canvas-wrapper">
         <canvas id="arena" width="500" height="500" aria-label="캐릭터 자동 전투 화면"></canvas>
+        <div class="arena-overtime-banner" id="arena-overtime-banner" role="status" hidden>
+          <strong>⚔ 결전 상태</strong>
+          <span class="arena-overtime-rate">모든 캐릭터에게 최대 HP 비례 피해</span>
+        </div>
         <div class="arena-top-controls" role="group" aria-label="경기 속도 및 종료">
           <label class="arena-speed-control" for="bf-speed">
             <span>배속</span>
@@ -90,7 +94,7 @@
             <div class="fighter-name"><span class="fighter-number">P1</span><span class="player-title" id="p1-name">P1</span></div>
             <span class="hp-text"><span id="p1-hp-text">250</span><span class="hp-max"> / <span id="p1-maxhp">250</span></span></span>
           </div>
-          <div class="hp-bar-track"><div id="p1-hp-bar" class="hp-bar-fill"></div></div>
+          <div class="hp-bar-track"><div id="p1-hp-trail" class="hp-bar-trail"></div><div id="p1-hp-bar" class="hp-bar-fill"></div></div>
           <span id="p1-tag" class="mode-tag" style="display:none;"></span>
         </div>
         <div class="player-section" id="sec-p2">
@@ -98,7 +102,7 @@
             <div class="fighter-name"><span class="fighter-number">P2</span><span class="player-title" id="p2-name">P2</span></div>
             <span class="hp-text"><span id="p2-hp-text">250</span><span class="hp-max"> / <span id="p2-maxhp">250</span></span></span>
           </div>
-          <div class="hp-bar-track"><div id="p2-hp-bar" class="hp-bar-fill"></div></div>
+          <div class="hp-bar-track"><div id="p2-hp-trail" class="hp-bar-trail"></div><div id="p2-hp-bar" class="hp-bar-fill"></div></div>
           <span id="p2-tag" class="mode-tag" style="display:none;"></span>
         </div>
         <div class="player-section" id="sec-p3" style="display:none;">
@@ -106,7 +110,7 @@
             <div class="fighter-name"><span class="fighter-number">P3</span><span class="player-title" id="p3-name">P3</span></div>
             <span class="hp-text"><span id="p3-hp-text">250</span><span class="hp-max"> / <span id="p3-maxhp">250</span></span></span>
           </div>
-          <div class="hp-bar-track"><div id="p3-hp-bar" class="hp-bar-fill"></div></div>
+          <div class="hp-bar-track"><div id="p3-hp-trail" class="hp-bar-trail"></div><div id="p3-hp-bar" class="hp-bar-fill"></div></div>
           <span id="p3-tag" class="mode-tag" style="display:none;"></span>
         </div>
       </div>
@@ -243,11 +247,11 @@
   <script src="js/characters/lee.js"></script>
   <script src="js/characters/park.js"></script>
   <script src="js/characters/choi.js"></script>
-  <script src="js/features/arena-stalemate.js?v=finite-rounds1"></script>
-  <script src="js/core/engine.js?v=finite-rounds1"></script>
+  <script src="js/features/arena-stalemate.js?v=overtime-percent2"></script>
+  <script src="js/core/engine.js?v=overtime-percent2"></script>
   <script src="js/core/render.js?v=clock-overlay1"></script>
   <script src="js/features/vfx-audio.js?v=stone25d1"></script>
-  <script src="js/features/background-music.js"></script>
+  <script src="js/features/background-music.js?v=overtime-percent2"></script>
   <script src="js/features/character-remix.js"></script>
   <script src="js/main.js?v=statusheight2"></script>
   <script src="js/features/action-registry.js"></script>
@@ -279,10 +283,10 @@
   <script src="js/features/tower-realms.js?v=terrain25d1"></script>
   <script src="js/features/tower-terrain-25d.js?v=realm-gimmicks1"></script>
   <script src="js/features/tower-enemy-art.js?v=terrain25d1"></script>
-  <script src="js/features/tower-pattern-25d.js?v=terrain25d1"></script>
-  <script src="js/features/tower-encounters.js?v=realm-gimmicks1"></script>
+  <script src="js/features/tower-pattern-25d.js?v=warningdepth2"></script>
+  <script src="js/features/tower-encounters.js?v=warningdepth2"></script>
   <script src="js/features/tower-environment-vfx.js?v=environment-vfx1"></script>
-  <script src="js/features/tower-environment.js?v=environment-vfx1"></script>
+  <script src="js/features/tower-environment.js?v=warningdepth2"></script>
   <script src="js/features/tower-atmosphere.js?v=realmdepth1"></script>
   <script src="js/features/ancient-one.js?v=ancient2"></script>
   <script src="js/features/tower-challenge.js?v=realm-gimmicks2"></script>
