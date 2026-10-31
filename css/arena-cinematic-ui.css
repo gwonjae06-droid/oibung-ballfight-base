@@ -1,0 +1,104 @@
+/* Responsive battle UI choreography. No interaction blocking, no physics timing. */
+:root{--cinema-ease:cubic-bezier(.19,1,.22,1)}
+.arena-category-nav a,.arena-nav-more summary,.arena-category-nav button,
+.control-panel button,.tower-realm-card,.pvp-lobby-actions button,
+#screen-tower button,.game-extra-card button{
+ transition:transform .26s var(--cinema-ease),filter .24s ease,box-shadow .3s ease,border-color .3s ease;
+}
+.arena-category-nav a:hover,.control-panel button:not(:disabled):hover,
+.pvp-lobby-actions button:not(:disabled):hover,#screen-tower button:not(:disabled):hover{
+ transform:translateY(-2px);filter:brightness(1.09);
+}
+.arena-category-nav a:active,.control-panel button:active,#screen-tower button:active{transform:scale(.97)}
+.arena-category-nav a:focus-visible,#screen-tower button:focus-visible,.control-panel button:focus-visible{
+ outline:3px solid #f0c97c;outline-offset:3px;
+}
+.arena-purpose-steps li[aria-current],.player-section,.tower-enemy-skill,
+.tower-realm-card-caption{animation:cinemaComeIn .52s var(--cinema-ease) both}
+.arena-purpose-steps li:nth-child(2){animation-delay:.08s}
+.arena-purpose-steps li:nth-child(3){animation-delay:.16s}
+@keyframes cinemaComeIn{from{opacity:.45;transform:translateY(11px)}to{opacity:1;transform:translateY(0)}}
+
+/* Commentary does not obscure the combat canvas. */
+.arena-commentary{display:flex;justify-content:space-between;align-items:center;gap:16px;
+ margin:10px 0;padding:12px 15px;border:1px solid #72839866;border-radius:13px;
+ background:linear-gradient(100deg,#142335,#1c2936);color:#edf5ff;min-height:66px}
+.arena-commentary .eyebrow{font-size:10px;letter-spacing:.19em;color:#a8d6ec}
+#arena-commentary-line{font-weight:650;line-height:1.6;font-size:clamp(12px,1.8vw,15px);margin:3px 0}
+.arena-commentary-voice-label{display:flex;gap:6px;white-space:nowrap;align-items:center;font-size:12px;color:#c9d9ea;cursor:pointer}
+.director-pop{animation:commentaryIn .32s ease both}
+@keyframes commentaryIn{from{opacity:.2;transform:translateX(8px)}to{opacity:1;transform:none}}
+.arena-defeat-analysis,.pvp-defeat-analysis{padding:15px 18px;margin:9px 0 16px;background:linear-gradient(140deg,#192739,#242532);border:1px solid #a9bed277;border-radius:13px;color:#e6eef8;animation:cinemaComeIn .4s ease both}
+.arena-defeat-analysis h3,.pvp-defeat-analysis h3{font-size:16px;margin:0 0 8px;color:#ffdfa2}
+.arena-defeat-analysis p,.pvp-defeat-analysis p{margin:5px 0;font-size:13px;line-height:1.7}
+.arena-defeat-analysis small,.pvp-defeat-analysis small{font-size:11px;color:#bac7d8;display:block;margin-top:9px}
+.arena-defeat-analysis[hidden],.pvp-defeat-analysis[hidden],.pvp-overtime-banner[hidden]{display:none!important}
+.pvp-commentary{border-radius:11px;border:1px solid #5a869c;background:#142637;padding:11px 14px;color:#e7f5ff;font-size:13px;margin:8px 0}
+.pvp-overtime-banner{border:1px solid #f4a36a;border-radius:11px;padding:11px;background:linear-gradient(110deg,#5c241d,#301b33);color:#fff0d8;font-size:13px;font-weight:750;animation:overtimePulse 2s ease-in-out infinite}
+@keyframes overtimePulse{50%{box-shadow:0 0 20px #f97d3933}}
+
+/* The six towers are animated DISTINCTLY; ambient effects are clipped to UI. */
+#screen-tower .tower-realm-card{transform-origin:50% 85%}
+#screen-tower .tower-realm-card:hover{transform:translateY(-5px) scale(1.02)}
+#screen-tower .tower-realm-card::before{content:"";position:absolute;inset:-45%;z-index:0;pointer-events:none;
+ background:conic-gradient(from 0deg,transparent 0 25%,color-mix(in srgb,var(--realm-color) 16%,transparent) 44%,transparent 60%);
+ animation:towerCardHalo 12s linear infinite}
+#screen-tower .tower-realm-card:nth-child(2n)::before{animation-direction:reverse;animation-duration:15s}
+#screen-tower .tower-realm-card-caption{position:relative;z-index:2}
+#screen-tower .tower-realm-card .tower-realm-icon{display:inline-block;animation:towerIconFloat 3.4s ease-in-out infinite}
+#screen-tower .tower-realm-card[data-realm="time"] .tower-realm-icon{animation:towerIconTurn 16s linear infinite}
+#screen-tower .tower-realm-card[data-realm="storm"] .tower-realm-icon{animation:stormFlash 3.2s steps(1,end) infinite}
+#screen-tower .tower-realm-card[data-realm="fire"] .tower-realm-icon{animation:fireBreathe 2s ease-in-out infinite}
+#screen-tower .tower-realm-card[data-realm="ice"] .tower-realm-icon{animation:iceShimmer 4.3s ease-in-out infinite}
+#screen-tower .tower-realm-card[data-realm="forest"] .tower-realm-icon{animation:leafWaver 5s ease-in-out infinite}
+#screen-tower .tower-panorama-art{animation:panoramaDepth 14s ease-in-out infinite;transform-origin:center bottom}
+@keyframes towerCardHalo{to{transform:rotate(360deg)}}
+@keyframes towerIconFloat{50%{transform:translateY(-8px) rotate(3deg)}}
+@keyframes towerIconTurn{to{transform:rotate(360deg)}}
+@keyframes stormFlash{0%,90%,96%,100%{filter:brightness(1)}92%,98%{filter:brightness(2.8)}}
+@keyframes fireBreathe{50%{filter:brightness(1.65);transform:translateY(-5px) scale(1.1)}}
+@keyframes iceShimmer{50%{filter:drop-shadow(0 0 14px #d6ffff);transform:scale(1.07)}}
+@keyframes leafWaver{50%{transform:rotate(9deg) translateY(-5px)}}
+@keyframes panoramaDepth{50%{filter:saturate(1.16) brightness(1.12);transform:scale(1.012)}}
+#screen-tower[data-tower-view="interior"] .tower-doorway{animation:cinemaComeIn .5s var(--cinema-ease) both}
+#screen-tower[data-tower-view="interior"] .tower-challenge{animation:cinemaComeIn .62s var(--cinema-ease) both}
+#screen-tower .tower-ui-particles{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:0}
+#screen-tower .tower-ui-particles i{position:absolute;left:var(--particle-left);bottom:-19px;
+ width:var(--particle-size);height:var(--particle-size);border-radius:50%;
+ background:var(--realm-color,#f4dfab);box-shadow:0 0 11px var(--realm-color,#f4dfab);
+ opacity:.62;animation:realmParticle 5s linear var(--particle-delay) infinite}
+#screen-tower .tower-doorway-text,#screen-tower .tower-doorway-symbol{position:relative;z-index:1}
+#screen-tower[data-tower-realm="time"] .tower-ui-particles i{border:1px solid #fbd987;background:transparent;animation:clockworkParticle 7s linear var(--particle-delay) infinite}
+#screen-tower[data-tower-realm="space"] .tower-ui-particles i{border-radius:2px;transform:rotate(45deg);animation:starParticle 5.5s ease-in-out var(--particle-delay) infinite}
+#screen-tower[data-tower-realm="fire"] .tower-ui-particles i{background:#ff963c;border-radius:10% 70% 30% 70%;animation:emberParticle 3.1s ease-out var(--particle-delay) infinite}
+#screen-tower[data-tower-realm="storm"] .tower-ui-particles i{width:2px;height:19px;border-radius:0;clip-path:polygon(65% 0,20% 47%,60% 49%,35% 100%,100% 35%,55% 34%);animation:lightningParticle 2.4s steps(1) var(--particle-delay) infinite}
+#screen-tower[data-tower-realm="ice"] .tower-ui-particles i{clip-path:polygon(50% 0,60% 38%,100% 50%,60% 62%,50% 100%,40% 62%,0 50%,40% 38%);background:#e0fcff;animation:snowParticle 6.2s linear var(--particle-delay) infinite}
+#screen-tower[data-tower-realm="forest"] .tower-ui-particles i{border-radius:90% 0 90% 0;transform:rotate(25deg);background:#a6db7a;animation:leafParticle 5.1s ease-in-out var(--particle-delay) infinite}
+@keyframes realmParticle{from{transform:translateY(0);opacity:0}18%{opacity:.75}to{transform:translateY(-170px);opacity:0}}
+@keyframes clockworkParticle{from{transform:translateY(0) rotate(0);opacity:0}20%{opacity:.6}to{transform:translateY(-175px) rotate(460deg);opacity:0}}
+@keyframes starParticle{0%{transform:translateY(0) rotate(0);opacity:0}40%{opacity:.85}100%{transform:translateY(-180px) rotate(135deg);opacity:0}}
+@keyframes emberParticle{0%{transform:translateY(0) scale(.7);opacity:0}18%{opacity:.9}100%{transform:translate(35px,-150px) scale(.2);opacity:0}}
+@keyframes lightningParticle{0%,48%,52%,100%{opacity:0}49%,51%{opacity:.94}}
+@keyframes snowParticle{0%{transform:translateY(-190px) translateX(0);opacity:0}20%{opacity:.8}100%{transform:translateY(60px) translateX(36px) rotate(180deg);opacity:0}}
+@keyframes leafParticle{0%{transform:translateY(0) rotate(-40deg);opacity:0}25%{opacity:.8}100%{transform:translate(60px,-145px) rotate(200deg);opacity:0}}
+#screen-tower[data-tower-realm="time"] .tower-ambient-orb{background:repeating-conic-gradient(from 0deg,#d49f2a55 0 5deg,transparent 5deg 30deg);animation:towerCardHalo 22s linear infinite}
+#screen-tower[data-tower-realm="space"] .tower-ambient-orb{background:radial-gradient(circle,#d6b8ff66 4%,#5b3480aa 25%,transparent 70%);animation:starParticle 16s ease-in-out infinite}
+#screen-tower[data-tower-realm="fire"] .tower-ambient-orb{background:radial-gradient(circle,#ff722488 0,#7b200f66 47%,transparent 76%);animation:fireBreathe 3s ease-in-out infinite}
+#screen-tower[data-tower-realm="storm"] .tower-ambient-orb{background:repeating-linear-gradient(110deg,#65dfff66 0 3px,transparent 3px 45px);animation:stormFlash 3s steps(1) infinite}
+#screen-tower[data-tower-realm="ice"] .tower-ambient-orb{background:radial-gradient(circle,#e3ffffbb 0,#73b9df77 32%,transparent 65%);animation:iceShimmer 6s ease-in-out infinite}
+#screen-tower[data-tower-realm="forest"] .tower-ambient-orb{background:radial-gradient(ellipse,#a5ed6855,transparent 70%);animation:leafWaver 9s ease-in-out infinite}
+/* The Ancient One feels like a living seal rather than a static portrait. */
+.ancient-unlock{isolation:isolate;position:relative;overflow:hidden}
+.ancient-void-waves{position:absolute;inset:-45%;z-index:-1;pointer-events:none;
+ background:repeating-radial-gradient(ellipse at 50% 45%,transparent 0 30px,#b34fe51c 32px 36px,transparent 38px 68px);
+ animation:ancientPulse 9s ease-in-out infinite}
+.ancient-portrait-art{animation:ancientAwaken 7.8s ease-in-out infinite;transform-origin:50% 60%}
+.ancient-unlock[data-unlocked="true"] button{animation:ancientButton 3.6s ease-in-out infinite}
+@keyframes ancientPulse{50%{transform:rotate(15deg) scale(1.13);filter:brightness(1.6)}}
+@keyframes ancientAwaken{50%{transform:translateY(-5px) scale(1.024);filter:brightness(1.25) hue-rotate(5deg) drop-shadow(0 0 12px #8b28ff)}}
+@keyframes ancientButton{50%{box-shadow:0 0 30px #cb5eff99}}
+@media(max-width:650px){.arena-commentary{flex-direction:column;align-items:stretch;gap:6px}.arena-commentary-voice-label{align-self:flex-end}}
+@media(prefers-reduced-motion:reduce){.tower-realm-card::before,.tower-realm-icon,.tower-panorama-art,.tower-ui-particles i,.tower-ambient-orb,
+ .ancient-void-waves,.ancient-portrait-art,.ancient-unlock button,.pvp-overtime-banner,
+ .director-pop,.player-section,.arena-purpose-steps li,.tower-challenge,.tower-doorway{animation:none!important}
+ .arena-category-nav a,.control-panel button,#screen-tower button{transition:none!important}}

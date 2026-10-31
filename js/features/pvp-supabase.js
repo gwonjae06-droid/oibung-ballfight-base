@@ -103,18 +103,36 @@ class SupabasePvpTransport{
     rule.normalizeProfile(data.fighter_b),data.mode,Date.now(),
     [data.mode_a||data.mode,data.mode_b||data.mode]);
   this.rule=rule;
-  this.channel=this.sb.channel('oibung-pvp:'+this.room,
-    {config:{private:true,broadcast:{self:false,ack:false}}});
-  this.channel.on('broadcast',{event:'control'},({payload})=>this.control(payload,rule));
+  await this.subscribeRoom(rule);
+  if(this.closed)return;
+  this.lastPeer=Date.now();
+  this.watchdog=global.setInterval(()=>{
+   if(!this.done&&this.connected&&Date.now()-this.lastPeer>18000)
+    this.fail(Error('상대와의 연결이 끊어졌습니다. 다시 매칭해 주세요.'));
+  },1000);
+  this.emit({type:'matched',you:this.side,mode:data.mode,room:this.room});
+  if(this.side===1){
+   // The host needs liveness after the first state too: keep tiny heartbeats.
+   const ping=()=>{if(!this.closed&&this.channel)this.channel.send({
+    type:'broadcast',event:'control',payload:{type:'ready',from:1}
+   });};
+   ping();this.readyTicker=global.setInterval(ping,900);
+  }else{
+   rule.setFxWake?.(()=>this.scheduleFx());
+   this.sim=global.setInterval(()=>this.advance(rule),33);
+  }
+ }
+ bindRoomChannel(channel,rule){
+  channel.on('broadcast',{event:'control'},({payload})=>this.control(payload,rule));
   // Original 55 VFX types arrive as tiny independent packets, rather than
   // waiting up to a second for a heavyweight world snapshot.
-  this.channel.on('broadcast',{event:'fx'},({payload})=>{
-   if(this.closed||this.side!==1||!this.current||!payload)return;
+  channel.on('broadcast',{event:'fx'},({payload})=>{
+   if(this.closed||this.channel!==channel||this.side!==1||!this.current||!payload)return;
    this.lastPeer=Date.now();
    rule.receiveFx?.(payload.events);
   });
-  this.channel.on('broadcast',{event:'state'},({payload})=>{
-   if(this.closed||this.side!==1||!payload)return;
+  channel.on('broadcast',{event:'state'},({payload})=>{
+   if(this.closed||this.channel!==channel||this.side!==1||!payload)return;
    if(payload.type==='state'){
     this.lastPeer=Date.now();
     this.peerReliable=payload.protocol===3;
@@ -132,40 +150,45 @@ class SupabasePvpTransport{
     this.emit(payload);
    }
   });
-  await new Promise((resolve,reject)=>{
-   let settled=false;
-   const finish=(err)=>{
-    if(settled)return;settled=true;
-    if(this.subscriptionTimer){global.clearTimeout(this.subscriptionTimer);this.subscriptionTimer=null;}
-    if(err)reject(err);else resolve();
-   };
-   this.subscriptionTimer=global.setTimeout(()=>
-     finish(Error('실시간 채널 연결 시간이 초과됐습니다.')),14000);
-   try{this.channel.subscribe(status=>{
+ }
+ async subscribeRoom(rule){
+  // When two opponents search again immediately, the prior subscription may
+  // still be leaving. Never treat one transient Realtime join error as fatal.
+  for(let attempt=0;attempt<3;attempt++){
+   if(this.closed)return;
+   const channel=this.sb.channel('oibung-pvp:'+this.room,
+    {config:{private:true,broadcast:{self:false,ack:false}}});
+   this.channel=channel;this.bindRoomChannel(channel,rule);
+   try{
+    await new Promise((resolve,reject)=>{
+     let settled=false;
+     const finish=err=>{
+      if(settled)return;settled=true;
+      if(this.subscriptionTimer){global.clearTimeout(this.subscriptionTimer);this.subscriptionTimer=null;}
+      err?reject(err):resolve();
+     };
+     this.subscriptionTimer=global.setTimeout(()=>finish(Error('실시간 채널 가입 응답 시간이 초과됐습니다.')),7500);
+     try{channel.subscribe(status=>{
+      if(this.closed||this.channel!==channel)return;
+      if(status==='SUBSCRIBED'){
+       this.connected=true;this.lastPeer=Date.now();finish();
+      }else if(['CHANNEL_ERROR','TIMED_OUT','CLOSED'].includes(status)){
+       this.connected=false;
+       if(!settled)finish(Error('일시적인 실시간 채널 가입 오류: '+status));
+       // After a successful join, Supabase automatically re-joins when the
+       // socket reconnects. Do not close a live match for a transient error.
+      }
+     });}catch(error){finish(error);}
+    });
+    return;
+   }catch(error){
     if(this.closed)return;
-    if(status==='SUBSCRIBED'){this.connected=true;finish();}
-    else if(['CHANNEL_ERROR','TIMED_OUT','CLOSED'].includes(status)){
-     this.connected=false;
-     if(!settled)finish(Error('실시간 대전 채널에 접속할 수 없습니다.'));
-    }
-   });}catch(err){finish(err);}
-  });
-  if(this.closed)return;
-  this.lastPeer=Date.now();
-  this.watchdog=global.setInterval(()=>{
-   if(!this.done&&Date.now()-this.lastPeer>18000)
-    this.fail(Error('상대와의 연결이 끊어졌습니다. 다시 매칭해 주세요.'));
-  },1000);
-  this.emit({type:'matched',you:this.side,mode:data.mode,room:this.room});
-  if(this.side===1){
-   // The host needs liveness after the first state too: keep tiny heartbeats.
-   const ping=()=>{if(!this.closed&&this.channel)this.channel.send({
-    type:'broadcast',event:'control',payload:{type:'ready',from:1}
-   });};
-   ping();this.readyTicker=global.setInterval(ping,900);
-  }else{
-   rule.setFxWake?.(()=>this.scheduleFx());
-   this.sim=global.setInterval(()=>this.advance(rule),33);
+    this.connected=false;
+    try{await this.sb.removeChannel(channel);}catch(_){}
+    if(this.channel===channel)this.channel=null;
+    if(attempt===2)throw Error('실시간 대전 채널에 접속할 수 없습니다. 재시도 3회 실패: '+(error?.message||'연결 오류'));
+    await new Promise(resolve=>global.setTimeout(resolve,(attempt+1)*350));
+   }
   }
  }
  scheduleFx(){

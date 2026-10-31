@@ -73,6 +73,7 @@ function reRollMatch(forcedDef) {
   }
   players=placeFighters(defs);
   globalThis.ArenaStalemate?.reset?.();
+  globalThis.ArenaBattleDirector?.reset?.(players);
   globalThis.ArenaCountdown?.cancel?.();
   openingCollisionPairs.clear();
   particles=[];floatingTexts=[];shockwaves=[];screenShake=0;
@@ -132,6 +133,7 @@ function stopMatch(){
   globalThis.ArenaStalemate?.finish?.();
   globalThis.BackgroundMusic?.setBattle(false);
   screenShake=0;
+  globalThis.ArenaBattleDirector?.finish?.(players,null,'stopped');
   settleRound(null,'stopped');
   const start=document.getElementById('btn-start');
   start.innerText='다음 경기';
@@ -325,6 +327,7 @@ function update() {
       p._hudLastHit=Math.min(1,lost/Math.max(1,p.maxHp||1));
     }
   });
+  globalThis.ArenaBattleDirector?.observe?.(players,{overtime:!!globalThis.ArenaStalemate?.state?.active});
   const finalAlive=players.filter(p=>p.hp>0);
   const expired=!!globalThis.ArenaStalemate?.state?.expired;
   if(finalAlive.length<=1||expired){
@@ -333,6 +336,7 @@ function update() {
     globalThis.ArenaStalemate?.finish?.();
     globalThis.BackgroundMusic?.setBattle(false);
     const winner=finalAlive.length===1?finalAlive[0]:null;
+    globalThis.ArenaBattleDirector?.finish?.(players,winner,expired?'timeout':undefined);
     settleRound(winner,expired?'timeout':undefined);
     const startButton=document.getElementById('btn-start');
     if(startButton){startButton.innerText='다음 경기';startButton.dataset.state='finished';}

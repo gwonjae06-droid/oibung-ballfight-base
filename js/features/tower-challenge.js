@@ -462,10 +462,10 @@ function install(){
   function onBattleEnd(winner,reason){
     if(!active||stage!=='fighting')return false;
     if(reason==='stopped'||!winner||winner.playerNum!==1){
-      if(ancient){active=false;stage='lost';cleanup();message.textContent='고대의 존재에게 패배했습니다. 다시 도전할 수 있습니다.';show();return true;}
+      if(ancient){active=false;stage='lost';cleanup();message.textContent='고대의 존재에게 패배했습니다. 다시 도전할 수 있습니다.'+(global.ArenaBattleDirector?.explanations?.(players,null)?.[0]?' · '+global.ArenaBattleDirector.explanations(players,null)[0]:'');show();return true;}
       const old=selected;active=false;stage='lost';
       updateRecord(global.localStorage,old,cleared,false);cleanup();
-      message.textContent='도전 종료 · '+cleared+'층 클리어. 최고 기록이 저장됐습니다.';
+      message.textContent='도전 종료 · '+cleared+'층 클리어. 최고 기록이 저장됐습니다.'+(global.ArenaBattleDirector?.explanations?.(players,null)?.[0]?' · '+global.ArenaBattleDirector.explanations(players,null)[0]:'');
       show();global.ArenaScreenRouter?.refresh?.();return true;
     }
     if(ancient){active=false;stage='won';cleanup();try{global.localStorage?.setItem('oibung-ancient-one-clear','true');}catch(_){}message.textContent='☽ 고대의 존재 토벌 성공!';show();global.ArenaScreenRouter?.refresh?.();return true;}

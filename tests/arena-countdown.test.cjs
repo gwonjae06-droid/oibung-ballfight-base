@@ -75,5 +75,5 @@ test('online PvP applies the same freeze to BOTH peers with a host-controlled re
  assert.match(runtime,/startInMs:/);
  assert.match(online,/ArenaCountdown\?\.syncRemote/);
  assert.match(online,/ArenaCountdown\?\.progressRemote/);
- assert.match(html,/pvp-online\.js\?v=fight-countdown1/);
+ assert.match(html,/pvp-online\.js\?v=cinema1/);
 });

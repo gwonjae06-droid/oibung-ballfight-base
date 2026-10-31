@@ -25,12 +25,16 @@ host.innerHTML='<section class="pvp-lobby" id="pvp-lobby">'
   +'<div><span id="pvp-name-1">Player 2</span><div class="pvp-hp pvp-hp-foe"><i id="pvp-hp-1"></i></div>'
   +'<small id="pvp-hp-text-1">240/240</small></div></div>'
   +'<canvas id="pvp-canvas" width="680" height="460" aria-label="PvP 전장"></canvas>'
+  +'<div class="pvp-overtime-banner" id="pvp-overtime-banner" hidden role="status">⚔ 결전 상태 · <span id="pvp-overtime-rate"></span></div>'
+  +'<p class="pvp-commentary" id="pvp-commentary" aria-live="off">실시간 해설이 준비 중입니다.</p>'
   +'<p class="pvp-result" id="pvp-result" hidden role="status"></p>'
+  +'<section id="pvp-defeat-analysis" class="pvp-defeat-analysis" hidden aria-label="패배 원인 분석"></section>'
   +'<button type="button" id="pvp-again" hidden>다른 상대 찾기</button></section>';
 screen.append(host);
 const $=id=>doc.getElementById(id);
 const visualEffects=[],flecks=[],lastHealth=[null,null];
 let fxClock=0;
+let pvpDamageLog=[null,null],pvpNarratedAt=0,pvpOvertimeSeen=false;
 let socket=null,searching=false,matched=false,mode='auto',side=0,latest=null,view=null,
   frame=null,active=true,lastServer='';
 function status(text){$('pvp-status').textContent=text;}
@@ -91,6 +95,10 @@ function showMatch(data){
   $('pvp-lobby').hidden=true;$('pvp-match').hidden=false;
   $('pvp-match-type').textContent='자동전투 · PvP';
   $('pvp-result').hidden=true;$('pvp-again').hidden=true;
+  $('pvp-defeat-analysis').hidden=true;$('pvp-defeat-analysis').replaceChildren();
+  $('pvp-overtime-banner').hidden=true;
+  $('pvp-commentary').textContent='선수 입장! 두 파이터의 충돌과 기술 싸움이 시작됩니다.';
+  pvpDamageLog=[null,null];pvpNarratedAt=0;pvpOvertimeSeen=false;
   $('pvp-round-state').textContent='상대 발견 · 전투 준비';
   $('pvp-forfeit').hidden=false;
   visualEffects.length=0;flecks.length=0;lastHealth.fill(null);
@@ -104,7 +112,10 @@ function renderState(data){
   global.ArenaCountdown?.syncRemote?.($('pvp-match'),remaining);
   if(remaining>0)$('pvp-round-state').textContent='3 · 2 · 1 · 결전 준비';
   if(data.finished)global.PvpOriginalEngine.paint();
-  if(remaining<=0)$('pvp-round-state').textContent='AI 자동전투 · 실시간 대결';
+  if(remaining<=0)$('pvp-round-state').textContent=data.overtime?.active?'⚔ 결전 · 실시간 대결':'AI 자동전투 · 실시간 대결';
+  $('pvp-overtime-banner').hidden=!data.overtime?.active;
+  if(data.overtime?.active){$('pvp-overtime-rate').textContent='2초마다 최대 HP 약 '+Number(data.overtime.percentage||1.25).toFixed(2)+'% 압박 피해';
+   if(!pvpOvertimeSeen){pvpOvertimeSeen=true;$('pvp-commentary').textContent='결전 상태! 이제 방어막을 넘어서는 압박 피해가 들어갑니다!';}}
   $('pvp-clock').textContent=Math.floor(Math.max(0,data.clock)/60)+':'+
     String(Math.floor(Math.max(0,data.clock)%60)).padStart(2,'0');
   const own=data.players[side],other=data.players[1-side];
@@ -113,6 +124,15 @@ function renderState(data){
     $('pvp-name-'+i).textContent=p.name;
     $('pvp-hp-'+i).style.width=Math.max(0,p.hp/p.maxHp*100).toFixed(1)+'%';
     $('pvp-hp-text-'+i).textContent=Math.ceil(p.hp)+' / '+p.maxHp;
+  }
+  for(let i=0;i<2;i++){
+   const p=data.players?.[i];if(!p)continue;
+   const h=pvpDamageLog[i]||{hp:p.hp,peak:0,last:0,lost:0,maxHp:p.maxHp,name:p.name,low:false};
+   const loss=Math.max(0,h.hp-p.hp);h.peak=Math.max(h.peak,loss);h.last=loss;h.lost+=loss;
+   h.hp=p.hp;h.maxHp=p.maxHp;h.name=p.name;
+   if(!h.low&&p.hp>0&&p.hp/p.maxHp<.27){h.low=true;if(Date.now()-pvpNarratedAt>1700){$('pvp-commentary').textContent=p.name+'의 체력이 위험합니다!';pvpNarratedAt=Date.now();}}
+   if(loss>p.maxHp*.16&&Date.now()-pvpNarratedAt>1900){$('pvp-commentary').textContent=p.name+'에게 강한 공격이 적중했습니다!';pvpNarratedAt=Date.now();}
+   pvpDamageLog[i]=h;
   }
   if(!view)view=data.players.map(p=>({x:p.x,y:p.y}));
 
@@ -125,6 +145,19 @@ function finish(winner,reason){
   $('pvp-round-state').textContent='경기 종료';
   $('pvp-forfeit').hidden=true;
   $('pvp-again').hidden=false;
+  const analysis=$('pvp-defeat-analysis');analysis.replaceChildren();
+  const title=doc.createElement('h3');title.textContent='승부 원인 분석';analysis.append(title);
+  const defeated=winner===-1?[0,1]:[1-winner];
+  for(const i of defeated){const h=pvpDamageLog[i],p=latest?.players?.[i];if(!p)continue;
+   const note=doc.createElement('p');
+   note.textContent=p.name+(p.hp<=0?'의 HP가 0이 되었습니다. ':'이(가) 패배했습니다. ')+
+    (h?.peak>0?'최근 기록 중 가장 큰 체력 감소 구간은 약 '+Math.round(h.peak)+' HP입니다. ':'')+
+    (pvpOvertimeSeen?'결전의 양측 비례 피해도 적용됐습니다. ':'')+
+    (p.hp>0?'경기가 기권·연결 종료 또는 시간 제한으로 끝났을 수 있습니다.':'');
+   analysis.append(note);
+  }
+  const qualifier=doc.createElement('small');qualifier.textContent='현재 보이는 HP 변화로 분석하며, 미기록된 공격 원인은 단정하지 않습니다.';analysis.append(qualifier);analysis.hidden=false;
+  $('pvp-commentary').textContent=winner===-1?'무승부! 두 파이터가 끝까지 버텼습니다.':winner===side?'승리! 마지막 충돌이 승부를 갈랐습니다.':'패배! 전투 분석에서 체력 변화를 확인하세요.';
 }
 function onMessage(event){
   let data;try{data=JSON.parse(event.data);}catch(_){return;}

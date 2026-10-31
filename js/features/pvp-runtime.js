@@ -233,6 +233,7 @@ function decode(v){
 function snapshot(room,full=true){
  const b=room.blitz;
  const state={type:'state',clock:Math.max(0,MATCH_LIMIT_SECONDS-room.elapsed),finished:room.ended,winner:room.winner,
+  overtime:{active:!!global.ArenaStalemate?.state?.active,percentage:global.ArenaStalemate?.state?.percentage||0,elapsed:global.ArenaStalemate?.state?.elapsed||0},
   ...(Number(room.startAt)>Date.now()?{startInMs:Math.max(0,room.startAt-Date.now())}:{}),
   ...(b?{blitz:{phase:b.phase,round:b.round,turn:b.turn,maxTurns:b.maxTurns,
     remainingMs:Math.max(0,(b.phase==='plan'?b.deadline:b.executionEnd)-Date.now()),

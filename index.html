@@ -19,6 +19,7 @@
   <link rel="stylesheet" href="css/ancient-one-portrait.css?v=eldritch1">
   <link rel="stylesheet" href="css/lobby-atmosphere.css?v=arena-lobby1">
   <link rel="stylesheet" href="css/arena-countdown.css?v=fight-countdown1">
+  <link rel="stylesheet" href="css/arena-cinematic-ui.css?v=cinema1">
 </head>
 <body>
   <main class="main-container" id="container">
@@ -92,6 +93,8 @@
         </div>
       </div>
 
+      <div class="arena-commentary" id="arena-commentary" aria-label="실시간 전투 해설"><div><span class="eyebrow">LIVE COMMENTARY</span><p id="arena-commentary-line" aria-live="off">경기를 시작하면 전투 해설이 표시됩니다.</p></div><label class="arena-commentary-voice-label"><input id="arena-commentary-voice" type="checkbox"> 음성 해설</label></div>
+      <section class="arena-defeat-analysis" id="arena-defeat-analysis" aria-live="polite" hidden></section>
       <div class="ui-container" id="ui-container" aria-label="캐릭터 체력">
         <div class="player-section" id="sec-p1">
           <div class="player-header">
@@ -265,6 +268,7 @@
   <script src="js/features/advanced-combat.js?v=statusheight1"></script>
   <script src="js/features/forge-expansion.js?v=periodic-balance1"></script>
   <script src="js/features/status-vfx.js?v=status-vfx1"></script>
+  <script src="js/features/battle-director.js?v=cinema1"></script>
   <script src="js/features/arena-auto-ai.js?v=arena-shapes1"></script>
   <script src="js/features/arena-balance.js?v=periodic-balance1"></script>
   <script src="js/features/arena-telegraph.js?v=prep1"></script>
@@ -303,11 +307,12 @@
   <script src="js/features/tower-atmosphere.js?v=realmdepth1"></script>
   <script src="js/features/ancient-one.js?v=eldritch1"></script>
   <script src="js/features/tower-challenge.js?v=eldritch1"></script>
+  <script src="js/features/tower-ui-cinematics.js?v=cinema1"></script>
   <script src="js/features/studio-modes.js?v=easy-designer1"></script>
   <script src="js/features/studio-easy-designer.js?v=easy-designer2"></script>
   <script src="js/features/pvp-rulebook.js"></script>
   <script src="js/features/pvp-original-engine.js?v=realm-chaos1"></script>
-  <script src="js/features/pvp-supabase.js?v=realm-chaos2"></script>
-  <script src="js/features/pvp-online.js?v=fight-countdown1"></script>
+  <script src="js/features/pvp-supabase.js?v=rematch-retry1"></script>
+  <script src="js/features/pvp-online.js?v=cinema1"></script>
 </body>
 </html>
