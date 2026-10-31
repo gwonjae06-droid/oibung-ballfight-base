@@ -34,7 +34,8 @@ function floor(base,id){
  }[r.id];
  // Escalating endurance yields progressively longer boss fights without
  // changing any saved player stats or requiring a specific power build.
- const endurance=1+Math.pow((f.number-1)/9,1.55)*1.75;
+ // Reduce high-floor HP inflation; decisive attacks now matter without erasing boss phases.
+ const endurance=1+Math.pow((f.number-1)/9,1.45)*.65;
  f.hp=Math.round((190+f.number*26+(f.boss?170:0))*balance.hp*endurance);
  f.towerDefense=1-Math.pow((f.number-1)/9,1.3)*.28;
  f.damage=Math.round((15+f.number*3)*balance.damage);

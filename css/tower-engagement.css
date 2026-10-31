@@ -1,0 +1,18 @@
+/* Additional tower gameplay decisions: readable, accessible and responsive. */
+.tower-tactics{padding:12px 14px;margin:0 0 10px;border:1px solid rgba(161,195,255,.26);border-radius:14px;background:rgba(12,18,31,.94);color:#f3f8ff}
+.tower-tactics[hidden],.tower-route-choices[hidden],.tower-weakpoint-hint[hidden]{display:none!important}
+.tower-tactics-caption{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:9px;flex-wrap:wrap}
+.tower-tactics-caption strong{font-size:1rem}
+.tower-tactics-caption span{font-size:.83rem;color:#bad0ec;font-variant-numeric:tabular-nums}
+.tower-tactics-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.tower-tactics-actions button{border:1px solid #647fa7;background:#1d2d48;color:#fff;padding:10px 7px;border-radius:10px;font-weight:750;cursor:pointer;min-height:43px}
+.tower-tactics-actions button[aria-pressed="true"]{background:#315c84;border-color:#a3dffb}
+.tower-tactics-actions button:disabled{opacity:.40;cursor:not-allowed}
+.tower-tactics-actions button:focus-visible,.tower-route-choices button:focus-visible{outline:3px solid #9bdfff;outline-offset:2px}
+.tower-route-choices{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0}
+.tower-route-choices>strong{grid-column:1/-1;color:#f5f5f5}
+.tower-route-choices button{padding:12px;text-align:left;background:#1b2940;color:#fff;border:1px solid #637ca1;border-radius:11px;cursor:pointer;min-height:80px}
+.tower-route-choices button b{display:block;font-size:.96rem;margin-bottom:5px}
+.tower-route-choices button small{display:block;line-height:1.4;color:#c7d9ec}
+.tower-weakpoint-hint{padding:9px 11px;margin:8px 0;border-left:3px solid #e9b85b;background:rgba(63,44,24,.35);color:#f8e5be;font-size:.86rem}
+@media(max-width:480px){.tower-tactics{padding:10px}.tower-tactics-actions{grid-template-columns:1fr;gap:5px}.tower-tactics-actions button{min-height:39px}.tower-route-choices{grid-template-columns:1fr}}

@@ -51,14 +51,14 @@ test('unbounded healing and permanent shields still end after bounded simulation
  S.reset();assert.equal(S.state.active,false);
  assert.equal(S.state.expired,false);
 });
-test('pauses never count as physics ticks and Tower bosses have a longer grace period',()=>{
+test('tower fights reach overtime earlier, while paused frames remain excluded by the engine',()=>{
  const S=world('js/features/arena-stalemate.js').ArenaStalemate;
  const p=[{hp:3000,maxHp:3000},{hp:200,maxHp:200}];
- for(let i=0;i<S.LIMITS.stagnant+2;i++)S.tick(p,true);
- assert.equal(S.state.active,false,'tower must not trigger at free-battle grace interval');
- assert.equal(S.state.elapsed,S.LIMITS.stagnant+2);
- for(let i=0;i<S.LIMITS.towerStagnant-S.LIMITS.stagnant;i++)S.tick(p,true);
- assert.equal(S.state.active,true);
+ for(let i=0;i<S.LIMITS.towerStagnant-1;i++)S.tick(p,true);
+ assert.equal(S.state.active,false,'tower grace does not trigger early');
+ assert.equal(S.state.elapsed,S.LIMITS.towerStagnant-1);
+ S.tick(p,true);
+ assert.equal(S.state.active,true,'tower pressure begins at the faster tower threshold');
 });
 test('engine resets the overtime supervisor and only ticks it on active fights',()=>{
  const source=read('js/core/engine.js'),html=read('index.html');
