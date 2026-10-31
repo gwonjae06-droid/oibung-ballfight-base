@@ -1,0 +1,96 @@
+/* Beginner-first skill creator. Large touch targets, plain Korean labels,
+ * quiet hierarchy, and a single shared program with the expert workbench. */
+.scratch-friendly-mode #scratch-workbench{display:none!important}
+.scratch-friendly-mode.scratch-friendly-advanced #scratch-workbench{display:block!important}
+.scratch-friendly-mode.scratch-friendly-advanced .kid-easy-body{display:none!important}
+.scratch-friendly-mode .kid-easy-body[hidden],.scratch-friendly-mode .kid-legacy[hidden]{display:none!important}
+.scratch-friendly-mode .scratch-beginner{min-width:0;background:#182438;color:#f2f7ff;border:1px solid #455d78;border-radius:17px;overflow:hidden;box-shadow:0 10px 30px #0003}
+.scratch-friendly-mode .kid-top{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px;padding:19px 20px;background:linear-gradient(105deg,#254a70,#273551);border-bottom:1px solid #526b85}
+.scratch-friendly-mode .kid-overline{display:block;font-size:11px;font-weight:850;letter-spacing:.13em;color:#b5e1ff}
+.scratch-friendly-mode .kid-top h3{font-size:clamp(21px,2.5vw,29px)!important;line-height:1.26;color:#fff;margin:4px 0 6px;font-weight:900}
+.scratch-friendly-mode .kid-top p{color:#e2edf8;font-size:14px;line-height:1.55;margin:0}
+.scratch-friendly-mode .kid-display{display:flex;flex-wrap:wrap;gap:5px;padding:5px;border:1px solid #7797b5;border-radius:12px;background:#142438}
+.scratch-friendly-mode .kid-display button{background:transparent;color:#d8eafc;border:0;border-radius:8px;min-height:46px;padding:9px 15px;font-size:14px;font-weight:800;cursor:pointer}
+.scratch-friendly-mode .kid-display button[aria-pressed=true]{background:#d8efff;color:#193855}
+.scratch-friendly-mode .kid-easy-body{display:grid;grid-template-columns:minmax(200px,1fr) minmax(265px,1.15fr) minmax(220px,1fr);gap:12px;padding:14px;align-items:stretch}
+.scratch-friendly-mode .kid-section{min-width:0;background:#202f45;border:1px solid #425a75;border-radius:15px;padding:15px;display:flex;flex-direction:column;gap:13px}
+.scratch-friendly-mode .kid-step-heading{display:flex;align-items:flex-start;gap:11px}
+.scratch-friendly-mode .kid-step-no{display:flex;align-items:center;justify-content:center;flex:none;width:36px;height:36px;border-radius:11px;background:#96d8ff;color:#143352;font-size:20px;font-weight:950}
+.scratch-friendly-mode .kid-step-heading h4{font-size:clamp(16px,1.6vw,21px)!important;font-weight:850;color:#fcfdff;margin:2px 0 4px}
+.scratch-friendly-mode .kid-step-heading p{font-size:12px;color:#b9cde2;line-height:1.5;margin:0}
+.scratch-friendly-mode .kid-trigger-options{display:grid;gap:9px}
+.scratch-friendly-mode .kid-trigger{min-width:0;display:grid;grid-template-columns:39px minmax(0,1fr);gap:0 10px;text-align:left;align-items:center;padding:12px 10px;min-height:69px;border:2px solid #50647e;border-radius:12px;background:#293d56;color:#f5faff;cursor:pointer}
+.scratch-friendly-mode .kid-trigger[aria-pressed=true]{border-color:#a8eff9;background:#235778;box-shadow:inset 0 0 0 1px #7dd6f4}
+.scratch-friendly-mode .kid-trigger-icon{font-size:26px;grid-row:1/3;text-align:center}
+.scratch-friendly-mode .kid-trigger strong{font-size:15px;line-height:1.3}
+.scratch-friendly-mode .kid-trigger small{font-size:11px;color:#d1e1f0;line-height:1.35;margin-top:4px}
+.scratch-friendly-mode .kid-action-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.scratch-friendly-mode .kid-action{position:relative;min-width:0;display:flex;align-items:center;justify-content:center;text-align:center;flex-direction:column;gap:5px;min-height:117px;padding:12px 9px;border:2px solid #7e6a9c;border-radius:13px;background:#6c4c9b;color:#fff;cursor:pointer;box-shadow:inset 0 -4px 0 #0002}
+.scratch-friendly-mode .kid-action-move{background:#286eaf;border-color:#62b4ec}
+.scratch-friendly-mode .kid-action-defense{background:#267c6b;border-color:#68c3ad}
+.scratch-friendly-mode .kid-action-special{background:#9a4e80;border-color:#d98cbd}
+.scratch-friendly-mode .kid-action-icon{font-size:30px;line-height:1.1}
+.scratch-friendly-mode .kid-action strong{font-size:15px;line-height:1.2}
+.scratch-friendly-mode .kid-action small{color:#f2effb;font-size:11px;line-height:1.3}
+.scratch-friendly-mode .kid-action-plus{position:absolute;right:8px;top:6px;font-size:17px;font-weight:850}
+.scratch-friendly-mode .kid-skill-summary{border:2px dashed #7392b0;background:#15263a;border-radius:13px;padding:11px;min-width:0}
+.scratch-friendly-mode .kid-plan{display:flex;flex-direction:column;gap:6px;max-height:370px;overflow:auto}
+.scratch-friendly-mode .kid-plan-item{display:grid;grid-template-columns:30px minmax(0,1fr) auto;align-items:center;gap:7px;padding:11px 9px;margin-left:calc(var(--kid-indent,0)*10px);border-radius:10px;background:#5d4384;color:#fff;border:1px solid #9373b4;min-height:47px;font-size:13px;font-weight:750;line-height:1.4}
+.scratch-friendly-mode .kid-plan-control{background:#866124;border-color:#c8a566}
+.scratch-friendly-mode .kid-plan-item button{border:0;border-radius:7px;background:#0003;color:#fff;font-size:20px;min-height:34px;min-width:34px;cursor:pointer}
+.scratch-friendly-mode .kid-plan-subtitle{font-size:11px;color:#e6c68a;margin:1px 2px 1px 12px}
+.scratch-friendly-mode .kid-empty{font-size:13px;line-height:1.7;color:#d2e7f9;padding:18px 9px;text-align:center}
+.scratch-friendly-mode .kid-count{font-size:11px;color:#a8c8e0;padding-top:9px}
+.scratch-friendly-mode .kid-tempo{display:flex;flex-direction:column;gap:9px}
+.scratch-friendly-mode .kid-tempo>strong{font-size:14px}
+.scratch-friendly-mode .kid-tempo-options{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.scratch-friendly-mode .kid-tempo-options button{font-size:12px;padding:9px 3px;min-height:48px;background:#2e4561;border:1px solid #7994b2;border-radius:9px;color:#f6f9ff;cursor:pointer;font-weight:750}
+.scratch-friendly-mode .kid-tempo-options button[aria-pressed=true]{background:#a8e5ff;border-color:#baf3ff;color:#153b54}
+.scratch-friendly-mode .kid-preview-action{background:#b1e2ff;color:#133450;border:1px solid #e0f5ff;border-radius:10px;min-height:53px;padding:10px;font-size:15px;font-weight:900;cursor:pointer;margin-top:auto}
+.scratch-friendly-mode .kid-templates{grid-column:1/-1;border:1px solid #4a627f;background:#1e3049;border-radius:14px;padding:15px;display:flex;flex-direction:column;gap:12px}
+.scratch-friendly-mode .kid-templates-heading h4{margin:0 0 5px;color:#fff;font-size:17px;font-weight:850}
+.scratch-friendly-mode .kid-templates-heading p{margin:0;color:#c6dcf0;font-size:12px;line-height:1.5}
+.scratch-friendly-mode .kid-template-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:9px}
+.scratch-friendly-mode .kid-template{min-width:0;min-height:96px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;text-align:center;padding:10px 6px;color:#fff;background:#2b4664;border:1px solid #6685a5;border-radius:11px;cursor:pointer}
+.scratch-friendly-mode .kid-template>span{font-size:23px}
+.scratch-friendly-mode .kid-template strong{font-size:13px;line-height:1.3}
+.scratch-friendly-mode .kid-template small{font-size:10px;color:#c7e0f6;line-height:1.4}
+.scratch-friendly-mode .kid-random{align-self:center;min-height:47px;border:1px solid #b5b8eb;border-radius:10px;padding:10px 19px;color:#fff;background:#49558c;font-weight:850;cursor:pointer}
+.scratch-friendly-mode .kid-feedback{padding:12px 19px;color:#b7f5d5;background:#183629;border-top:1px solid #426653;font-size:13px;line-height:1.5}
+.scratch-friendly-mode .kid-legacy{padding:22px;line-height:1.6}
+.scratch-friendly-mode .kid-legacy strong{font-size:17px}
+.scratch-friendly-mode .kid-legacy p{font-size:13px;color:#d3e3f2}
+.scratch-friendly-mode .kid-legacy button{min-height:49px;background:#367db5;color:#fff;border-radius:10px;border:1px solid #93ccef;padding:11px 17px;cursor:pointer}
+.scratch-friendly-mode.scratch-friendly-advanced .kid-top{border-bottom:0}
+.scratch-friendly-mode.scratch-friendly-advanced .kid-legacy{display:none!important}
+.scratch-friendly-mode.scratch-friendly-advanced .kid-feedback{display:none}
+.scratch-friendly-mode button:hover{filter:brightness(1.1)}
+.scratch-friendly-mode button:focus-visible{outline:3px solid #ffe699;outline-offset:3px}
+.scratch-friendly-mode button:disabled{opacity:.5;cursor:not-allowed}
+.scratch-friendly-mode .scratch-main-nav{display:none!important}
+@media(max-width:1360px){
+ .scratch-friendly-mode .kid-easy-body{grid-template-columns:minmax(195px,1fr) minmax(240px,1.2fr)}
+ .scratch-friendly-mode .kid-plan-section{grid-column:1/-1}
+ .scratch-friendly-mode .kid-trigger-options{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .scratch-friendly-mode .kid-template-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+@media(max-width:790px){
+ .scratch-friendly-mode .kid-easy-body{grid-template-columns:1fr}
+ .scratch-friendly-mode .kid-plan-section{grid-column:1}
+ .scratch-friendly-mode .kid-top{padding:14px}
+ .scratch-friendly-mode .kid-template-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .scratch-friendly-mode .kid-trigger-options{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .scratch-friendly-mode .kid-action-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:440px){
+ .scratch-friendly-mode .kid-display{width:100%}
+ .scratch-friendly-mode .kid-display button{flex:1;padding:9px 5px;font-size:12px}
+ .scratch-friendly-mode .kid-easy-body{padding:9px;gap:9px}
+ .scratch-friendly-mode .kid-section{padding:12px}
+ .scratch-friendly-mode .kid-trigger{padding:8px;grid-template-columns:30px minmax(0,1fr)}
+ .scratch-friendly-mode .kid-trigger-icon{font-size:21px}
+ .scratch-friendly-mode .kid-trigger strong{font-size:13px}
+ .scratch-friendly-mode .kid-action{min-height:112px}
+ .scratch-friendly-mode .kid-template-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(prefers-reduced-motion:reduce){.scratch-friendly-mode *{transition:none!important}}
