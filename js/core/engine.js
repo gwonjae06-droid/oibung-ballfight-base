@@ -149,11 +149,15 @@ function updateCharacter(self) {
   if(globalThis.ArenaTower?.active&&self.towerHero&&self.forge){
     globalThis.SkillForge?.autoUpdate?.(self,getClosestAliveEnemy(self));return;
   }
-  const b=BEHAVIORS[self.id];
+  const b=BEHAVIORS[self.id],foe=getClosestAliveEnemy(self);
   if(b&&b.update){
-    if(globalThis.ForgeExpansion&&!self.forge)globalThis.ForgeExpansion.legacy(self,()=>b.update(self,getClosestAliveEnemy(self)));
-    else b.update(self,getClosestAliveEnemy(self));
+    if(globalThis.ForgeExpansion&&!self.forge)globalThis.ForgeExpansion.legacy(self,()=>b.update(self,foe));
+    else b.update(self,foe);
   }
+  // Built-in fighters retain their original attacks/movement. Only add
+  // a bounded evasive steering correction if a visible threat is approaching.
+  if(!self.forge&&!self.towerPatternBoss)
+    globalThis.ArenaAutoAI?.react?.(self,foe);
 }
 
 function handleCombat(pA,pB) {
