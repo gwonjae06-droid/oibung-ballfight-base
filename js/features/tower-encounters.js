@@ -10,6 +10,17 @@ const NAMES={
  ice:['거울 빙정','절대영도 고리','빙창 회전','서리 봉인'],
  forest:['뿌리 포위','가시 장벽','세계수 고리','공생의 덩굴']
 };
+// 5F guardian and 10F overlord share exactly ONE signature move per realm.
+// Other realms share no boss attack names. Each 10F move is a multi-stage
+// locked telegraph, not a cosmetic reskin of one circle or straight line.
+const ULTIMATES={
+ time:['영겁의 초침 폭주','인과 역류','멈춘 12시','시공 모래시계','시계 바늘 교차'],
+ space:['행성 궤도 전쟁','쌍극 특이점','혜성 군락','차원 붕괴','공전 고리'],
+ fire:['화산 칼데라 붕괴','종말의 용암해','태양 분화 연쇄','재앙의 화염 벽','용암 십자'],
+ storm:['뇌신의 7연격','초대형 번개 전선','폭풍의 눈 개방','천공 격자 붕괴','천둥 회랑'],
+ ice:['빙하 대륙 분열','영구동토 격벽','극점 결정 포위','천년 빙창 폭풍','거울 빙정'],
+ forest:['세계수 뿌리 폭주','식충림 만개','맹독 포자 군락','생명의 수확','뿌리 포위']
+};
 const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
 function contains(z,p){
  const r=p.radius||0,dx=p.x-z.x,dy=p.y-z.y;
@@ -28,6 +39,7 @@ function create({realm,level,width=500,height=500,hero,boss,damage,environmentMa
  const ring=(x,y,inner,r)=>({shape:'ring',x,y,inner,r});
  function add(shape,kind,label,delay=90,life=30){
   zones.push({...shape,id:++serial,kind,label,born:tick,fire:tick+delay,end:tick+delay+life,hits:new Set()});
+  if(zones.length>MAX_ZONES)zones.splice(0,zones.length-MAX_ZONES);
  }
  function terrain(){
   const turn=terrainTurn++%3,x=clamp(hero.x,90,width-90),y=clamp(hero.y,90,height-90);
@@ -45,11 +57,15 @@ function create({realm,level,width=500,height=500,hero,boss,damage,environmentMa
   add(shape,'terrain',label[turn],turn===0?96:90,turn===0?120:96);
  }
  function pattern(){
-  const turn=bossTurn++%4,strong=level===10,rapid=phase===2;
+  const turn=bossTurn++%(level===10?5:4),strong=level===10,rapid=phase===2;
   const cadence={time:[82,94],space:[87,104],fire:[72,82],storm:[80,92],ice:[112,126],forest:[76,90]}[realm]||[78,96];
   const delay=rapid?cadence[0]:cadence[1];
   const x=clamp(hero.x,65,width-65),y=clamp(hero.y,65,height-65);
   const extra=strong||rapid;
+  if(strong){
+   ultimate(turn,delay,x,y,rapid);
+   return;
+  }
   switch(realm){
    case 'time':
     if(turn===0){const a=(bossTurn%8)*Math.PI/8;add(line(cx,cy,a,50),'boss','시계 바늘 교차',delay);
@@ -110,6 +126,73 @@ function create({realm,level,width=500,height=500,hero,boss,damage,environmentMa
     break;
   }
  }
+ function ultimate(turn,delay,x,y,rapid){
+  // A 10F boss attacks with *composed* layouts that build up across time.
+  // Telegraphs are fixed in place and each constituent hit is limited to one.
+  const id=ULTIMATES[realm]||ULTIMATES.time,base=delay+(rapid?-2:6);
+  const c=(px,py,r,label,offset=0,life=27)=>add(circle(px,py,r),'boss',label,base+offset,life);
+  const l=(px,py,a,w,label,offset=0,life=27)=>add(line(px,py,a,w),'boss',label,base+offset,life);
+  const r=(px,py,inner,outer,label,offset=0,life=27)=>add(ring(px,py,inner,outer),'boss',label,base+offset,life);
+  const common=turn===4;
+  // One shared 5F/10F signature per realm is intentional.
+  if(common){
+   if(realm==='time')l(cx,cy,Math.PI/4,44,id[turn]);
+   else if(realm==='space')r(cx,cy,95,163,id[turn]);
+   else if(realm==='fire'){l(cx,y,0,46,id[turn]);l(x,cy,Math.PI/2,45,id[turn],48);}
+   else if(realm==='storm'){l(cx,height*.25,0,46,id[turn]);l(cx,height*.75,0,46,id[turn],51);}
+   else if(realm==='ice')c(x,y,74,id[turn]);
+   else for(let k=0;k<3;k++){const a=k*Math.PI*2/3+bossTurn*.14;c(cx+Math.cos(a)*118,cy+Math.sin(a)*118,60,id[turn],k*42);}
+   return;
+  }
+  switch(realm){
+   case 'time':
+    if(turn===0)for(let k=0;k<6;k++)l(cx,cy,Math.PI*k/6,27,id[turn],k*25);
+    if(turn===1){c(x,y,69,id[turn]);c(width-x,height-y,69,id[turn],58);r(cx,cy,105,161,id[turn],116);}
+    if(turn===2){l(cx,cy,0,36,id[turn]);l(cx,cy,Math.PI/2,36,id[turn],48);c(x,y,67,id[turn],104);}
+    if(turn===3){l(width*.33,cy,Math.PI/2,45,id[turn]);l(width*.67,cy,Math.PI/2,45,id[turn],55);
+     r(cx,cy,100,163,id[turn],113);}
+    break;
+   case 'space':
+    if(turn===0){r(cx,cy,96,155,id[turn]);for(let k=0;k<3;k++){const a=k*Math.PI*2/3+bossTurn*.24;
+     c(cx+Math.cos(a)*148,cy+Math.sin(a)*148,48,id[turn],46+k*35);}}
+    if(turn===1){c(width*.28,height*.36,86,id[turn]);c(width*.72,height*.64,86,id[turn],56);
+     r(cx,cy,137,201,id[turn],112);}
+    if(turn===2)for(let k=0;k<5;k++)l(cx,cy,(-.35+k*.175)*Math.PI,33,id[turn],k*32);
+    if(turn===3){r(cx,cy,55,130,id[turn]);r(cx,cy,152,213,id[turn],66);c(x,y,62,id[turn],130);}
+    break;
+   case 'fire':
+    if(turn===0){r(cx,cy,145,217,id[turn]);c(cx,cy,80,id[turn],64);l(x,cy,Math.PI/2,51,id[turn],120);}
+    if(turn===1)for(let k=0;k<5;k++)c(width*(.15+k*.175),height*(k%2?.65:.35),57,id[turn],k*39);
+    if(turn===2){c(x,y,76,id[turn]);r(x,y,80,144,id[turn],59);r(x,y,150,211,id[turn],119);}
+    if(turn===3)for(let k=0;k<4;k++)l(cx,height*(.18+k*.21),0,40,id[turn],k*47);
+    break;
+   case 'storm':
+    if(turn===0)for(let k=0;k<7;k++)c(
+      k%2?width-x:x,k%3?height*.31:height*.72,56,id[turn],k*29);
+    if(turn===1)for(let k=0;k<5;k++)l(cx,height*(.14+k*.18),0,35,id[turn],k*32);
+    if(turn===2){r(cx,cy,88,160,id[turn]);l(cx,cy,Math.PI/4,38,id[turn],55);
+      l(cx,cy,-Math.PI/4,38,id[turn],111);}
+    if(turn===3)for(let k=0;k<4;k++){l(width*(.19+k*.21),cy,Math.PI/2,34,id[turn],k*25);
+      if(k<3)l(cx,height*(.21+k*.25),0,33,id[turn],k*25+110);}
+    break;
+   case 'ice':
+    if(turn===0){l(cx,height*.33,0,55,id[turn]);l(cx,height*.67,0,55,id[turn],57);
+     r(cx,cy,112,174,id[turn],111);}
+    if(turn===1)for(let k=0;k<4;k++)l(width*(.17+k*.22),cy,Math.PI/2,48,id[turn],k*46);
+    if(turn===2)for(let k=0;k<5;k++){const a=k*Math.PI*2/5+bossTurn*.12;
+      c(cx+Math.cos(a)*141,cy+Math.sin(a)*141,68,id[turn],k*38);}
+    if(turn===3)for(let k=0;k<5;k++)l(cx,cy,k*Math.PI/5,40,id[turn],k*36);
+    break;
+   case 'forest':
+    if(turn===0){for(let k=0;k<5;k++){const a=k*Math.PI*2/5+bossTurn*.12;
+      c(cx+Math.cos(a)*134,cy+Math.sin(a)*134,59,id[turn],k*40);}}
+    if(turn===1){l(cx,height*.36,0,52,id[turn]);l(width*.34,cy,Math.PI/2,50,id[turn],62);
+      l(width*.66,cy,Math.PI/2,50,id[turn],124);}
+    if(turn===2)for(let k=0;k<4;k++)c(width*(.22+k*.18),height*(k%2?.37:.63),68,id[turn],k*49);
+    if(turn===3){r(cx,cy,110,179,id[turn]);c(x,y,75,id[turn],65);c(width-x,height-y,75,id[turn],125);}
+    break;
+  }
+ }
  function step(){
   if(hero.hp<=0||boss.hp<=0)return;
   tick++;
@@ -134,8 +217,26 @@ function create({realm,level,width=500,height=500,hero,boss,damage,environmentMa
       const element={time:.86,space:1.02,fire:1.75,storm:1.05,ice:.82,forest:.9}[realm]||1;
       const amount=Math.round((z.kind==='boss'?24+level*3+(phase===2?6:0):(realm==='fire'?18:12)+level*2)*element);
       if(z.kind==='boss'&&realm==='ice'){p.slowTimer=Math.max(p.slowTimer||0,90);p.slowMultiplier=.5;}
-      if(z.kind==='boss'&&realm==='forest'){p.poisonTimer=Math.max(p.poisonTimer||0,120);}
-      if(damage(p,amount,z)!==false)z.hits.add(p);
+      if(damage(p,amount,z)!==false){
+        z.hits.add(p);
+        // Signature mechanics are real status/force effects AFTER a confirmed
+        // hit, not merely particle colours. No hidden damage outside telegraphs.
+        if(z.kind==='boss'){
+          if(realm==='time'){
+            p.slowTimer=Math.max(p.slowTimer||0,75);
+            p.slowMultiplier=Math.min(p.slowMultiplier||1,.64);
+            if(p.forgeTicks)p.forgeTicks=p.forgeTicks.map(v=>Math.max(0,v-20));
+          }
+          if(realm==='space'){
+            const dx=cx-p.x,dy=cy-p.y,d=Math.max(1,Math.hypot(dx,dy));
+            p.vx=(p.vx||0)+dx/d*1.4;p.vy=(p.vy||0)+dy/d*1.4;
+          }
+          if(realm==='fire'){p.bfDot=Math.max(p.bfDot||0,90);p.bfDotDamage=Math.max(p.bfDotDamage||0,2+Math.floor(level/5));}
+          if(realm==='storm'){p.vx=(p.vx||0)+(p.x<cx?-2:2);p.vy=(p.vy||0)+(p.y<cy?-2:2);}
+          if(realm==='ice'){p.slowTimer=Math.max(p.slowTimer||0,90);p.slowMultiplier=.5;}
+          if(realm==='forest'){p.poisonTimer=Math.max(p.poisonTimer||0,120);p.slowTimer=Math.max(p.slowTimer||0,45);p.slowMultiplier=.7;}
+        }
+      }
     }
    }
   }
@@ -167,5 +268,5 @@ function create({realm,level,width=500,height=500,hero,boss,damage,environmentMa
  return {step,draw,get zones(){return zones;},get tick(){return tick;},get phase(){return phase;},isBoss,
     get attackIndex(){return bossTurn;}};
 }
-g.ArenaEncounter={create,contains,patternNames:id=>[...(NAMES[id]||NAMES.time)]};
+g.ArenaEncounter={create,contains,patternNames:(id,level=5)=>[...((level===10?ULTIMATES:NAMES)[id]||NAMES.time)],bossCatalog:{middle:NAMES,final:ULTIMATES}};
 })(globalThis);
