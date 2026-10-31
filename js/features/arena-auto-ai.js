@@ -73,9 +73,9 @@ function hazards(p,foe){
      }
    }
  }
- // The actual telegraphed environmental fields use the same collision
- // geometry as their renderer. Ignore beneficial time acceleration zones.
- if(g.ArenaTower?.active&&p.towerHero){
+ // Both AI fighters react to the very same visible environment zones;
+ // beneficial time acceleration never counts as a danger.
+ if(g.ArenaTower?.active){
    const env=g.ArenaTower.environment;
    for(const z of (env?.zones||[]).slice(-3)){
      if(z.mode==='fast')continue;
