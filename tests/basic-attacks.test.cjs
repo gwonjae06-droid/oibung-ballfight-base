@@ -79,6 +79,9 @@ test('basic attack hits damage through SkillForge.hit and signal signature combo
  owner._forgeActionClock++;
  g.SignatureLive.record(owner,'basicHit');
  assert.equal(g.SignatureLive.condition(owner,foe,'basicHit',run),true);
+ const start=g.SignatureLive.begin([{kind:'if',condition:'basicHit',then:[{kind:'action',action:{type:'wave'}}],else:[]}],owner,'basicHit');
+ assert.equal(g.SignatureLive.condition(owner,foe,'basicHit',start),true,
+   'a triggered skill should see the confirmed hit that started it');
 });
 test('lifesteal is capped, confirmed-hit only, and never heals above maxHP',()=>{
  const g=world(),owner=hero('ranged',{effect:'leech'}),foe=target();
