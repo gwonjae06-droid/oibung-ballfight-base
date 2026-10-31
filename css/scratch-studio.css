@@ -117,3 +117,39 @@
  .scratch-heading-actions button{padding:8px}
 }
 @media(prefers-reduced-motion:reduce){.scratch-workbench *, .scratch-main-nav *{transition:none!important}}
+
+/* V2: the code canvas, not the passive animation preview, owns the desktop. */
+@media(min-width:1101px){
+ .character-studio-dialog:has(.scratch-studio-active){width:min(99vw,1880px)!important;max-width:1880px!important;height:min(98dvh,1160px)!important;max-height:98dvh!important}
+ .character-studio-dialog .character-studio-shell:has(.scratch-studio-active){grid-template-columns:minmax(230px,.25fr) minmax(0,1fr)!important}
+ .character-studio-dialog .character-studio-shell:has(.scratch-studio-active) .studio-motion-preview{padding:13px 11px!important;gap:9px;max-width:320px}
+ .character-studio-dialog .character-studio-shell:has(.scratch-studio-active) .character-studio-content{padding:13px 16px 22px!important}
+ .character-studio-dialog .character-studio-shell:has(.scratch-studio-wide){grid-template-columns:minmax(0,1fr)!important}
+ .character-studio-dialog .character-studio-shell:has(.scratch-studio-wide) .studio-motion-preview{display:none!important}
+ .character-studio-dialog .character-studio-shell:has(.scratch-studio-wide) .character-studio-content{grid-column:1/-1!important;grid-row:2!important}
+}
+@media(max-width:1100px){
+ .character-studio-dialog:has(.scratch-studio-active) .studio-motion-preview{max-height:min(24dvh,205px)!important}
+ .character-studio-dialog:has(.scratch-studio-wide) .studio-motion-preview{display:none!important}
+}
+.scratch-studio-active .scratch-layout{grid-template-columns:minmax(160px,210px) minmax(0,1fr);min-height:620px}
+.scratch-studio-active .scratch-script{min-height:520px;max-height:min(75dvh,900px);padding:16px}
+.scratch-studio-active .scratch-node-line{padding:12px 11px;min-height:52px}
+.scratch-studio-active .scratch-drag-grip{display:inline-flex;align-items:center;justify-content:center;cursor:grab;min-height:32px;min-width:27px;border-radius:6px;background:#0003;color:white}
+.scratch-studio-active .scratch-block-title{cursor:grab}
+.scratch-studio-active .scratch-insert-zone{height:16px}
+.scratch-studio-active .scratch-insert-zone:hover{height:27px}
+.scratch-drag-ghost{position:fixed;z-index:2147483600;pointer-events:none;max-width:min(340px,55vw);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:#2e86c7;color:#fff;border:2px solid #a2daff;border-radius:10px;box-shadow:0 10px 24px #0009;padding:12px 16px;font:750 13px system-ui,sans-serif;opacity:.94}
+.scratch-live-drop-guide{position:fixed;z-index:2147483599;pointer-events:none;height:6px;background:#98f1b9;border:1px solid #fff;border-radius:6px;box-shadow:0 0 0 4px #3aaf8b58,0 0 24px #69e5b8}
+.scratch-node-waitUntil,.scratch-node-repeatUntil{background:#b37e30!important}
+.scratch-node-set,.scratch-node-change{background:#d38530!important}
+.scratch-studio-active .scratch-workbench{min-width:0;width:100%}
+.scratch-studio-active .scratch-palette-block{touch-action:pan-y}
+.scratch-studio-active .scratch-node-line{user-select:none}
+.scratch-studio-active .scratch-node-line input,.scratch-studio-active .scratch-node-line select{user-select:auto}
+@media(min-width:1500px){.scratch-studio-active .scratch-layout{grid-template-columns:minmax(170px,225px) minmax(0,1fr) minmax(155px,190px)}.scratch-studio-active .scratch-help{display:block}}
+@media(max-width:800px){.scratch-studio-active .scratch-layout{grid-template-columns:minmax(125px,.55fr) minmax(0,2fr);min-height:500px}.scratch-studio-active .scratch-script{min-height:380px}}
+@media(max-width:520px){.scratch-studio-active .scratch-layout{display:flex;flex-direction:column;min-height:0}.scratch-studio-active .scratch-script{min-height:310px;max-height:60dvh;padding:9px}.scratch-studio-active .scratch-node-line{padding:9px 7px}}
+
+.scratch-studio-active .scratch-inline-status{display:block;color:#b9eed8;font-size:.77rem;line-height:1.45;flex:1;min-width:140px}
+.scratch-studio-active .scratch-footer{flex-wrap:wrap;align-items:center}

@@ -236,7 +236,10 @@ function create({realm,level,width=500,height=500,hero,boss,damage,environmentMa
       const element={time:.86,space:1.02,fire:1.75,storm:1.05,ice:.82,forest:.9}[realm]||1;
       const amount=Math.round((z.kind==='boss'?24+level*3+(phase===2?6:0):(realm==='fire'?18:12)+level*2)*element);
       if(z.kind==='boss'&&realm==='ice'){p.slowTimer=Math.max(p.slowTimer||0,90);p.slowMultiplier=.5;}
-      if(damage(p,amount,z)!==false){
+      const hitResult=damage(p,amount,z);
+      if(hitResult===false&&z.kind==='boss'&&p._scratchShieldUntil>=(Number(p._forgeActionClock)||0))
+        g.SignatureLive?.record?.(p,'guard');
+      if(hitResult!==false){
         z.hits.add(p);
         // Signature mechanics are real status/force effects AFTER a confirmed
         // hit, not merely particle colours. No hidden damage outside telegraphs.
@@ -265,6 +268,7 @@ function create({realm,level,width=500,height=500,hero,boss,damage,environmentMa
     if(!z.hits.has(hero)&&hero?.forge?.signatureVersion===1){
      hero._forgeDodgeSerial=(hero._forgeDodgeSerial||0)+1;
      hero._forgeDodgeWindow=(hero._forgeActionClock||0)+120;
+     g.SignatureLive?.record?.(hero,'dodge');
     }
     avoided=z.hits.has(hero)?0:avoided+1;
     if(avoided>=2&&tick>=nextExpose){
