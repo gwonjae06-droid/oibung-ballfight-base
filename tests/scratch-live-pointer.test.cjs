@@ -103,3 +103,16 @@ test('editing surface is larger with usable grab handles and pointer drop overla
  assert.match(src,/pointerType==='touch'/);
  assert.match(src,/closest\('input,select,textarea/);
 });
+
+test('charge variable persists across casts and never exceeds safe maximum',()=>{
+ const g=world(),owner=p(),target={x:100,y:0};
+ let run=g.SignatureLive.begin([{kind:'change',value:2}],owner);
+ assert.equal(tick(g,run,owner,target),null);
+ assert.equal(owner._scratchCharge,2);
+ run=g.SignatureLive.begin([{kind:'change',value:3},{kind:'if',condition:'charge3',then:[action('beam')],else:[action('shield')]}],owner);
+ assert.equal(tick(g,run,owner,target).type,'beam');
+ assert.equal(owner._scratchCharge,5);
+ run=g.SignatureLive.begin([{kind:'change',value:10}],owner);
+ tick(g,run,owner,target);
+ assert.equal(owner._scratchCharge,10);
+});
