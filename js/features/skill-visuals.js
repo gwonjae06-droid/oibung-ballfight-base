@@ -194,7 +194,9 @@ function renderFamily(c,e){
   if(f==='wave'){
     // Outer ring represents the actual committed range immediately; inner
     // ripples describe the propagation rather than inventing hit timing.
-    c.strokeStyle=e.color;c.lineWidth=3.1*(1-t*.55);
+    c.strokeStyle='rgba(8,19,35,.75)';c.lineWidth=6.5*(1-t*.35);
+    arc(c,0,0,r,0,Math.PI*2);
+    c.strokeStyle=e.color;c.lineWidth=3.4*(1-t*.35);
     arc(c,0,0,r,0,Math.PI*2);
     c.strokeStyle='rgba(77,103,124,.48)';c.lineWidth=2;
     for(let i=0;i<2;i++)arc(c,0,0,r*(.2+(.8*t+i*.34)%1),0,Math.PI*2);
@@ -209,24 +211,31 @@ function renderFamily(c,e){
     return true;
   }
   if(f==='time'){
-    c.save();c.rotate(-e.angle); // Pocket watch stays upright while caster turns.
+    c.save();c.rotate(-e.angle); // Keep the watch upright as the caster moves.
     const sz=32;
-    c.fillStyle='rgba(29,42,53,.2)';c.strokeStyle='#c4974c';c.lineWidth=4;
-    c.beginPath();c.arc(0,0,sz,0,Math.PI*2);c.fill();c.stroke();
-    c.strokeStyle='#deba72';c.lineWidth=3;
+    const primary=e.type==='timestop'?'#8feaff':e.type==='timeburst'?'#ffdc72':'#d0a6ff';
+    const secondary=e.type==='timestop'?'#d5f9ff':e.type==='timeburst'?'#fff5c2':'#f2deff';
+    c.fillStyle='rgba(10,19,38,.88)';c.strokeStyle='#17283b';c.lineWidth=7;
+    c.beginPath();c.arc(0,0,sz+1,0,Math.PI*2);c.fill();c.stroke();
+    c.strokeStyle=primary;c.lineWidth=3.5;c.shadowColor=primary;c.shadowBlur=low?0:10;
+    arc(c,0,0,sz,0,Math.PI*2);
+    c.shadowBlur=0;c.strokeStyle=secondary;c.lineWidth=2.5;
     line(c,0,-sz,0,-sz-9);arc(c,0,-sz-10,3,0,Math.PI*2);
-    c.lineWidth=1.5;
-    for(let i=0;i<12;i++){const a=i*Math.PI/6-Math.PI/2;line(c,Math.cos(a)*24,Math.sin(a)*24,Math.cos(a)*29,Math.sin(a)*29);}
+    for(let i=0;i<12;i++){
+      const a=i*Math.PI/6-Math.PI/2;
+      c.lineWidth=i%3===0?2.7:1.5;
+      line(c,Math.cos(a)*23,Math.sin(a)*23,Math.cos(a)*29,Math.sin(a)*29);
+    }
     const direction=e.type==='rewind'?-1:1;
     const revolutions=e.type==='timeburst'?8:e.type==='rewind'?5:3;
     const phase=e.type==='timestop'?Math.min(t/.6,1):t;
     const minutes=direction*phase*Math.PI*2*revolutions;
     const hours=minutes/12;
-    c.strokeStyle='#f9ead5';c.lineWidth=2.8;
+    c.strokeStyle=secondary;c.lineWidth=3.6;
     line(c,0,0,Math.sin(minutes)*23,-Math.cos(minutes)*23);
-    c.strokeStyle='#b47e3c';c.lineWidth=4;
+    c.strokeStyle=primary;c.lineWidth=4.8;
     line(c,0,0,Math.sin(hours)*15,-Math.cos(hours)*15);
-    c.fillStyle='#efe7dd';c.beginPath();c.arc(0,0,3,0,Math.PI*2);c.fill();
+    c.fillStyle='#fff';c.beginPath();c.arc(0,0,3.8,0,Math.PI*2);c.fill();
     c.restore();return true;
   }
   if(f==='explosion'){
@@ -377,9 +386,9 @@ function draw(ctx){
     ctx.save();ctx.globalCompositeOperation='source-over';
     const t=e.age/e.life,fade=clamp(Math.min(1,t*7,(1-t)*4),0,1);
     ctx.save();ctx.translate(x,y);ctx.rotate(e.angle);
-    ctx.globalAlpha=fade*(e.family==='wave'?.65:e.family==='explosion'?.9:.82);
+    ctx.globalAlpha=fade*(e.family==='wave'?.85:e.family==='explosion'?.96:.92);
     ctx.strokeStyle=e.color;ctx.fillStyle=e.color;
-    ctx.lineWidth=low?1.8:2.6;
+    ctx.lineWidth=low?2.1:3.1;
     if(!renderFamily(ctx,e)){
       const zoom=e.kind==='impact'?.65+.9*t:.65+.48*t;
       ctx.scale(zoom*e.scale,zoom*e.scale);
@@ -399,6 +408,56 @@ function draw(ctx){
     else paintEffect(ctx);
   }
   ctx.restore();
+}
+/* Screen-space time watch pass: WORLD effects are underneath 2.5D fighters,
+ * so a second bright watch sits beside its owner AFTER the character pass.
+ * This only reads live effects. It never creates attacks or alters gameplay. */
+function drawForeground(ctx,canvas){
+  if(!ctx||!canvas)return;
+  const watchByOwner=new Map();
+  for(const e of effects){
+    if(e.family!=='time'||e.kind!=='cast'||!e.source||e.source.hp<=0)continue;
+    const previous=watchByOwner.get(e.source);
+    if(!previous||e.age<previous.age)watchByOwner.set(e.source,e);
+  }
+  let painted=0;
+  for(const [owner,e] of watchByOwner){
+    if(painted++>=6)break;
+    const pos=global.ArenaMotion?.position?.(owner)||owner;
+    const at=global.ArenaDepth?.screenPoint?.(pos.x,pos.y,canvas)||{x:pos.x,y:pos.y};
+    const scale=clamp(global.ArenaDepth?.spriteScale?.(pos,canvas)||1,.75,1.15);
+    const height=global.AdvancedCombat?.visibleHeight?.(owner)||0;
+    const cy=at.y-height*scale+9*scale;
+    const outer=44*scale,spacing=(owner.radius||27)*scale+outer+10;
+    const rightFits=at.x+spacing+outer+7<canvas.width;
+    const leftFits=at.x-spacing-outer-7>0;
+    const direction=rightFits||!leftFits?1:-1;
+    const x=clamp(at.x+direction*spacing,outer+7,canvas.width-outer-7);
+    const y=clamp(cy,outer+16,canvas.height-outer-12);
+    const age=e.age/Math.max(1,e.life);
+    const fade=clamp(Math.min(1,age*9,(1-age)*5),0,1);
+    const color=e.type==='timestop'?'#8feaff':e.type==='timeburst'?'#ffdc72':'#d0a6ff';
+    const title=e.type==='timestop'?'시간정지':e.type==='timeburst'?'시간가속':'시간역행';
+    ctx.save();ctx.globalCompositeOperation='source-over';ctx.globalAlpha=fade;
+    // Dark/light double outline guarantees contrast against every realm.
+    ctx.translate(x,y);ctx.scale(scale,scale);ctx.rotate(e.angle);
+    ctx.shadowColor=color;ctx.shadowBlur=low?0:15;
+    ctx.fillStyle='rgba(6,15,31,.65)';
+    ctx.beginPath();ctx.arc(0,0,38,0,Math.PI*2);ctx.fill();
+    ctx.shadowBlur=0;
+    ctx.strokeStyle='rgba(3,12,24,.86)';ctx.lineWidth=7;
+    arc(ctx,0,0,38,0,Math.PI*2);
+    ctx.strokeStyle=color;ctx.lineWidth=2.5;
+    arc(ctx,0,0,38,0,Math.PI*2);
+    renderFamily(ctx,e);
+    ctx.rotate(-e.angle);
+    // Badge is outside the watch, never over the fighter's face.
+    ctx.font='bold 11px "Noto Sans KR",system-ui,sans-serif';
+    ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.lineWidth=4;ctx.strokeStyle='#081121';ctx.fillStyle='#fff';
+    ctx.strokeText(title,0,51);ctx.fillText(title,0,51);
+    ctx.restore();
+  }
 }
 /* Stateless preview interface: uses the exact 7 family visual drawings, but
  * deliberately does not touch the battle VFX pool, HP, audio or cooldowns. */
@@ -440,6 +499,6 @@ function replay(event,fighters=[]){
 function clear(){effects.length=0;ghosts=[];poses=new WeakMap();activePoses.clear();frame=0;}
 function setReduced(v){low=!!v;}
 global.SkillVisuals={exportEffects:()=>effects,importEffects:value=>{effects=value;},
-  setSpawnListener:fn=>{spawnListener=typeof fn==='function'?fn:null;},replay,catalog,get TYPES(){return global.ActionRegistry?.ids()||TYPES;},FAMILIES,ARM_IDLE_FRAMES,cast,impact,contact,detonate,previewFrame,drawAction,tick,draw,clear,setReduced,
+  setSpawnListener:fn=>{spawnListener=typeof fn==='function'?fn:null;},replay,catalog,get TYPES(){return global.ActionRegistry?.ids()||TYPES;},FAMILIES,ARM_IDLE_FRAMES,cast,impact,contact,detonate,previewFrame,drawAction,tick,draw,drawForeground,clear,setReduced,
   get active(){return effects.length;}};
 })(window);
