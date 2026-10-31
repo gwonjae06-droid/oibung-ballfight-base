@@ -35,7 +35,8 @@ function clock(c,z,t,live,P){
    const a=i*TAU/8+t*.012*(i%2?1:-1);
    c.beginPath();c.arc(Math.cos(a)*r*.94,Math.sin(a)*r*.94,r*.055,0,TAU);c.fillStyle=P[1];c.fill();
  }
- const sec=(z.mode==='slow'?.012:.095)*t,minute=(z.mode==='slow'?.002:.017)*t;
+ const dir=z.mode==='reverse'?-1:1;
+ const sec=(z.mode==='slow'?.012:.095)*t*dir,minute=(z.mode==='slow'?.002:.017)*t*dir;
  c.shadowBlur=0;
  path(c,[[0,0],[Math.cos(sec)*r*.79,Math.sin(sec)*r*.79]],P[0],4);
  path(c,[[0,0],[Math.cos(minute)*r*.52,Math.sin(minute)*r*.52]],P[1],6);
@@ -45,7 +46,7 @@ function clock(c,z,t,live,P){
 }
 function cosmos(c,z,t,live,P){
  const r=clamp(z.r||90,45,125);
- c.save();c.scale(1,.75);c.rotate(t*(z.mode==='antigravity'?-.018:.021));
+ c.save();c.scale(1,.75);c.rotate(t*(z.mode==='antigravity'?-.018:z.mode==='debris'?.045:.021));
  for(let i=0;i<3;i++){
    c.save();c.rotate(i*TAU/3);
    c.beginPath();c.ellipse(0,0,r*(.73+i*.08),r*(.28+i*.025),.4,0,TAU);
@@ -70,8 +71,8 @@ function fire(c,z,t,live,P){
  ring(c,r*.38+Math.sin(t*.12)*4,P[1],3);c.restore();
  // Vertical lava columns and incandescent fragments, not mere floor marks.
  if(live){
-   for(let i=0;i<7;i++){
-    const x=(i-3)*r*.24+Math.sin(t*.07+i)*5;
+   for(let i=0;i<(z.mode==='slag'?11:7);i++){
+    const x=(i-(z.mode==='slag'?5:3))*r*.24+Math.sin(t*.07+i)*5;
     const h=burst*(30+r*.47)*(1+Math.sin(t*.11+i*1.8)*.19);
     polygon(c,[[x-9,0],[x-7,-h*.7],[x,-h-8],[x+8,-h*.58],[x+11,0]],
       i%3===0?'#ffe18a':i%2?'#ef4d1c':'#ff8a20',P[1]);
@@ -102,7 +103,7 @@ function thunder(c,z,t,live,P){
  c.restore();
  if(live){
    const age=t-z.fire;glow(c,P[0],14);
-   for(let k=0;k<5;k++){
+   for(let k=0;k<(z.mode==='chainlightning'?8:5);k++){
      const offset=(k-2)*r*.22,pts=[[offset-12,-110]];
      for(let j=1;j<=6;j++){
        const py=-110+j*19,
@@ -130,7 +131,7 @@ function frost(c,z,t,live,P){
   }
  }
  ring(c,r*.78,P[1],2);c.restore();
- if(live&&z.mode==='frost'){
+ if(live&&(z.mode==='frost'||z.mode==='shatter')){
   const burst=Math.min(1,(t-z.fire)/20);
   for(let i=0;i<9;i++){
    const a=i*TAU/9,base=Math.cos(a)*r*.70,h=(23+i%3*17)*burst;
