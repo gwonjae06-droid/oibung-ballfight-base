@@ -63,6 +63,11 @@ function aura(c,p,items,coords,frame,quiet){
   c.save();c.globalAlpha=(quiet?.44:.66)/(1+k*.27);c.strokeStyle=v.color;c.fillStyle=v.color;c.lineWidth=k===0?3.3:2;
   // A thin arc never obscures the character's name or face.
   c.beginPath();c.ellipse(0,r*.1,radius,radius*.83,0,phase,phase+Math.PI*1.2);c.stroke();
+  // Stacked horizontal halos reveal the body's volume while following its altitude.
+  c.save();c.globalAlpha*=.45;c.lineWidth=1.25;
+  for(const height of [-r*.54,r*.46]){
+    c.beginPath();c.ellipse(0,height,radius*.90,radius*.28,0,phase*.36,phase*.36+Math.PI*1.65);c.stroke();
+  }c.restore();
   const shape=m[3];
   if(shape==='flame'||shape==='bubble'||shape==='ice'||shape==='star'||shape==='bolt'){
    for(let j=0;j<(quiet?2:4);j++){

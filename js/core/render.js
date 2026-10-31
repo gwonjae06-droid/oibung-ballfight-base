@@ -108,13 +108,15 @@ const shakeX=screenShake>0.5?(Math.random()-.5)*screenShake:0;
 const shakeY=screenShake>0.5?(Math.random()-.5)*screenShake:0;
 ctx.translate(shakeX,shakeY);
 worldCtx.save();
+globalThis.ArenaFXDepth?.beginFrame?.((globalThis.AdvancedCombat?.projectiles?.length||0)+
+ players.reduce((n,p)=>n+(p.forgeExtras?.length||0),0));
 if(layer)worldCtx.clearRect(0,0,canvas.width,canvas.height);
 // All coordinates in worldCtx are real battle coordinates, not screen coords.
 const painted=globalThis.ArenaTower?.paintBackground?.(worldCtx,canvas)===true;
 depth?.paintFloor?.(worldCtx,canvas,painted);
-shockwaves.forEach(w=>{worldCtx.beginPath();worldCtx.arc(w.x,w.y,w.radius,0,Math.PI*2);worldCtx.strokeStyle=`rgba(4,120,87,${w.alpha})`;worldCtx.lineWidth=6;worldCtx.stroke();worldCtx.beginPath();worldCtx.arc(w.x,w.y,w.radius*0.7,0,Math.PI*2);worldCtx.fillStyle=`rgba(5,150,105,${w.alpha*0.2})`;worldCtx.fill();});
+shockwaves.forEach(w=>{globalThis.ArenaFXDepth?.impact?.(worldCtx,w.x,w.y,w.radius,30,'#14b88a',1-w.alpha,'wave');worldCtx.beginPath();worldCtx.arc(w.x,w.y,w.radius,0,Math.PI*2);worldCtx.strokeStyle=`rgba(4,120,87,${w.alpha})`;worldCtx.lineWidth=6;worldCtx.stroke();worldCtx.beginPath();worldCtx.arc(w.x,w.y,w.radius*0.7,0,Math.PI*2);worldCtx.fillStyle=`rgba(5,150,105,${w.alpha*0.2})`;worldCtx.fill();});
 players.forEach(p=>{
-if(p.id==='bae'&&p.waves)p.waves.forEach(w=>{worldCtx.beginPath();worldCtx.arc(w.x,w.y,w.currentRadius,0,Math.PI*2);worldCtx.strokeStyle=`rgba(234,88,12,${w.alpha})`;worldCtx.lineWidth=3;worldCtx.stroke();worldCtx.beginPath();worldCtx.arc(w.x,w.y,w.currentRadius*0.85,0,Math.PI*2);worldCtx.fillStyle=`rgba(249,115,22,${w.alpha*0.12})`;worldCtx.fill();});
+if(p.id==='bae'&&p.waves)p.waves.forEach(w=>{globalThis.ArenaFXDepth?.impact?.(worldCtx,w.x,w.y,w.currentRadius,28,'#ed762a',1-w.alpha,'wave');worldCtx.beginPath();worldCtx.arc(w.x,w.y,w.currentRadius,0,Math.PI*2);worldCtx.strokeStyle=`rgba(234,88,12,${w.alpha})`;worldCtx.lineWidth=3;worldCtx.stroke();worldCtx.beginPath();worldCtx.arc(w.x,w.y,w.currentRadius*0.85,0,Math.PI*2);worldCtx.fillStyle=`rgba(249,115,22,${w.alpha*0.12})`;worldCtx.fill();});
 if(p.id==='oh'&&p.mode==='menhera'&&p.hp>0){const r=p.auraRadius+Math.sin(p.auraPulse)*8,g=worldCtx.createRadialGradient(p.x,p.y,10,p.x,p.y,r);g.addColorStop(0,'rgba(126,34,206,0.4)');g.addColorStop(0.7,'rgba(168,85,247,0.15)');g.addColorStop(1,'rgba(126,34,206,0)');worldCtx.beginPath();worldCtx.arc(p.x,p.y,r,0,Math.PI*2);worldCtx.fillStyle=g;worldCtx.fill();worldCtx.beginPath();worldCtx.arc(p.x,p.y,r,0,Math.PI*2);worldCtx.strokeStyle='rgba(168,85,247,0.6)';worldCtx.setLineDash([5,5]);worldCtx.lineWidth=2;worldCtx.stroke();worldCtx.setLineDash([]);
 p.projectiles.forEach(b=>depth?.floatingBall?.(worldCtx,b,'#a855f7'));
 p.poisonTears.forEach(b=>depth?.floatingBall?.(worldCtx,b,'#c084fc'));}

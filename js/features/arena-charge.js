@@ -52,7 +52,9 @@ function drawGround(p,ctx){
  const progress=s.phase==='charging'?1-s.ticks/Math.max(1,s.total):1;
  ctx.save();ctx.strokeStyle=p.forge?.effectColor||p.themeColor||'#8bc7ef';
  ctx.globalAlpha=.3+progress*.35;ctx.lineWidth=2+progress*2;
- ctx.beginPath();ctx.arc(v.x,v.y,(p.radius||28)+10+progress*13,0,Math.PI*2);ctx.stroke();
+ const ringRadius=(p.radius||28)+10+progress*13;
+ g.ArenaFXDepth?.ground?.(ctx,v.x,v.y,ringRadius,ctx.strokeStyle,.35);
+ ctx.beginPath();ctx.ellipse(v.x,v.y,ringRadius,Math.max(3,ringRadius*.4),0,0,Math.PI*2);ctx.stroke();
  ctx.restore();
 }
 function draw(p,ctx){

@@ -51,7 +51,7 @@ test('draw uses only supplied state and restores it, respects reduced movement',
 });
 test('renderer mounts status FX on final fighter plane and game binds effects preference',()=>{
  const html=fs.readFileSync('index.html','utf8');
- assert.ok(html.includes('js/features/status-vfx.js?v=status-vfx1'));
+ assert.ok(html.includes('js/features/status-vfx.js?v=fx25d1'));
  assert.ok(html.indexOf('status-vfx.js')>html.indexOf('forge-expansion.js'));
  const render=fs.readFileSync('js/core/render.js','utf8');
  assert.ok(render.includes('ArenaStatusVFX?.draw?.(ctx,p,'));

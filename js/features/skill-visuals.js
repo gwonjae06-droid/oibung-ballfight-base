@@ -382,6 +382,14 @@ function draw(ctx,options={}){
     const ground=e.kind==='cast'&&['wave','movement','explosion'].includes(e.family);
     const lift=ground?0:z+(e.family==='explosion'?18:12);
     const y=groundY-lift;
+    const fx=global.ArenaFXDepth;
+    if(fx && (e.kind==='impact'||['wave','explosion','cosmos','movement','time','generic'].includes(e.family))){
+      if(e.kind==='impact')fx.impact(ctx,x,groundY,Math.min(115,e.radius*.5),Math.min(78,e.radius*.5+15),e.color,e.age/e.life,e.family);
+      else if(['wave','explosion','cosmos','movement'].includes(e.family))
+        fx.ground(ctx,x,groundY,Math.min(130,e.radius*.45),e.color,.22);
+      if(e.kind==='cast'&&!low&&['cosmos','explosion','wave','time'].includes(e.family))
+        fx.column(ctx,x,groundY,Math.min(23,e.radius*.18),Math.min(55,e.radius*.34),e.color,.26,e.family);
+    }
     if(e.family==='explosion'&&e.kind==='impact'){
       ctx.save();ctx.strokeStyle=e.color;ctx.globalAlpha=Math.max(0,1-e.age/e.life)*.42;
       const floor=global.ArenaTowerTerrain?.worldHeight?.(x,groundY)||0;
@@ -395,6 +403,8 @@ function draw(ctx,options={}){
     ctx.save();ctx.globalCompositeOperation='source-over';
     const t=e.age/e.life,fade=clamp(Math.min(1,t*7,(1-t)*4),0,1);
     ctx.save();ctx.translate(x,y);ctx.rotate(e.angle);
+    // Shockwaves are floor ellipses, not upright circular billboards.
+    if(e.family==='wave')ctx.scale(1,.57);
     ctx.globalAlpha=fade*(e.family==='wave'?.85:e.family==='explosion'?.96:.92);
     ctx.strokeStyle=e.color;ctx.fillStyle=e.color;
     ctx.lineWidth=low?2.1:3.1;

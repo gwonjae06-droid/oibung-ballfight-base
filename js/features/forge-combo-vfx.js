@@ -133,7 +133,15 @@ function drawPulse(c,e,t){
 function draw(c){if(!c||!effects.length)return;
  c.save();c.globalCompositeOperation='source-over';
  for(const e of effects){if(e.owner?.hp<=0)continue;
-  const t=clamp(e.age/e.life,0,1);c.save();c.lineCap='round';c.lineJoin='round';
+  const t=clamp(e.age/e.life,0,1),fx=global.ArenaFXDepth;
+  const owner=position(e.owner),x=Number(owner?.x)||e.x,y=Number(owner?.y)||e.y;
+  if(fx){
+   if(e.kind==='impact')fx.impact(c,e.x,e.y,Math.min(72,e.radius*.65),Math.min(70,e.radius*.55),e.status||e.color,t,'magic');
+   else if(e.kind==='cast'){fx.ground(c,x,y,26+e.steps*5,e.color,.20);
+    if(!reduced)fx.column(c,x,y,12,32+e.steps*7,e.color,.24,'magic');}
+   else if(e.kind==='pulse'&&!reduced)fx.ground(c,x,y,19+e.slot*3,e.color,.16);
+  }
+  c.save();c.lineCap='round';c.lineJoin='round';
   if(e.kind==='cast')drawCast(c,e,t);else if(e.kind==='pulse')drawPulse(c,e,t);else drawImpact(c,e,t);c.restore();
  }c.restore();
 }

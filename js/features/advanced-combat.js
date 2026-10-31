@@ -912,6 +912,8 @@ function draw(ctx){
       ctx.fillText(o.kind==='summon'?'추적수 · '+Math.ceil(o.life/60)+'s':Math.ceil(o.life/60)+'s',0,o.r+18);
     }
     ctx.restore();};
+    if(['wall','turret','portal','summon'].includes(o.kind))
+      global.ArenaFXDepth?.ground?.(ctx,x,y+(o.floorZ||0),Math.min(34,o.r||20),col,.28);
     if(o.kind!=='trap'&&global.ArenaDepth?.air){
       const z=o.floorZ||0;
       global.ArenaDepth.air(ctx,{x,y:y+z},z,paintObject,o.r||18);
@@ -925,6 +927,7 @@ function draw(ctx){
     const height=lerp(b.prevHeight||0,b.height||0,alpha);
     const dy=y-height-12,col=color(p);
     const direction=Math.atan2(b.ty-b.startY,b.tx-b.startX);
+    if(shotDetail<2&&!reduced)global.ArenaFXDepth?.ground?.(ctx,x,y,Math.min(8,3+height*.015),col,.18);
     const paintProjectile=ctx=>{
     ctx.save();ctx.lineCap='round';ctx.lineJoin='round';
     if(shotDetail<2&&b.trail?.length){
@@ -992,6 +995,7 @@ function draw(ctx){
     else paintProjectile(ctx);
   }
   for(const e of effects){
+    if(e.stage==='impact')global.ArenaFXDepth?.impact?.(ctx,e.x,e.y,Math.min(50,e.r||20),Math.min(58,(e.r||20)*1.2),e.color||'#b1e9ff',e.age/Math.max(1,e.life),'magic');
     if(e.stage==='impact'&&global.ArenaDepth?.air){
       const z=e.z||0;
       global.ArenaDepth.air(ctx,{x:e.x,y:e.y+z},z,c=>shape(c,e),Math.min(24,e.r*.4));

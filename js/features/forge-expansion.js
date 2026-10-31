@@ -249,6 +249,12 @@ function draw(p,renderCtx){
   ink.save();ink.strokeStyle=global.arenaEffectColor?.(p.forge?.color||p.themeColor)||(p.forge?.color||p.themeColor||'#684f83');ink.lineWidth=2.5;ink.fillStyle=ink.strokeStyle;
   for(const b of p.forgeExtras||[]){
     ink.save();const area=['meteor','mine','blackhole','lifebloom'].includes(b.kind);
+    const fx=global.ArenaFXDepth;
+    if(fx&&area){
+      const color=b.kind==='meteor'?'#e9a15e':b.kind==='blackhole'?'#a88aff':b.kind==='lifebloom'?'#79db91':'#dfac69';
+      fx.ground(ink,b.x,b.y,Math.min(150,b.a?.radius||40),color,.43,b.kind==='mine'?'warning':'circle');
+      if(b.kind==='blackhole'||b.kind==='lifebloom')fx.column(ink,b.x,b.y,Math.min(18,(b.a?.radius||38)*.32),b.kind==='blackhole'?63:39,color,.26,b.kind);
+    }
     if(b.kind==='meteor'){
       // The same speed-derived descent timeline drives both the animation and
       // the impact/damage in update(): no ground explosion until landing.

@@ -8,6 +8,7 @@ function draw(ctx,zone,realm,tick,width=500,height=500){
  if(!ctx||!zone)return;
  const col=COLOR[realm]||'#ffffff',live=tick>=zone.fire;
  if(!live)return;
+ g.ArenaFXDepth?.ground?.(ctx,zone.x,zone.y,Math.min(120,zone.r||zone.width||40),col,.30);
  const points=[];
  if(zone.shape==='line'){
   const a=zone.angle||0;

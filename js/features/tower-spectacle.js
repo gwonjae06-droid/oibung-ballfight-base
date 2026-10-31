@@ -105,7 +105,11 @@ function create({realm,level,width:w,height:h,hero,boss,damage}){
  function draw(ctx){
   if(!event)return;
   ctx.save();ctx.strokeStyle=C[realm];ctx.fillStyle=C[realm];
-  for(const z of zones){const live=tick>=z.fire;ctx.save();ctx.globalAlpha=live?.18:.15;ctx.translate(z.x,z.y);
+  for(const z of zones){const live=tick>=z.fire;
+   const fx=g.ArenaFXDepth,col=C[realm];
+   if(fx){fx.ground(ctx,z.x,z.y,Math.min(135,z.r||z.width||40),col,live?.34:.24,'warning');
+    if(live)fx.column(ctx,z.x,z.y,Math.min(20,(z.r||z.width||55)*.28),realm==='storm'?85:realm==='fire'?75:62,col,.32,realm);}
+   ctx.save();ctx.globalAlpha=live?.18:.15;ctx.translate(z.x,z.y);
    if(z.shape==='line'){ctx.rotate(z.angle);ctx.lineWidth=z.width;ctx.beginPath();ctx.moveTo(-z.length/2,0);ctx.lineTo(z.length/2,0);ctx.stroke();ctx.lineWidth=2;ctx.strokeStyle='#fff';ctx.stroke();}
    else if(z.shape==='ring'){ctx.lineWidth=z.r-z.inner;ctx.beginPath();ctx.arc(0,0,(z.r+z.inner)/2,0,TAU);ctx.stroke();}
    else {ctx.beginPath();ctx.arc(0,0,z.r,0,TAU);ctx.stroke();}

@@ -106,8 +106,10 @@ function draw(ctx,roster){
    const centered=['mine','trap'].includes(cue.type)||!target;
    const px=centered?x:tx,py=centered?y:ty;
    const radius=clamp(cue.radius*.34,22,90);
-   ctx.setLineDash([5,5]);ctx.beginPath();ctx.arc(px,py,radius,0,Math.PI*2);
-   ctx.stroke();ctx.setLineDash([]);
+   global.ArenaFXDepth?.ground?.(ctx,px,py,radius,tint,.46,'warning');
+    if(progress>.7)global.ArenaFXDepth?.column?.(ctx,px,py,7,22*progress,tint,.18,'warning');
+    ctx.setLineDash([5,5]);ctx.beginPath();ctx.ellipse(px,py,radius,Math.max(3,radius*.36),0,0,Math.PI*2);
+    ctx.stroke();ctx.setLineDash([]);
   }
   ctx.restore();count++;
  }

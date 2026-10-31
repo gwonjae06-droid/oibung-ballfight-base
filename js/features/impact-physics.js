@@ -137,7 +137,8 @@ function draw(ctx){
     const t=p.age/p.life,fade=1-t,r=8+p.impulse*(.6+1.45*t);
     ctx.save();ctx.globalAlpha=fade*(reduced?.45:.85);
     ctx.strokeStyle=p.color;ctx.lineWidth=Math.max(1,5.5*fade);
-    ctx.beginPath();ctx.arc(p.x,p.y,r,0,Math.PI*2);ctx.stroke();
+    global.ArenaFXDepth?.impact?.(ctx,p.x,p.y,r,Math.min(46,14+p.impulse*.85),p.color,t,'impact');
+    ctx.beginPath();ctx.ellipse(p.x,p.y,r,Math.max(3,r*.5),0,0,Math.PI*2);ctx.stroke();
     ctx.strokeStyle='#243443';ctx.lineWidth=Math.max(1,2.2*fade);
     ctx.beginPath();ctx.arc(p.x,p.y,r*.72,0,Math.PI*2);ctx.stroke();
     if(!reduced){

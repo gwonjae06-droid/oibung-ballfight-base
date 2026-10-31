@@ -3,6 +3,8 @@
 function zone(c,z,realm,t){
  const live=t>=z.fire,age=t-z.born,charge=Math.min(1,age/Math.max(1,z.fire-z.born));
  const radius=z.shape==='line'?z.width/2:z.r;
+ g.ArenaFXDepth?.ground?.(c,z.x,z.y,Math.min(145,Math.max(10,radius||20)),
+   realm==='fire'?'#ffa15c':realm==='space'?'#af97ff':realm==='ice'?'#a1f0ff':realm==='storm'?'#75daff':realm==='forest'?'#a9db70':'#e7c781',live?.35:.17);
  c.save();c.translate(z.x,z.y);if(z.shape==='line')c.rotate(z.angle);
  const extent=z.shape==='line'?Math.min(z.length/2,300):Math.min(radius,260);
  c.globalAlpha=live?.9:.3+charge*.25;c.lineWidth=2;

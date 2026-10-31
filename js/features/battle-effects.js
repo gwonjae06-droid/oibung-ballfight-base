@@ -104,11 +104,14 @@
     window.SkillVisuals?.draw?.(worldCtx,{skipForegroundTime:true});
     window.ArenaTelegraph?.draw?.(worldCtx,players);
     worldCtx.globalCompositeOperation='source-over';
-    sparks.forEach(s=>{worldCtx.save();worldCtx.globalAlpha=s.life/s.max;worldCtx.strokeStyle=s.c;worldCtx.lineWidth=2;worldCtx.beginPath();worldCtx.moveTo(s.x,s.y);worldCtx.lineTo(s.x-s.vx*2,s.y-s.vy*2);worldCtx.stroke();worldCtx.restore();});
+    sparks.forEach(s=>{worldCtx.save();worldCtx.globalAlpha=s.life/s.max;worldCtx.strokeStyle=s.c;worldCtx.lineWidth=2;
+      const lift=6+12*(s.life/s.max); // Spontaneous sparks travel ABOVE the impact footprint.
+      worldCtx.beginPath();worldCtx.moveTo(s.x,s.y-lift);worldCtx.lineTo(s.x-s.vx*2,s.y-s.vy*2-lift-4);worldCtx.stroke();worldCtx.restore();});
     pulses.forEach(s=>{
       worldCtx.save();worldCtx.globalAlpha=Math.min(1,s.life/12);worldCtx.shadowColor=s.c;worldCtx.shadowBlur=gentle.checked?0:5;
       if(s.bolt){worldCtx.beginPath();worldCtx.moveTo(s.x-10,s.y-160);worldCtx.lineTo(s.x+8,s.y-90);worldCtx.lineTo(s.x-7,s.y-55);worldCtx.lineTo(s.x,s.y);worldCtx.strokeStyle=s.c;worldCtx.lineWidth=5;worldCtx.stroke();}
       else{const r=s.r*(1-s.life/20),floor=window.ArenaTowerTerrain?.worldHeight?.(s.x,s.y)||0;
+        window.ArenaFXDepth?.impact?.(worldCtx,s.x,s.y,r,34,s.c,1-s.life/20,'wave');
         // Projected elliptical ground ring plus an upright hit-energy shell.
         worldCtx.save();worldCtx.translate(s.x,s.y-floor);
         worldCtx.strokeStyle=s.c;worldCtx.lineWidth=Math.max(1,s.life/4);
@@ -174,6 +177,7 @@
     window.SkillVisuals?.setReduced(gentle.checked);
     window.ArenaStatusVFX?.setReduced?.(gentle.checked);
     window.ImpactPhysics?.setReduced?.(gentle.checked);
+    window.ArenaFXDepth?.setReduced?.(gentle.checked);
     window.ArenaResolution?.sync?.();
     if(!globalThis.ArenaScreenRouter?.enabled||['tower','pve'].includes(globalThis.ArenaScreenRouter.active))draw();
     requestAnimationFrame(gameLoop);

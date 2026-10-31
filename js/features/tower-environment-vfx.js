@@ -180,6 +180,12 @@ function forest(c,z,t,live,P){
 function draw(c,z,t,level=1){
  const P=palette[z.realm];if(!c||!P)return false;
  const live=t>=z.fire&&t<z.end,soon=clamp(1-(z.fire-t)/Math.max(1,z.fire-z.born),0,1);
+ const fx=g.ArenaFXDepth;
+ if(fx){const radius=z.shape==='line'?Math.min(48,(z.width||35)*.55):Math.min(110,z.r||52);
+   fx.ground(c,z.x,z.y,radius,P[1],live?.42:.24,'warning');
+   if(live)fx.column(c,z.x,z.y,Math.min(22,radius*.3),
+     z.realm==='storm'?102:z.realm==='space'?85:z.realm==='ice'?74:z.realm==='forest'?61:70,P[1],.40,z.realm);
+ }
  c.save();c.globalAlpha=live?.92:.35+.55*soon;
  // One modest glow per zone (not per particle) keeps mobile paint affordable.
  if(live)glow(c,P[1],level%5===0?14:8);
