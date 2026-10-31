@@ -36,18 +36,19 @@ test('normal custom characters still have four skills maximum',()=>{
   assert.equal(def.forgeData.skills.length,4);
   assert.equal(def.createInstance(1).forgeTicks.length,4);
 });
-test('transient tower enemies can spawn even when the user roster holds six fighters',()=>{
+test('transient tower enemies work alongside an unlimited player roster',()=>{
   const h=world();
-  for(let i=0;i<6;i++)h.CUSTOM_DEFS.push({id:'saved_'+i,name:'Saved '+i});
+  for(let i=0;i<22;i++)h.CUSTOM_DEFS.push({id:'saved_'+i,name:'Saved '+i});
   const foe=h.ArenaTowerModel.makeEnemy(10);
-  assert.throws(()=>h.SkillForge.register(foe),/최대 6명/);
+  const normalId=h.SkillForge.register(foe);
   const id=h.SkillForge.register(foe,{towerEnemy:true});
-  assert.equal(h.CUSTOM_DEFS.length,7);
+  assert.equal(h.CUSTOM_DEFS.length,24);
+  assert.equal(h.CUSTOM_DEFS.find(x=>x.id===normalId).forgeData.skills.length,4);
   const index=h.CUSTOM_DEFS.findIndex(x=>x.id===id);
   assert.equal(h.CUSTOM_DEFS[index].createInstance(2).forge.skills.length,6);
   h.CUSTOM_DEFS.splice(index,1);
   delete h.BEHAVIORS[id];
-  assert.equal(h.CUSTOM_DEFS.length,6);
+  assert.equal(h.CUSTOM_DEFS.length,23);
 });
 test('hard floor mechanics stay within runtime safety limits',()=>{
   const h=world(),m=h.ArenaTowerModel;
