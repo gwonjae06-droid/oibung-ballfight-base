@@ -72,6 +72,7 @@ function reRollMatch(forcedDef) {
     defs=Array.from({length:count},(_,i)=>shuffled[i%shuffled.length]);
   }
   players=placeFighters(defs);
+  globalThis.ArenaStalemate?.reset?.();
   openingCollisionPairs.clear();
   particles=[];floatingTexts=[];shockwaves=[];screenShake=0;
   globalThis.ImpactPhysics?.reset?.();
