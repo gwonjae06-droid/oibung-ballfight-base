@@ -190,6 +190,8 @@ function blitzTick(room,now){
 }
 function step(room,dt,now){
  if(room.ended)return;
+ // Never move, cast or apply damage before the host's FIGHT timestamp.
+ if(Number.isFinite(room.startAt)&&room.startAt>now)return;
  if(!blitzTick(room,now))return;
  accumulator+=dt;
  while(accumulator>=1/60&&!isGameOver){
@@ -226,6 +228,7 @@ function decode(v){
 function snapshot(room,full=true){
  const b=room.blitz;
  const state={type:'state',clock:Math.max(0,MATCH_LIMIT_SECONDS-room.elapsed),finished:room.ended,winner:room.winner,
+  startInMs:Math.max(0,Number(room.startAt||0)-Date.now()),
   ...(b?{blitz:{phase:b.phase,round:b.round,turn:b.turn,maxTurns:b.maxTurns,
     remainingMs:Math.max(0,(b.phase==='plan'?b.deadline:b.executionEnd)-Date.now()),
     submitted:b.plans.map(Boolean)}}:{}),
