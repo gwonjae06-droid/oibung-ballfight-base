@@ -767,6 +767,7 @@ function render(){
       return '<section class="forge-action">'
       +'<div class="forge-top"><span>ACTION '+(j+1)+'</span><button type="button" class="forge-delete" data-command="remove-action" '+aj+'>제거</button></div>'
       +'<div class="forge-grid">'
+      +(draft.signatureVersion===1?'<label>조건 블록'+choice('condition',global.SignatureProgram?.CONDITIONS||{always:'항상 실행'},a.condition||'always',aj)+'</label>':'')
       +box('동작',choice('type',TYPE,a.type,aj))
       +box('공격 배치',choice('pattern',global.AbilityAtlas?.PATTERNS||{direct:'직선 집중'},a.pattern||'direct',aj),'pattern')
       +box('대상 우선순위',choice('target',global.AbilityAtlas?.TARGETS||{nearest:'가장 가까운 적'},a.target||'nearest',aj),'target')
@@ -786,17 +787,18 @@ function render(){
       +'</section>';
     }).join('');
     return '<section class="forge-skill">'
-      +'<div class="forge-top"><span>SKILL '+String(i+1).padStart(2,'0')+'</span><button type="button" class="forge-delete" data-command="remove-skill" '+si+'>스킬 삭제</button></div>'
+      +'<div class="forge-top"><span>'+(draft.signatureVersion===1?'고유 스킬 1 / 1':'SKILL '+String(i+1).padStart(2,'0'))+'</span>'+(draft.signatureVersion===1?'':'<button type="button" class="forge-delete" data-command="remove-skill" '+si+'>스킬 삭제</button>')+'</div>'
       +'<label>스킬 이름'+field('name',s.name,si+' maxlength="18"')+'</label>'
       +'<div class="forge-grid">'
       +'<label>발동 조건'+choice('trigger',TRIGGER,s.trigger,si)+'</label>'
       +'<label>쿨타임 (초)'+field('cooldown',s.cooldown,'type="number" min=".2" max="30" step=".1" '+si)+'</label>'
       +(s.trigger==='lowhp'?'<label>HP 조건 (%)'+field('threshold',s.threshold,'type="number" min="5" max="95" step="5" '+si)+'</label>':'')
       +'</div><div class="forge-action-list">'+parts+'</div>'
-      +'<button type="button" class="forge-add" data-command="add-action" '+si+' '+(s.actions.length>=3?'disabled':'')+'>+ 동작 연결</button>'
+      +'<button type="button" class="forge-add" data-command="add-action" '+si+' '+(s.actions.length>=(draft.signatureVersion===1?12:3)?'disabled':'')+'>+ 행동 블록 연결 ('+s.actions.length+'/'+(draft.signatureVersion===1?12:3)+')</button>'
       +'</section>';
   }).join('');
-  document.getElementById('forge-add-skill').disabled=draft.allAbilities||draft.skills.length>=4;
+  document.getElementById('forge-add-skill').disabled=draft.signatureVersion===1||draft.allAbilities||draft.skills.length>=4;
+  document.getElementById('forge-add-skill').hidden=draft.signatureVersion===1;
 }
 function initializeUI(){
   const panel=document.querySelector('.bf-tools');
@@ -914,12 +916,12 @@ function initializeUI(){
     const action=button.dataset.command;
     if(action==='disable-all'){draft.allAbilities=false;render();return;}
     if(action==='remove-skill'&&draft.skills.length>1)draft.skills.splice(i,1);
-    if(action==='add-action'&&draft.skills[i].actions.length<3)draft.skills[i].actions.push(stage());
+    if(action==='add-action'&&draft.skills[i].actions.length<(draft.signatureVersion===1?12:3))draft.skills[i].actions.push(stage());
     if(action==='remove-action'&&draft.skills[i].actions.length>1)draft.skills[i].actions.splice(j,1);
     render();global.NaturalForge?.refreshGenerated?.(draft);
   });
   $('forge-add-skill').addEventListener('click',()=>{
-    sync();if(!draft.allAbilities&&draft.skills.length<4){draft.skills.push(skill());render();global.NaturalForge?.refreshGenerated?.(draft);}
+    sync();if(draft.signatureVersion!==1&&!draft.allAbilities&&draft.skills.length<4){draft.skills.push(skill());render();global.NaturalForge?.refreshGenerated?.(draft);}
   });
   $('bf-analyze').addEventListener('click',()=>{
     try{
