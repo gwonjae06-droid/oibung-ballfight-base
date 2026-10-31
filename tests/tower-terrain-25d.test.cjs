@@ -35,7 +35,8 @@ test('six towers each have three distinct raised islands with safe low-ground ro
  for(const realm of Object.keys(names)){
   const ns=T.nodes(realm,1,500,500);
   assert.equal(ns.length,3);assert.ok(ns.every(n=>n.z>=20&&n.z<=65));
-  assert.ok(T.heightAt(realm,1,ns[0].x,ns[0].y)>ns[0].z*.95);
+  assert.ok(T.heightAt(realm,1,ns[0].x,ns[0].y)>ns[0].z*(realm==='fire'?.82:.95),
+    'fire has a recessed crater while other towers retain raised centerpiece');
   assert.equal(T.heightAt(realm,1,15,15),0,'corner is always low and walkable');
   assert.ok(T.heightAt(realm,1,ns[0].x+ns[0].r*2,ns[0].y) <
      T.heightAt(realm,1,ns[0].x,ns[0].y));
@@ -49,7 +50,7 @@ test('terrain visual shapes draw unique full arenas and named themed stone engra
  for(const realm of Object.keys(names)){
   const {c,calls}=painter();
   assert.equal(T.paint(c,realm,5,500,500,90),true);
-  assert.ok(calls.ellipses>=3);
+  assert.ok(calls.shapes>=18,'polygonal terraces and physical arena edge render as closed contours');
   assert.ok(calls.shapes>=12,'raised platforms must contain visible top surfaces and side walls');
   assert.ok(calls.words.length>=3);
   icons.push(calls.words[0]);

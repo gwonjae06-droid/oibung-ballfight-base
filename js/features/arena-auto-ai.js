@@ -195,17 +195,21 @@ function stance(p,foe,data){
  else if(profile.role==='melee'&&!profile.ready&&d<85)mode='reposition';
  // No indefinite stalling: even under low HP a melee-only fighter fights.
  if(profile.role==='melee'&&d>125)mode='approach';
- const pressure=mode==='approach'?1:mode==='bait'?-.84:mode==='recover'?-.8:
+ // Tactical does not mean sterile: occasionally *commit* to a real-body
+ // collision at a favorable moment. The normal collision solver owns bounce.
+ if(profile.role==='melee'&&profile.ready&&d>=58&&d<135&&!windup&&
+    Math.floor(finite(p._aiClock)/105)%3===1)mode='clash';
+ const pressure=mode==='clash'?1.16:mode==='approach'?1:mode==='bait'?-.84:mode==='recover'?-.8:
    mode==='reposition'?-.58:d>profile.preferred+9?.16:0;
  // Commit to one flank until a new tactical beat, not a direction flip each tick.
  const tick=finite(p._aiClock),beat=Math.floor((tick+(p.playerNum||1)*23)/95);
  const spin=((beat+(p.playerNum||1))%2)?1:-1;
- const sidestep=mode==='approach'?.26:mode==='bait'?.48:mode==='recover'?.36:
+ const sidestep=mode==='clash'?.14:mode==='approach'?.26:mode==='bait'?.48:mode==='recover'?.36:
    mode==='reposition'?.60:.9;
  const sideX=-dy/d*spin,sideY=dx/d*spin;
  let x=dx/d*pressure+sideX*sidestep,y=dy/d*pressure+sideY*sidestep;
  // When both fighters are too close, lateral separation beats collision spam.
- if(d<safeRadius(p)+safeRadius(foe)+14){x-=dx/d*.80;y-=dy/d*.80;}
+ if(d<safeRadius(p)+safeRadius(foe)+14&&mode!=='clash'){x-=dx/d*.80;y-=dy/d*.80;}
  return {x,y,mode,profile,distance:d,preferred:profile.preferred};
 }
 function plan(p,foe,speed,evadeOnly=false){
@@ -231,7 +235,10 @@ function plan(p,foe,speed,evadeOnly=false){
    const futureX=clamp(rawX,pad,w-pad),futureY=clamp(rawY,pad,h-pad);
    const safety=risk(p,foe,ux*base,uy*base,threats);
    const border=clamp((pad-rawX)/30,0,3)+clamp((rawX-(w-pad))/30,0,3)
-     +clamp((pad-rawY)/30,0,3)+clamp((rawY-(h-pad))/30,0,3);
+     +clamp((pad-rawY)/30,0,3)+clamp((rawY-(h-pad))/30,0,3)
+     +(terrain?.arenaClearance&&g.ArenaTower?.active?
+        clamp((pad-terrain.arenaClearance(g.ArenaTower?.state?.realm||p.towerRealm||'time',
+          futureX,futureY,w,h))/20,0,12):0);
    const projectedDistance=magnitude(foe.x-futureX,foe.y-futureY);
    const gap=Math.abs(projectedDistance-intent.preferred);
    const preference=ux*preferred.x+uy*preferred.y;

@@ -20,6 +20,79 @@ const NODES={
  forest:[[.5,.48,.24,43],[.23,.67,.17,25],[.76,.28,.16,28]]
 };
 const smooth=x=>{x=clamp(x,0,1);return x*x*(3-2*x);};
+// Each realm owns a different *physical* silhouette, not just a color scheme.
+// Coordinates are arena-world positions; the same polygons are painted,
+// sampled for elevations and used for bouncy perimeter collisions.
+const OUTLINES={
+ fire:[[.08,.33],[.18,.15],[.40,.13],[.52,.07],[.79,.17],[.94,.34],[.85,.51],[.94,.72],[.72,.91],[.52,.87],[.33,.94],[.13,.77],[.22,.57],[.06,.49]],
+ space:[[.49,.06],[.58,.17],[.92,.80],[.84,.90],[.19,.90],[.08,.80],[.42,.17]],
+ storm:[[.06,.52],[.22,.38],[.33,.28],[.49,.08],[.63,.30],[.80,.32],[.95,.51],[.79,.66],[.65,.72],[.51,.92],[.34,.73],[.20,.68]],
+ ice:[[.10,.10],[.38,.10],[.46,.19],[.58,.10],[.89,.12],[.89,.36],[.81,.46],[.91,.57],[.89,.90],[.63,.88],[.53,.79],[.41,.91],[.11,.88],[.11,.60],[.19,.51],[.10,.40]],
+ forest:null,
+ time:null
+};
+function outline(realm,width=500,height=500){
+ let pts=OUTLINES[realm];
+ if(!pts&&realm==='time')pts=Array.from({length:48},(_,i)=>{
+  const a=i*Math.PI/24-Math.PI/2,r=i%4<2?.467:.421;
+  return [.5+Math.cos(a)*r,.5+Math.sin(a)*r];
+ });
+ if(!pts)pts=Array.from({length:28},(_,i)=>{
+  const a=i*Math.PI/14-Math.PI/2,r=(i%7===3?.82:i%7===4?.87:1)*(.90+.08*Math.sin(i*1.8));
+  return [.5+Math.cos(a)*.49*r,.5+Math.sin(a)*.47*r];
+ });
+ return pts.map(([x,y])=>({x:x*width,y:y*height}));
+}
+function polygonMetrics(points,x,y){
+ let inside=false,best=Infinity,foot=null,area=0;
+ for(let i=0,j=points.length-1;i<points.length;j=i++){
+  const a=points[j],b=points[i],vx=b.x-a.x,vy=b.y-a.y,length2=vx*vx+vy*vy||1;
+  const t=clamp(((x-a.x)*vx+(y-a.y)*vy)/length2,0,1),px=a.x+vx*t,py=a.y+vy*t;
+  const d=Math.hypot(x-px,y-py);
+  if(d<best){best=d;foot={x:px,y:py,vx,vy};}
+  if((a.y>y)!==(b.y>y)&&x<(b.x-a.x)*(y-a.y)/(b.y-a.y)+a.x)inside=!inside;
+  area+=a.x*b.y-b.x*a.y;
+ }
+ const sign=area>=0?1:-1,edge=Math.hypot(foot.vx,foot.vy)||1;
+ return {clearance:inside?best:-best,near:foot,inside,normalX:-foot.vy/edge*sign,normalY:foot.vx/edge*sign};
+}
+function polygonPath(ctx,points){ctx.beginPath();points.forEach((v,i)=>i?ctx.lineTo(v.x,v.y):ctx.moveTo(v.x,v.y));ctx.closePath();}
+function footprint(realm,node){
+ const {x,y,r,index}=node;
+ let vertices=[];
+ if(realm==='time'){const sides=index===0?40:28;vertices=Array.from({length:sides},(_,i)=>{
+   const a=i*2*PI/sides-PI/2,rad=(i%4<2?1:.82)*r;return [Math.cos(a)*rad,Math.sin(a)*rad];});}
+ else if(realm==='fire'){const sides=index===0?9:index===1?5:7;vertices=Array.from({length:sides},(_,i)=>{const a=i*2*PI/sides-.8,rad=r*(i%3===1?.79:1);return [Math.cos(a)*rad,Math.sin(a)*rad];});}
+ else if(realm==='space'){const a=-PI/2+index*.33;vertices=Array.from({length:3},(_,i)=>[Math.cos(a+i*2*PI/3)*r*1.26,Math.sin(a+i*2*PI/3)*r*1.25]);}
+ else if(realm==='storm'){vertices=[[-1.18,0],[-.20,-.55],[.08,-1.13],[1.14,-.06],[.24,.59],[-.06,1.07]].map(([a,b])=>[a*r,b*r]);}
+ else if(realm==='ice'){vertices=[[-.95,-.95],[.18,-.95],[.29,-.73],[.94,-.91],[.92,.82],[.38,.91],[.12,.72],[-.93,.92]].map(([a,b])=>[a*r,b*r]);}
+ else {vertices=Array.from({length:18},(_,i)=>{const a=i*PI/9,rad=r*(i%6===2?.73:i%6===3?.87:1.12);return [Math.cos(a)*rad,Math.sin(a)*rad*.82];});}
+ return vertices.map(([px,py])=>({x:x+px,y:y+py}));
+}
+function arenaClearance(realm,x,y,width=500,height=500){return polygonMetrics(outline(realm,width,height),x,y).clearance;}
+function isWalkable(realm,x,y,width=500,height=500,radius=0){return arenaClearance(realm,x,y,width,height)>=radius;}
+function boundaryBounce(p,realm,width,height){
+ const polygon=outline(realm,width,height),pad=Math.max(5,Math.min(30,Number(p.radius)||20)*.65);
+ let hit=false;
+ for(let k=0;k<3;k++){
+  const m=polygonMetrics(polygon,p.x,p.y);
+  if(m.clearance>=pad)break;
+  const displacement=pad-m.clearance;
+  p.x=m.near.x+m.normalX*(pad+1);
+  p.y=m.near.y+m.normalY*(pad+1);
+  if(!hit){
+   const towardWall=(p.vx||0)*m.normalX+(p.vy||0)*m.normalY;
+   if(towardWall<0){const elasticity=.71;
+    p.vx-=(1+elasticity)*towardWall*m.normalX;
+    p.vy-=(1+elasticity)*towardWall*m.normalY;
+    p._towerRimBounce=(p._towerRimBounce||0)+1;
+   }
+  }
+  hit=true;
+ }
+ return hit;
+}
+
 // The same floor field is sampled for rendering, actor footing, and projectiles.
 // The only active context lives for a Tower encounter and is removed on exit.
 let active=null;
@@ -50,11 +123,26 @@ function nodes(realm,level=1,width=500,height=500,tick=0){
    z:lift,index:i};
  });
 }
+// Cache one geometry snapshot per simulation frame so high-speed multi-shot
+// encounters do not reconstruct 3D meshes for every swept bullet sample.
+let geometryCache=null;
+function geometry(realm,level,width,height,tick){
+ const key=[realm,level,width,height,tick].join(':');
+ if(geometryCache?.key===key)return geometryCache;
+ const platforms=nodes(realm,level,width,height,tick);
+ return (geometryCache={key,platforms,polygons:platforms.map(n=>footprint(realm,n))});
+}
 function heightAt(realm,level,x,y,width=500,height=500,tick=0){
- let z=0;const platforms=nodes(realm,level,width,height,tick);
- for(const n of platforms){
-   const distance=Math.hypot(x-n.x,y-n.y)/n.r;
-   z=Math.max(z,n.z*(1-smooth((distance-.67)/.43)));
+ let z=0;const geo=geometry(realm,level,width,height,tick),platforms=geo.platforms;
+ for(let i=0;i<platforms.length;i++){
+   const n=platforms[i];
+   const shape=polygonMetrics(geo.polygons[i],x,y);
+   // Flat tops and narrow, tangible slopes instead of three soft circles.
+   let plateau=smooth(shape.clearance/Math.max(5,n.r*.17));
+   if(realm==='fire'&&n.index===0){const radial=Math.hypot(x-n.x,y-n.y)/n.r;
+     if(radial<.32)plateau*=.88; // recessed crater; rim remains elevated
+   }
+   z=Math.max(z,n.z*plateau);
  }
  // Previously only painted bridges linked the islands: a fighter looked as
  // though it walked on a ramp, but its physics instantly fell to z=0.
@@ -65,6 +153,32 @@ function heightAt(realm,level,x,y,width=500,height=500,tick=0){
    const halfWidth=Math.min(width,height)*.042;
    const ridge=between(a.z,b.z,t)*.88*(1-smooth((dist-halfWidth*.65)/(halfWidth*.65)));
    z=Math.max(z,ridge);
+ }
+ // Distinct terrain cross-sections exist BETWEEN the major terraces.
+ // They affect actor elevation and low-flying projectiles, not just color.
+ const nx=x/Math.max(1,width),ny=y/Math.max(1,height);
+ const segment=(x1,y1,x2,y2)=>{
+   const dx=x2-x1,dy=y2-y1,u=clamp(((nx-x1)*dx+(ny-y1)*dy)/(dx*dx+dy*dy||1),0,1);
+   return Math.hypot(nx-x1-u*dx,ny-y1-u*dy);
+ };
+ if(realm==='time'){
+   const ring=Math.hypot(nx-.5,ny-.5),gear=smooth((.055-Math.abs(ring-.345))/.04);
+   z=Math.max(z,13*gear); // external clock track: a raised circular rail
+ }else if(realm==='space'){
+   const pit=smooth((.105-Math.hypot(nx-.35,ny-.59))/.072);
+   z=Math.max(0,z-18*pit); // gravitational sink beside the triangular spine
+ }else if(realm==='storm'){
+   const crest=smooth((.062-segment(.15,.63,.83,.34))/.05);
+   z=Math.max(z,22*crest); // long diagonal ridge, not isolated disks
+ }else if(realm==='ice'){
+   const fault=smooth((.031-segment(.11,.52,.87,.47))/.027);
+   z=Math.max(0,z-17*fault); // fissure in the rectangular ice shelf
+ }else if(realm==='forest'){
+   const root=smooth((.072-segment(.16,.71,.80,.30))/.055);
+   z=Math.max(z,17*root); // thick ridgeline across the living ground
+ }else if(realm==='fire'){
+   const rim=smooth((.055-Math.abs(Math.hypot(nx-.5,ny-.46)-.30))/.049);
+   z=Math.max(z,14*rim); // basalt rim surrounds the recessed caldera
  }
  return z;
 }
@@ -87,27 +201,76 @@ function paint(ctx,realm,level,width=500,height=500,frame=0){
  const theme=C[realm];if(!theme||!ctx)return false;
  const platforms=nodes(realm,level,width,height,frame);
  ctx.save();
+ // The arena silhouette is the actual collision perimeter (including indents).
+ // Color the void outside it distinctly so the rebound edge is readable.
+ const rim=outline(realm,width,height);
+ ctx.save();polygonPath(ctx,rim);ctx.fillStyle=theme.base;ctx.globalAlpha=.78;ctx.fill();
+ ctx.globalAlpha=1;ctx.strokeStyle=theme.rim;ctx.lineWidth=5;ctx.lineJoin='round';ctx.stroke();
+ ctx.strokeStyle=theme.side;ctx.lineWidth=15;ctx.globalAlpha=.47;ctx.stroke();ctx.restore();
+ // Low-lying ridges and fissures are physically sampled in heightAt.
+ ctx.save();ctx.lineCap='round';ctx.globalAlpha=.74;
+ if(realm==='storm'||realm==='forest'||realm==='ice'){
+   const a=realm==='storm'?[.15,.63,.83,.34]:realm==='forest'?[.16,.71,.80,.30]:[.11,.52,.87,.47];
+   ctx.beginPath();ctx.moveTo(a[0]*width,a[1]*height);ctx.lineTo(a[2]*width,a[3]*height);
+   ctx.lineWidth=Math.min(width,height)*(realm==='ice'?.027:.038);
+   ctx.strokeStyle=realm==='ice'?'#071725':realm==='storm'?'#b5f0ff':'#446f37';ctx.stroke();
+ }else if(realm==='time'||realm==='fire'){
+   ctx.beginPath();ctx.ellipse(width*.5,height*(realm==='fire'?.46:.5),width*(realm==='fire'?.30:.345),height*(realm==='fire'?.30:.345),0,0,PI*2);
+   ctx.strokeStyle=theme.rim;ctx.lineWidth=Math.min(width,height)*.025;ctx.stroke();
+ }else if(realm==='space'){
+   ctx.beginPath();ctx.arc(width*.35,height*.59,Math.min(width,height)*.085,0,PI*2);
+   ctx.strokeStyle='#281d54';ctx.lineWidth=Math.min(width,height)*.045;ctx.stroke();
+ }
+ ctx.restore();
   // The top physically sits z units above the ground footprint. Draw
   // the unprojected circular footprint here: ArenaDepth.projectWorld turns
   // it into the same perspective ellipse used for the fighter's feet.
  for(const n of platforms){
-   const r=n.r,topY=n.y-n.z;
-   ctx.fillStyle='#00000036';ctx.beginPath();ctx.ellipse(n.x+7,n.y+8,r*1.12,r*.94,0,0,PI*2);ctx.fill();
+   const r=n.r,topY=n.y-n.z,upper=footprint(realm,n);
+   const base=upper.map(p=>({x:p.x,y:p.y}));
+   const top=upper.map(p=>({x:p.x,y:p.y-n.z}));
+   ctx.fillStyle='#0000004a';polygonPath(ctx,base);ctx.fill();
+   // Front-facing side walls expose actual world elevation. Irregular
+   // polygons, triangle edges, gear teeth and square corners stay visible.
    ctx.fillStyle=theme.side;
-   ctx.beginPath();ctx.arc(n.x,n.y,r,0,PI*2);ctx.fill();
-   // Front wall exposes the full real elevation, not a decorative fraction.
-   ctx.beginPath();ctx.moveTo(n.x+r,topY);ctx.arc(n.x,topY,r,0,PI);
-   ctx.lineTo(n.x-r,n.y);ctx.arc(n.x,n.y,r,PI,0,true);ctx.closePath();ctx.fill();
-   ctx.beginPath();ctx.arc(n.x,topY,r,0,PI*2);
-   ctx.fillStyle=theme.top;ctx.globalAlpha=.84;ctx.fill();ctx.globalAlpha=1;
-   ctx.strokeStyle=theme.rim;ctx.lineWidth=2.7;ctx.stroke();
-   ctx.strokeStyle='#ffffff46';ctx.lineWidth=1.2;
-   ctx.beginPath();ctx.arc(n.x,topY-r*.12,r*.72,PI*1.08,PI*1.92);ctx.stroke();
-   // Theme glyph is a floor engraving, not a character sprite.
-   ctx.fillStyle=theme.base;ctx.globalAlpha=.50;
-   ctx.textAlign='center';ctx.textBaseline='middle';
-   ctx.font='bold '+Math.round(r*.47)+'px system-ui';
-   ctx.fillText(theme.symbol,n.x,topY-4);ctx.globalAlpha=1;
+   for(let i=0;i<upper.length;i++){
+     const a=upper[i],b=upper[(i+1)%upper.length];
+     if(b.x-a.x<0){ctx.beginPath();ctx.moveTo(a.x,a.y-n.z);ctx.lineTo(b.x,b.y-n.z);
+       ctx.lineTo(b.x,b.y);ctx.lineTo(a.x,a.y);ctx.closePath();ctx.fill();}
+   }
+   ctx.fillStyle=theme.top;ctx.globalAlpha=.91;
+   polygonPath(ctx,top);ctx.fill();ctx.globalAlpha=1;
+   ctx.strokeStyle=theme.rim;ctx.lineWidth=2.8;polygonPath(ctx,top);ctx.stroke();
+   ctx.strokeStyle='#ffffff55';ctx.lineWidth=1.2;
+   ctx.beginPath();ctx.moveTo(top[0].x,top[0].y);
+   ctx.lineTo(top[Math.floor(top.length/2)].x,top[Math.floor(top.length/2)].y);ctx.stroke();
+   ctx.save();ctx.translate(n.x,topY);
+   if(realm==='fire'){
+     ctx.strokeStyle='#ff7042';ctx.lineWidth=n.index===0?6:3;
+     ctx.beginPath();ctx.arc(0,0,r*(n.index===0?.29:.20),0,PI*2);ctx.stroke();
+     for(let k=0;k<6;k++){const a=k*PI/3;ctx.beginPath();ctx.moveTo(Math.cos(a)*r*.32,Math.sin(a)*r*.32);
+       ctx.lineTo(Math.cos(a+.12)*r*.78,Math.sin(a+.12)*r*.78);ctx.stroke();}
+   }else if(realm==='time'){
+     ctx.strokeStyle='#382b1d';ctx.lineWidth=6;
+     ctx.beginPath();ctx.arc(0,0,r*.49,0,PI*2);ctx.stroke();
+     ctx.beginPath();ctx.arc(0,0,r*.12,0,PI*2);ctx.stroke();
+   }else if(realm==='space'){
+     ctx.strokeStyle='#d9c3ff';ctx.lineWidth=3;
+     for(let i=0;i<3;i++){const a=i*2*PI/3-PI/2;ctx.beginPath();ctx.moveTo(0,0);
+       ctx.lineTo(Math.cos(a)*r*.85,Math.sin(a)*r*.85);ctx.stroke();}
+   }else if(realm==='storm'){
+     ctx.strokeStyle='#c1f6ff';ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(-r*.8,0);
+     ctx.lineTo(-r*.1,-r*.3);ctx.lineTo(r*.15,r*.3);ctx.lineTo(r*.87,0);ctx.stroke();
+   }else if(realm==='ice'){
+     ctx.strokeStyle='#e8fcff';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(-r*.83,r*.08);
+     ctx.lineTo(-r*.14,-r*.27);ctx.lineTo(r*.33,r*.07);ctx.lineTo(r*.83,-r*.54);ctx.stroke();
+   }else{
+     ctx.strokeStyle='#3f6237';ctx.lineWidth=5;for(let i=-2;i<=2;i++){
+       ctx.beginPath();ctx.moveTo(-r*.8,i*r*.25);ctx.bezierCurveTo(-r*.2,i*r*.09,r*.1,i*r*.32,r*.85,i*r*.10);ctx.stroke();}
+   }
+   ctx.fillStyle=theme.base;ctx.globalAlpha=.75;
+   ctx.textAlign='center';ctx.textBaseline='middle';ctx.font='bold '+Math.round(r*.30)+'px system-ui';
+   ctx.fillText(theme.symbol,0,-4);ctx.restore();
  }
  // Realm architecture painted behind combatants, without changing collision.
  ctx.save();ctx.lineWidth=2;ctx.globalAlpha=.68;
@@ -169,7 +332,8 @@ function paint(ctx,realm,level,width=500,height=500,frame=0){
 function sync(roster){
  if(!active)return;
  for(const p of roster||[])if(p&&p.hp>0)
-   {p._towerPreviousFloor=Number(p.towerGroundZ)||0;
+   {boundaryBounce(p,active.realm,active.width,active.height);
+    p._towerPreviousFloor=Number(p.towerGroundZ)||0;
     p.towerGroundZ=worldHeight(p.x,p.y);}
 }
 function step(realm,level,roster,width=500,height=500,tick=0,damage){
@@ -178,6 +342,7 @@ function step(realm,level,roster,width=500,height=500,tick=0,damage){
  const curr=nodes(realm,level,width,height,tick),oldNodes=prev?.realm===realm?nodes(realm,level,width,height,prev.tick):null;
  for(const p of roster||[]){
   if(!p||p.hp<=0)continue;
+  boundaryBounce(p,realm,width,height);
   const before=Number.isFinite(p._towerPreviousFloor)?p._towerPreviousFloor:(Number(p.towerGroundZ)||0);
   delete p._towerPreviousFloor;
   // Moving gears carry grounded occupants a little; travel stays inside
@@ -211,10 +376,11 @@ function step(realm,level,roster,width=500,height=500,tick=0,damage){
  }
 }
 function clear(roster){
- active=null;
+ active=null;geometryCache=null;
  for(const p of roster||[])if(p){
-  for(const key of ['towerGroundZ','towerGravity','towerTerrainSpeed','towerHeightLabel','_towerPreviousFloor','_towerVentHitFrame'])delete p[key];
+  for(const key of ['towerGroundZ','towerGravity','towerTerrainSpeed','towerHeightLabel','_towerPreviousFloor','_towerVentHitFrame','_towerRimBounce'])delete p[key];
  }
 }
-g.ArenaTowerTerrain={nodes,heightAt,worldHeight,obstructsShot,paint,sync,step,clear,THEMES:C};
+g.ArenaTowerTerrain={nodes,heightAt,worldHeight,obstructsShot,paint,sync,step,clear,
+  outline,footprint,arenaClearance,isWalkable,boundaryBounce,THEMES:C};
 })(globalThis);

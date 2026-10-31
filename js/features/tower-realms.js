@@ -2,12 +2,12 @@
 (function(g){
 'use strict';
 const REALMS=[
- {id:'time',name:'시간의 탑',icon:'◷',color:'#f5ce78',scene:8,subtitle:'멈춘 시계의 성채',terrain:'가속·정체 시계판',hint:'황금 시계판에서는 스킬 충전이 빨라집니다. 정체 시계판은 이동과 스킬 충전을 늦춥니다.',bosses:['시간의 파수꾼','영겁의 시계신'],pattern:'시계 바늘',blessing:'시간의 잔향'},
- {id:'space',name:'우주의 탑',icon:'✧',color:'#c8aaff',scene:9,subtitle:'무중력의 별자리',terrain:'중력·반중력 궤도',hint:'예고된 중력장은 중심으로 끌어당기고 반중력장은 밀어냅니다.',bosses:['중력의 지배자','특이점의 군주'],pattern:'공전 고리',blessing:'별의 파편'},
- {id:'fire',name:'화염의 탑',icon:'♨',color:'#ffad72',scene:4,subtitle:'흑요석 아래의 심장',terrain:'용암 균열·분화 화구',hint:'오래 예고된 용암 균열을 벗어나세요. 분화는 피해와 화상을 일으킵니다.',bosses:['용암의 심장','종말의 화산왕'],pattern:'용암 십자',blessing:'잿불 각인'},
- {id:'storm',name:'폭풍의 탑',icon:'ϟ',color:'#8ce7f3',scene:3,subtitle:'구름 위 뇌명의 첨탑',terrain:'순환 돌풍·낙뢰 전선',hint:'돌풍은 이동 경로를 바꾸고 낙뢰 전선은 예고 후 공격합니다.',bosses:['천둥의 파수꾼','폭풍의 제왕'],pattern:'번개 격자',blessing:'폭풍의 박동'},
- {id:'ice',name:'빙결의 탑',icon:'❄',color:'#bcecff',scene:2,subtitle:'푸른 결정의 성소',terrain:'미끄럼판·동결 빙정',hint:'얼음판에서는 관성이 커집니다. 동결 빙정은 둔화와 짧은 속박을 일으킵니다.',bosses:['빙정의 수호자','영원의 빙하왕'],pattern:'서리 봉쇄',blessing:'빙정의 숨결'},
- {id:'forest',name:'숲의 탑',icon:'♧',color:'#b5e992',scene:6,subtitle:'고대 뿌리의 미궁',terrain:'맹독 포자·파수목·뿌리',hint:'포자숲은 중독을, 파수목은 주기 피해를, 뿌리는 속박을 일으킵니다.',bosses:['고목의 수호자','세계수의 심장'],pattern:'뿌리 포위',blessing:'세계수의 씨앗'}
+ {id:'time',name:'시간의 탑',icon:'◷',color:'#f5ce78',scene:8,subtitle:'멈춘 시계의 성채',terrain:'톱니 원형 경기장·회전 기어·시계 레일',hint:'황금 시계판에서는 스킬 충전이 빨라집니다. 정체 시계판은 이동과 스킬 충전을 늦춥니다.',bosses:['시간의 파수꾼','영겁의 시계신'],pattern:'시계 바늘',blessing:'시간의 잔향'},
+ {id:'space',name:'우주의 탑',icon:'✧',color:'#c8aaff',scene:9,subtitle:'무중력의 별자리',terrain:'삼각형 부유 전장·중력 웅덩이·저중력',hint:'예고된 중력장은 중심으로 끌어당기고 반중력장은 밀어냅니다.',bosses:['중력의 지배자','특이점의 군주'],pattern:'공전 고리',blessing:'별의 파편'},
+ {id:'fire',name:'화염의 탑',icon:'♨',color:'#ffad72',scene:4,subtitle:'흑요석 아래의 심장',terrain:'불규칙한 화산 외곽·분화구·용암 승강대',hint:'오래 예고된 용암 균열을 벗어나세요. 분화는 피해와 화상을 일으킵니다.',bosses:['용암의 심장','종말의 화산왕'],pattern:'용암 십자',blessing:'잿불 각인'},
+ {id:'storm',name:'폭풍의 탑',icon:'ϟ',color:'#8ce7f3',scene:3,subtitle:'구름 위 뇌명의 첨탑',terrain:'마름모 번개 지형·대각 고지·상승기류',hint:'돌풍은 이동 경로를 바꾸고 낙뢰 전선은 예고 후 공격합니다.',bosses:['천둥의 파수꾼','폭풍의 제왕'],pattern:'번개 격자',blessing:'폭풍의 박동'},
+ {id:'ice',name:'빙결의 탑',icon:'❄',color:'#bcecff',scene:2,subtitle:'푸른 결정의 성소',terrain:'깨진 사각 빙판·낮은 균열·붕괴 절벽',hint:'얼음판에서는 관성이 커집니다. 동결 빙정은 둔화와 짧은 속박을 일으킵니다.',bosses:['빙정의 수호자','영원의 빙하왕'],pattern:'서리 봉쇄',blessing:'빙정의 숨결'},
+ {id:'forest',name:'숲의 탑',icon:'♧',color:'#b5e992',scene:6,subtitle:'고대 뿌리의 미궁',terrain:'비대칭 숲 외곽·솟는 뿌리 고지·독성 포자',hint:'포자숲은 중독을, 파수목은 주기 피해를, 뿌리는 속박을 일으킵니다.',bosses:['고목의 수호자','세계수의 심장'],pattern:'뿌리 포위',blessing:'세계수의 씨앗'}
 ].map(x=>Object.freeze({...x,bosses:Object.freeze(x.bosses)}));
 const ENEMIES={
  time:['초침석','역행석','정지핵','초침석','역행석','정지핵','초침석','역행석'],
