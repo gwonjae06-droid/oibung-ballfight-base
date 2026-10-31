@@ -391,7 +391,8 @@ function update(p,target){
     if(!blocked&&target&&p.forgeClock%6===0){
       for(let tries=0;tries<skills.length;tries++){
         const i=(p.forgeCursor+tries)%skills.length,s=skills[i];
-        if(p.forgeTicks[i]<cooldownFrames(p,s))continue;
+        if(p.forgeTicks[i]<cooldownFrames(p,s)||
+          global.ArenaAutoAI?.canCast?.(p,target,s)===false)continue;
         p.forgeTicks[i]=0;cast(p,s,target,i);
         p.forgeCursor=(i+1)%skills.length;
         break;
