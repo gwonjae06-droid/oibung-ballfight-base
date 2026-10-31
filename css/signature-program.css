@@ -1,0 +1,17 @@
+/* One programmable move with actual conditional and ordered action blocks. */
+.signature-program-intro{border:1px solid #4b7197;border-radius:12px;padding:11px 13px;margin:6px 0;background:linear-gradient(130deg,#202f48,#182537);color:#edf6ff}
+.signature-program-intro strong{display:block;font-size:1rem;margin-bottom:5px}
+.signature-program-intro p{margin:0;color:#c5d7ea;font-size:.84rem;line-height:1.5}
+.signature-program-legacy{padding:12px;border:1px solid #ab8553;border-radius:11px;background:#302a22;color:#f3e2c6}
+.signature-program-legacy p{margin:6px 0 10px;font-size:.84rem}
+.signature-program-legacy button{padding:10px;border-radius:8px;background:#79532c;color:white;border:1px solid #d4a470;font-weight:700;cursor:pointer}
+.signature-condition{display:flex;align-items:center;gap:8px;margin:5px 0 5px 12px;flex-wrap:wrap}
+.signature-condition label{padding:5px 9px;border:1px solid #bd9c55;border-radius:8px;background:#705329;color:#fff;font-size:.79rem;font-weight:750}
+.signature-condition select{background:#f9f2e4;color:#372612;padding:7px;border:1px solid #bb9952;border-radius:6px;max-width:100%;font:inherit}
+.signature-execution{padding:10px;border-radius:9px;background:#1e3847;color:#e5f5fc;font-size:.86rem}
+.block-quick-skill.signature-single{border-color:#579ac4}
+.signature-single .block-quick-skill-head>button[data-op="select"]{cursor:default}
+.signature-single .block-quick-action{cursor:grab}
+.signature-single .block-quick-action:active{cursor:grabbing}
+.signature-single .block-quick-action.signature-drop-target{outline:2px dashed #f4d596;outline-offset:3px}
+@media(max-width:550px){.signature-condition{margin-left:2px}.signature-condition select{width:100%}}
