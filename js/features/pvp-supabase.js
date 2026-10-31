@@ -264,9 +264,22 @@ class SupabasePvpTransport{
   let snap=rule.snapshot(this.current,full);
   if(full){
    this.lastFull=now;
-   // The Free plan rejects oversized broadcasts. Keep essential controls
-   // flowing even when a particularly busy visual frame is too large.
-   if(JSON.stringify(snap).length>MAX_FRAME_BYTES)delete snap.world;
+   // Preserve vital projectile positions rather than dropping the ENTIRE
+   // effect world when a spell-spam frame exceeds the free-tier packet cap.
+   // Reduce optional decoration first. No extra network round trips.
+   if(snap.world&&JSON.stringify(snap).length>MAX_FRAME_BYTES){
+    const w=snap.world;
+    for(const key of ['effects','floatingTexts','shockwaves','objects']){
+     if(JSON.stringify(snap).length<=MAX_FRAME_BYTES)break;
+     if(Array.isArray(w[key]))w[key]=w[key].slice(-Math.max(0,Math.floor(w[key].length/3)));
+    }
+    for(const v of w.visualPlayers||[])for(const key of
+      ['forgeOrbs','forgeZones','poisonTears','waves','projectiles','forgeShots']){
+      if(JSON.stringify(snap).length<=MAX_FRAME_BYTES)break;
+      if(Array.isArray(v[key]))v[key]=v[key].slice(-Math.max(0,Math.floor(v[key].length/2)));
+    }
+    if(JSON.stringify(snap).length>MAX_FRAME_BYTES)delete snap.world;
+   }
   }
   snap.protocol=3;
   snap.seq=(this.sequence=(this.sequence||0)+1);
