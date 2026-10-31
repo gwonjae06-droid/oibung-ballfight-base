@@ -124,6 +124,7 @@ function stopMatch(){
   isPlaying=false;
   isGameOver=true;
   roundStopped=true;
+  globalThis.ArenaStalemate?.finish?.();
   globalThis.BackgroundMusic?.setBattle(false);
   screenShake=0;
   settleRound(null,'stopped');
@@ -310,6 +311,7 @@ function update() {
   if(finalAlive.length<=1||expired){
     isGameOver=true;isPlaying=false;
     if(expired&&finalAlive.length>1)roundStopped=true;
+    globalThis.ArenaStalemate?.finish?.();
     globalThis.BackgroundMusic?.setBattle(false);
     const winner=finalAlive.length===1?finalAlive[0]:null;
     settleRound(winner,expired?'timeout':undefined);
