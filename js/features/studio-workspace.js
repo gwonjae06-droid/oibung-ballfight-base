@@ -91,7 +91,8 @@ looks.hidden=true;
 [basics,appearance].filter(Boolean).forEach(node=>looks.append(node));
 // Keep live code blocks at the beginning of the editing column. The saved
 // fighter manager stays accessible below the primary Save action.
-studio.replaceChildren(...[name,rolePicker,tabs,skills,looks,create,manager,saved].filter(Boolean));
+studio.replaceChildren(...[name,tabs,skills,looks,create,manager,saved].filter(Boolean));
+studio.insertBefore(rolePicker,tabs);
 refreshRole();
 // Refresh the count and rows after moving their original DOM container.
 global.SkillForge.refreshList?.();
