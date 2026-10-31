@@ -1,0 +1,152 @@
+/* Animated accents aligned to the six individual towers INSIDE one SVG panorama.
+   Render-only overlays; never change hit regions, labels or original artwork. */
+#screen-tower .tower-panorama-animations{
+ position:absolute;inset:0;z-index:3;overflow:hidden;pointer-events:none;
+}
+#screen-tower .tower-image-motion{
+ position:absolute;left:var(--tower-x);top:18%;width:16.6667%;height:64%;
+ transform:translateX(-50%);pointer-events:none;contain:layout paint;
+}
+#screen-tower .tower-image-motion i{
+ position:absolute;display:block;pointer-events:none;box-sizing:border-box;
+}
+#screen-tower .tower-image-halo{inset:18% 7%;border-radius:50%;opacity:.55}
+#screen-tower .tower-image-trace{inset:0}
+#screen-tower .tower-image-particles{inset:0}
+/* Time: actual rotating clock-like perimeter, gold sweep and tiny gear ticks. */
+#screen-tower .tower-image-motion[data-realm=time] .tower-image-halo{
+ inset:33% 24% 36%;border:2px solid #ffdc8c99;
+ box-shadow:0 0 12px #ffc35a6b,inset 0 0 12px #ffd47b40;
+ background:repeating-conic-gradient(#ffdc8c77 0deg 2deg,transparent 2deg 30deg);
+ animation:tower-art-clock 14s linear infinite;
+}
+#screen-tower .tower-image-motion[data-realm=time] .tower-image-trace::before{
+ content:"";position:absolute;left:50%;top:36%;width:2px;height:21%;
+ background:linear-gradient(#fff4c1,#dca23e00);transform-origin:50% 86%;
+ box-shadow:0 0 8px #ffd36e8c;animation:tower-art-clock 8s linear infinite;
+}
+#screen-tower .tower-image-motion[data-realm=time] .tower-image-particles{
+ background:radial-gradient(circle at 33% 45%,#ffe9ae 0 2px,transparent 3px),radial-gradient(circle at 77% 71%,#ffc86b 0 2px,transparent 3px);
+ animation:tower-art-pulse 4s ease-in-out infinite;
+}
+/* Space: elliptical orbit surrounding the tower's glowing core and drifting stars. */
+#screen-tower .tower-image-motion[data-realm=space] .tower-image-halo{
+ inset:30% 12% 40%;border:3px solid #d599ffbb;border-radius:50%;
+ box-shadow:0 0 12px #b663ec77;
+ animation:tower-art-orbit 6s ease-in-out infinite;
+}
+#screen-tower .tower-image-motion[data-realm=space] .tower-image-trace{
+ background:radial-gradient(ellipse at 50% 48%,#bc7dff55 0,transparent 39%);
+ animation:tower-art-pulse 5.4s ease-in-out infinite;
+}
+#screen-tower .tower-image-motion[data-realm=space] .tower-image-particles{
+ background:radial-gradient(circle at 22% 23%,#e4ceff 0 2px,transparent 3px),radial-gradient(circle at 74% 30%,#d5b2ff 0 2px,transparent 3px),radial-gradient(circle at 34% 68%,#bd9cff 0 2px,transparent 3px),radial-gradient(circle at 82% 81%,#e6ccff 0 1px,transparent 3px);
+ animation:tower-art-star-drift 6s linear infinite;
+}
+/* Fire: flame core, ember rise, shimmering heat. Avoid full-screen blur/filter. */
+#screen-tower .tower-image-motion[data-realm=fire] .tower-image-halo{
+ inset:20% 28% 20%;border-radius:50% 50% 30% 30%;
+ background:radial-gradient(ellipse at 50% 90%,#ffad4366,#ef3d1b46 45%,transparent 73%);
+ animation:tower-art-flame 1.7s ease-in-out infinite;
+}
+#screen-tower .tower-image-motion[data-realm=fire] .tower-image-trace{
+ background:linear-gradient(95deg,transparent 20%,#ff8b3221 50%,transparent 75%);
+ animation:tower-art-heat 3.5s ease-in-out infinite;
+}
+#screen-tower .tower-image-motion[data-realm=fire] .tower-image-particles{
+ background:radial-gradient(circle at 35% 72%,#ffdf87 0 2px,transparent 4px),radial-gradient(circle at 63% 59%,#ff924e 0 2px,transparent 4px),radial-gradient(circle at 42% 37%,#ffd780 0 1px,transparent 3px),radial-gradient(circle at 73% 85%,#ff6728 0 2px,transparent 4px);
+ animation:tower-art-ember 2.8s ease-out infinite;
+}
+/* Storm: stepped double-flash and sharp lightning silhouette over tower, not UI. */
+#screen-tower .tower-image-motion[data-realm=storm] .tower-image-halo{
+ inset:16% 10%;background:radial-gradient(ellipse,#76d9ff4f,transparent 67%);
+ animation:tower-art-storm-glow 4.3s steps(1,end) infinite;
+}
+#screen-tower .tower-image-motion[data-realm=storm] .tower-image-trace::before{
+ content:"";position:absolute;left:43%;top:5%;width:25%;height:54%;
+ background:linear-gradient(#e2faff,#62d3ff 55%,transparent 100%);
+ clip-path:polygon(60% 0,17% 43%,47% 47%,25% 100%,94% 40%,61% 35%,79% 0);
+ animation:tower-art-storm-flash 4.3s steps(1,end) infinite;
+}
+#screen-tower .tower-image-motion[data-realm=storm] .tower-image-particles{
+ background:radial-gradient(circle at 30% 48%,#b4f4ff 0 2px,transparent 3px),radial-gradient(circle at 74% 61%,#95edff 0 2px,transparent 3px);
+ animation:tower-art-storm-glow 4.3s steps(1,end) infinite;
+}
+/* Ice: diagonal crystalline specular pass + light falling snow. */
+#screen-tower .tower-image-motion[data-realm=ice] .tower-image-halo{
+ inset:14% 12%;border-radius:15%;
+ background:linear-gradient(115deg,transparent 30%,#eaffff50 48%,transparent 60%);
+ animation:tower-art-ice-shine 5.2s ease-in-out infinite;
+}
+#screen-tower .tower-image-motion[data-realm=ice] .tower-image-trace{
+ background:radial-gradient(ellipse at 49% 55%,#bdf4ff3d,transparent 66%);
+ animation:tower-art-pulse 5s ease-in-out infinite;
+}
+#screen-tower .tower-image-motion[data-realm=ice] .tower-image-particles{
+ background:radial-gradient(circle at 25% 11%,#e9ffff 0 2px,transparent 3px),radial-gradient(circle at 48% 23%,#d5f9ff 0 2px,transparent 3px),radial-gradient(circle at 69% 14%,#f1ffff 0 2px,transparent 3px),radial-gradient(circle at 80% 36%,#c2efff 0 1px,transparent 3px);
+ animation:tower-art-snow 5.8s linear infinite;
+}
+/* Forest: canopy glow sways, leaf-shaped motes drift and settle. */
+#screen-tower .tower-image-motion[data-realm=forest] .tower-image-halo{
+ inset:5% 0 32%;border-radius:50%;background:radial-gradient(ellipse at 65% 28%,#b4ff9150,transparent 65%);
+ transform-origin:55% 78%;animation:tower-art-leaf-sway 5.7s ease-in-out infinite;
+}
+#screen-tower .tower-image-motion[data-realm=forest] .tower-image-trace{
+ background:radial-gradient(circle at 62% 18%,#9df68b32 0 12px,transparent 24px),radial-gradient(circle at 82% 40%,#a6e86930 0 9px,transparent 20px);
+ animation:tower-art-pulse 5.8s ease-in-out infinite;
+}
+#screen-tower .tower-image-motion[data-realm=forest] .tower-image-particles{
+ inset:3% 0 18%;background:radial-gradient(ellipse at 24% 30%,#d0ffa7 0 3px,transparent 4px),radial-gradient(ellipse at 71% 18%,#a3e788 0 3px,transparent 4px),radial-gradient(ellipse at 80% 57%,#c3f295 0 3px,transparent 4px);
+ animation:tower-art-leaf-drift 6.6s ease-in-out infinite;
+}
+/* Ancient portrait: moving seal, subtle pulse over existing multi-eyed art. */
+#screen-tower .ancient-portrait-motions{
+ position:absolute;inset:0;z-index:2;overflow:hidden;pointer-events:none;
+}
+#screen-tower .ancient-portrait-motions i{position:absolute;display:block;pointer-events:none}
+#screen-tower .ancient-seal-ring{
+ width:31%;aspect-ratio:1;left:62%;top:1%;border-radius:50%;
+ border:1px solid #76dcf75e;box-shadow:0 0 0 9px #55d4f009,0 0 24px #27c1ef26;
+ background:repeating-conic-gradient(from 0deg,transparent 0deg 28deg,#7bcafb3b 29deg 30deg,transparent 31deg 60deg);
+ opacity:.38;animation:tower-art-ancient-seal 11s linear infinite;
+}
+#screen-tower .ancient-gaze-glimmer{
+ inset:7% 0 5% 52%;background:radial-gradient(circle at 58% 27%,#72f8ff72 0 1%,transparent 5%),radial-gradient(circle at 72% 40%,#86faff77 0 1%,transparent 4%),radial-gradient(circle at 35% 54%,#50ebff6c 0 1%,transparent 5%);
+ animation:tower-art-ancient-gaze 7.6s ease-in-out infinite;
+}
+#screen-tower .ancient-tentacle-haze{
+ inset:5% -4% -15% 53%;border-radius:50%;
+ background:radial-gradient(ellipse at 63% 73%,#54bfeb33 0,transparent 55%);
+ transform-origin:60% 80%;animation:tower-art-ancient-tentacle 7s ease-in-out infinite;
+}
+#screen-tower .ancient-unlock[data-unlocked="true"] .ancient-seal-ring{opacity:.7}
+#screen-tower .ancient-unlock:hover .ancient-gaze-glimmer{animation-duration:4.5s}
+@keyframes tower-art-clock{to{transform:rotate(360deg)}}
+@keyframes tower-art-pulse{50%{opacity:.3;transform:scale(1.055)}}
+@keyframes tower-art-orbit{0%,100%{transform:rotate(-16deg) scale(1)}50%{transform:rotate(-10deg) scale(1.1)}}
+@keyframes tower-art-star-drift{0%,100%{transform:translateY(0);opacity:.3}50%{transform:translateY(-10px);opacity:.96}}
+@keyframes tower-art-flame{0%,100%{transform:scale(1,.95);opacity:.5}50%{transform:translateY(-7px) scale(1.06,1.12);opacity:.86}}
+@keyframes tower-art-heat{50%{transform:skewX(3deg);opacity:.4}}
+@keyframes tower-art-ember{0%{transform:translateY(16px);opacity:0}20%{opacity:.9}100%{transform:translate(8px,-44px);opacity:0}}
+@keyframes tower-art-storm-glow{0%,80%,86%,91%,100%{opacity:0}82%,88%{opacity:.85}}
+@keyframes tower-art-storm-flash{0%,80%,86%,91%,100%{opacity:0}82%{opacity:.87}88%{opacity:.68}}
+@keyframes tower-art-ice-shine{0%{transform:translateX(-34%);opacity:0}30%{opacity:.8}100%{transform:translateX(40%);opacity:0}}
+@keyframes tower-art-snow{0%{transform:translateY(-12px);opacity:0}20%{opacity:.8}100%{transform:translate(11px,40px);opacity:0}}
+@keyframes tower-art-leaf-sway{0%,100%{transform:rotate(-1.5deg)}50%{transform:rotate(2deg) translateX(-4px)}}
+@keyframes tower-art-leaf-drift{0%,100%{transform:translate(0,0) rotate(-8deg);opacity:.28}50%{transform:translate(-10px,15px) rotate(8deg);opacity:.9}}
+@keyframes tower-art-ancient-seal{to{transform:rotate(360deg)}}
+@keyframes tower-art-ancient-gaze{0%,42%,55%,100%{opacity:.22}45%,50%{opacity:.87}48%{opacity:.03}}
+@keyframes tower-art-ancient-tentacle{50%{transform:translateY(8px) rotate(3deg);opacity:.56}}
+/* Animations are purely decorative; honor OS and in-game reduced-motion flags. */
+@media(prefers-reduced-motion:reduce){
+ #screen-tower .tower-panorama-animations,#screen-tower .ancient-portrait-motions{display:none!important}
+}
+body.reduce-effects #screen-tower .tower-panorama-animations,
+body.reduce-effects #screen-tower .ancient-portrait-motions,
+body.reduced-effects #screen-tower .tower-panorama-animations,
+body.reduced-effects #screen-tower .ancient-portrait-motions,
+body.low-effects #screen-tower .tower-panorama-animations,
+body.low-effects #screen-tower .ancient-portrait-motions{display:none!important}
+
+#screen-tower.tower-motion-reduced .tower-panorama-animations,
+#screen-tower.tower-motion-reduced .ancient-portrait-motions{display:none!important}
