@@ -334,6 +334,22 @@ function paint(){
  }else{
    global.ArenaMotion?.setAlpha?.(1);
    fxFrameCarry+=dt;
+   // Reconstruct a visual-only trajectory between infrequent 3D world
+   // snapshots. The host remains the sole authority for projectile hits.
+   const visualTicks=Math.min(3,Math.max(0,dt/(1000/60)));
+   for(const p of players)for(const shot of p.forgeShots||[]){
+     if(Number.isFinite(shot.vx)&&Number.isFinite(shot.vy)){
+       shot.x+=shot.vx*visualTicks;shot.y+=shot.vy*visualTicks;
+     }
+   }
+   for(const b of AdvancedCombat.projectiles||[]){
+     if(!(b.travel>0)||!Number.isFinite(b.startX)||!Number.isFinite(b.tx))continue;
+     b.age=Math.min(b.travel,(Number(b.age)||0)+visualTicks);
+     const ratio=b.age/b.travel;
+     b.x=b.startX+(b.tx-b.startX)*ratio;
+     b.y=b.startY+(b.ty-b.startY)*ratio;
+     if(b.kind==='arcshot')b.height=4*ratio*(1-ratio)*88;
+   }
    const frames=Math.min(3,Math.floor(fxFrameCarry/(1000/60)));
    for(let i=0;i<frames;i++)SkillVisuals.tick();
    fxFrameCarry=Math.max(0,fxFrameCarry-frames*1000/60);
