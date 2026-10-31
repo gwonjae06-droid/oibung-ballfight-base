@@ -34,7 +34,7 @@ test('beginner and expert UIs write the same versioned Scratch program',()=>{
  const b=src('js/features/scratch-beginner.js'),expert=src('js/features/scratch-studio.js');
  assert.match(b,/S\.applyProgram\(/);
  assert.match(b,/S\.applyFields\(/);
- assert.match(b,/engine/);
+ assert.match(b,/compiler/);
  assert.match(expert,/applyProgram\(program,fields=/);
  assert.match(expert,/applyFields\(fields=/);
  assert.match(expert,/g\.ScratchStudio\?\.onChange\?\.\(\)/);
