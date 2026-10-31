@@ -67,11 +67,17 @@ const skill=()=>({name:'새 스킬',trigger:'auto',cooldown:3,threshold:40,actio
 function normalize(value,{towerEnemy=false}={}){
   if(!value||typeof value!=='object'||Array.isArray(value))throw Error('올바른 설정을 입력하세요.');
   if(!Array.isArray(value.skills)||value.skills.length<1)throw Error('스킬을 한 개 이상 추가하세요.');
+  // Only opted-in new profiles gain class stats. Legacy saved fighters and
+  // transient tower opponents keep their original authored HP/speed intact.
+  const archetype=!towerEnemy&&global.ForgeArchetypes?.get?.(value.archetype)?value.archetype:'legacy';
+  const base=global.ForgeArchetypes?.get?.(archetype);
   return {
     name:clean(value.name,14)||'커스텀 파이터',blurb:clean(value.blurb,90),
     artKey:clean(value.artKey||'',52).replace(/[^a-zA-Z0-9_-]/g,''),
-    color:color(value.color),effectColor:color(value.effectColor||value.color),hp:Math.round(number(value.hp,140,towerEnemy?8000:500,250)),
-    speed:number(value.speed,.6,5,1.8),
+    archetype,
+    color:color(value.color),effectColor:color(value.effectColor||value.color),
+    hp:base?base.hp:Math.round(number(value.hp,140,towerEnemy?8000:500,250)),
+    speed:base?base.speed:number(value.speed,.6,5,1.8),
     allAbilities:value.allAbilities===true,
     // Only transient Tower enemies may exceed the four-skill player limit.
     skills:value.skills.slice(0,towerEnemy?6:4).map((s,i)=>{
@@ -214,6 +220,7 @@ function hit(p,e,action,multiplier=1,attackZ) {
   if(!global.AdvancedCombat&&e.jumpState&&e.jumpState!=='ground')return false;
   const d=Math.max(0,Math.round((action.damage||0)*multiplier*(global.ForgeExpansion?.damageScale(p,e)||1)*
     (global.ArenaBalance?.factorOf?.(p)??1)*(global.ArenaStalemate?.attackFactor?.()??1)*
+    (global.ForgeArchetypes?.attack?.(p)??1)*(global.ForgeArchetypes?.received?.(e)??1)*
     (e.towerEnemy&&Number.isFinite(e.towerDefense)?e.towerDefense:1)));
   const frame=Number(p._forgeBalanceFrame)||0;
   if(e.invincible<=0){e._forgeImpactGrace=0;e._forgeImpactStamps=new WeakMap();}
@@ -235,7 +242,11 @@ function hit(p,e,action,multiplier=1,attackZ) {
     addFloatingText('-'+d,e.x,e.y-30,tint,17);
     global.ImpactPhysics?.hit?.(p,e,d,{knockback:action.knockback||0,color:tint,type:action.type});
   }
-  if(!e.isConstruct&&action.status==='ice'){e.slowTimer=Math.max(e.slowTimer||0,90);e.slowMultiplier=.5;}
+  const controlPower=global.ForgeArchetypes?.control?.(p)??1;
+  if(!e.isConstruct&&action.status==='ice'){
+    e.slowTimer=Math.max(e.slowTimer||0,Math.round(90*controlPower));
+    e.slowMultiplier=Math.min(e.slowMultiplier||1,controlPower>1?.42:.5);
+  }
   if(!e.isConstruct&&(action.status==='fire'||action.status==='poison')){
     const seconds=Number.isFinite(action.duration)?action.duration:(action.status==='fire'?2:3);
     // A DoT lasts as long as requested; its half-second damage ticks are
@@ -244,7 +255,9 @@ function hit(p,e,action,multiplier=1,attackZ) {
     e._forgeDotKind=action.status;
     e.bfDotDamage=Math.max(e.bfDotDamage||2,Math.min(6,Math.max(1,Math.round(d*.12))));
   }
-  if(!e.isConstruct)global.ForgeExpansion?.applyStatus(p,e,action);
+  if(!e.isConstruct)global.ForgeExpansion?.applyStatus(p,e,controlPower>1&&action.status!=='none'?{
+    ...action,duration:Math.min(8,(Number(action.duration)||1.5)*controlPower)
+  }:action);
   // Only report a confirmed hit; commentary never assumes a queued action
   // actually reached its target or that a resisted status was applied.
   const appliedStatus=action.status==='ice'&&e.slowTimer>0?'ice':
@@ -710,7 +723,7 @@ function persist(){
 }
 const escape=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const options=(values,selected)=>Object.entries(values).map(([k,v])=>'<option value="'+k+'"'+(k===selected?' selected':'')+'>'+v+'</option>').join('');
-let draft={name:'',blurb:'',color:'#a78bfa',effectColor:'#a78bfa',hp:250,speed:1.8,skills:[skill()]};
+let draft={name:'',blurb:'',color:'#a78bfa',effectColor:'#a78bfa',archetype:'melee',hp:285,speed:2.35,skills:[skill()]};
 let refreshList=()=>{}, refreshForm=()=>{},editingId=null;
 function field(key,value,attrs){
   return '<input data-field="'+key+'" '+attrs+' value="'+escape(value)+'">';
@@ -800,6 +813,11 @@ function initializeUI(){
     $('bf-name').value=draft.name;$('bf-text').value=draft.blurb;
     $('forge-color').value=draft.color;$('forge-effect-color').value=draft.effectColor||draft.color;$('forge-hp').value=draft.hp;
     $('forge-speed').value=draft.speed;
+    const fixed=!!global.ForgeArchetypes?.get?.(draft.archetype);
+    $('forge-hp').readOnly=fixed;$('forge-speed').readOnly=fixed;
+    $('forge-hp').title=fixed?'전투 유형에 따라 결정되는 고정 능력치입니다.':'';
+    $('forge-speed').title=fixed?'전투 유형에 따라 결정되는 고정 능력치입니다.':'';
+    global.CharacterStudioArchetypes?.refresh?.();
   }
   function report(t){$('bf-result').textContent=t;}
   function roster(){
@@ -840,7 +858,7 @@ function initializeUI(){
   refreshList=roster;
   $('forge-roster-filter')?.addEventListener('input',roster);
   refreshForm=()=>{refreshBasics();render();};
-   function cancelEdit(){editingId=null;draft=normalize({name:'',color:'#a78bfa',effectColor:'#a78bfa',hp:250,speed:1.8,skills:[skill()]});refreshForm();global.BlockForge?.refresh?.();$('bf-create').textContent='캐릭터 생성';$('forge-cancel-edit').hidden=true;}
+   function cancelEdit(){editingId=null;draft=normalize({name:'',color:'#a78bfa',effectColor:'#a78bfa',archetype:'melee',skills:[skill()]});refreshForm();global.BlockForge?.refresh?.();$('bf-create').textContent='캐릭터 생성';$('forge-cancel-edit').hidden=true;}
    $('forge-cancel-edit').addEventListener('click',()=>{cancelEdit();report('편집 취소');});
   $('bf-custom-list').addEventListener('click',e=>{
     const editId=e.target.closest('button')?.dataset.editForgeId;
