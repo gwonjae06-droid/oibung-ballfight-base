@@ -265,6 +265,7 @@ function create({realm,level,width=500,height=500,hero,boss,damage,environmentMa
     if(!z.hits.has(hero)&&hero?.forge?.signatureVersion===1){
      hero._forgeDodgeSerial=(hero._forgeDodgeSerial||0)+1;
      hero._forgeDodgeWindow=(hero._forgeActionClock||0)+120;
+     g.SignatureLive?.record?.(hero,'dodge');
     }
     avoided=z.hits.has(hero)?0:avoided+1;
     if(avoided>=2&&tick>=nextExpose){
