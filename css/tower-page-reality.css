@@ -1,0 +1,25 @@
+/* Arena boss ultimates color and displace the surrounding webpage without blocking a single control. */
+html[data-tower-reality]{--tr-power:0;--tr-x:0px;--tr-y:0px;--tr-turn:0deg;--tr-gravity:0;--tr-glow:#ffffff}
+html[data-tower-reality] body::before{content:"";position:fixed;inset:0;z-index:800;pointer-events:none;opacity:var(--tr-opacity);background:radial-gradient(ellipse at 50% 42%,transparent 14%,var(--tr-glow) 155%);transition:opacity .12s linear}
+html[data-tower-reality="space"] body::before{background:radial-gradient(ellipse at 50% 40%,#05000b99 4%,#b182ec33 52%,transparent 100%)}
+html[data-tower-reality="fire"] body::before{background:radial-gradient(ellipse at 50% 100%,#fa3e1477,transparent 73%)}
+html[data-tower-reality="ice"] body::before{background:linear-gradient(130deg,#d2f8ff22,transparent 40%,#c9edff44 100%)}
+html[data-tower-reality="forest"] body::before{background:radial-gradient(ellipse at 50% 110%,#67973766,transparent 80%)}
+html[data-tower-reality] #container :is(.page-header,.arena-category-nav,#tower-challenge,.tower-doorway){
+ transform:translate3d(var(--tr-x),var(--tr-y),0) rotate(var(--tr-turn));
+ transition:box-shadow .18s linear,border-color .18s linear;
+ will-change:transform;
+}
+html[data-tower-reality] #container :is(.arena-category-nav,#tower-challenge,.tower-doorway){box-shadow:0 0 var(--tr-shadow) color-mix(in srgb,var(--tr-glow) 60%,transparent);border-color:color-mix(in srgb,var(--tr-glow) 35%,transparent)}
+html[data-tower-reality] #container .arena-category-nav [aria-current="location"]{box-shadow:inset 0 0 var(--tr-shadow) var(--tr-glow)}
+html[data-tower-reality="space"] #container :is(.page-header,.arena-category-nav,.tower-doorway){transform:translate3d(var(--tr-x),var(--tr-y),0) rotate(var(--tr-turn)) scale(var(--tr-scale))}
+html[data-tower-reality="time"][data-tower-reality-variant="1"] #container .page-header{filter:drop-shadow(3px 0 #ddaa5f77) drop-shadow(-3px 0 #fff5d566)}
+html[data-tower-reality="fire"] #container :is(.arena-category-nav,.tower-doorway){box-shadow:0 0 var(--tr-shadow) #e9492b77,inset 0 -5px var(--tr-shadow) #ee682166}
+html[data-tower-reality="storm"] #container :is(.page-header,.arena-category-nav){filter:drop-shadow(0 0 5px #a7e9ff77)}
+html[data-tower-reality="ice"] #container :is(.arena-category-nav,.tower-doorway){box-shadow:inset 0 0 var(--tr-shadow) #c2f0ff88,0 0 15px #d9faff55}
+html[data-tower-reality="forest"] #container :is(.arena-category-nav,.tower-doorway){box-shadow:inset 0 0 var(--tr-shadow) #87b15a77,0 0 18px #6eb95366}
+/* Respect both OS and in-game reduced-effects settings. */
+html[data-tower-reality-muted="true"] body::before{opacity:.05!important}
+html[data-tower-reality-muted="true"] #container :is(.page-header,.arena-category-nav,#tower-challenge,.tower-doorway){transform:none!important;filter:none!important;will-change:auto!important}
+@media(prefers-reduced-motion:reduce){html[data-tower-reality] body::before{opacity:.05!important}html[data-tower-reality] #container :is(.page-header,.arena-category-nav,#tower-challenge,.tower-doorway){transform:none!important;filter:none!important;will-change:auto!important}}
+@media(max-width:650px){html[data-tower-reality] #container :is(.page-header,.arena-category-nav,#tower-challenge,.tower-doorway){transform:translate3d(calc(var(--tr-x)*.25),calc(var(--tr-y)*.25),0)}}
