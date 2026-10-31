@@ -44,3 +44,36 @@ test('transport protects loss of single FX packet via bounded redundant IDs and 
  assert.match(runtime,/remoteFxSeen\.has\(e\.id\)/);
  assert.match(runtime,/targetVelocities/);
 });
+
+test('guest canvas advances full-detail projectiles between full world packets',()=>{
+ const w=world(),p=w.PvpRuntime;
+ const room=p.createRoom(fighter,fighter,'auto',Date.now(),['auto','auto']);
+ room.players[0].forgeShots.push({x:140,y:170,vx:5,vy:2,life:90});
+ const full=JSON.parse(JSON.stringify(p.snapshot(room,true)));
+ p.receive(full);
+ const bullet=room.players[0].forgeShots[0];
+ const before={x:bullet.x,y:bullet.y,hp:room.players[0].hp};
+ let time=Date.now();w.Date=class extends Date{static now(){return time;}};
+ p.paint();time+=33;p.paint();
+ assert.ok(bullet.x>before.x&&bullet.y>before.y,'guest sees smoothly moving shot');
+ assert.equal(room.players[0].hp,before.hp,'visual extrapolation never changes hit logic');
+});
+test('host sends one final duplicate FX burst even if no further ability fires',()=>{
+ const events=[{id:1,type:'wave',kind:'cast',x:120,y:130}];
+ const packets=[];
+ const o={closed:false,done:false,side:0,connected:true,fxRecent:[],fxRepeatPending:false,
+  lastFx:0,fxTimer:null,rule:{drainFx:()=>events.splice(0,24)},
+  channel:{send(v){packets.push(v);return Promise.resolve();}}};
+ const h={window:null,Date:{now:()=>2000},console,Promise,
+   setTimeout(){return 1;},clearTimeout(){}};
+ h.window=h;vm.createContext(h);
+ vm.runInContext(fs.readFileSync('js/features/pvp-supabase.js','utf8'),h);
+ const proto=h.SupabasePvpTransport.prototype;
+ proto.flushFx.call(o);
+ assert.equal(packets.length,1);
+ proto.flushFx.call(o);
+ assert.equal(packets.length,2,'last FX has one bounded retransmission');
+ assert.deepEqual(packets[1].payload.events.map(e=>e.id),[1]);
+ proto.flushFx.call(o);
+ assert.equal(packets.length,2,'not an endless background rebroadcast');
+});
