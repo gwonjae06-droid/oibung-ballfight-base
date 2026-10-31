@@ -20,17 +20,20 @@ function shapes(realm,tick=0,level=1){
    bridge('south-stairs',[250,404],[250,325],46,15,68+hi,'stairs'),
    bridge('west-wheel',[94,218],[167,229],31,15,42+hi),
    bridge('east-wheel',[335,277],[403,300],31,15,47+hi),
-   bridge('core-west',[157,226],[202,244],30,42+hi,68+hi)];
+   bridge('core-west',[157,226],[202,244],40,42+hi,68+hi),
+   bridge('gear-crosspath',[161,228],[335,282],43,42+hi,47+hi)];
  }
  if(realm==='space'){
   const lift=Math.sin(t*.021+1.3)*12;
-  return [poly('central-crystal',57+hi,[[180,225],[332,217],[257,348]]),
-   poly('northwest-isle',39+hi,[[67,133],[164,112],[179,194],[80,212]]),
-   poly('northeast-isle',72+hi+lift,[[358,133],[441,181],[391,253],[331,202]]),
-   poly('southern-isle',21+hi,[[179,387],[275,357],[331,402],[293,465],[193,453]]),
+  return [poly('central-crystal',57+hi,[[164,197],[347,190],[271,363],[188,332]]),
+   poly('northwest-isle',39+hi,[[43,108],[182,95],[208,217],[63,248]]),
+   poly('northeast-isle',72+hi+lift,[[356,107],[463,167],[424,288],[310,214]]),
+   poly('southern-isle',21+hi,[[149,370],[287,337],[363,405],[305,480],[157,470]]),
    bridge('nebula-bridge-west',[154,186],[199,245],32,39+hi,57+hi,'energy'),
    bridge('nebula-bridge-east',[317,249],[357,204],30,57+hi,72+hi+lift,'energy'),
-   bridge('nebula-bridge-south',[264,324],[271,377],35,57+hi,21+hi,'energy')];
+   bridge('nebula-bridge-south',[264,324],[271,377],49,57+hi,21+hi,'energy'),
+   bridge('nebula-bypass-west',[161,214],[181,373],42,39+hi,21+hi,'energy'),
+   bridge('nebula-bypass-east',[362,245],[338,393],42,72+hi+lift,21+hi,'energy')];
  }
  if(realm==='fire'){
   const q=t%540,lift=q<180?0:q<265?24*(q-180)/85:q<350?24:q<425?24*(425-q)/75:0;
@@ -44,38 +47,42 @@ function shapes(realm,tick=0,level=1){
    bridge('south-to-caldera',[240,379],[246,334],38,22+hi,Math.max(0,lift)),
    bridge('east-to-caldera',[332,301],[293,268],32,75+hi,Math.max(0,lift)),
    bridge('eastern-basalt-steps',[319,406],[380,325],43,22+hi,75+hi,'stairs'),
-   bridge('western-basalt-steps',[187,398],[119,317],39,22+hi,56+hi,'stairs')];
+   bridge('western-basalt-steps',[187,398],[119,317],45,22+hi,56+hi,'stairs'),
+   bridge('basalt-rim-crossing',[126,155],[363,162],44,56+hi,75+hi,'stairs')];
  }
  if(realm==='storm'){
   const sway=Math.sin(t*.02)*4;
-  return [poly('storm-citadel',88+hi,[[308,77],[421,109],[452,207],[331,219]]),
-   poly('wind-court',44+hi+sway,[[166,205],[309,175],[361,301],[205,339]]),
-   poly('fallen-bridgehead',18+hi,[[58,344],[142,307],[180,396],[110,466],[40,426]]),
+  return [poly('storm-citadel',88+hi,[[285,55],[439,88],[476,227],[313,241]]),
+   poly('wind-court',44+hi+sway,[[135,192],[325,157],[388,315],[180,365]]),
+   poly('fallen-bridgehead',18+hi,[[34,326],[163,283],[205,404],[112,479],[24,429]]),
    bridge('gorge-pass-one',[139,344],[200,316],37,18+hi,44+hi+sway),
-   bridge('gorge-pass-two',[325,214],[364,191],34,44+hi+sway,88+hi),
+   bridge('gorge-pass-two',[325,214],[364,191],48,44+hi+sway,88+hi),
+   bridge('gorge-bypass',[139,363],[329,209],45,18+hi,88+hi),
    bridge('wind-spur',[244,340],[320,285],28,44+hi+sway,44+hi+sway)];
  }
  if(realm==='ice'){
   const collapse=(t%540>=410&&t%540<480),iceZ=collapse?4:12;
   return [poly('ice-lake',iceZ,[[88,293],[398,291],[439,417],[346,469],[107,455],[56,379]]),
-   poly('ice-sanctuary',83+hi,[[190,72],[338,72],[338,188],[190,188]]),
+   poly('ice-sanctuary',83+hi,[[166,58],[361,58],[361,210],[166,210]]),
    poly('western-ice-shelf',45+hi,[[48,145],[173,151],[203,257],[64,281]]),
    poly('eastern-ice-shelf',55+hi,[[337,155],[449,137],[455,275],[343,279]]),
    bridge('western-ice-stair-lower',[137,342],[122,253],43,iceZ,45+hi,'stairs'),
    bridge('western-ice-stair-upper',[179,202],[222,164],38,45+hi,83+hi,'stairs'),
    bridge('eastern-ice-stair-lower',[370,345],[392,269],43,iceZ,55+hi,'stairs'),
-   bridge('eastern-ice-stair-upper',[351,197],[322,166],38,55+hi,83+hi,'stairs')];
+   bridge('eastern-ice-stair-upper',[351,197],[322,166],44,55+hi,83+hi,'stairs'),
+   bridge('frozen-crosspass',[174,245],[337,246],46,45+hi,55+hi,'ice')];
  }
  if(realm==='forest'){
   const root=18+hi+Math.max(0,Math.sin(t*.016))*24;
   return [poly('ancient-ruins',15,[[87,305],[348,306],[411,409],[351,469],[103,452],[50,383]]),
-   poly('great-tree',80+hi,round(346,171,90,13)),
+   poly('great-tree',80+hi,round(346,171,105,13)),
    poly('western-moss',35+hi,[[74,177],[150,156],[205,258],[146,290],[63,258]]),
    poly('spore-basin',7,round(235,365,63,12),'swamp'),
    bridge('western-moss-stairs',[173,309],[154,259],45,15,35+hi,'stairs'),
    bridge('root-stair-one',[182,330],[218,229],39,15,50+hi,'roots'),
    bridge('root-stair-two',[218,229],[307,196],37,50+hi,80+hi,'roots'),
-   bridge('tree-moss-bridge',[184,196],[284,185],34,35+hi,80+hi,'roots'),
+   bridge('tree-moss-bridge',[184,196],[284,185],46,35+hi,80+hi,'roots'),
+   bridge('forest-bypass',[143,286],[284,260],44,35+hi,80+hi,'roots'),
    poly('rising-root',root,[[140,226],[174,230],[188,251],[161,270],[133,254]])];
  }
  return [];
@@ -223,10 +230,37 @@ function nextWaypoint(realm,from,to,w=500,h=500,level=1,tick=0){
  return null;
 }
 function drawPoly(ctx,pts){ctx.beginPath();for(let i=0;i<pts.length;i++)i?ctx.lineTo(pts[i].x,pts[i].y):ctx.moveTo(pts[i].x,pts[i].y);ctx.closePath();}
+function paintVoid(ctx,realm,w,h,tick){
+ // Everything outside walkable surfaces has an identity. Decorations never
+ // alter walkability, target selection, damage or collision geometry.
+ const time=tick/60,dim=Math.min(w,h),seed=(i,a=1)=>((i*73+a*137)%997)/997;
+ const backdrop=ctx.createLinearGradient(0,0,w,h);
+ const tones={space:['#020413','#12102e','#28194b'],fire:['#210808','#7a1f0b','#e14b14'],storm:['#071123','#26435d','#58798e'],ice:['#061625','#1c4f74','#4b9db1'],forest:['#09150e','#213b1f','#4d7640'],time:['#100f19','#362a28','#58442e']};
+ const t=tones[realm]||tones.time;backdrop.addColorStop(0,t[0]);backdrop.addColorStop(.66,t[1]);backdrop.addColorStop(1,t[2]);
+ ctx.fillStyle=backdrop;ctx.fillRect(0,0,w,h);ctx.save();
+ if(realm==='space'){
+   for(let i=0;i<62;i++){const x=seed(i,2)*w,y=seed(i,9)*h,r=.6+seed(i,5)*2.1;
+     ctx.globalAlpha=.3+.6*seed(i,4)*(0.8+.2*Math.sin(time*.6+i));ctx.fillStyle=i%6?'#b8cafa':'#de9bfa';ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill();}
+   for(const [x,y,r] of [[.16,.65,.34],[.72,.34,.25]]){const haze=ctx.createRadialGradient(x*w,y*h,0,x*w,y*h,r*dim);haze.addColorStop(0,'#8e54df55');haze.addColorStop(1,'#6f42bb00');ctx.fillStyle=haze;ctx.globalAlpha=.85;ctx.fillRect(0,0,w,h);}
+ }else if(realm==='fire'){
+   const glow=ctx.createRadialGradient(w*.5,h*.56,0,w*.5,h*.56,dim*.65);glow.addColorStop(0,'#ff8a27aa');glow.addColorStop(.7,'#c92b0855');glow.addColorStop(1,'#3f090900');ctx.fillStyle=glow;ctx.fillRect(0,0,w,h);
+   for(let i=0;i<29;i++){const x=(seed(i,1)*w+time*(i%2?8:-6))%w,y=seed(i,3)*h;ctx.strokeStyle=i%3?'#ff8d38':'#ffcb73';ctx.globalAlpha=.16+.27*seed(i,8);ctx.lineWidth=2+seed(i,6)*4;ctx.beginPath();ctx.moveTo(x,y);ctx.bezierCurveTo(x+17,y+6,x-14,y+24,x+10,y+34);ctx.stroke();}
+ }else if(realm==='storm'){
+   for(let i=0;i<17;i++){const x=seed(i,3)*w,y=seed(i,2)*h;ctx.strokeStyle='#9ac5e3';ctx.globalAlpha=.12;ctx.lineWidth=12+seed(i,5)*24;ctx.beginPath();ctx.moveTo(x-w*.1,y);ctx.quadraticCurveTo(x,y-13,x+w*.3,y+8);ctx.stroke();}
+ }else if(realm==='ice'){
+   for(let i=0;i<28;i++){const x=seed(i,5)*w,y=seed(i,2)*h;ctx.globalAlpha=.16;ctx.strokeStyle='#b9edff';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+8,y-14);ctx.lineTo(x+3,y-27);ctx.stroke();}
+ }else if(realm==='forest'){
+   for(let i=0;i<36;i++){const x=seed(i,3)*w,y=seed(i,7)*h;ctx.fillStyle=i%3?'#406b35':'#6e9854';ctx.globalAlpha=.2;ctx.beginPath();ctx.ellipse(x,y,8+seed(i,4)*19,5+seed(i,2)*13,i*.7,0,Math.PI*2);ctx.fill();}
+ }else{
+   ctx.lineWidth=2;ctx.strokeStyle='#d9b875';ctx.globalAlpha=.13;
+   for(let i=0;i<9;i++){ctx.beginPath();ctx.arc(w*.5,h*.5,dim*(.17+i*.055),0,Math.PI*2);ctx.stroke();}
+ }
+ ctx.restore();
+}
 function paint(ctx,realm,level,w=500,h=500,tick=0){
  const st=style[realm];if(!st||!ctx)return false;const map=getMap(realm,level,w,h,tick);ctx.save();
  // Crucial: replace the old square battleground with each tower's abyss.
- ctx.fillStyle=st.void;ctx.fillRect(0,0,w,h);
+ paintVoid(ctx,realm,w,h,tick);
  const terrain=map.surfaces.slice().sort((a,b)=>a.z-b.z);
  for(const s of terrain){const pts=s.vertices;
   const meanZ=s.z,down=Math.max(7,Math.min(45,meanZ*.55));

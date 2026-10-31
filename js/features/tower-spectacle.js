@@ -131,14 +131,15 @@ function glyph(c,realm,t,r,live){
 }
 // One non-interactive viewport canvas. No transforms on clickable page content.
 let overlay=null,shaken=null,previousTranslate='';
-function unshake(){if(shaken){shaken.style.translate=previousTranslate;shaken=null;}}
+function unshake(){if(shaken){shaken.style&&(shaken.style.translate=previousTranslate);shaken=null;}}
 function page(event,tick){
  if(!g.document)return;
  if(!event){if(overlay)overlay.hidden=true;unshake();g.ArenaTowerPageReality?.clear?.();return;}
  if(!overlay){overlay=document.createElement('canvas');overlay.setAttribute('aria-hidden','true');overlay.style.cssText='position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:900;';document.body.appendChild(overlay);}
  overlay.hidden=false;const w=g.innerWidth,h=g.innerHeight;if(overlay.width!==w||overlay.height!==h){overlay.width=w;overlay.height=h;}
  const c=overlay.getContext('2d');c.clearRect(0,0,w,h);const reduced=g.matchMedia?.('(prefers-reduced-motion: reduce)').matches||!!document.querySelector('.bf-preference input')?.checked;const t=reduced?0:tick;
- if(event.realm==='storm'&&!reduced){if(!shaken){shaken=document.querySelector('.battle-screen');previousTranslate=shaken?.style.translate||'';}if(shaken)shaken.style.translate=(Math.sin(t*.21)*3)+'px '+(Math.sin(t*.13)*2)+'px';}else unshake();
+ if((event.realm==='storm'||event.realm==='fire'&&event.deadline)&&!reduced){if(!shaken){shaken=event.realm==='fire'?document.body:document.querySelector('.battle-screen');previousTranslate=shaken?.style?.translate||'';}if(shaken?.style){const intensity=event.realm==='fire'?Math.max(0,Math.pow(event.progress||0,2)*8):3;
+  shaken.style.translate=(Math.sin(t*.43)*intensity).toFixed(2)+'px '+(Math.sin(t*.31)*intensity*.7).toFixed(2)+'px';}}else unshake();
  c.globalAlpha=.3*Math.sin(Math.PI*Math.min(1,event.progress));
  g.ArenaTowerSpectacleArt?.viewport(c,event,t,w,h);
   g.ArenaTowerPageReality?.render?.(c,event,t,w,h,reduced);

@@ -35,10 +35,10 @@ function rock(c,r,t){
 }
 function draw(c,event,t,w,h,reduced=false){
  if(event?.realm!=='fire'||!event.deadline)return;
- const progress=clamp(Number(event.progress)||0,0,1),eased=progress*progress*(3-2*progress);
+ const progress=clamp(Number(event.progress)||0,0,1),eased=Math.pow(progress,2.35);
  const radius=Math.max(250,w*.46,h*.77);
  const size=radius*(.72+.28*eased),centerX=w*.5,
-  centerY=-radius*.94+(h*.48+radius*.94)*eased;
+  centerY=-radius*1.03+(h*.51+radius*1.03)*eased;
  c.save();
  if(!event.exploded){
   // Entire giant moon remains on-screen until the timer reaches zero.
@@ -54,6 +54,8 @@ function draw(c,event,t,w,h,reduced=false){
    }
   }
   rock(c,size,t);
+  // The body grows hotter only as the timer nears zero.
+  c.globalAlpha=progress*.48;c.fillStyle='#ff1e0b';c.beginPath();c.arc(0,0,size,0,T);c.fill();c.globalAlpha=1;
  }else{
   // Impact fills the PAGE, not only the small in-game canvas.
   const blast=clamp((t-event.deadline)/(event.impactTick-event.deadline),0,1);
@@ -66,6 +68,8 @@ function draw(c,event,t,w,h,reduced=false){
   c.globalAlpha=1;
  }
  c.restore();
+ if(!event.failed&&progress>.22){c.save();c.globalAlpha=(progress-.22)*.33;
+  c.fillStyle='#f31e0b';c.fillRect(0,0,w,h);c.restore();}
  // Countdown remains legible and centered on the viewport even on mobile.
  c.save();
  const bar=Math.min(480,w-28),x=(w-bar)/2,y=24;

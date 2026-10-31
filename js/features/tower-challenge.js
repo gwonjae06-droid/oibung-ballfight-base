@@ -413,6 +413,7 @@ function install(){
       players[1].towerEnemyType=(level<=4?level-1:level-2)%3;
       players[1].towerBossTier=level===10?2:level===5?1:0;
       players[1].towerLevel=level;
+      players[1].towerDefense=ancient?1:floor(level).towerDefense||1;
       if(!ancient)global.ArenaTowerTerrain?.step?.(realmId,level,players,canvas.width,canvas.height,0);
       // Environmental events share Tower's confirmed-hit damage adapter.
       const hazardDamage=(p,amount,z)=>{
@@ -440,6 +441,7 @@ function install(){
     if(!isPlaying)togglePlay({towerBattle:true});
     if(!isPlaying||!roundStarted)throw Error('전투 엔진이 시작되지 않았습니다. 자유 대전 상태를 초기화하고 다시 시도해 주세요.');
     stage='fighting';
+    global.ArenaBattleDirector?.floorReady?.(level,ancient?'고대의 존재':realm()?.name);
     message.textContent='';
     show();
     global.ArenaScreenRouter?.showArena?.();

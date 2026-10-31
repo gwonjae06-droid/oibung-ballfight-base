@@ -60,6 +60,62 @@ const variants={
  comeback:[(n)=>`${n}이(가) 다시 체력을 채우며 반격을 준비합니다!`,
   (n)=>`회복 후 다시 움직이는 ${n}! 전세가 달라질까요?`]
 };
+// 576 authored-context combinations (nine events × eight leads × eight
+// outcomes), in addition to the short legacy lines. Dynamic slots only use
+// measured actors, skill names, damage and actual status information.
+const COMMENTARY_COMBINATIONS={
+ cast:{start:[
+  (n,s)=>`${n}이(가) ${s}을(를) 꺼냅니다.`,
+  (n,s)=>`이번에 선택한 기술은 ${s}, 사용하는 쪽은 ${n}입니다.`,
+  (n,s)=>`${n}, ${s} 시전!`,
+  (n,s)=>`${n}의 ${s}이(가) 시작됐습니다.`,
+  (n,s)=>`움직임을 바꾸는 ${n}! ${s} 사용입니다.`,
+  (n,s)=>`${s}을(를) 준비한 ${n}.`,
+  (n,s)=>`${n}이(가) 지금 ${s}을(를) 전개합니다.`,
+  (n,s)=>`눈길을 끄는 ${n}의 ${s}!`],
+ end:['공격이 어디로 이어질지 지켜보죠.','상대가 어떤 반응을 보일지 궁금합니다.','다음 명중 판정이 중요합니다.','상대의 대응도 주목할 부분입니다.','기술의 결과는 아직 결정되지 않았습니다.','곧 전황에 변화가 생길 수 있습니다.','이제 실제 타격을 확인해야겠군요.','공들의 움직임에 시선이 갑니다.']},
+ impact:{start:[
+  (n,s,t,d)=>`${n}의 ${s}, ${t}에게 적중했습니다!`,
+  (n,s,t,d)=>`${s}이(가) 맞았습니다. ${n}의 공격입니다!`,
+  (n,s,t,d)=>`${t}이(가) ${s}에 피격됐습니다!`,
+  (n,s,t,d)=>`정확히 맞힌 ${n}! ${s}의 결과입니다.`,
+  (n,s,t,d)=>`${n}의 ${s}이(가) ${t}을(를) 잡아냈습니다.`,
+  (n,s,t,d)=>`${t}에게 연결되는 ${s}!`,
+  (n,s,t,d)=>`유효타를 만든 ${n}, 기술은 ${s}입니다.`,
+  (n,s,t,d)=>`${s} 적중! ${n}의 타격이 성공했습니다.`],
+ end:['${d} 피해가 확인됐습니다.','이번 피해량은 ${d}입니다.','체력이 ${d}만큼 줄었습니다.','피해 수치 ${d}, 무시할 수 없겠네요.','실제로 ${d} HP를 깎았습니다.','상대 체력에 ${d}의 손실이 생겼습니다.','한 번에 ${d} 피해입니다.','기록된 명중 피해는 ${d}입니다.']},
+ control:{start:[
+  (n,s,t,st)=>`${n}의 ${s}에 ${t}이(가) 당했습니다.`,
+  (n,s,t,st)=>`${s} 적중! ${t}의 행동이 제한됩니다.`,
+  (n,s,t,st)=>`${t}에게 걸린 ${s}!`,
+  (n,s,t,st)=>`상태이상을 연결한 ${n}!`,
+  (n,s,t,st)=>`${s}이(가) 흐름을 끊습니다.`,
+  (n,s,t,st)=>`${n}이(가) 제어 기술을 적중시켰습니다.`,
+  (n,s,t,st)=>`${t}, ${s}에 걸렸습니다.`,
+  (n,s,t,st)=>`지금 ${n}의 ${s}!`],
+ end:['현재 효과는 ${st}입니다.','${st}이(가) 적용된 상태입니다.','${st} 때문에 움직임이 달라지겠네요.','${st} 상태가 전황에 영향을 줄 수 있습니다.','${st}에 걸렸으니 다음 반응을 보시죠.','상태 효과 ${st}, 결과가 궁금합니다.','${st}을(를) 버텨야 합니다.','지금의 제어 효과는 ${st}입니다.']},
+ low:{start:[(n)=>`${n}의 남은 체력이 위험합니다.`,(n)=>`${n}이(가) 빈사 상태에 들어섰습니다.`,(n)=>`${n}, 체력 게이지가 바닥을 보입니다.`,(n)=>`${n}이(가) 궁지에 몰렸군요.`,(n)=>`위기 속의 ${n}!`,(n)=>`${n}에게 더는 여유가 없습니다.`,(n)=>`${n}, 다음 교전이 고비입니다.`,(n)=>`급격히 위험해진 ${n}의 상황.`],
+ end:['회복이나 회피가 필요해 보입니다.','이제 작은 타격도 치명적일 수 있습니다.','마지막 한 방에 승부가 갈릴까요?','상대의 다음 기술이 중요합니다.','반격할 틈을 만들어야겠죠.','이대로 끝나지는 않을지 지켜봅니다.','아직 역전 가능성은 남아 있습니다.','끝까지 살아남을 수 있을까요?']},
+ heavy:{start:[(n,d)=>`${n}이(가) 큰 충격을 받았습니다!`,(n,d)=>`${n}에게 강한 공격이 들어갑니다!`,(n,d)=>`묵직한 타격을 버티는 ${n}!`,(n,d)=>`${n}의 체력이 크게 떨어집니다.`,(n,d)=>`한 번의 교전에서 크게 밀린 ${n}!`,(n,d)=>`${n}, 이번 피해는 큽니다.`,(n,d)=>`무거운 공격을 피하지 못한 ${n}.`,(n,d)=>`${n}에게 예상보다 큰 손실이 생겼습니다.`],
+ end:['감소량은 ${d} HP입니다.','${d} 피해를 한 번에 받았습니다.','체력이 ${d}나 빠졌습니다.','이번에 ${d} 피해가 기록됐습니다.','${d}의 체력 손실이 확인됩니다.','피해 수치는 ${d}입니다.','한 번에 ${d}만큼 깎였습니다.','총 ${d} HP가 줄어든 장면입니다.']},
+ lead:{start:[(n)=>`${n}이(가) 체력 면에서 앞섭니다.`,(n)=>`현재 흐름은 ${n} 쪽입니다.`,(n)=>`${n}이(가) 생존력에서 우세합니다.`,(n)=>`유리한 입장은 ${n}입니다.`,(n)=>`${n}, 지금까지의 체력 교환이 좋군요.`,(n)=>`체력 게이지로 보면 ${n}의 우세입니다.`,(n)=>`${n}이(가) 조금 더 여유가 있습니다.`,(n)=>`이번 대치는 ${n} 쪽으로 기웁니다.`],
+ end:['하지만 한 번의 충돌로 바뀔 수 있죠.','상대의 역전 기술을 조심해야 합니다.','아직 마지막 승자는 아닙니다.','다음 공격 기회가 중요합니다.','무리한 돌진은 오히려 위험하겠네요.','지금의 차이를 지킬 수 있을까요?','끝까지 버텨야 승리입니다.','변수는 여전히 많습니다.']},
+ overtime:{start:[()=>`결전 상태가 시작됐습니다!`,()=>`시간이 길어지자 결전 규칙이 발동합니다.`,()=>`장기전은 여기까지, 결전에 돌입합니다!`,()=>`더는 버티기만 할 수 없는 전장입니다.`,()=>`결전 경고! 양쪽 모두 압박을 받습니다.`,()=>`전투가 마지막 국면으로 접어듭니다.`,()=>`공들이 서로 결론을 내야 할 때입니다.`,()=>`정체된 전투가 결전으로 전환됩니다.`],
+ end:['최대 체력에 비례한 피해가 시작됩니다.','두 선수 모두 체력을 잃게 됩니다.','승부를 마무리할 시간이군요.','방어만으로는 오래 버티기 어렵습니다.','지금부터는 적극적인 공격이 유리할 수 있습니다.','회복과 공격의 균형이 중요합니다.','이제 시간도 적입니다.','끝까지 남는 쪽이 승리합니다.']},
+ recovery:{start:[(n,d)=>`${n}이(가) 체력을 회복했습니다.`,(n,d)=>`위기에서 버티는 ${n}, 회복 성공!`,(n,d)=>`${n}에게 회복 효과가 들어옵니다.`,(n,d)=>`다시 힘을 얻는 ${n}!`,(n,d)=>`${n}의 체력 바가 올라갑니다.`,(n,d)=>`지금 ${n}에게 필요한 회복이 들어왔습니다.`,(n,d)=>`${n}이(가) 버티기에 성공합니다.`,(n,d)=>`생존을 노리는 ${n}의 회복!`],
+ end:['회복량은 ${d} HP입니다.','${d} 체력을 돌려받습니다.','다시 ${d} HP를 채웠습니다.','체력 상승량은 ${d}입니다.','${d}만큼 생존력이 돌아왔습니다.','기록된 회복은 ${d}입니다.','${d} HP 회복, 반격의 기회입니다.','${d}만큼 회복했습니다.']},
+ comeback:{start:[(n)=>`${n}이(가) 다시 반격을 준비합니다.`,(n)=>`재정비한 ${n}이(가) 움직입니다.`,(n)=>`${n}, 위기를 넘기고 돌아옵니다.`,(n)=>`${n}의 흐름이 조금씩 살아납니다.`,(n)=>`한 번 버틴 ${n}, 다음 공격을 노립니다.`,(n)=>`${n}이(가) 전세를 뒤집으려 합니다.`,(n)=>`다시 싸울 힘을 얻은 ${n}!`,(n)=>`${n}, 아직 경기가 끝나지 않았습니다.`],
+ end:['다음 타격에 주목하죠.','회복 뒤의 판단이 중요합니다.','이제 공격 타이밍을 잡아야 합니다.','곧 반격이 나올 수도 있습니다.','다음 충돌이 관건이겠네요.','상대의 대응도 중요합니다.','이 흐름을 이어 갈 수 있을까요?','승부는 여전히 열려 있습니다.']}
+};
+// Expand only contexts for which we have real observations; 9×64 = 576.
+for(const [kind,parts] of Object.entries(COMMENTARY_COMBINATIONS)){
+ const generated=[];
+ for(let i=0;i<8;i++)for(let j=0;j<8;j++){
+  generated.push((...args)=>parts.start[i](...args)+' '+parts.end[j].replace(/\$\{(\w+)\}/g,(_,key)=>String(args[{n:0,s:1,t:2,d:3,st:3}[key]]??'')));
+ }
+ variants[kind].push(...generated);
+}
+const catalogSize=Object.values(COMMENTARY_COMBINATIONS).reduce((n,v)=>n+v.start.length*v.end.length,0);
 function phrase(kind,args=[]){const list=variants[kind]||[];if(!list.length)return '';
  const index=phraseSerial++%list.length;
  let sentence=typeof list[index]==='function'?list[index](...args):list[index];
@@ -98,10 +154,22 @@ function dispatch(){
 }
 function reset(players=[]){
  frame=0;lastNarrated=0;roster=players.slice();history=new Map();overTimeWas=false;ended=false;
- queue=[];recent=[];lastSentence='';phraseSerial=0;actionNames=new WeakMap();lastSkillUsed=new WeakMap();
+ queue=[];recent=[];actionNames=new WeakMap();lastSkillUsed=new WeakMap();
  for(const p of roster)history.set(p,{previous:sample(p),lost:0,healed:0,biggest:0,last:0,low:false,controlled:false});
  const panel=g.document?.getElementById?.('arena-defeat-analysis');if(panel){panel.hidden=true;panel.replaceChildren();}
- speak(phrase('start'));
+ // Tower enemies are already prepared in the intermission. Narrate only
+ // once the player presses Next Floor and the actual countdown begins.
+ if(!g.ArenaTower?.active)speak(phrase('start'));
+}
+function floorReady(level,realm){
+ const lv=Math.max(1,Number(level)||1),name=String(realm||'탑');
+ const intros=[`${lv}층 시작! ${name}의 다음 상대가 나옵니다.`,
+  `${lv}층입니다! 카운트다운이 끝나면 대결이 시작됩니다.`,
+  `${name} ${lv}층 도전! 어떤 기술이 통할까요?`,
+  `${lv}층 준비 완료. 이번 충돌도 지켜보시죠.`,
+  `${lv}층에 도착했습니다. 상대의 움직임을 보겠습니다.`,
+  `${name} ${lv}층, 새로운 대결을 준비합니다.`];
+ return speak(intros[(lv+phraseSerial++)%intros.length]);
 }
 function skillUsed(attacker,target,action,skillName){
  if(ended||!attacker||!action)return;
@@ -170,5 +238,5 @@ function finish(players,winner=null,reason=''){
  speak(winner?`${name(winner)} 승리! 전투가 종료됐습니다.`:'무승부! 치열한 경기가 마무리됐습니다.');
  return lines;
 }
-g.ArenaBattleDirector=Object.freeze({reset,observe,finish,explanations,skillUsed,skillHit,get frame(){return frame;}});
+g.ArenaBattleDirector=Object.freeze({reset,observe,finish,explanations,skillUsed,skillHit,floorReady,get frame(){return frame;},catalogSize});
 })(typeof window!=='undefined'?window:globalThis);

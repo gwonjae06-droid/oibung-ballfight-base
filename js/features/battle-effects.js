@@ -108,9 +108,15 @@
     pulses.forEach(s=>{
       worldCtx.save();worldCtx.globalAlpha=Math.min(1,s.life/12);worldCtx.shadowColor=s.c;worldCtx.shadowBlur=gentle.checked?0:5;
       if(s.bolt){worldCtx.beginPath();worldCtx.moveTo(s.x-10,s.y-160);worldCtx.lineTo(s.x+8,s.y-90);worldCtx.lineTo(s.x-7,s.y-55);worldCtx.lineTo(s.x,s.y);worldCtx.strokeStyle=s.c;worldCtx.lineWidth=5;worldCtx.stroke();}
-      else{const r=s.r*(1-s.life/20);
-        ring(s.x,s.y,r,s.c,Math.max(1,s.life/4),worldCtx);
-        ring(s.x,s.y,r*0.65,'#fff',1,worldCtx);}
+      else{const r=s.r*(1-s.life/20),floor=window.ArenaTowerTerrain?.worldHeight?.(s.x,s.y)||0;
+        // Projected elliptical ground ring plus an upright hit-energy shell.
+        worldCtx.save();worldCtx.translate(s.x,s.y-floor);
+        worldCtx.strokeStyle=s.c;worldCtx.lineWidth=Math.max(1,s.life/4);
+        worldCtx.beginPath();worldCtx.ellipse(0,0,r,Math.max(3,r*.31),0,0,Math.PI*2);worldCtx.stroke();
+        if(!gentle.checked&&r>12){worldCtx.globalAlpha*=.48;
+          worldCtx.beginPath();worldCtx.moveTo(-r*.54,0);worldCtx.quadraticCurveTo(-r*.22,-r*.69,0,-r*.84);
+          worldCtx.quadraticCurveTo(r*.22,-r*.69,r*.54,0);worldCtx.stroke();}
+        worldCtx.restore();}
       worldCtx.restore();
     });
     worldCtx.restore();

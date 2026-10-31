@@ -8,47 +8,30 @@ function clock(){
  vm.runInContext(read('js/features/arena-countdown.js'),context);
  return {c:context.ArenaCountdown,set(value){now=value;}};
 }
-test('every new battle displays a full 3-2-1-FIGHT sequence at wall-clock speed',()=>{
- const {c}=clock();
- c.start(null,1000);
- assert.equal(c.active,true);
- assert.equal(c.state.remaining,3600);
- assert.equal(c.tick(1990),true);assert.equal(c.state.remaining,2610);
- assert.equal(c.tick(2010),true);assert.equal(c.state.remaining,2590);
- assert.equal(c.tick(3010),true);assert.equal(c.state.remaining,1590);
- assert.equal(c.tick(4010),true);assert.equal(c.state.remaining,590);
- assert.equal(c.tick(4599),true);
- assert.equal(c.tick(4600),false);
+test('1.3x faster 3-2-1-FIGHT countdown uses the same simulation pause semantics',()=>{
+ const {c}=clock();c.start(null,1000);
+ assert.equal(c.active,true);assert.equal(c.state.remaining,2769);
+ c.tick(1700);assert.equal(c.state.remaining,2069);
+ c.tick(1980);assert.equal(c.state.remaining,1789);
+ c.tick(2780);assert.equal(c.state.remaining,989);
+ assert.equal(c.tick(3768),true);assert.equal(c.tick(3769),false);
  assert.equal(c.active,false);
 });
-test('pause freezes the countdown and resume preserves the remaining time',()=>{
- const {c}=clock();
- c.start(null,1000);
- c.pause(1700);
- assert.equal(c.state.phase,'paused');
- assert.equal(c.state.remaining,2900);
- assert.equal(c.tick(170000),true);
- assert.equal(c.state.remaining,2900);
- c.resume(200000);
- c.tick(200500);
- assert.equal(c.state.remaining,2400);
- c.cancel();
- assert.equal(c.active,false);
- c.start(null,220000);
- assert.equal(c.state.remaining,3600,'the next match starts fresh');
+test('pause freezes the faster countdown and resume preserves its state',()=>{
+ const {c}=clock();c.start(null,1000);c.pause(1700);
+ assert.equal(c.state.phase,'paused');assert.equal(c.state.remaining,2069);
+ assert.equal(c.tick(170000),true);assert.equal(c.state.remaining,2069);
+ c.resume(200000);c.tick(200500);assert.equal(c.state.remaining,1569);
+ c.cancel();assert.equal(c.active,false);
+ c.start(null,220000);assert.equal(c.state.remaining,2769);
 });
-test('remote PvP countdown does not freeze local game simulation or double-tick',()=>{
- const {c}=clock();
- c.syncRemote(null,3200,1000);
- assert.equal(c.state.phase,'remote');
- assert.equal(c.tick(2000),false,'main physics clock never consumes spectator time');
- assert.equal(c.state.remaining,3200);
- c.progressRemote(1500);
- assert.equal(c.state.remaining,2700);
- c.syncRemote(null,2520,1700);
- assert.equal(c.state.remaining,2500,'small packet jitter is ignored');
- c.progressRemote(4200);
- assert.equal(c.isVisible,false);
+test('remote PvP follows faster host countdown and does not block local physics',()=>{
+ const {c}=clock();c.syncRemote(null,2500,1000);
+ assert.equal(c.state.phase,'remote');assert.equal(c.tick(2000),false);
+ assert.equal(c.state.remaining,2500);c.progressRemote(1500);
+ assert.equal(c.state.remaining,2000);
+ c.syncRemote(null,1800,1700);assert.equal(c.state.remaining,1800);
+ c.progressRemote(4000);assert.equal(c.isVisible,false);
 });
 test('arena countdown is mounted by the main screen and controls all fixed-step physics',()=>{
  const html=read('index.html'),engine=read('js/core/engine.js'),
@@ -70,7 +53,7 @@ test('arena countdown is mounted by the main screen and controls all fixed-step 
 test('online PvP applies the same freeze to BOTH peers with a host-controlled ready timestamp',()=>{
  const html=read('index.html'),runtime=read('js/features/pvp-runtime.js'),
   transport=read('js/features/pvp-supabase.js'),online=read('js/features/pvp-online.js');
- assert.match(transport,/this\.current\.startAt=this\.lastStep\+3600/);
+ assert.match(transport,/this\.current\.startAt=this\.lastStep\+2769/);
  assert.match(runtime,/room\.startAt>now\)return/);
  assert.match(runtime,/startInMs:/);
  assert.match(online,/ArenaCountdown\?\.syncRemote/);

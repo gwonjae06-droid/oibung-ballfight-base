@@ -5,14 +5,14 @@
  */
 (function(global){
 'use strict';
-const TOTAL=3600,READY=3000;
+const TOTAL=Math.round(3600/1.3),READY=Math.round(3000/1.3);
 let phase='idle',last=0,remaining=TOTAL,root=null,container=null,label=null,subtitle=null,token=0;
 const clock=()=>typeof global.performance?.now==='function'?global.performance.now():Date.now();
 function render(){
  if(!root)return;
  if(phase==='idle'){root.hidden=true;return;}
  root.hidden=false;
- const next=remaining>2600?'3':remaining>1600?'2':remaining>600?'1':'FIGHT!';
+ const next=remaining>Math.round(2600/1.3)?'3':remaining>Math.round(1600/1.3)?'2':remaining>Math.round(600/1.3)?'1':'FIGHT!';
  if(root.dataset.step!==next){
    root.dataset.step=next;
    if(label)label.textContent=next;

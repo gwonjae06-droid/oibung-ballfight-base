@@ -384,7 +384,12 @@ function draw(ctx,options={}){
     const y=groundY-lift;
     if(e.family==='explosion'&&e.kind==='impact'){
       ctx.save();ctx.strokeStyle=e.color;ctx.globalAlpha=Math.max(0,1-e.age/e.life)*.42;
-      ctx.lineWidth=2;ctx.beginPath();ctx.arc(x,groundY,e.radius*(.15+.65*e.age/e.life),0,Math.PI*2);ctx.stroke();ctx.restore();
+      const floor=global.ArenaTowerTerrain?.worldHeight?.(x,groundY)||0;
+      const r=e.radius*(.15+.65*e.age/e.life),raisedY=groundY-floor;
+      ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(x,raisedY,r,Math.max(3,r*.33),0,0,Math.PI*2);ctx.stroke();
+      if(!low){ctx.globalAlpha*=.65;ctx.beginPath();ctx.moveTo(x-r*.55,raisedY);
+        ctx.quadraticCurveTo(x,raisedY-r*.85,x+r*.55,raisedY);ctx.stroke();}
+      ctx.restore();
     }
     const paintEffect=ctx=>{
     ctx.save();ctx.globalCompositeOperation='source-over';

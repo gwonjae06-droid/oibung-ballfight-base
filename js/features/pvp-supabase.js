@@ -250,7 +250,7 @@ class SupabasePvpTransport{
     this.peerReady=true;this.lastStep=Date.now();
     this.current.started=this.lastStep;
     // Both peers see the same ready countdown; no simulation until FIGHT.
-    this.current.startAt=this.lastStep+3600;
+    this.current.startAt=this.lastStep+2769;
     if(this.current.blitz)this.current.blitz.deadline=this.lastStep+10000;
    }
    return;
