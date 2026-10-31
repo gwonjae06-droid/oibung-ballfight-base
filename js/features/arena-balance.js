@@ -16,8 +16,10 @@ function actionPressure(a){
 }
 function skillPressure(s){
  const actions=(s?.actions||[]).slice(0,12),charge=actions.find(a=>a.type==='charge');
- const raw=actions.reduce((sum,a)=>sum+actionPressure(a),0)*
-   (charge?1+Math.min(.48,cap(n(charge.duration,1.2),.2,8)*.12):1);
+ const base=Array.isArray(s?.program)&&g.SignatureScratch?.worstPressure?
+   g.SignatureScratch.worstPressure(s.program,actionPressure):
+   actions.reduce((sum,a)=>sum+actionPressure(a),0);
+ const raw=base*(charge?1+Math.min(.48,cap(n(charge.duration,1.2),.2,8)*.12):1);
  const cd=Math.max(.2,cap(n(s?.cooldown,3),.2,30),
     charge?Math.min(3,cap(n(charge.duration,1.2),.2,8))+.18:0);
  const availability=s?.trigger==='lowhp'?.7+.3*cap((n(s.threshold,40)-40)/55,0,1):s?.trigger==='damaged'?.65:s?.trigger==='contact'?.7:1;
@@ -55,7 +57,7 @@ const DEFENSE_BUDGET=90;
 function defenseSkillPressure(s){
  const cd=Math.max(.2,cap(n(s?.cooldown,3),.2,30));
  const availability=s?.trigger==='lowhp'?.7+.3*cap((n(s.threshold,40)-40)/55,0,1):s?.trigger==='damaged'?.65:s?.trigger==='contact'?.7:1;
- const pressure=(s?.actions||[]).slice(0,12).reduce((sum,a)=>{
+ const perAction=a=>{
   const duration=cap(n(a.duration,1.5),.2,8),power=cap(n(a.damage),0,120);
   switch(a.type){
    case 'heal':return sum+power/cd;
@@ -67,7 +69,10 @@ function defenseSkillPressure(s){
    case 'rewind':return sum+25*duration/cd;
    default:return sum;
   }
- },0);
+ };
+ const pressure=Array.isArray(s?.program)&&g.SignatureScratch?.worstPressure?
+   g.SignatureScratch.worstPressure(s.program,perAction):
+   (s?.actions||[]).slice(0,12).reduce((sum,a)=>sum+perAction(a),0);
  return pressure*availability;
 }
 function defenseSummary(profile){
