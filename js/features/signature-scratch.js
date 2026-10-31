@@ -64,6 +64,18 @@ function compile(program,p,target,options={}){
  walk(normalize(program),0);
  return result;
 }
+function worstPressure(program,weight){
+ const score=typeof weight==='function'?weight:()=>0;
+ function walk(list){
+  return list.reduce((sum,node)=>{
+   if(node.kind==='action')return sum+Math.max(0,Number(score(node.action))||0);
+   if(node.kind==='if')return sum+Math.max(walk(node.then),walk(node.else));
+   if(node.kind==='repeat')return sum+node.times*walk(node.body);
+   return sum;
+  },0);
+ }
+ return walk(normalize(program));
+}
 function preview(program){return compile(program,null,null,{condition:()=>true});}
 function random(rng=Math.random){
  const pick=a=>a[Math.floor(Math.max(0,Math.min(.999999,rng()))*a.length)];
@@ -78,5 +90,5 @@ function random(rng=Math.random){
    {kind:'repeat',times:2,body:[make(pick(['shot','wave','bolt','arcshot']),14)]}
  ]);
 }
-g.SignatureScratch=Object.freeze({LIMIT,MAX_NODES,MAX_DEPTH,MAX_REPEAT,KINDS,normalize,fromActions,compile,preview,random,safeAction});
+g.SignatureScratch=Object.freeze({LIMIT,MAX_NODES,MAX_DEPTH,MAX_REPEAT,KINDS,normalize,fromActions,compile,preview,worstPressure,random,safeAction});
 })(typeof window!=='undefined'?window:globalThis);
