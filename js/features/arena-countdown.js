@@ -7,7 +7,7 @@
 'use strict';
 const TOTAL=3600,READY=3000;
 let phase='idle',last=0,remaining=TOTAL,root=null,container=null,label=null,subtitle=null,token=0;
-const clock=()=>Number(global.performance?.now?.())||Date.now();
+const clock=()=>typeof global.performance?.now==='function'?global.performance.now():Date.now();
 function render(){
  if(!root)return;
  if(phase==='idle'){root.hidden=true;return;}
@@ -62,7 +62,8 @@ function cancel(){
  phase='idle';remaining=TOTAL;last=0;token++;render();
 }
 function tick(at=clock()){
- if(phase==='idle')return false;
+ // Remote spectators drive their own overlay and never block the local engine.
+ if(phase==='idle'||phase==='remote')return false;
  if(phase==='paused')return true;
  const delta=Math.max(0,at-last);
  remaining=Math.max(0,remaining-delta);
