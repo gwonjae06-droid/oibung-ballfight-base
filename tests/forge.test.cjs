@@ -92,3 +92,33 @@ test('saved roster restores every profile instead of cutting off after 6',()=>{
   assert.equal(loaded.length,35);
   assert.equal(loaded[34].name,'캐릭터 34');
 });
+
+test('re-editing a fighter during an ongoing Tower battle changes NEXT instances, not the live actor',()=>{
+ const {state,api}=create(),id=api.register(profile({name:'이전 설계',hp:280}));
+ const def=state.CUSTOM_DEFS.find(d=>d.id===id);
+ const inBattle=def.createInstance(1),originalForge=inBattle.forge;
+ const originalHP=inBattle.hp;
+ def.updateProfile(profile({name:'새 설계',hp:410,skills:[{name:'새 기술',cooldown:5,
+   trigger:'auto',actions:[{type:'shot',damage:79,radius:180}]}]}));
+ const future=def.createInstance(2);
+ assert.equal(inBattle.hp,originalHP,'existing Tower battle HP never changes');
+ assert.equal(inBattle.forge,originalForge,'existing Tower fighter keeps its independent loadout');
+ assert.equal(inBattle.forge.skills[0].actions[0].type,'wave');
+ assert.equal(future.forge.skills[0].actions[0].type,'shot');
+ assert.equal(future.hp,410);
+ assert.equal(def.forgeData.name,'새 설계');
+ assert.equal(def.name,'새 설계');
+});
+test('studio editing and saving do not demand match termination',()=>{
+ const begin=source.indexOf("$('bf-custom-list').addEventListener('click'");
+ const end=source.indexOf("  $('forge-skills').addEventListener('input'",begin);
+ assert.ok(begin>=0&&end>begin);
+ const edit=source.slice(begin,end);
+ assert.doesNotMatch(edit,/전투 종료 후 수정할 수 있습니다/);
+ assert.match(edit,/dataset\.editForgeId/);
+ const submit=source.slice(source.indexOf("  $('bf-create').addEventListener('click'"),
+    source.indexOf("  $('forge-export').addEventListener('click'"));
+ assert.doesNotMatch(submit,/경기 종료 후 생성할 수 있습니다/);
+ assert.match(submit,/if\(!fighting\)\{/);
+ assert.match(submit,/다음 경기부터 적용됩니다/);
+});
