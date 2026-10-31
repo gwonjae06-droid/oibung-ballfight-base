@@ -247,9 +247,9 @@ function snapshot(room,full=true){
      {previews:global.ArenaTelegraph.preview(p)}:{}),
    charge:p.forgeCharge?{phase:p.forgeCharge.phase,ticks:p.forgeCharge.ticks,total:p.forgeCharge.total,
      expires:p.forgeCharge.expires,flash:p.forgeCharge.flash}:null,
-   skills:p.forge?.skills.slice(0,4).map(s=>({name:s.name}))||[],
-   cooldowns:p.forge?.skills.slice(0,4).map((s,j)=>
-     Math.max(0,(SkillForge.cooldownFrames(p,s)-(p.forgeTicks[j]||0))/60))||[]}))};
+   ...(full?{skills:p.forge?.skills.slice(0,4).map(s=>({name:s.name}))||[],
+     cooldowns:p.forge?.skills.slice(0,4).map((s,j)=>
+       Math.max(0,(SkillForge.cooldownFrames(p,s)-(p.forgeTicks[j]||0))/60))||[]}:{} )}))};
  if(full){
    const take=(a,n)=>Array.isArray(a)?a.slice(-n):[];
    state.world={
