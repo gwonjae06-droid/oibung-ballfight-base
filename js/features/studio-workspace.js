@@ -23,7 +23,10 @@ manager.className='studio-roster-manager';
 manager.setAttribute('aria-label','커스텀 캐릭터 삭제 및 관리');
 manager.innerHTML='<div class="studio-roster-heading"><strong>내 커스텀 캐릭터</strong>'
   +'<span id="forge-custom-count" aria-label="저장한 캐릭터 수"></span></div>'
-  +'<span class="studio-roster-guide">목록에서 삭제 · 대진 선택 가능</span>';
+  +'<label class="studio-roster-search" for="forge-roster-filter"><span>캐릭터 이름 검색</span>'
+  +'<input id="forge-roster-filter" type="search" placeholder="이름으로 찾기" autocomplete="off" aria-describedby="forge-roster-filter-status"></label>'
+  +'<span id="forge-roster-filter-status" class="studio-roster-search-status" role="status" aria-live="polite"></span>'
+  +'<span class="studio-roster-guide">스킬 수정으로 언제든 재편집 · 삭제는 확인 후 진행</span>';
 if(owned)manager.append(owned);
 if(feedback)manager.append(feedback);
 const rest=Array.from(studio.children).filter(n=>![random,name,blocks,tuning,library,appearance,basics,create,saved].includes(n));
