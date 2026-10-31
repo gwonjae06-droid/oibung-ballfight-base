@@ -69,3 +69,22 @@ test('Tower pattern boss stays stationary while its Forge defense can continue',
  assert.equal(calls,1,'boss defensive ability clock must still update');
  assert.equal(fighter.vx,0);assert.equal(fighter.vy,0);
 });
+
+test('online host physically freezes both fighters before the shared FIGHT timestamp',()=>{
+ const w=world(),P=w.PvpRuntime;
+ const room=P.createRoom(profile,profile,'auto',Date.now(),['auto','auto']);
+ const now=Date.now();room.startAt=now+3600;
+ const before=room.players.map(p=>({hp:p.hp,x:p.x,y:p.y,forgeTicks:p.forgeTicks?.slice()}));
+ P.step(room,4,now+3500);
+ assert.equal(room.elapsed,0,'countdown must not consume game time');
+ assert.equal(room.ended,false);
+ assert.deepEqual(room.players.map(p=>({hp:p.hp,x:p.x,y:p.y,forgeTicks:p.forgeTicks?.slice()})),before);
+ const snapshot=P.snapshot(room,false);
+ assert.ok(snapshot.startInMs>0&&snapshot.startInMs<=3600,
+  'guests receive the actual remaining ready time');
+ room.startAt=now+3500;
+ P.step(room,.15,now+3600);
+ assert.ok(room.elapsed>0,'physics begins only after FIGHT');
+ assert.equal(P.snapshot(room,false).startInMs,undefined,
+  'ready timer is omitted from normal low-bandwidth packets');
+});
