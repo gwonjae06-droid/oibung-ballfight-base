@@ -228,13 +228,13 @@ function install(){
 
   const nextStart=el('tower-next-start');
   let active=false,stage='ready',level=1,cleared=0,selected=null,temporary=null,mode='auto';
-  let blessings=[],offers=[],encounter=null,view='selection',ancient=false;
+  let blessings=[],offers=[],encounter=null,environment=null,view='selection',ancient=false;
   const pool=()=>[...CHARACTER_DEFS,...CUSTOM_DEFS];
   function selectedDef(){return pool().find(d=>d.id===hero.value)||pool()[0]||null;}
   function current(){return {ancient,active,stage,level,cleared,boss:floor(level).boss,selected:key(selected),mode,realm:realmId,blessings:[...blessings],offers:offers.map(x=>({...x}))};}
   function selectRealm(id){
     if(active||!realms?.REALMS.some(r=>r.id===id))return false;
-    ancient=false;realmId=id;view='interior';stage='ready';level=1;cleared=0;blessings=[];offers=[];encounter=null;
+    ancient=false;realmId=id;view='interior';stage='ready';level=1;cleared=0;blessings=[];offers=[];encounter=null;environment?.clear?.();environment=null;
     message.textContent='';show();return true;
   }
   function allRealmsCleared(){const records=read(global.localStorage).records;return !!realms&&realms.REALMS.every(r=>Object.entries(records).some(([id,v])=>id.startsWith(r.id+'_')&&Number(v.best)>=FINISH));}
@@ -350,6 +350,7 @@ function install(){
     // Automatic combat has no movement or turn-selection controls.
   }
   function cleanup(){
+    environment?.clear?.();environment=null;
     global.ArenaTowerTerrain?.clear?.(typeof players!=='undefined'?players:[]);
     if(temporary){delete BEHAVIORS[temporary.id];temporary=null;}
   }
@@ -385,14 +386,19 @@ function install(){
       players[1].towerBossTier=level===10?2:level===5?1:0;
       players[1].towerLevel=level;
       if(!ancient)global.ArenaTowerTerrain?.step?.(realmId,level,players,canvas.width,canvas.height,0);
+      // Environmental events share Tower's confirmed-hit damage adapter.
+      const hazardDamage=(p,amount)=>{
+        if(p.invincible>0||(p.z||p.jumpHeight||0)>38)return false;
+        return global.SkillForge.hit(p===players[0]?players[1]:players[0],p,
+          {type:'wave',damage:amount,radius:0,knockback:0,status:'none',duration:0},
+          1,global.AdvancedCombat?.height?.(p));
+      };
+      environment=!ancient?global.ArenaTowerEnvironment?.create?.({
+        realm:realmId,level,width:canvas.width,height:canvas.height,roster:players,damage:hazardDamage
+      }):null;
       encounter=(ancient?global.ArenaAncientOne:global.ArenaEncounter)?.create({realm:realmId,level,width:canvas.width,height:canvas.height,
-        hero:players[0],boss:players[1],damage(p,amount){
-          // Ground-only zones are avoidable by jumping; platform tier
-          // does not make a grounded fighter mysteriously invulnerable.
-          if(p.invincible>0||(p.z||p.jumpHeight||0)>38)return false;
-          return global.SkillForge.hit(p===players[0]?players[1]:players[0],p,
-            {type:'wave',damage:amount,radius:0,knockback:0,status:'none',duration:0},
-            1,global.AdvancedCombat?.height?.(p));
+        hero:players[0],boss:players[1],environmentManaged:!!environment,damage(p,amount){
+          return hazardDamage(p,amount);
         }});
     }
     // Fresh combatants; run-local blessings were applied above.
@@ -504,10 +510,11 @@ function install(){
   }
   function tickEncounter(){if(active&&stage==='fighting'){
     encounter?.step();
+    environment?.step?.();
     if(!ancient)global.ArenaTowerTerrain?.step?.(realmId,level,players,canvas.width,canvas.height,encounter?.tick||0);
   }}
-  function drawEncounter(ctx){if(active&&stage==='fighting'){global.ArenaTowerAtmosphere?.particles?.(ctx,canvas.width,canvas.height,realmId,encounter?.tick||0);encounter?.draw(ctx,realm()?.color);}}
-  const api={beginAncient,allRealmsCleared,selectRealm,openSelection,chooseBlessing,tickEncounter,drawEncounter,get encounter(){return encounter;},floor,makeEnemy,read,updateRecord,records,begin,forfeit,paintBackground,
+  function drawEncounter(ctx){if(active&&stage==='fighting'){global.ArenaTowerAtmosphere?.particles?.(ctx,canvas.width,canvas.height,realmId,encounter?.tick||0);environment?.draw?.(ctx);encounter?.draw(ctx,realm()?.color);}}
+  const api={beginAncient,allRealmsCleared,selectRealm,openSelection,chooseBlessing,tickEncounter,drawEncounter,get encounter(){return encounter;},get environment(){return environment;},floor,makeEnemy,read,updateRecord,records,begin,forfeit,paintBackground,
     onBattleEnd,isTransientDef,pauseAway,refresh:show,setMode,get mode(){return mode;},get active(){return active;},
     get stage(){return stage;},get view(){return active?'interior':view;},get state(){return current();}};
   global.ArenaTower=api;return api;
