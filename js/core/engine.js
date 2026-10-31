@@ -359,7 +359,7 @@ function updateUI() {
     if(tag&&p.hp>0){te.style.display='inline-block';te.textContent=tag.text+(p.itemLabels&&p.itemLabels.length?` · ${p.itemLabels.join(' · ')}`:'');}
     else te.style.display='none';
     const hud=document.getElementById('sec-p'+n);
-    if(hud){
+    if(hud?.dataset&&hud?.classList){
       const current=String(p._hudHitSerial||0);
       if(hud.dataset.hitSerial!==current){
         hud.dataset.hitSerial=current;
