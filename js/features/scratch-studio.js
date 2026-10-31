@@ -189,6 +189,7 @@ function render(){
  root.querySelector('[data-scratch-command="redo"]').disabled=!redo.length;
  $('.scratch-heading').querySelector('[data-scratch-command="random"]').textContent='🎲 랜덤 블록 생성';
  lastChecksum=JSON.stringify(program);
+ g.ScratchStudio?.onChange?.();
 }
 function insert(kind,type,where=activeList,index=activeIndex){
  commit(p=>{
@@ -399,5 +400,20 @@ doc.getElementById('bf-create')?.addEventListener('click',e=>{
 },true);
 g.addEventListener?.('studio:open',()=>{render();openTab('code');});
 renderPalette();render();openTab('code');
-g.ScratchStudio={render,openTab,insert,get activeCategory(){return category;}};
+g.ScratchStudio={render,openTab,insert,
+ // Both the visual workbench and beginner guide edit the same normalized AST.
+ // Keep one undo/redo history; never replace an existing saved fighter silently.
+ applyProgram(program,fields={},message='내 기술을 바꿨어요!'){
+  const old=current();
+  undo.push(JSON.stringify(old));if(undo.length>30)undo.shift();redo=[];
+  setProfile(program,fields,message);
+ },
+ applyFields(fields={},message='기술 설정을 바꿨어요!'){
+  undo.push(JSON.stringify(current()));if(undo.length>30)undo.shift();redo=[];
+  setProfile(programOf(current()),fields,message);
+ },
+ getProgram(){return programOf(current());},
+ onChange:null,
+ get activeCategory(){return category;}
+};
 })(window);
