@@ -262,6 +262,10 @@ function create({realm,level,width=500,height=500,hero,boss,damage,environmentMa
   for(let i=zones.length-1;i>=0;i--)if(tick>=zones[i].end){
    const z=zones[i];
    if(isBoss&&z.kind==='boss'){
+    if(!z.hits.has(hero)&&hero?.forge?.signatureVersion===1){
+     hero._forgeDodgeSerial=(hero._forgeDodgeSerial||0)+1;
+     hero._forgeDodgeWindow=(hero._forgeActionClock||0)+120;
+    }
     avoided=z.hits.has(hero)?0:avoided+1;
     if(avoided>=2&&tick>=nextExpose){
      avoided=0;exposure=180;nextExpose=tick+540;
