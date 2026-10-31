@@ -27,13 +27,15 @@ function shotSlope(p,e,speed){
  const travel=Math.max(1,Math.hypot(e.x-p.x,e.y-p.y)/Math.max(1,speed||5));
  return (heightOf(e)-heightOf(p))/travel;
 }
-function damageScale(p,e){return (active(p,'weak')?.6:1)*(active(p,'blind')?.65:1)*(active(e,'vulnerable')?1.35:1)*(active(e,'fortify')?.55:1);}
+function damageScale(p,e){return (active(p,'weak')?.6:1)*(active(p,'blind')?.65:1)*(active(e,'vulnerable')?1.35:1)*(active(e,'fortify')?1-.45*(global.ArenaBalance?.defenseFactorOf?.(e)??1):1);}
 function legacy(p,fn){
   const before=players.map(e=>({e,hp:e.hp})),ownHp=p.hp;fn();
   if(p.hp>ownHp&&active(p,'curse'))p.hp=ownHp+(p.hp-ownHp)*.4;
   for(const {e,hp} of before)if(e!==p&&e.hp<hp)e.hp=Math.max(0,hp-(hp-e.hp)*damageScale(p,e)*(global.ArenaStalemate?.attackFactor?.()??1));
 }
-function heal(p,amount){if(p.hp<=0)return;const n=active(p,'curse')?amount*.4:amount;p.hp=Math.min(p.maxHp,p.hp+n);}
+function heal(p,amount){if(p.hp<=0)return 0;
+ const n=(active(p,'curse')?amount*.4:amount)*(global.ArenaBalance?.defenseFactorOf?.(p)??1);
+ const before=p.hp;p.hp=Math.min(p.maxHp,p.hp+Math.max(0,n));return p.hp-before;}
 function tick(p){
   revive(p);if(p.hp<=0)return;
   // Once per simulation frame in ALL modes. No second UI-only tick.
@@ -74,7 +76,10 @@ function execute(p,a,target,api){
   if(a.type==='resurrect')return true;
   if(a.type==='rewind'){
     const history=p.forgeHistory||[],old=history[Math.max(0,history.length-1-Math.min(180,Math.round(a.duration*60)))];
-    if(old){p.x=old.x;p.y=old.y;p.hp=Math.max(1,Math.min(p.maxHp,old.hp));clampPosition(p);show(p.x,p.y,50);}return true;
+    if(old){p.x=old.x;p.y=old.y;
+      const recovery=Math.max(0,old.hp-p.hp)*(global.ArenaBalance?.defenseFactorOf?.(p)??1);
+      p.hp=Math.max(1,Math.min(p.maxHp,p.hp+recovery));
+      clampPosition(p);show(p.x,p.y,50);}return true;
   }
   if(['cleanse','haste','regen','fortify','timeburst'].includes(a.type)){
     if(a.type==='cleanse'){
