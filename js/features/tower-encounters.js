@@ -20,7 +20,7 @@ function contains(z,p){
  }
  return Math.hypot(dx,dy)<=z.r+r;
 }
-function create({realm,level,width=500,height=500,hero,boss,damage}){
+function create({realm,level,width=500,height=500,hero,boss,damage,environmentManaged=false}){
  let tick=0,serial=0,phase=1,nextBoss=100,nextTerrain=150,terrainTurn=0,bossTurn=0;
  const zones=[];const isBoss=level%5===0,cx=width/2,cy=height/2;
  const circle=(x,y,r)=>({shape:'circle',x,y,r});
@@ -115,7 +115,7 @@ function create({realm,level,width=500,height=500,hero,boss,damage}){
   tick++;
   if(isBoss&&phase===1&&boss.hp<=boss.maxHp*.5){phase=2;nextBoss=Math.max(tick+90,nextBoss);}
   // No extra terrain on boss floors; every pattern has safe geometry.
-  if(!isBoss&&tick>=nextTerrain){terrain();nextTerrain=tick+Math.max(205,300-level*9);}
+  if(!isBoss&&!environmentManaged&&tick>=nextTerrain){terrain();nextTerrain=tick+Math.max(205,300-level*9);}
   if(isBoss&&tick>=nextBoss){pattern();nextBoss=tick+({time:phase===2?135:178,space:phase===2?230:272,fire:phase===2?150:185,storm:phase===2?118:155,ice:phase===2?245:295,forest:phase===2?158:204}[realm]||255);}
   for(const z of zones){
    if(tick<z.fire||tick>=z.end)continue;
