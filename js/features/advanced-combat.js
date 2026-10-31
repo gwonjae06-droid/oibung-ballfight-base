@@ -116,8 +116,30 @@ function mark(kind,x,y,r=65,col='#516170',life=22,angle=0,z=0){
   effect.z=z;return effect;
 }
 function reset(){objects.length=0;projectiles.length=0;effects.length=0;alpha=1;}
-function pushObject(o){if(objects.length>=MAX_OBJECTS)objects.shift();objects.push(o);return o;}
-function pushShot(o){if(projectiles.length>=MAX_PROJECTILES)projectiles.shift();o.trail=[];projectiles.push(o);return o;}
+// A global FIFO cap let a spammer silently delete another fighter's walls,
+// summons, turrets or even in-flight projectiles. Reserve independent budgets
+// for each participant; a full owner budget only evicts that owner's oldest
+// item. With ten fighters this remains bounded without favoring early spawns.
+function ownerQuota(max){
+  const alive=new Set(players.filter(p=>p&&p.hp>0&&p.playerNum!=null).map(p=>p.playerNum));
+  return Math.max(2,Math.floor(max/Math.max(2,alive.size)));
+}
+function pushOwned(pool,item,max){
+  const quota=ownerQuota(max);
+  let owned=0,oldest=-1;
+  for(let i=0;i<pool.length;i++)if(pool[i].owner===item.owner){
+    owned++;if(oldest<0)oldest=i;
+  }
+  if(owned>=quota||pool.length>=max){
+    // Never evict a rival's live object just because this caster is spamming.
+    // An unexpected full pool with no owned entry rejects the new item safely.
+    if(oldest<0)return null;
+    pool.splice(oldest,1);
+  }
+  pool.push(item);return item;
+}
+function pushObject(o){return pushOwned(objects,o,MAX_OBJECTS);}
+function pushShot(o){o.trail=[];return pushOwned(projectiles,o,MAX_PROJECTILES);}
 const enemies=p=>players.filter(q=>q!==p&&q.hp>0).concat(globalThis.ArenaTower?.encounter?.spectacle?.targets(p)||[]);
 const nearest=p=>enemies(p).sort((a,b)=>Math.hypot(a.x-p.x,a.y-p.y)-Math.hypot(b.x-p.x,b.y-p.y))[0]||null;
 function strike(p,e,a,api,z=groundHeight(p),factor=1){
