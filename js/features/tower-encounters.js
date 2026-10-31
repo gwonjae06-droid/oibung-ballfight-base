@@ -33,6 +33,9 @@ function contains(z,p){
 }
 function create({realm,level,width=500,height=500,hero,boss,damage,environmentManaged=false}){
  let tick=0,serial=0,phase=1,nextBoss=100,nextTerrain=150,terrainTurn=0,bossTurn=0;
+ // Only dodged, completed boss telegraphs grant a temporary damage window.
+ const baseDefense=Number.isFinite(boss?.towerDefense)?boss.towerDefense:1;
+ let exposure=0,nextExpose=0,avoided=0;
  const spectacle=g.ArenaTowerSpectacle?.create({realm,level,width,height,hero,boss,damage});
  const zones=[];const isBoss=level%5===0,cx=width/2,cy=height/2;
  const MAX_ZONES=30;
@@ -210,6 +213,7 @@ function create({realm,level,width=500,height=500,hero,boss,damage,environmentMa
  function step(){
   if(hero.hp<=0||boss.hp<=0)return;
   tick++;
+  if(exposure>0&&--exposure===0)boss.towerDefense=baseDefense;
   spectacle?.step();
   if(isBoss&&phase===1&&boss.hp<=boss.maxHp*.5){phase=2;nextBoss=Math.max(tick+90,nextBoss);}
   // No extra terrain on boss floors; every pattern has safe geometry.
@@ -255,7 +259,18 @@ function create({realm,level,width=500,height=500,hero,boss,damage,environmentMa
     }
    }
   }
-  for(let i=zones.length-1;i>=0;i--)if(tick>=zones[i].end)zones.splice(i,1);
+  for(let i=zones.length-1;i>=0;i--)if(tick>=zones[i].end){
+   const z=zones[i];
+   if(isBoss&&z.kind==='boss'){
+    avoided=z.hits.has(hero)?0:avoided+1;
+    if(avoided>=2&&tick>=nextExpose){
+     avoided=0;exposure=180;nextExpose=tick+540;
+     boss.towerDefense=baseDefense*1.5;
+     g.addFloatingText?.('약점 노출!',boss.x,boss.y-65,'#ffe28e',22);
+    }
+   }
+   zones.splice(i,1);
+  }
  }
  function draw(ctx,color='#f5ce78'){
   ctx.save();
@@ -277,10 +292,14 @@ function create({realm,level,width=500,height=500,hero,boss,damage,environmentMa
    if(!raised&&!live){const label=z.label+' '+(warning/60).toFixed(1)+'s';
      ctx.strokeText(label,x,y);ctx.fillText(label,x,y);}
   }
-  if(isBoss){ctx.font='bold 14px system-ui';ctx.textAlign='center';ctx.fillStyle='#ffffff';ctx.fillText('PHASE '+phase+' · '+(phase===2?'격화':'탐색'),width/2,24);}
+  if(isBoss){
+   ctx.font='bold 14px system-ui';ctx.textAlign='center';ctx.fillStyle='#ffffff';
+   ctx.fillText('PHASE '+phase+' · '+(phase===2?'격화':'탐색'),width/2,24);
+   if(exposure>0){ctx.fillStyle='#ffe28e';ctx.fillText('약점 노출 · 피해 +50% · '+(exposure/60).toFixed(1)+'초',width/2,43);}
+  }
   ctx.restore();
  }
- return {step,draw: function(ctx,color){draw(ctx,color);spectacle?.draw(ctx);g.ArenaTowerSpectacle?.page(g.ArenaScreenRouter?.active&&g.ArenaScreenRouter.active!=='tower'?null:spectacle?.event,spectacle?.tick);},get spectacle(){return spectacle;},get zones(){return zones.concat(spectacle?.zones||[]);},get tick(){return tick;},get phase(){return phase;},isBoss,
+ return {step,draw: function(ctx,color){draw(ctx,color);spectacle?.draw(ctx);g.ArenaTowerSpectacle?.page(g.ArenaScreenRouter?.active&&g.ArenaScreenRouter.active!=='tower'?null:spectacle?.event,spectacle?.tick);},get spectacle(){return spectacle;},get zones(){return zones.concat(spectacle?.zones||[]);},get tick(){return tick;},get phase(){return phase;},get weakpointFrames(){return exposure;},isBoss,
     get attackIndex(){return bossTurn;}};
 }
 g.ArenaEncounter={create,contains,patternNames:(id,level=5)=>[...((level===10?ULTIMATES:NAMES)[id]||NAMES.time)],bossCatalog:{middle:NAMES,final:ULTIMATES}};
