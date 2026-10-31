@@ -116,6 +116,15 @@ function mark(kind,x,y,r=65,col='#516170',life=22,angle=0,z=0){
   effect.z=z;return effect;
 }
 function reset(){objects.length=0;projectiles.length=0;effects.length=0;alpha=1;}
+// A visual-only crowd budget. Every projectile retains its normal trajectory,
+// collision and damage; dense fights only simplify trails, glows and sparks.
+function projectileLoad(){
+ let count=projectiles.length;
+ for(const p of (typeof players!=='undefined'?players:[]))count+=p?.forgeShots?.length||0;
+ return count;
+}
+function projectileDetail(){const n=projectileLoad();return n>=65?2:n>=32?1:0;}
+
 // A global FIFO cap let a spammer silently delete another fighter's walls,
 // summons, turrets or even in-flight projectiles. Reserve independent budgets
 // for each participant; a full owner budget only evicts that owner's oldest
@@ -465,8 +474,11 @@ function updateProjectiles(api){
       }
       if(collided||t>=1){projectiles.splice(i,1);continue;}
     }
-    b.trail.unshift({x:b.x,y:b.y-b.height});
-    if(b.trail.length>(reduced?4:11))b.trail.pop();
+    // Older trail vertices cost extra Canvas strokes for no gameplay gain.
+    // Reduce stored history when effects crowd the arena; no shot is removed.
+    const trailLimit=reduced?2:projectiles.length>=65?2:projectiles.length>=32?4:11;
+    if(trailLimit>0)b.trail.unshift({x:b.x,y:b.y-b.height});
+    if(b.trail.length>trailLimit)b.trail.length=trailLimit;
     if(b.kind==='splitshot'&&!b.split&&t>=.56){
       b.split=true;const n=cap(Math.round(b.a.count||1),1,8);
       for(let j=0;j<n;j++){
@@ -887,6 +899,7 @@ function draw(ctx){
       global.ArenaDepth.air(ctx,{x,y:y+z},z,paintObject,o.r||18);
     }else paintObject(ctx);
   }
+  const shotDetail=projectileDetail();
   for(const b of projectiles){
     const p=ownerOf(b);if(!p)continue;
     const x=lerp(Number.isFinite(b.prevX)?b.prevX:b.x,b.x,alpha);
@@ -896,8 +909,8 @@ function draw(ctx){
     const direction=Math.atan2(b.ty-b.startY,b.tx-b.startX);
     const paintProjectile=ctx=>{
     ctx.save();ctx.lineCap='round';ctx.lineJoin='round';
-    if(b.trail?.length){
-      const path=[{x,y:dy},...b.trail].slice(0,reduced?4:9);
+    if(shotDetail<2&&b.trail?.length){
+      const path=[{x,y:dy},...b.trail].slice(0,reduced?3:shotDetail?3:9);
       for(let i=1;i<path.length;i++){
         ctx.globalAlpha=.50*(1-i/path.length);
         ctx.lineWidth=Math.max(.75, (b.kind==='arcshot'?5:3.5)-i*.32);
@@ -909,7 +922,14 @@ function draw(ctx){
     ctx.globalAlpha=1;ctx.translate(x,dy);
     ctx.rotate(direction+(b.kind==='splitshot'?b.age*.13:0));
     ctx.strokeStyle='#273443';ctx.lineWidth=2;ctx.fillStyle=col;
-    if(b.kind==='turretshot'){
+    // Fast silhouette for crowded combat: still render every shot, including
+    // its direction and distinct heavy shell, at a fraction of the path cost.
+    if(shotDetail===2){
+      ctx.beginPath();
+      if(b.kind==='arcshot')ctx.arc(0,0,8,0,Math.PI*2);
+      else {ctx.moveTo(10,0);ctx.lineTo(-7,-4);ctx.lineTo(-5,4);ctx.closePath();}
+      ctx.fill();
+    }else if(b.kind==='turretshot'){
       // Short, pointed bullet visually moves from the aimed barrel to contact.
       ctx.beginPath();ctx.moveTo(11,0);ctx.lineTo(-5,-5);
       ctx.lineTo(-9,0);ctx.lineTo(-5,5);ctx.closePath();
@@ -942,7 +962,7 @@ function draw(ctx){
       ctx.moveTo(-3,-2);ctx.lineTo(8,0);ctx.stroke();
     }
     ctx.restore();
-    if(b.age<14&&b.kind!=='fragment'&&b.kind!=='turretshot'&&!reduced){
+    if(shotDetail===0&&b.age<14&&b.kind!=='fragment'&&b.kind!=='turretshot'&&!reduced){
       // A tiny typographic ID is shown only at launch; no permanent HUD clutter.
       ctx.save();ctx.fillStyle='rgba(24,30,38,.83)';
       const label=b.kind==='arcshot'?'곡사탄':'분열탄';
@@ -964,5 +984,5 @@ function draw(ctx){
 function activeLine(t){return Math.max(1,8*Math.sin(Math.PI*cap(t,0,1)));}
 global.AdvancedCombat={TYPES,TYPE_NAMES,DESCRIPTIONS,objects,projectiles,effects,
   height:absoluteHeight,floorHeight:terrainElevation,visibleHeight,visual,pose,setAlpha,setReduced,blend,size,renderY,canHit,
-  launch,execute,tick,draw,reset,mark,ensure,blockSegment};
+  launch,execute,tick,draw,reset,mark,ensure,blockSegment,projectileLoad,projectileDetail};
 })(window);

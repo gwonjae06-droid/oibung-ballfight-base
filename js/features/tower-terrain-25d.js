@@ -130,12 +130,16 @@ function geometry(realm,level,width,height,tick){
  const key=[realm,level,width,height,tick].join(':');
  if(geometryCache?.key===key)return geometryCache;
  const platforms=nodes(realm,level,width,height,tick);
- return (geometryCache={key,platforms,polygons:platforms.map(n=>footprint(realm,n))});
+ return (geometryCache={key,platforms,peak:Math.max(22,...platforms.map(n=>n.z)),polygons:platforms.map(n=>footprint(realm,n))});
 }
 function heightAt(realm,level,x,y,width=500,height=500,tick=0){
  let z=0;const geo=geometry(realm,level,width,height,tick),platforms=geo.platforms;
  for(let i=0;i<platforms.length;i++){
    const n=platforms[i];
+   // All platform vertex coordinates are at most 1.26 radii from the
+   // center. Skip expensive polygon edge tests for points clearly outside
+   // the bounding box. The resulting height is exactly unchanged (zero).
+   if(Math.abs(x-n.x)>n.r*1.32||Math.abs(y-n.y)>n.r*1.32)continue;
    const shape=polygonMetrics(geo.polygons[i],x,y);
    // Flat tops and narrow, tangible slopes instead of three soft circles.
    let plateau=smooth(shape.clearance/Math.max(5,n.r*.17));
@@ -189,6 +193,10 @@ function worldHeight(x,y){
 // and compare terrain against the bullet's world-space altitude.
 function obstructsShot(x0,y0,z0,x1,y1,z1,clearance=9){
  if(!active||![x0,y0,z0,x1,y1,z1].every(Number.isFinite))return false;
+ // A projectile entirely above the highest terrain cannot hit a platform.
+ // Platform tops dominate the cross-section ridges (all <=22 world units).
+ const snapshot=geometry(active.realm,active.level,active.width,active.height,active.tick);
+ if(Math.min(z0,z1)>=snapshot.peak-clearance)return false;
  const length=Math.hypot(x1-x0,y1-y0),steps=Math.max(1,Math.ceil(length/5));
  for(let i=1;i<=steps;i++){
    const t=i/steps;

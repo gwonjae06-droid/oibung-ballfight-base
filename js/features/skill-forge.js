@@ -224,7 +224,10 @@ function hit(p,e,action,multiplier=1,attackZ) {
     e.hp=Math.max(0,e.hp-d);
     e.invincible=IMPACT_GRACE_FRAMES;
     e._forgeImpactGrace=IMPACT_GRACE_FRAMES;
-    createHitParticles(e.x,e.y,tint,d>=25?22:14);
+    // In projectile storms, retain readable impact feedback without
+    // producing hundreds of expensive short-lived spark sprites per tick.
+    const density=global.AdvancedCombat?.projectileDetail?.()||0;
+    createHitParticles(e.x,e.y,tint,density===2?4:density===1?8:d>=25?22:14);
     addFloatingText('-'+d,e.x,e.y-30,tint,17);
     global.ImpactPhysics?.hit?.(p,e,d,{knockback:action.knockback||0,color:tint,type:action.type});
   }
@@ -238,6 +241,13 @@ function hit(p,e,action,multiplier=1,attackZ) {
     e.bfDotDamage=Math.max(e.bfDotDamage||2,Math.min(6,Math.max(1,Math.round(d*.12))));
   }
   global.ForgeExpansion?.applyStatus(p,e,action);
+  // Only report a confirmed hit; commentary never assumes a queued action
+  // actually reached its target or that a resisted status was applied.
+  const appliedStatus=action.status==='ice'&&e.slowTimer>0?'ice':
+    action.status==='fire'&&e.bfDot>0?'fire':
+    action.status==='poison'&&e.bfDot>0?'poison':
+    e.forgeEffects?.[action.status]?.time>0?action.status:'none';
+  global.ArenaBattleDirector?.skillHit?.(p,e,action,d,appliedStatus);
   if(action.knockback>0&&!global.ImpactPhysics){const dx=e.x-p.x,dy=e.y-p.y,dist=Math.hypot(dx,dy)||1;e.vx+=dx/dist*action.knockback;e.vy+=dy/dist*action.knockback;}
   global.SkillVisuals?.impact(p,e,action); // Only after damage/status actually connects.
   global.ForgeComboFX?.impact?.(p,e,action);
@@ -309,6 +319,7 @@ function tickQueue(p,target){
       next.castId===q.castId&&next.step>q.step&&next.a.type==='aircombo');
     if(aerialLink)p.uppercutFollow=true;
     const castTarget=players.find(e=>e.playerNum===q.targetNum&&e.hp>0)||target;
+    global.ArenaBattleDirector?.skillUsed?.(p,castTarget,q.a,p.forge?.skills?.[q.skillIndex]?.name);
     execute(p,q.a,castTarget);
     global.ForgeComboFX?.cast?.(p,q.a,{castId:q.castId,step:q.step,steps:q.steps,link:q.a.link},castTarget);
     if(aerialLink)p.uppercutFollow=false;
@@ -570,8 +581,10 @@ function drawFighter(p,renderCtx){
   const ink=renderCtx||ctx;
   if(!p.forge||p.hp<=0)return;
 
-  const c=global.arenaEffectColor?.((p.forge.effectColor||p.forge.color))||(p.forge.effectColor||p.forge.color);ink.save();ink.globalCompositeOperation='source-over';
-  ink.shadowColor=c;ink.shadowBlur=3;ink.fillStyle=c;ink.strokeStyle=c;
+  const c=global.arenaEffectColor?.((p.forge.effectColor||p.forge.color))||(p.forge.effectColor||p.forge.color);
+  const projectileDetail=global.AdvancedCombat?.projectileDetail?.()||0;
+  ink.save();ink.globalCompositeOperation='source-over';
+  ink.shadowColor=c;ink.shadowBlur=projectileDetail?0:3;ink.fillStyle=c;ink.strokeStyle=c;
   p.forgeShots.forEach(b=>{
     const heading=Math.atan2(b.vy,b.vx),status=b.a?.status||'none';
     const x=global.AdvancedCombat?.blend(b.prevX,b.x)??b.x;
@@ -581,8 +594,15 @@ function drawFighter(p,renderCtx){
     ink.save();
     const paintShot=ink=>{
     ink.save();ink.strokeStyle=c;
-    ink.globalAlpha=.28;ink.lineWidth=b.a?.charged?8:4;ink.lineCap='round';
-    ink.beginPath();ink.moveTo(x-b.vx*3,y-b.vy*3);ink.lineTo(x,y);ink.stroke();
+    if(projectileDetail===2){
+      ink.translate(x,y);ink.rotate(heading);ink.globalAlpha=.92;
+      ink.beginPath();ink.moveTo(11,0);ink.lineTo(-7,-4);ink.lineTo(-7,4);ink.closePath();
+      ink.fill();ink.restore();return;
+    }
+    if(projectileDetail===0){
+      ink.globalAlpha=.28;ink.lineWidth=b.a?.charged?8:4;ink.lineCap='round';
+      ink.beginPath();ink.moveTo(x-b.vx*3,y-b.vy*3);ink.lineTo(x,y);ink.stroke();
+    }
     ink.globalAlpha=1;ink.translate(x,y);ink.rotate(heading);
     ink.strokeStyle='#253344';ink.fillStyle=c;ink.lineWidth=2;
     // All projectiles have a physical pointed direction; their status
