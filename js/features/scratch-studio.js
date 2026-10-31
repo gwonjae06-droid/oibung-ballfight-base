@@ -278,6 +278,9 @@ root.addEventListener('dragend',()=>{drag=null;root.querySelectorAll('.scratch-d
 function openTab(tab){
  const looks=tab==='looks';
  g.CharacterStudioWorkspace?.selectTab?.(looks?'appearance':'skills');
+ // Legacy mode controller still owns the shared save/name/preview visibility.
+ // Keep it in compose mode while hiding its old redundant 4-skill UI.
+ originalSelect?.(looks?'appearance':'compose',{keepTab:true});
  if(!looks){const pv=doc.querySelector('.studio-motion-preview');if(pv)pv.hidden=false;g.CharacterStudioWorkspace?.setPreviewVisible?.(true);}
  header.querySelectorAll('[data-scratch-tab]').forEach(b=>b.setAttribute('aria-pressed',String((looks?'looks':'code')===b.dataset.scratchTab)));
 }
