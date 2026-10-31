@@ -183,6 +183,9 @@ depthOrder.forEach(p=>{
  }});
 });
 airItems.sort((a,b)=>a.depth-b.depth).forEach(item=>item.paint(ctx));
+// Time watches are painted ABOVE every fighter billboard; the simulation's
+// hit/collision effects remain in the existing projected world layer.
+globalThis.SkillVisuals?.drawForeground?.(ctx,canvas);
 floatingTexts.forEach(f=>{
   const point=globalThis.ArenaDepth?.screenPoint?.(f.x,f.y,canvas)||{x:f.x,y:f.y};
   ctx.save();
