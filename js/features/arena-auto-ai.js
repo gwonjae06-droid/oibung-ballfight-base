@@ -73,6 +73,17 @@ function hazards(p,foe){
      }
    }
  }
+ // The actual telegraphed environmental fields use the same collision
+ // geometry as their renderer. Ignore beneficial time acceleration zones.
+ if(g.ArenaTower?.active&&p.towerHero){
+   const env=g.ArenaTower.environment;
+   for(const z of (env?.zones||[]).slice(-3)){
+     if(z.mode==='fast')continue;
+     out.push({...z,relative:false,
+       fire:finite(z.fire)-finite(env.tick),end:finite(z.end)-finite(env.tick),
+       weight:['lava','eruption','lightning','roots','frost'].includes(z.mode)?1.2:.65});
+   }
+ }
  // Don't use future, hidden casts. Only visible skill wind-up cues count.
  const cues=g.ArenaTelegraph?.preview?.(foe)||[];
  for(const cue of cues.slice(0,2)){
