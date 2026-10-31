@@ -122,7 +122,7 @@ function makeEnemy(n){
     const attack=action(type,isMovement||isSupport?0:Math.round(f.damage*(i===0?1:.7)),{
       radius:type==='starfall'||type==='blackhole'?(realmId==='space'?190:155):112,
       speed:type==='dash'?8:5,
-      duration:type==='dash'?0.5:type==='starfall'?2.5:type==='summon'&&realmId==='forest'?6:1.7,
+      duration:type==='shield'&&f.boss?({time:.28,storm:.25,ice:.58,space:.42,fire:.38,forest:.48}[realmId]||.42):type==='dash'?0.5:type==='starfall'?2.5:type==='summon'&&realmId==='forest'?6:1.7,
       count:type==='starfall'?(realmId==='space'?8:5):type==='chain'?(realmId==='storm'?6:3):type==='summon'&&realmId==='forest'?4:1,
       status:realms?({fire:'fire',ice:'ice',forest:'poison'})[realmId]||'none':(f.number===4&&['nova','zone','shot'].includes(type))?'fire':
         f.number===6&&['zone','trap','drain','dung'].includes(type)?'poison':'none'
