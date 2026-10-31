@@ -7,6 +7,11 @@ let current=null,accumulator=0,remote=false,targets=null,lastPaint=0;
 let lastSimAt=0,lastSnapshotAt=0,lastSteerAt=0,lastStateSeq=-1;
 let steer=null,fxOutbox=[],fxSequence=0,remoteFxSequence=0,preview=null,fxFrameCarry=0;
 let fxWake=null;
+// Online auto combat must use the same overtime + neutral draw rules as local.
+const MATCH_LIMIT_SECONDS=Math.ceil(((global.ArenaStalemate?.LIMITS?.regular||7200)+
+  (global.ArenaStalemate?.LIMITS?.deadline||7200))/60)+5;
+function survivingWinner(){const alive=players.map((p,i)=>p.hp>0?i:-1).filter(i=>i>=0);
+ return alive.length===1?alive[0]:-1;}
 function setFxWake(fn){fxWake=typeof fn==='function'?fn:null;}
 function captureFx(effect,owner){
   if(remote||!current||current.ended)return;
@@ -93,6 +98,7 @@ function createRoom(a,b,mode,now,modes){
   const def=CHARACTER_DEFS.find(d=>d.id===raw.id);if(!def)throw Error('Unknown fighter');return def;
  });
  players=placeFighters(defs);particles=[];floatingTexts=[];shockwaves=[];
+ global.ArenaStalemate?.reset?.();
  openingCollisionPairs.clear();isPlaying=true;isGameOver=false;roundStarted=true;
  players.forEach((p,i)=>{
   p.onlineManual=modes[i]==='manual'||modes.includes('blitz');
@@ -192,8 +198,13 @@ function step(room,dt,now){
   update();SkillVisuals.tick();accumulator-=1/60;room.elapsed+=1/60;
  }
  lastSimAt=Date.now();
- if(isGameOver||room.elapsed>=120){room.ended=true;isPlaying=false;isGameOver=true;
-  room.winner=players[0].hp===players[1].hp?-1:players[0].hp>players[1].hp?0:1;}
+ if(isGameOver||room.elapsed>=MATCH_LIMIT_SECONDS){
+  room.ended=true;isPlaying=false;isGameOver=true;
+  // A surviving fighter wins; double KO and unbroken defense are draws.
+  // HP at the time limit is NEVER used as a tiebreaker.
+  room.winner=survivingWinner();
+  global.ArenaStalemate?.finish?.();
+ }
 }
 // Explicit references keep projectile owners, targets and hit sets intact.
 function encode(value,root=false,seen=new Set()){
@@ -214,7 +225,7 @@ function decode(v){
 // position, HP and cooldown updates stay small and interpolate smoothly.
 function snapshot(room,full=true){
  const b=room.blitz;
- const state={type:'state',clock:Math.max(0,120-room.elapsed),finished:room.ended,winner:room.winner,
+ const state={type:'state',clock:Math.max(0,MATCH_LIMIT_SECONDS-room.elapsed),finished:room.ended,winner:room.winner,
   ...(b?{blitz:{phase:b.phase,round:b.round,turn:b.turn,maxTurns:b.maxTurns,
     remainingMs:Math.max(0,(b.phase==='plan'?b.deadline:b.executionEnd)-Date.now()),
     submitted:b.plans.map(Boolean)}}:{}),
@@ -372,5 +383,6 @@ function paint(){
 }
 
 global.PvpRuntime={createRoom,setInput,cast,submitPlan,step,snapshot,receive,receiveFx,
+  MATCH_LIMIT_SECONDS,
   drainFx,setFxWake,previewCast,predict,paint};
 })(window);
