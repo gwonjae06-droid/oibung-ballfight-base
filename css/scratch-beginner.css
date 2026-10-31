@@ -95,3 +95,7 @@
  .scratch-friendly-mode .kid-template-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
 @media(prefers-reduced-motion:reduce){.scratch-friendly-mode *{transition:none!important}}
+
+.scratch-friendly-mode .kid-name-label{display:grid;gap:6px;font-size:13px;color:#d4e8fb;font-weight:800}
+.scratch-friendly-mode .kid-name-label input{width:100%;min-height:47px;padding:10px 12px;border:1px solid #91b7da;border-radius:9px;background:#11253a;color:#fff;font-size:16px}
+.scratch-friendly-mode .kid-name-label input::placeholder{color:#9ab9d1}
