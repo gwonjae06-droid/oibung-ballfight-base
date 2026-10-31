@@ -7,6 +7,7 @@ const forge=global.SkillForge;
 if(!forge)return;
 const TYPES=forge.TYPE,THEMES=forge.THEMES,TRIGGER=forge.TRIGGER,STATUS=forge.STATUS;
 const LINKS={and:'하고 · 이어서',after:'한 뒤 · 순차',with:'와/과 동시에',separate:'별도 스킬로 분리'};
+const CONDITIONS=global.SignatureProgram?.CONDITIONS||{always:'항상 실행'};
 const TARGETS=global.AbilityAtlas?.TARGETS||{nearest:'가장 가까운 적',farthest:'가장 먼 적',lowest:'체력이 낮은 적',highest:'체력이 높은 적',random:'무작위 적'};
 const GROUPS=global.ActionRegistry?.GROUPS||{
   attacks:{name:'공격',types:['wave','shot','beam','bolt','slash','spinslash','thrust','aircombo','arcshot','splitshot','uppercut','nova','chain','meteor','starfall','dung','dive','flight','burrow','burrowdash','erupt']},
@@ -30,20 +31,28 @@ function action(type){
 function clone(profile){return forge.normalize(profile);}
 function modify(profile,op){
   const d=clone(profile),skills=d.skills;
+  const signature=d.signatureVersion===1,limit=signature?12:3;
   const i=Number(op.skill),j=Number(op.index);
   switch(op.kind){
+    case 'migrate-signature':return clone(global.SignatureProgram.migrate(d));
+    case 'restore-legacy':return clone(global.SignatureProgram.restore(d));
+    case 'condition':{
+      if(!signature||!idOk(skills,i)||!idOk(skills[i].actions,j))throw Error('조건 블록을 찾지 못했습니다.');
+      skills[i].actions[j].condition=global.SignatureProgram.validCondition(op.value);break;
+    }
     case 'enable':
       d.allAbilities=false;break;
     case 'add':{
       if(!TYPES[op.type])throw Error('등록할 수 없는 동작입니다.');
       if(!idOk(skills,i))throw Error('먼저 스킬을 선택하세요.');
-      if(skills[i].actions.length>=3)throw Error('스킬 하나에는 동작을 최대 3개 연결할 수 있습니다. 새 스킬을 추가하세요.');
+      if(skills[i].actions.length>=limit)throw Error('고유 스킬에는 행동 블록을 최대 '+limit+'개 연결할 수 있습니다.');
       const at=Number.isInteger(Number(op.at))?Math.max(0,Math.min(skills[i].actions.length,Number(op.at))):skills[i].actions.length;
       skills[i].actions.splice(at,0,action(op.type));
       if(at===0)skills[i].actions[0].link='and';
       break;
     }
     case 'new-skill':
+      if(signature)throw Error('고유 스킬은 한 개만 만들 수 있습니다. 행동 블록을 추가하세요.');
       if(skills.length>=4)throw Error('독립 스킬은 최대 4개까지 만들 수 있습니다.');
       skills.push({name:'새 스킬 '+(skills.length+1),trigger:'auto',cooldown:3,threshold:40,actions:[action(op.type&&TYPES[op.type]?op.type:'wave')]});break;
     case 'remove-skill':
@@ -59,11 +68,15 @@ function modify(profile,op){
       skills[i].actions[j].type=op.type;break;
     case 'link':{
       if(!idOk(skills,i)||!idOk(skills[i].actions,j)||j===0)throw Error('첫 동작에는 연결사가 없습니다.');
-      if(op.value==='separate')return modify(d,{kind:'split',skill:i,index:j});
+      if(op.value==='separate'){
+        if(signature)throw Error('고유 스킬은 분리할 수 없습니다.');
+        return modify(d,{kind:'split',skill:i,index:j});
+      }
       if(!allowedLinks.has(op.value))throw Error('연결 방식을 선택해 주세요.');
       skills[i].actions[j].link=op.value;break;
     }
     case 'split':{
+      if(signature)throw Error('한 개의 고유 스킬 안에서 연결 방식을 선택하세요.');
       if(!idOk(skills,i)||j<=0||!idOk(skills[i].actions,j))throw Error('분리할 동작을 골라 주세요.');
       if(skills.length>=4)throw Error('독립 스킬은 최대 4개까지 만들 수 있습니다.');
       const separated=skills[i].actions.splice(j);
@@ -206,7 +219,7 @@ function inspector(skill,i){
       :'수치는 실제 전투에 반영됩니다. 공격 판정과 피해량은 기존 엔진의 설정을 따릅니다.')
     +' · 변경 후 아래에서 캐릭터를 저장하세요.</p></div></details>';
 }
-function actionRow(a,i,j,count){
+function actionRow(a,i,j,count,signature=false){
   const type=TYPES[a.type]||'동작',definition=global.ActionRegistry?.get(a.type);
   const category=definition?.category||'attacks',icon=CATEGORY_ICON[category]||'✧';
   const chosen=i===selectedSkill&&j===selectedAction;
@@ -214,8 +227,9 @@ function actionRow(a,i,j,count){
     a.type==='charge'?'⚡ '+Number(a.duration)+'초 모으기 → 다음 공격 강화':
     forge.supportedParameter(a.type,'damage')?Number(a.damage)+' 피해':
     category==='defense'?'보호·회복':'특수 동작';
-  return (j?'<div class="block-quick-link"><span aria-hidden="true">↓</span><select data-edit="link" data-skill="'+i+'" data-index="'+j+'" aria-label="앞 동작과 연결 방식">'+options(LINKS,a.link||'and')+'</select></div>':'')
-    +'<div class="block-quick-action block-family-'+category+(chosen?' is-inspected':'')+'" style="--block-accent:'+escape(definition?.visual?.color||'#8396ab')+'">'
+  return (signature?'<div class="signature-condition"><label>만약 · 실행 조건</label><select data-edit="condition" data-skill="'+i+'" data-index="'+j+'" aria-label="'+(j+1)+'번 블록 조건">'+options(CONDITIONS,a.condition||'always')+'</select></div>':'')
+    +(j?'<div class="block-quick-link"><span aria-hidden="true">↓</span><select data-edit="link" data-skill="'+i+'" data-index="'+j+'" aria-label="앞 동작과 연결 방식">'+options(signature?{and:LINKS.and,after:LINKS.after,with:LINKS.with}:LINKS,a.link||'and')+'</select></div>':'')
+    +'<div class="block-quick-action block-family-'+category+(chosen?' is-inspected':'')+'" style="--block-accent:'+escape(definition?.visual?.color||'#8396ab')+'"'+(signature?' draggable="true" data-draggable-skill="'+i+'" data-draggable-index="'+j+'"':'')+'>'
     +'<button type="button" class="block-quick-inspect" data-op="inspect" data-skill="'+i+'" data-index="'+j+'" aria-pressed="'+String(chosen)+'" aria-label="'+escape(type)+' 세부 능력 편집">'
     +'<span class="block-quick-icon" aria-hidden="true">'+icon+'</span>'
     +'<span class="block-quick-name"><strong>'+escape(type)+'</strong><small>'+escape(stats)+'</small></span></button>'
@@ -230,6 +244,7 @@ function draw(){
   if(!workspace)return;
   const d=forge.getDraft(),skills=d.skills||[];
   if(!skills.length)return;
+  const signature=d.signatureVersion===1;
   selectedSkill=Math.max(0,Math.min(selectedSkill,skills.length-1));
   selectedAction=Math.max(0,Math.min(selectedAction,skills[selectedSkill].actions.length-1));
   const allNotice=d.allAbilities?'<p class="block-quick-note">전체 능력 모드입니다. <button type="button" data-op="enable">일반 스킬 조합으로 전환</button></p>':'';
@@ -247,14 +262,15 @@ function draw(){
     +'<strong>🛡 회복·보호 밸런스</strong><span>유지력 지수 '+defense.pressure+' / 기준 '+defense.budget+'</span>'
     +'<p>'+(defense.excess?'회복량·보호막 지속시간·방어 효율에 약 '+defense.percent+'%가 적용됩니다.':'유지력 효과가 100% 적용됩니다.')
     +' 스킬 설정값은 그대로 저장되며, 방어형 조합과 지속 보호막은 계속 사용할 수 있습니다.</p></div>':'';
-  workspace.innerHTML=allNotice+balanceNotice+defensiveNotice+skills.map((s,i)=>
-    '<section class="block-quick-skill '+(i===selectedSkill?'is-selected':'')+'">'
+  const signatureHeader=signature?'<div class="signature-program-intro"><strong>🧩 나만의 고유 스킬 · 1 / 1</strong><p>블록을 원하는 순서로 연결하고, 각 행동 앞에 조건을 넣어 자동전투를 코딩하세요. 조건이 거짓이면 해당 행동은 발동하지 않습니다. 최대 12블록 · 하나의 쿨타임을 공유합니다.</p></div>':'<div class="signature-program-legacy"><strong>기존 캐릭터의 독립 스킬</strong><p>기존 캐릭터는 변함없이 전투합니다. 새 고유 스킬 방식으로 전환하면 행동들을 하나로 합치고 공통 쿨타임을 사용합니다. 저장 전에는 원래 스킬을 복구할 수 있습니다.</p><button type="button" data-op="migrate-signature">고유 스킬 1개로 전환</button></div>';
+  workspace.innerHTML=signatureHeader+allNotice+balanceNotice+defensiveNotice+skills.map((s,i)=>
+    '<section class="block-quick-skill '+(i===selectedSkill?'is-selected':'')+(signature?' signature-single':'')+'">'
     +'<div class="block-quick-skill-head">'
-    +'<button type="button" class="block-quick-select" data-op="select" data-skill="'+i+'" aria-pressed="'+String(i===selectedSkill)+'">'+(i===selectedSkill?'◆ ':'◇ ')+'스킬 '+(i+1)+'</button>'
+    +'<button type="button" class="block-quick-select" data-op="select" data-skill="'+i+'" aria-pressed="'+String(i===selectedSkill)+'">'+(i===selectedSkill?'◆ ':'◇ ')+(signature?'고유 스킬':'스킬 '+(i+1))+'</button>'
     +'<input type="text" maxlength="18" data-edit="meta" data-key="name" data-skill="'+i+'" aria-label="스킬 이름" value="'+escape(s.name)+'">'
-    +'<button type="button" data-op="remove-skill" data-skill="'+i+'" aria-label="스킬 삭제" '+(skills.length===1?'disabled':'')+'>삭제</button></div>'
+    +(signature?'':'<button type="button" data-op="remove-skill" data-skill="'+i+'" aria-label="스킬 삭제" '+(skills.length===1?'disabled':'')+'>삭제</button>')+'</div>'
     +'<div class="block-quick-facts"><span>'+escape(TRIGGER[s.trigger]||TRIGGER.auto)+'</span><span>↻ '+escape(s.cooldown)+'초</span><span>'+s.actions.length+'개 동작</span></div>'
-    +'<div class="block-quick-stack">'+s.actions.map((a,j)=>actionRow(a,i,j,s.actions.length)).join('')+'</div>'
+    +'<div class="block-quick-stack">'+s.actions.map((a,j)=>actionRow(a,i,j,s.actions.length,signature)).join('')+'</div>'
     +(i===selectedSkill?inspector(s,i):'')
     +'<p class="block-quick-description">'+escape(phrase(s))+'</p>'
     +'<details class="block-quick-settings"><summary>발동 조건 · 쿨타임</summary><div class="block-quick-settings-grid">'
@@ -262,9 +278,10 @@ function draw(){
     +'<label>쿨타임(초)<input type="number" min=".2" max="30" step=".1" data-edit="meta" data-key="cooldown" data-skill="'+i+'" value="'+escape(s.cooldown)+'"></label>'
     +(s.trigger==='lowhp'?'<label>HP 조건(%)<input type="number" min="5" max="95" step="5" data-edit="meta" data-key="threshold" data-skill="'+i+'" value="'+escape(s.threshold)+'"></label>':'')
     +'</div></details>'
-    +(i>0?'<button type="button" class="block-quick-merge" data-op="merge" data-skill="'+i+'" '+(skills[i-1].actions.length+s.actions.length>3?'disabled':'')+'>↑ 이전 스킬과 합치기</button>':'')
+    +(!signature&&i>0?'<button type="button" class="block-quick-merge" data-op="merge" data-skill="'+i+'" '+(skills[i-1].actions.length+s.actions.length>3?'disabled':'')+'>↑ 이전 스킬과 합치기</button>':'')
     +'</section>').join('')
-    +'<button type="button" class="block-quick-new" data-op="new-skill" '+(skills.length>=4?'disabled':'')+'>+ 별도 스킬 만들기 ('+skills.length+'/4)</button>';
+    +(signature?'<p class="signature-execution">기본 전투 유형은 자동 이동·기본 공격을 맡고, 이 한 개의 고유 스킬이 상황에 따라 반격·이동·방어·공격을 연계합니다.</p>':
+      '<button type="button" class="block-quick-new" data-op="new-skill" '+(skills.length>=4?'disabled':'')+'>+ 별도 스킬 만들기 ('+skills.length+'/4)</button>');
 }
 function refreshTypes(){
   if(!movePicker)return;
@@ -276,11 +293,11 @@ function mount(){
   if(!studio||!document.getElementById('forge-skills'))return;
   root=document.createElement('section');root.className='block-forge block-forge-simple';root.id='block-forge';
   root.setAttribute('aria-label','간단 스킬 조합기');
-  root.innerHTML='<div class="block-editor-head"><span class="eyebrow">TACTICAL WORKBENCH / ACTION BUILDER</span><h3>스킬 조립 작업실</h3><p>블록을 선택하면 아래에서 능력을 직접 조절할 수 있습니다. 왼쪽에서 시연하며 연결을 확인하세요.</p></div>'
+  root.innerHTML='<div class="block-editor-head"><span class="eyebrow">TACTICAL WORKBENCH / ACTION BUILDER</span><h3>고유 스킬 블록 코딩</h3><p>스크래치처럼 조건과 행동을 연결하세요. 블록은 ↑↓ 버튼으로 재배치하고, 전문가 설정에서 수치를 수정할 수 있습니다.</p></div>'
     +'<div class="block-quick-picker"><label>종류<select class="block-quick-group" aria-label="스킬 계열">'+options(Object.fromEntries(Object.entries(GROUPS).map(([id,g])=>[id,g.name])),filter)+'</select></label>'
     +'<label>동작<select class="block-quick-type" aria-label="추가할 동작"></select></label>'
     +'<button type="button" class="block-quick-add" data-op="add">+ 동작 붙이기</button></div>'
-    +'<p class="block-quick-help"><strong>사용 순서</strong> ① 스킬 선택 → ② 행동 붙이기 → ③ 블록 선택·조정 → ④ 미리보기 → ⑤ 저장</p>'
+    +'<p class="block-quick-help"><strong>사용 순서</strong> ① 행동 붙이기 → ② 조건 설정 → ③ 순서·동시 실행 설정 → ④ 미리보기 → ⑤ 저장</p>'
     +'<div class="block-workspace" aria-label="스킬 조합 영역"></div>'
     +'<p class="block-status" role="status" aria-live="polite"></p>';
   const target=studio.querySelector('.forge-primary-actions');
@@ -301,6 +318,10 @@ function mount(){
     if(op==='preview'){selectedSkill=si;selectedAction=ai;draw();global.CharacterStudioWorkspace?.previewSkill?.(si,ai);return;}
     if(op==='add'){apply({kind:'add',skill:selectedSkill,type:movePicker.value});global.CharacterStudioWorkspace?.previewSkill?.(selectedSkill,selectedAction);return;}
     if(op==='enable'){apply({kind:'enable'});return;}
+    if(op==='migrate-signature'){
+      if(typeof global.confirm==='function'&&!global.confirm('기존 4개 스킬을 하나의 고유 스킬로 합치겠습니까? 쿨타임이 하나로 통합됩니다.'))return;
+      apply({kind:'migrate-signature'});return;
+    }
     if(op==='new-skill'){apply({kind:'new-skill',type:movePicker.value});return;}
     if(op==='remove-skill'){apply({kind:'remove-skill',skill:si});return;}
     if(op==='remove'){apply({kind:'remove',skill:si,index:ai});return;}
@@ -311,13 +332,40 @@ function mount(){
       apply({kind:'move',fromSkill:si,fromIndex:ai,skill:si,at:ai+(dir<0?-1:2)});
     }
   });
+  // Desktop: drag an action block to reorder. The existing up/down buttons
+  // provide the same behavior via keyboard, touch screens, and screen readers.
+  let dragSource=null;
+  const clearDrop=()=>root.querySelectorAll('.signature-drop-target').forEach(n=>n.classList.remove('signature-drop-target'));
+  root.addEventListener('dragstart',e=>{
+    const item=e.target.closest?.('[data-draggable-index]');
+    if(!item||forge.getDraft().signatureVersion!==1)return;
+    dragSource={skill:Number(item.dataset.draggableSkill),index:Number(item.dataset.draggableIndex)};
+    e.dataTransfer?.setData('text/plain','signature-action');
+    if(e.dataTransfer)e.dataTransfer.effectAllowed='move';
+  });
+  root.addEventListener('dragover',e=>{
+    const item=e.target.closest?.('[data-draggable-index]');
+    if(!dragSource||!item||Number(item.dataset.draggableSkill)!==dragSource.skill)return;
+    e.preventDefault();clearDrop();item.classList.add('signature-drop-target');
+  });
+  root.addEventListener('drop',e=>{
+    const item=e.target.closest?.('[data-draggable-index]');
+    if(!dragSource||!item)return;
+    e.preventDefault();clearDrop();
+    const dest=Number(item.dataset.draggableIndex),src=dragSource;
+    dragSource=null;
+    if(src.index===dest)return;
+    apply({kind:'move',fromSkill:src.skill,fromIndex:src.index,skill:src.skill,at:src.index<dest?dest+1:dest});
+  });
+  root.addEventListener('dragend',()=>{dragSource=null;clearDrop();});
   root.addEventListener('change',e=>{
     const el=e.target;if(!el.dataset.edit)return;
     const skill=Number(el.dataset.skill),index=Number(el.dataset.index);
     if(el.dataset.edit==='link'){
       // '별도 스킬로 분리' remains an option in the compact connector menu.
       apply({kind:'link',skill,index,value:el.value});
-    }else if(el.dataset.edit==='meta')apply({kind:'meta',skill,key:el.dataset.key,value:el.value});
+    }else if(el.dataset.edit==='condition')apply({kind:'condition',skill,index,value:el.value});
+    else if(el.dataset.edit==='meta')apply({kind:'meta',skill,key:el.dataset.key,value:el.value});
     else if(el.dataset.edit==='type'){selectedSkill=skill;selectedAction=index;apply({kind:'type',skill,index,type:el.value});global.CharacterStudioWorkspace?.previewSkill?.(skill,index);}
     else if(el.dataset.edit==='param'){selectedSkill=skill;selectedAction=index;apply({kind:'param',skill,index,key:el.dataset.key,value:el.value});global.CharacterStudioWorkspace?.previewSkill?.(skill,index);}
   });

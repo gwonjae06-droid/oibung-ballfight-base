@@ -51,7 +51,7 @@ test('single-block skill remains modest; tower AI is not burdened with custom-on
 });
 test('connected VFX hooks use actual queued execution not scheduling and are cleared by arena lifecycle',()=>{
  const forge=read('js/features/skill-forge.js'),visual=read('js/features/skill-visuals.js'),studio=read('js/features/studio-workspace.js'),html=read('index.html');
- assert.ok(forge.includes('steps:s.actions.length'));
+ assert.ok(forge.includes('steps:actions.length'),'only conditions that pass should enter a connected VFX cast');
  assert.ok(forge.indexOf('global.ForgeComboFX?.cast?.(')>forge.indexOf('    execute(p,q.a,castTarget);'));
  assert.ok(forge.includes('global.ForgeComboFX?.impact?.(p,e,action)'));
  assert.ok(visual.includes('global.ForgeComboFX?.tick?.()'));

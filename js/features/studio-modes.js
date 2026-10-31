@@ -1,4 +1,4 @@
-/* Separate the custom studio's random-four generator and detailed block editor.
+/* Separate the custom studio's single-signature generator and detailed block editor.
  * Reuse the original forge draft, preview canvas, save button and roster. */
 (function(global){
 'use strict';
@@ -30,20 +30,20 @@ const picker=document.createElement('section');
 picker.id='studio-mode-picker';
 picker.className='studio-mode-picker';
 picker.setAttribute('aria-label','캐릭터 스킬 제작 방법 선택');
-picker.innerHTML='<div class="studio-mode-intro"><span class="eyebrow">SKILL WORKSHOP</span><h3>어떤 방식으로 스킬을 만들까요?</h3><p>무작위로 네 가지 스킬을 뽑거나, 블록을 직접 연결해 나만의 기술을 설계하세요.</p></div>'
+picker.innerHTML='<div class="studio-mode-intro"><span class="eyebrow">SKILL WORKSHOP</span><h3>어떤 방식으로 스킬을 만들까요?</h3><p>한 개의 고유 스킬을 무작위로 뽑거나, 조건·행동 블록을 직접 연결해 기술을 코딩하세요.</p></div>'
   +'<div class="studio-mode-choices">'
-  +'<button type="button" data-studio-open="random" class="studio-mode-choice"><span class="studio-mode-icon" aria-hidden="true">🎲</span><strong>랜덤 생성기</strong><small>전체 동작을 섞어 스킬 4개 자동 생성<br>언제든 다시 뽑기 · 왼쪽 동작 시연</small><span class="studio-mode-cta">랜덤 스킬 만들기</span></button>'
-  +'<button type="button" data-studio-open="compose" class="studio-mode-choice"><span class="studio-mode-icon" aria-hidden="true">⚡</span><strong>직접 설계하기</strong><small>쉬운 설계로 스킬 4개를 정하고<br>원하면 전문가 설정까지 자유롭게 편집</small><span class="studio-mode-cta">직접 조합하기</span></button></div>';
+  +'<button type="button" data-studio-open="random" class="studio-mode-choice"><span class="studio-mode-icon" aria-hidden="true">🎲</span><strong>랜덤 생성기</strong><small>전체 동작에서 고유 스킬 1개 자동 생성<br>언제든 다시 뽑기 · 왼쪽 동작 시연</small><span class="studio-mode-cta">랜덤 스킬 만들기</span></button>'
+  +'<button type="button" data-studio-open="compose" class="studio-mode-choice"><span class="studio-mode-icon" aria-hidden="true">⚡</span><strong>직접 설계하기</strong><small>하나의 고유 스킬에 행동 블록을 붙이고<br>원하면 전문가 설정까지 자유롭게 편집</small><span class="studio-mode-cta">직접 조합하기</span></button></div>';
 
 const randomView=document.createElement('section');
 randomView.id='studio-mode-random';
 randomView.className='studio-mode-screen studio-random-screen';
 randomView.hidden=true;
 randomView.innerHTML='<div class="studio-mode-toolbar"><button type="button" data-studio-back>← 제작 방법 선택</button><span>RANDOM GENERATOR</span></div>'
-  +'<h3>완전 랜덤 · 스킬 4개</h3><p class="studio-mode-description">전체 동작에서 무작위 스킬 4개를 생성합니다. 왼쪽에서 자동으로 시연하며, 원하는 만큼 다시 뽑을 수 있습니다.</p>'
-  +'<button type="button" id="studio-roll-four" class="studio-roll-four">🎲 네 가지 스킬 다시 생성</button>'
+  +'<h3>랜덤 · 고유 스킬 1개</h3><p class="studio-mode-description">전체 동작에서 행동 4개를 연결한 고유 스킬 1개를 생성합니다. 왼쪽에서 자동으로 시연하며, 원하는 만큼 다시 뽑을 수 있습니다.</p>'
+  +'<button type="button" id="studio-roll-four" class="studio-roll-four">🎲 고유 스킬 다시 생성</button>'
   +'<div id="studio-roll-status" class="studio-roll-status" role="status" aria-live="polite"></div>'
-  +'<div id="studio-random-results" class="studio-random-results" aria-label="생성한 네 가지 스킬"></div>'
+  +'<div id="studio-random-results" class="studio-random-results" aria-label="생성한 고유 스킬"></div>'
   +'<button type="button" class="studio-switch-to-compose" data-studio-open="compose">이 조합을 직접 수정하기</button>';
 // Retain legacy handlers and import/share integrations without showing duplicate random controls.
 if(randomEntry){randomEntry.hidden=true;randomView.append(randomEntry);}
@@ -98,7 +98,7 @@ function renderResults(profile){
   results.replaceChildren();
   const heading=document.createElement('p');
   heading.className='studio-result-heading';
-  heading.textContent='생성된 스킬 '+profile.skills.length+'개 · 스킬을 누르면 왼쪽에서 해당 동작을 시연합니다.';
+  heading.textContent='고유 스킬 1개 · 구성된 행동 '+profile.skills[0].actions.length+'개 · 왼쪽에서 연계를 시연합니다.';
   results.append(heading);
   profile.skills.forEach((s,i)=>{
     const card=document.createElement('button');
@@ -123,11 +123,15 @@ function selectRandomPreview(index){
   });
 }
 function rollFour(){
-  // Explicit four-skill mode; keep normal randomProfile callers backwards compatible.
+  // Sample four distinct actions for ONE signature. Other callers can still
+  // use legacy randomProfile(...,4) without altering stored character saves.
   const rolled=forge.randomProfile('any',Math.random,4);
   const previous=forge.getDraft();
+  const base=previous.signatureVersion===1?previous:global.SignatureProgram.migrate(previous);
+  const actions=rolled.skills.map((s,i)=>({...s.actions[0],condition:'always',link:i===0?'and':'after'}));
   const value=id=>document.getElementById(id)?.value;
-  const next={...previous,allAbilities:false,skills:rolled.skills,
+  const next={...base,signatureVersion:1,allAbilities:false,
+    skills:[{name:'운명의 고유 스킬',trigger:'auto',cooldown:4.5,threshold:40,actions}],
     name:value('bf-name')||previous.name,
     blurb:value('bf-text')??previous.blurb,
     color:value('forge-color')||previous.color,
@@ -139,7 +143,7 @@ function rollFour(){
   renderResults(forge.getDraft());
   workspace.refresh?.();
   selectRandomPreview('all');
-  rollStatus.textContent='스킬 4개 생성 완료 · 저장 전 초안입니다. 다시 생성하면 현재 스킬 4개가 교체됩니다.';
+  rollStatus.textContent='행동 블록 4개를 연결한 고유 스킬 1개 생성 완료 · 저장 전 초안입니다.';
   return forge.getDraft();
 }
 

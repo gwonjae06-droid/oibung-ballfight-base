@@ -15,7 +15,7 @@ function actionPressure(a){
   (a.status&&a.status!=='none'?1.13:1);
 }
 function skillPressure(s){
- const actions=(s?.actions||[]).slice(0,3),charge=actions.find(a=>a.type==='charge');
+ const actions=(s?.actions||[]).slice(0,12),charge=actions.find(a=>a.type==='charge');
  const raw=actions.reduce((sum,a)=>sum+actionPressure(a),0)*
    (charge?1+Math.min(.48,cap(n(charge.duration,1.2),.2,8)*.12):1);
  const cd=Math.max(.2,cap(n(s?.cooldown,3),.2,30),
@@ -55,7 +55,7 @@ const DEFENSE_BUDGET=90;
 function defenseSkillPressure(s){
  const cd=Math.max(.2,cap(n(s?.cooldown,3),.2,30));
  const availability=s?.trigger==='lowhp'?.7+.3*cap((n(s.threshold,40)-40)/55,0,1):s?.trigger==='damaged'?.65:s?.trigger==='contact'?.7:1;
- const pressure=(s?.actions||[]).slice(0,3).reduce((sum,a)=>{
+ const pressure=(s?.actions||[]).slice(0,12).reduce((sum,a)=>{
   const duration=cap(n(a.duration,1.5),.2,8),power=cap(n(a.damage),0,120);
   switch(a.type){
    case 'heal':return sum+power/cd;
