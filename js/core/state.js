@@ -56,7 +56,8 @@ const CUSTOM_DEFS = [];
 const BEHAVIORS = {};
 
 function getClosestAliveEnemy(self) {
-  const enemies = players.filter(p => p !== self && p.hp > 0);
+  const extra=globalThis.ArenaTower?.encounter?.spectacle?.targets(self)||[];
+  const enemies = extra.length?extra:players.filter(p => p !== self && p.hp > 0);
   if (enemies.length === 0) return null;
   let closest = enemies[0];
   let minDist = Math.hypot(closest.x - self.x, closest.y - self.y);

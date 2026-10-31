@@ -49,7 +49,7 @@ const LOADOUTS={
  forest:[['맹독 포자','dung'],['독성 수호수','summon'],['수호수 증식','summon'],['독가시 장판','zone'],['흡혈 덩굴','drain'],['포자 군단','summon']]
 };
 function enemyLoadout(id,level){
- const n=level<=2?2:level<=4?4:level<=7?5:6;
+ const n=level%5===0?6:level<=2?2:3;
  const load=LOADOUTS[id]||LOADOUTS.time;
  // Alternate opening skills between floors, without losing realm identity.
  const shift=(level-1)%Math.min(3,load.length);

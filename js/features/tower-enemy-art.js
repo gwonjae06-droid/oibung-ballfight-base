@@ -56,6 +56,8 @@ function draw(ctx,p,r){
   }
   ctx.restore();
  }
+ // Animated elemental anatomy for every family, scaled by boss tier.
+ if(g.ArenaTowerSpectacle){ctx.save();ctx.globalAlpha=boss?.7:.45;g.ArenaTowerSpectacle.glyph(ctx,p.towerRealm,Number(p.forgeClock)||0,r*(boss?.85:.65),true);ctx.restore();}
  // Distinct theme marks; no limbs, head or face.
  ctx.globalAlpha=.9;ctx.fillStyle=shine;ctx.textAlign='center';ctx.textBaseline='middle';
  const ICON={fire:'◆',time:'◷',space:'✧',ice:'❄',storm:'ϟ',forest:'♧'};

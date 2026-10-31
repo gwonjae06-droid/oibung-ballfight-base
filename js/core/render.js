@@ -56,6 +56,7 @@ ctx.save();ctx.translate(p.x+chargeJitter.x,p.y+offset+chargeJitter.y);
 ctx.scale(scale*pose.sx,scale*pose.sy);
 ctx.rotate(pose.tilt);if(dead)ctx.globalAlpha=0.3;if(z<0)ctx.globalAlpha*=.32;
 globalThis.ArenaDepth?.underlay?.(ctx,p,radius);
+if(!globalThis.ArenaTowerCreatures?.draw?.(ctx,p,radius)){
 ctx.save();ctx.scale(1,.83);ctx.beginPath();ctx.arc(0,0,radius,0,Math.PI*2);ctx.clip();
 if(img&&img.complete&&img.naturalWidth!==0)ctx.drawImage(img,-radius,-radius,radius*2,radius*2);
 else{
@@ -69,7 +70,8 @@ else{
   }
 }
 globalThis.ArenaDepth?.lightSurface?.(ctx,radius);
-ctx.restore();ctx.save();ctx.beginPath();ctx.ellipse(0,0,radius,radius*.83,0,0,Math.PI*2);ctx.lineWidth=globalThis.CosmeticArcade?.borderColor?.(p)?5:4;ctx.strokeStyle=globalThis.CosmeticArcade?.borderColor?.(p)||'#000';ctx.shadowColor=ctx.strokeStyle;ctx.shadowBlur=globalThis.CosmeticArcade?.borderGlow?.(p)||0;ctx.globalAlpha=1;ctx.shadowBlur=0;ctx.setLineDash([]);ctx.stroke();ctx.restore();ctx.save();ctx.scale(1,.83);globalThis.CosmeticArcade?.drawBorder?.(ctx,p,radius);ctx.restore();ctx.restore();
+ctx.restore();ctx.save();ctx.beginPath();ctx.ellipse(0,0,radius,radius*.83,0,0,Math.PI*2);ctx.lineWidth=globalThis.CosmeticArcade?.borderColor?.(p)?5:4;ctx.strokeStyle=globalThis.CosmeticArcade?.borderColor?.(p)||'#000';ctx.shadowColor=ctx.strokeStyle;ctx.shadowBlur=globalThis.CosmeticArcade?.borderGlow?.(p)||0;ctx.globalAlpha=1;ctx.shadowBlur=0;ctx.setLineDash([]);ctx.stroke();ctx.restore();ctx.save();ctx.scale(1,.83);globalThis.CosmeticArcade?.drawBorder?.(ctx,p,radius);ctx.restore();}
+ctx.restore();
 if(p.id==='lee'&&p.pokeAnim>0&&!dead){ctx.save();const a=Math.atan2(p.pokeTargetY-p.y,p.pokeTargetX-p.x),dist=Math.hypot(p.pokeTargetX-p.x,p.pokeTargetY-p.y),max=Math.min(p.pokeRange,Math.max(p.radius+40,dist)),reach=p.radius+(max-p.radius)*Math.sin(p.pokeAnim*Math.PI),x=p.x+Math.cos(a)*reach,y=p.y+Math.sin(a)*reach;ctx.beginPath();ctx.moveTo(p.x+Math.cos(a)*p.radius,p.y+Math.sin(a)*p.radius);ctx.lineTo(x,y);ctx.strokeStyle='#9a6500';ctx.lineWidth=5;ctx.lineCap='round';ctx.stroke();ctx.font='bold 24px -apple-system, sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillStyle='#ffe8a3';ctx.beginPath();ctx.arc(x,y,7,0,Math.PI*2);ctx.fill();ctx.restore();}
 globalThis.SkillVisuals?.drawAction?.(ctx,p,z);
 ctx.save();const labelY=p.y+offset-radius*scale-12;

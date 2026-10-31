@@ -231,6 +231,9 @@ function handleCombat(pA,pB) {
 }
 function update() {
   if(!isPlaying||isGameOver)return;
+  const spectacle=globalThis.ArenaTower?.active?globalThis.ArenaTower?.encounter?.spectacle:null;
+  if(spectacle?.temporal?.active){spectacle.temporal.step();return;}
+  spectacle?.temporal?.capture();
   const healthAtStart=players.map(p=>p.hp);
   players.forEach(p=>{
     if(p.movementOnlyFrames>0)p.movementOnlyFrames--;
@@ -292,6 +295,7 @@ function update() {
     }
   });
   globalThis.ArenaTower?.tickEncounter?.();
+  for(const p of players)for(const e of spectacle?.targets(p)||[])handleCombat(p,e);
   const alive=players.filter(p=>p.hp>0);
   for(let i=0;i<alive.length;i++)for(let j=i+1;j<alive.length;j++)handleCombat(alive[i],alive[j]);
   for(let i=shockwaves.length-1;i>=0;i--){const sw=shockwaves[i];sw.radius+=5.5;sw.alpha-=0.03;if(sw.alpha<=0||sw.radius>=sw.maxRadius)shockwaves.splice(i,1);}

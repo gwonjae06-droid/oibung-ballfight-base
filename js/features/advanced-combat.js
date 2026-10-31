@@ -118,7 +118,7 @@ function mark(kind,x,y,r=65,col='#516170',life=22,angle=0,z=0){
 function reset(){objects.length=0;projectiles.length=0;effects.length=0;alpha=1;}
 function pushObject(o){if(objects.length>=MAX_OBJECTS)objects.shift();objects.push(o);return o;}
 function pushShot(o){if(projectiles.length>=MAX_PROJECTILES)projectiles.shift();o.trail=[];projectiles.push(o);return o;}
-const enemies=p=>players.filter(q=>q!==p&&q.hp>0);
+const enemies=p=>players.filter(q=>q!==p&&q.hp>0).concat(globalThis.ArenaTower?.encounter?.spectacle?.targets(p)||[]);
 const nearest=p=>enemies(p).sort((a,b)=>Math.hypot(a.x-p.x,a.y-p.y)-Math.hypot(b.x-p.x,b.y-p.y))[0]||null;
 function strike(p,e,a,api,z=groundHeight(p),factor=1){
   // Legacy authored melee and landing moves pass relative jump height.

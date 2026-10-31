@@ -188,7 +188,7 @@ function randomProfile(theme='any',rng=Math.random,exactCount=null){
 }
 
 let sequence=0;
-const enemies=p=>players.filter(e=>e!==p&&e.hp>0);
+const enemies=p=>players.filter(q=>q!==p&&q.hp>0).concat(globalThis.ArenaTower?.encounter?.spectacle?.targets(p)||[]);
 function groundImpactZ(target){
  return global.AdvancedCombat?.floorHeight?.(target) ??
   Math.max(0,Number(target?.towerGroundZ)||0);

@@ -33,6 +33,7 @@ function contains(z,p){
 }
 function create({realm,level,width=500,height=500,hero,boss,damage,environmentManaged=false}){
  let tick=0,serial=0,phase=1,nextBoss=100,nextTerrain=150,terrainTurn=0,bossTurn=0;
+ const spectacle=g.ArenaTowerSpectacle?.create({realm,level,width,height,hero,boss,damage});
  const zones=[];const isBoss=level%5===0,cx=width/2,cy=height/2;
  const MAX_ZONES=30;
  const circle=(x,y,r)=>({shape:'circle',x,y,r});
@@ -209,10 +210,11 @@ function create({realm,level,width=500,height=500,hero,boss,damage,environmentMa
  function step(){
   if(hero.hp<=0||boss.hp<=0)return;
   tick++;
+  spectacle?.step();
   if(isBoss&&phase===1&&boss.hp<=boss.maxHp*.5){phase=2;nextBoss=Math.max(tick+90,nextBoss);}
   // No extra terrain on boss floors; every pattern has safe geometry.
   if(!isBoss&&!environmentManaged&&tick>=nextTerrain){terrain();nextTerrain=tick+Math.max(205,300-level*9);}
-  if(isBoss&&tick>=nextBoss){pattern();nextBoss=tick+({time:phase===2?135:178,space:phase===2?230:272,fire:phase===2?150:185,storm:phase===2?118:155,ice:phase===2?245:295,forest:phase===2?158:204}[realm]||255);}
+  if(isBoss&&!spectacle?.event&&tick>=nextBoss){pattern();nextBoss=tick+({time:phase===2?135:178,space:phase===2?230:272,fire:phase===2?150:185,storm:phase===2?118:155,ice:phase===2?245:295,forest:phase===2?158:204}[realm]||255);}
   for(const z of zones){
    if(tick<z.fire||tick>=z.end)continue;
    for(const p of z.kind==='boss'?[hero]:[hero,boss]){
@@ -278,7 +280,7 @@ function create({realm,level,width=500,height=500,hero,boss,damage,environmentMa
   if(isBoss){ctx.font='bold 14px system-ui';ctx.textAlign='center';ctx.fillStyle='#ffffff';ctx.fillText('PHASE '+phase+' · '+(phase===2?'격화':'탐색'),width/2,24);}
   ctx.restore();
  }
- return {step,draw,get zones(){return zones;},get tick(){return tick;},get phase(){return phase;},isBoss,
+ return {step,draw: function(ctx,color){draw(ctx,color);spectacle?.draw(ctx);g.ArenaTowerSpectacle?.page(g.ArenaScreenRouter?.active&&g.ArenaScreenRouter.active!=='tower'?null:spectacle?.event,spectacle?.tick);},get spectacle(){return spectacle;},get zones(){return zones.concat(spectacle?.zones||[]);},get tick(){return tick;},get phase(){return phase;},isBoss,
     get attackIndex(){return bossTurn;}};
 }
 g.ArenaEncounter={create,contains,patternNames:(id,level=5)=>[...((level===10?ULTIMATES:NAMES)[id]||NAMES.time)],bossCatalog:{middle:NAMES,final:ULTIMATES}};

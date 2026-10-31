@@ -363,6 +363,8 @@ function install(){
     // Automatic combat has no movement or turn-selection controls.
   }
   function cleanup(){
+    encounter?.spectacle?.clear();
+    global.ArenaTowerSpectacle?.page(null);
     environment?.clear?.();environment=null;
     global.ArenaTowerTerrain?.clear?.(typeof players!=='undefined'?players:[]);
     if(temporary){delete BEHAVIORS[temporary.id];temporary=null;}
@@ -504,6 +506,7 @@ function install(){
   }
   function isTransientDef(d){return Boolean(temporary&&temporary.def===d&&active);}
   function pauseAway(){
+    global.ArenaTowerSpectacle?.page(null);
     if(active&&stage==='fighting'&&isPlaying)togglePlay();
   }
   start.addEventListener('click',begin);
@@ -527,7 +530,7 @@ function install(){
     environment?.step?.();
     if(!ancient)global.ArenaTowerTerrain?.step?.(realmId,level,players,canvas.width,canvas.height,encounter?.tick||0);
   }}
-  function drawEncounter(ctx){if(active&&stage==='fighting'){global.ArenaTowerAtmosphere?.particles?.(ctx,canvas.width,canvas.height,realmId,encounter?.tick||0);environment?.draw?.(ctx);encounter?.draw(ctx,realm()?.color);}}
+  function drawEncounter(ctx){if(!active||stage!=='fighting')global.ArenaTowerSpectacle?.page(null);if(active&&stage==='fighting'){global.ArenaTowerAtmosphere?.particles?.(ctx,canvas.width,canvas.height,realmId,encounter?.tick||0);environment?.draw?.(ctx);encounter?.draw(ctx,realm()?.color);}}
   const api={beginAncient,allRealmsCleared,selectRealm,openSelection,chooseBlessing,tickEncounter,drawEncounter,get encounter(){return encounter;},get environment(){return environment;},floor,makeEnemy,read,updateRecord,records,begin,forfeit,paintBackground,
     onBattleEnd,isTransientDef,pauseAway,refresh:show,setMode,get mode(){return mode;},get active(){return active;},
     get stage(){return stage;},get view(){return active?'interior':view;},get state(){return current();}};

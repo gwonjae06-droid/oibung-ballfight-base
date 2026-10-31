@@ -4,7 +4,7 @@ self.skillTimer++;
 if(self.skillTimer>=self.skillCooldown){self.skillTimer=0;
 if(self.skillCycle===0||self.skillCycle===1){addFloatingText('피싸기!',self.x,self.y-45,'#ea580c',20);for(let i=0;i<3;i++)self.waves.push({x:self.x,y:self.y,currentRadius:10+i*12,maxRadius:175,speed:2.2,alpha:0.85,hitTargets:new Set()});self.skillCycle++;}
 else{const healAmount=35;self.hp=Math.min(self.maxHp,self.hp+healAmount);addFloatingText('🩸 피모으기!',self.x,self.y-45,'#dc2626',21);addFloatingText(`+${healAmount} HP 회복!`,self.x,self.y-25,'#22c55e',18);for(let i=0;i<16;i++)particles.push({x:self.x+(Math.random()-0.5)*26,y:self.y+(Math.random()-0.5)*26,vx:(Math.random()-0.5)*1.5,vy:-1.2-Math.random()*1.4,radius:Math.random()*3+2,alpha:1,color:Math.random()>0.4?'#22c55e':'#f87171'});self.skillCycle=0;}}
-const enemies=players.filter(p=>p!==self&&p.hp>0);
+const enemies=players.filter(p=>p!==self&&p.hp>0).concat(globalThis.ArenaTower?.encounter?.spectacle?.targets(self)||[]);
 for(let i=self.waves.length-1;i>=0;i--){const w=self.waves[i];w.currentRadius+=w.speed;w.alpha-=0.009;
 enemies.forEach(e=>{if(e.jumpState!=='rising'&&e.jumpState!=='hovering'&&!w.hitTargets.has(e)){const dist=Math.hypot(e.x-w.x,e.y-w.y);if(Math.abs(dist-w.currentRadius)<e.radius+10){w.hitTargets.add(e);if(e.invincible===0){const dmg=25;e.hp=Math.max(0,e.hp-dmg);e.invincible=20;globalThis.ImpactPhysics?.hit?.(self,e,dmg,{heavy:true,color:'#c2410c',x:w.x,y:w.y});createHitParticles(e.x,e.y,'#c2410c',16);addFloatingText(`-${dmg}`,e.x,e.y-30,'#ea580c',22);const heal=Math.round(dmg*0.20);self.hp=Math.min(self.maxHp,self.hp+heal);addFloatingText(`+${heal} 흡혈`,self.x,self.y-20,'#22c55e',15);}}}});
 if(w.currentRadius>=w.maxRadius||w.alpha<=0)self.waves.splice(i,1);}
