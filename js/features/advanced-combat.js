@@ -573,8 +573,18 @@ function stepObjects(api){
           const normalY=rawDistance>1e-6?dy/dist:0;
           e.x=cap(o.x+normalX*minimum,e.radius,canvas.width-e.radius);
           e.y=cap(o.y+normalY*minimum,e.radius,canvas.height-e.radius);
-          e.vx=normalX*Math.max(1,Math.abs(e.vx));
-          e.vy=normalY*Math.max(1,Math.abs(e.vy));
+          // Constructed walls are PINBALL bumpers. Keep tangent velocity;
+          // reflecting each axis independently made an impact feel like a
+          // steering command and discarded most sideways travel.
+          const incoming=(e.vx||0)*normalX+(e.vy||0)*normalY;
+          if(incoming<-.1){
+            e.vx=((e.vx||0)-1.89*incoming*normalX)*.985;
+            e.vy=((e.vy||0)-1.89*incoming*normalY)*.985;
+            global.ArenaBallSquash?.wall?.(e,normalX,normalY,-incoming);
+            global.BounceMomentum?.wall?.(e,-incoming);
+            if(global.BounceMomentum?.enabled?.(e))
+              e._pinballReboundHold=Math.max(e._pinballReboundHold||0,9);
+          }
           if(e!==p&&o.age%22===0)o.hp-=Math.max(2,Math.abs(e.vx)+Math.abs(e.vy));
         }
       }
