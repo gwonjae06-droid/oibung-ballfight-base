@@ -19,7 +19,9 @@ function add(p,amount,kind){
  const clock=Number(p._forgeActionClock)||0;
  const gaps={contact:34,wall:26,basic:23};
  const name='_bounceLast_'+kind;
- if(gaps[kind]&&clock-(Number(p[name])||-1000)<gaps[kind])return false;
+ // Clock 0 is valid (the first simulation tick); do not treat it as
+ // missing and accidentally reward repeated overlap/rebounds at match start.
+ if(gaps[kind]&&Number.isFinite(p[name])&&clock-p[name]<gaps[kind])return false;
  if(gaps[kind])p[name]=clock;
  if(kind==='contact'||kind==='wall')g.SignatureLive?.record?.(p,kind);
  const previous=meter(p);
