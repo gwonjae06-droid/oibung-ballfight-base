@@ -63,7 +63,7 @@ function enemyLoadout(id,level){
 function choices(id,owned=[],random=Math.random){
  const r=get(id),all=[
   {id:'echo',name:r.blessing,description:'공격 스킬 위력 +18%. 이 도전에서만 적용.'},
-  {id:'haste',name:'찰나의 깨달음',description:'모든 스킬 쿨다운 15% 감소. 최대 2회 중첩.'},
+  {id:'haste',name:'찰나의 깨달음',description:'기세형은 충전량 +15%, 기존 스킬형은 쿨다운 15% 감소. 최대 2회 중첩.'},
   {id:'reach',name:'펼쳐진 경계',description:'공격 스킬 범위 +15%. 최대 2회 중첩.'},
   {id:'element',name:'속성 각성',description:({time:'공격에 빙결 둔화',space:'공격 범위 +25%',fire:'공격에 화상',storm:'투사체 속도 +35%',ice:'공격에 빙결 둔화',forest:'공격에 중독'})[r.id]+' 효과를 부여.'},
   {id:'vital',name:'생명의 샘',description:'매 층 최대 체력 +20%. 최대 2회 중첩.'}
@@ -76,8 +76,14 @@ function apply(p,id,blessings){
  if(p.forge)p.forge=JSON.parse(JSON.stringify(p.forge));
  for(const b of blessings){
   if(b==='vital'){p.maxHp=Math.round(p.maxHp*1.2);p.hp=p.maxHp;}
+  // Signature fighters and ordinary tower minions both spend ONE 100-point
+  // energy gauge. Reducing their visible cooldown does not speed up casting.
+  // Give modern player profiles a genuinely measurable, bounded gain instead.
+  // Run-local only: this field is never written to saved forge definitions.
+  if(b==='haste'&&p.forge?.signatureVersion===1&&!p.towerEnemy)
+   p._towerMomentumBoost=Math.min(1.3225,(p._towerMomentumBoost||1)*1.15);
   for(const s of p.forge?.skills||[]){
-   if(b==='haste')s.cooldown=Math.max(.35,s.cooldown*.85);
+   if(b==='haste'&&p.forge?.signatureVersion!==1)s.cooldown=Math.max(.35,s.cooldown*.85);
    for(const a of s.actions||[]){
     if(!(a.damage>0))continue;
     if(b==='echo')a.damage=Math.round(a.damage*1.18);
