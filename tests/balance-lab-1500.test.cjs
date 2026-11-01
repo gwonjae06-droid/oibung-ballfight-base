@@ -54,7 +54,7 @@ function enemyDefinition(g,realm,floor){
  }));
  return {name:f.name,hp:f.hp,speed:f.speed,skills};
 }
-function run(g,heroDef,enemyDef,realm,floor,seed){
+function run(g,heroDef,enemyDef,realm,floor,seed,frameLimit=FRAME_LIMIT){
  const f=g.ArenaTowerRealms.floor({number:floor,boss:floor%5===0},realm);
  const h=heroDef.createInstance(1),e=enemyDef.createInstance(2),score={casts:0,hits:0,
   damageDealt:0,damageTaken:0,healed:0,heroHp:h.hp,opponentHp:e.hp,events:0};
@@ -83,7 +83,7 @@ function run(g,heroDef,enemyDef,realm,floor,seed){
  const env=g.ArenaTowerEnvironment.create({realm,level:floor,width:500,height:500,
    roster:[h,e],damage:hurt});
  let elapsed=0,previousHero=h.hp,previousEnemy=e.hp;
- for(let t=0;t<FRAME_LIMIT;t++){
+ for(let t=0;t<frameLimit;t++){
   for(const p of [h,e]){
    if(p.invincible>0)p.invincible--;
    if(p.movementOnlyFrames>0)p.movementOnlyFrames--;
@@ -163,4 +163,35 @@ test('1500 seeded headless real-module tower duels provide reproducible balance 
  assert.ok(results.some(r=>r.score.casts>0),'real hero momentum must cast a skill');
  assert.ok(results.some(r=>r.score.events>0),'arena hazards must actually use hit adapter');
  assert.ok(results.some(r=>r.score.damageDealt>0),'real SkillForge hits must deal enemy damage');
+});
+
+test('120 longer 105-second 5F/10F seeded boss previews expose real finishing power instead of only 30s wins',()=>{
+ const g=boot(),heroes={},enemy={};
+ for(const build of BUILDS){
+  const id=g.SkillForge.register(playerDefinition(g,build));
+  heroes[build]=g.CUSTOM_DEFS.find(x=>x.id===id);
+ }
+ for(const realm of REALMS)for(const floor of [5,10]){
+  const id=g.SkillForge.register(enemyDefinition(g,realm,floor),{towerEnemy:true});
+  enemy[realm+floor]=g.CUSTOM_DEFS.find(x=>x.id===id);
+ }
+ const rows={};
+ let n=0,won=0,defeated=0,exceeded=0;
+ for(const build of BUILDS){
+  rows[build]={};
+  for(const realm of REALMS)for(const floor of [5,10]){
+   const tag=realm+'-'+floor,record={win:0,loss:0,time:0};
+   for(let seed=0;seed<2;seed++){
+    const r=run(g,heroes[build],enemy[realm+floor],realm,floor,seed,105*60);
+    record[r.outcome]++;n++;won+=r.outcome==='win';
+    defeated+=r.outcome==='loss';exceeded+=r.outcome==='time';
+    assert.ok(Number.isFinite(r.score.heroHp)&&Number.isFinite(r.score.opponentHp));
+   }
+   rows[build][tag]=record;
+  }
+ }
+ assert.equal(n,120);
+ console.log('BALANCE_LAB_BOSS_105S_HEADLESS_ONLY '+
+  JSON.stringify({matches:n,wins:won,losses:defeated,timeouts:exceeded,
+   samplesPerBuildRealmFloor:2,includeCinematicBossSpectacles:false,rows}));
 });
