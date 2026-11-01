@@ -108,7 +108,7 @@ test('all saved custom 4-skill fighters share a 100-point gauge; one skill per s
  const src=read('js/features/skill-forge.js'),m=read('js/features/bounce-momentum.js'),
   engine=read('js/core/engine.js');
  assert.match(m,/!!p\.forge\|\|!!g\.ArenaOriginalMomentum/);
- assert.match(src,/chargedPlayer&&i!==(p\._playerEnergyCursor/);
+ assert.ok(src.includes('chargedPlayer&&i!==(p._playerEnergyCursor'));
  assert.match(src,/if\(chargedPlayer\)p\._playerEnergyCursor/);
  assert.match(engine,/ArenaOriginalMomentum\.update\(self,foe,players\)/);
  assert.match(engine,/ArenaOriginalMomentum\.onContact\(a,b\)/);
