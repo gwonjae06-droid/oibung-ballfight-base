@@ -136,6 +136,43 @@ function draw(c,p,r){
   for(let i=0;i<5;i++){const x=(i-2)*.32;c.beginPath();c.moveTo(0,r*.3);c.bezierCurveTo(x*r,r*.55,(x+Math.sin(t+i)*.1)*r,r*.9,x*r*1.4,r*1.25);c.lineWidth=tier?6:3;c.strokeStyle='#896344';c.stroke();}
   poly([[-.38,.65],[-.2,-.55],[.15,-.8],[.4,.65]],'#654a31');
   for(let i=0;i<7;i++){const a=i*T/7,x=Math.cos(a)*.6,y=-.4+Math.sin(a)*.45;c.save();c.translate(x*r,y*r);c.rotate(a+Math.sin(t*2+i)*.08);c.beginPath();c.ellipse(0,0,r*.45,r*.25,0,0,T);c.fillStyle=i%2?'#427c43':'#88b74a';c.fill();c.strokeStyle='#bdde81';c.lineWidth=1;c.stroke();c.restore();}
+  if(tier){
+   // Guardian: ancient knotted stone covered by smaller leaves.
+   // World Tree Heart: massive crown of luminous floating seed/wood rings,
+   // still one round go-stone rather than a humanoid trunk or limbs.
+   const count=tier===2?12:7;
+   c.save();c.rotate(t*(tier===2?-.12:.16));
+   for(let k=0;k<count;k++){
+    const a=k*T/count,outer=tier===2?1.54:1.2;
+    c.save();c.rotate(a);
+    c.strokeStyle='#88644a';c.lineWidth=tier===2?6:4;
+    c.beginPath();c.moveTo(0,-r*.57);c.quadraticCurveTo(r*.2,-r*.91,0,-r*outer);c.stroke();
+    c.fillStyle=k%3===0?'#e6ffae':k%2?'#5da76a':'#a3d96b';
+    c.beginPath();c.ellipse(0,-r*(outer-.07),r*(tier===2?.3:.24),
+      r*(tier===2?.16:.14),.33,0,T);c.fill();
+    c.restore();
+   }
+   c.restore();
+   const heart=c.createRadialGradient(-r*.15,-r*.2,1,0,0,r*.75);
+   heart.addColorStop(0,'#fbffcf');heart.addColorStop(.34,'#b7f191');
+   heart.addColorStop(.68,'#5f9c52');heart.addColorStop(1,'#3e5036');
+   c.fillStyle=heart;c.beginPath();c.arc(0,0,r*(tier===2?.53:.42),0,T);c.fill();
+   c.strokeStyle='#f0ffc4';c.lineWidth=tier===2?3:2;
+   for(let k=0;k<(tier===2?8:5);k++){
+    const a=k*T/(tier===2?8:5);
+    c.beginPath();c.moveTo(Math.cos(a)*r*.19,Math.sin(a)*r*.19);
+    c.quadraticCurveTo(Math.cos(a+.2)*r*.49,Math.sin(a+.2)*r*.5,
+     Math.cos(a+.3)*r*.77,Math.sin(a+.3)*r*.73);c.stroke();
+   }
+   if(tier===2){
+    c.save();c.rotate(-t*.14);
+    for(let k=0;k<3;k++){
+     c.strokeStyle=k%2?'#e5ffc2':'#82d989';c.lineWidth=k===0?3.6:1.6;
+     c.beginPath();c.ellipse(0,0,r*(1.09+k*.16),r*(.45+k*.1),k*.44,0,T);c.stroke();
+    }
+    c.restore();
+   }
+  }
   if(v===1&&!tier){for(let i=0;i<4;i++)orb(Math.sin(t+i)*.7,Math.cos(t*.6+i)*.7,.08,'#e8a2ec');}
  }
  if(['fire','ice','forest','storm'].includes(realm)){orb(-.22,-.05,.075,'#fff4ba');orb(.22,-.05,.075,'#fff4ba');}
