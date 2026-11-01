@@ -12,14 +12,22 @@ function create({realm,level,width:w,height:h,hero,boss,damage}){
    width:w,height:h,hero,boss,damage,weakpoint(){
      // One exposed physical clock core is the pinball replacement for
      // automatic-dodge-derived boss vulnerability.
-     boss.towerDefense=(Number(boss.towerDefense)||1)*1.5;
+     if(!boss._towerClockWeakFrames)boss._towerClockDefenseBase=Number.isFinite(boss.towerDefense)?boss.towerDefense:1;
+     boss.towerDefense=boss._towerClockDefenseBase*1.5;
      boss._towerClockWeakFrames=level===10?240:180;
      g.addFloatingText?.('⏳ 시계 코어 파괴 · 약점 노출!',boss.x,boss.y-64,'#ffe7a4',18);
    }
  }):null;
  function zone(shape,delay,life=30){const z={...shape,kind:'boss',realm,label:names[realm][event.variant],born:tick,fire:tick+delay,end:tick+delay+life,hits:new Set(),spectacle:true};zones.push(z);return z;}
  function spawn(kind,x,y,hp=60){const p={id:'tower-construct',name:kind==='meteor'?'종말 운석':kind==='golem'?'빙정 골렘':kind==='mirror'?'얼음 거울상':'가시 수호수',kind,x,y,vx:0,vy:0,z:0,radius:kind==='meteor'?42:22,hp,maxHp:hp,invincible:0,playerNum:++entitySerial,jumpState:'ground',born:tick,expires:tick+600};entities.push(p);return p;}
- function clear(){event=null;zones.length=0;entities.length=0;clock?.clear();page(null);}
+ function clear(){
+  event=null;zones.length=0;entities.length=0;clock?.clear();
+  if(boss._towerClockWeakFrames>0){
+   boss.towerDefense=boss._towerClockDefenseBase||boss.towerDefense;
+   boss._towerClockWeakFrames=0;
+  }
+  page(null);
+ }
  function targets(p){return p===hero?entities.filter(e=>e.hp>0&&tick>=e.born+60):[];}
  function begin(){
   const variant=turn++%(level===10?3:2);event={realm,variant,start:tick,end:tick+540,title:names[realm][variant],progress:0};
@@ -81,7 +89,7 @@ function create({realm,level,width:w,height:h,hero,boss,damage}){
   if(boss._towerClockWeakFrames>0){
     if(--boss._towerClockWeakFrames===0){
       // Restore the externally managed defense only if the clock applied it.
-      boss.towerDefense=(Number(boss.towerDefense)||1)/1.5;
+      boss.towerDefense=boss._towerClockDefenseBase||boss.towerDefense;
     }
   }
   clock?.step();
