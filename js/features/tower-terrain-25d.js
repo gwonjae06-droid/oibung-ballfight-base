@@ -398,6 +398,8 @@ function sync(roster){
        p.vy=(vy-1.87*incoming*ny)*.97;
        g.ArenaBallSquash?.wall?.(p,-nx,-ny,incoming);
        g.BounceMomentum?.wall?.(p,incoming);
+       if(g.BounceMomentum?.enabled?.(p))
+         p._pinballReboundHold=Math.max(p._pinballReboundHold||0,9);
      }
    }
    p._towerPreviousFloor=oldZ;
