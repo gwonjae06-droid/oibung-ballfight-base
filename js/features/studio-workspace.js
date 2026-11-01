@@ -20,8 +20,8 @@ const classes=global.ForgeArchetypes;
 const rolePicker=document.createElement('section');
 rolePicker.id='forge-role-picker';rolePicker.className='forge-role-picker';
 rolePicker.setAttribute('aria-label','캐릭터 기본 전투 유형');
-rolePicker.innerHTML='<h3>기본 전투 유형 선택</h3>'
- +'<p>다섯 유형의 기본 체력·속도·공격·방어·제어 능력이 다릅니다. 스킬 블록은 유형에 관계없이 자유롭게 조합할 수 있습니다.</p>'
+rolePicker.innerHTML='<h3>공의 특성 선택</h3>'
+ +'<p>이동속도·체력·피해 배율이 다른 공 유형을 고르세요. 기본 공격 없이, 직접 코딩한 스킬만 기세 100에 발동합니다.</p>'
  +'<div class="forge-role-options" role="group" aria-label="전투 유형 다섯 가지">'
  +Object.entries(classes?.TYPES||{}).map(([id,r])=>
    '<button type="button" class="forge-role-option" data-archetype="'+id+'" aria-pressed="false">'
