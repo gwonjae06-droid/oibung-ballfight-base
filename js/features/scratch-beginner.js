@@ -20,9 +20,7 @@ const actions=[
  {id:'zone',icon:'❄️',name:'얼음 장판',tip:'적의 움직임을 느리게 해요',group:'special',damage:12,status:'ice'}
 ].filter(a=>forge.TYPE[a.id]);
 const starters=[
- {id:'auto',icon:'⚡',name:'기세가 가득 차면',tip:'충돌로 기세를 모으면 자동으로 사용'},
- {id:'contactEnergy',icon:'💥',name:'상대와 부딪힌 뒤',tip:'충돌한 순간을 활용해 연계'},
- {id:'wallEnergy',icon:'🎱',name:'벽에 튕긴 뒤',tip:'벽 반사 직후 이어지는 필살기'}, 
+ {id:'auto',icon:'⚡',name:'기세가 가득 차면',tip:'충돌로 기세 100을 모으면 자동 발동'}, 
  {id:'lowhp',icon:'❤️',name:'체력이 적을 때',tip:'위험할 때 기술 사용'},
  {id:'danger',icon:'🚨',name:'보스가 공격할 때',tip:'보스의 큰 공격을 보고 반응'},
  {id:'dodge',icon:'💨',name:'보스 공격을 피한 뒤',tip:'회피 성공 후 반격'},
@@ -47,7 +45,7 @@ panel.setAttribute('aria-label','쉬운 고유 스킬 만들기');
 panel.innerHTML='<div class="kid-top"><div><span class="kid-overline">MY SPECIAL MOVE</span><h3>내 필살기 만들기 ✨</h3><p>원하는 색깔 블록을 누르면 기술이 만들어져요. 순서대로 골라 보세요!</p></div><div class="kid-display" role="group" aria-label="코딩 화면 보기 선택"><button type="button" data-kid-view="easy" aria-pressed="true">😊 쉽게 만들기</button><button type="button" data-kid-view="advanced" aria-pressed="false">🧩 블록 자세히 보기</button></div></div>'
  +'<div class="kid-legacy" hidden><strong>이 캐릭터는 예전 스킬을 사용하고 있어요.</strong><p>기존 기술은 그대로 보관돼요. 새 필살기 방식으로 바꾸고 싶을 때만 선택하세요.</p><button type="button" data-kid-command="convert">한 가지 필살기로 바꾸기</button></div>'
  +'<div class="kid-easy-body">'
- +'<section class="kid-section" aria-labelledby="kid-step-one"><div class="kid-step-heading"><span class="kid-step-no">1</span><div><h4 id="kid-step-one">언제 기술을 쓸까?</h4><p>기술을 쓸 순간을 정해요.</p></div></div><div class="kid-trigger-options"></div></section>'
+ +'<section class="kid-section" aria-labelledby="kid-step-one"><div class="kid-step-heading"><span class="kid-step-no">1</span><div><h4 id="kid-step-one">언제 기술을 쓸까?</h4><p>⚡ 기세가 100이 되면 자동 사용! 발동 시점은 모두 같아요.</p></div></div><div class="kid-trigger-options"></div></section>'
  +'<section class="kid-section" aria-labelledby="kid-step-two"><div class="kid-step-heading"><span class="kid-step-no">2</span><div><h4 id="kid-step-two">무엇을 할까?</h4><p>블록을 누르면 내 기술에 차례대로 추가돼요.</p></div></div><div class="kid-action-grid"></div></section>'
  +'<section class="kid-section kid-plan-section" aria-labelledby="kid-step-three"><div class="kid-step-heading"><span class="kid-step-no">3</span><div><h4 id="kid-step-three">완성한 기술 확인하기</h4><p>위에서 아래로 순서대로 실행돼요.</p></div></div>'
  +'<label class="kid-name-label">내 필살기 이름<input id="kid-skill-name" type="text" maxlength="18" placeholder="예: 번개 돌진"></label><div class="kid-skill-summary"><div class="kid-plan"></div><div class="kid-count"></div></div>'
@@ -117,8 +115,7 @@ function refresh(){
  $('.kid-legacy').hidden=!legacy;
  const easy=$('.kid-easy-body');easy.hidden=legacy;
  if(legacy)return;
- $('.kid-trigger-options').innerHTML=starters.map(s=>
-  '<button type="button" class="kid-trigger" data-kid-trigger="'+s.id+'" aria-pressed="'+(fighter.skills[0].trigger===s.id)+'"><span class="kid-trigger-icon" aria-hidden="true">'+s.icon+'</span><strong>'+s.name+'</strong><small>'+s.tip+'</small></button>').join('');
+ $('.kid-trigger-options').innerHTML='<div class="kid-fixed-trigger" role="note"><strong>⚡ 기세 100 → 필살기 자동 발동</strong><p>상대와 충돌하거나 벽에 튕길수록 빨라져요. 보스 위험·회피·벽 반사 등의 판단은 자세히 보기에서 <b>만약</b> 블록으로 설정해요.</p></div>';
  $('.kid-action-grid').innerHTML=actions.map(a=>'<button type="button" class="kid-action kid-action-'+a.group+'" data-kid-add="'+a.id+'" title="'+escape(a.tip)+'">'
    +'<span class="kid-action-icon" aria-hidden="true">'+a.icon+'</span><strong>'+a.name+'</strong><small>'+a.tip+'</small><span class="kid-action-plus" aria-hidden="true">＋</span></button>').join('');
  $('#kid-skill-name').value=fighter.skills[0].name;
@@ -155,7 +152,7 @@ panel.addEventListener('click',e=>{
  const button=e.target.closest('button');if(!button)return;
  const trigger=button.dataset.kidTrigger,addId=button.dataset.kidAdd,templateId=button.dataset.kidTemplate;
  if(button.dataset.kidView){chooseMode(button.dataset.kidView);return;}
- if(trigger){changeFields({trigger});return;}
+ if(trigger){return;}
  if(addId){add(addId);return;}
  if(templateId){replaceWithTemplate(templates.find(t=>t.id===templateId));return;}
  if(button.dataset.kidDelete!==undefined){if(!migrate())return;const code=program(),index=Number(button.dataset.kidDelete);if(index>=0&&index<code.length){code.splice(index,1);setProgram(code,{},'블록 하나를 지웠어요. 다시 추가할 수 있어요.');}return;}
