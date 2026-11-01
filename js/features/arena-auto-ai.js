@@ -300,6 +300,12 @@ function plan(p,foe,speed,evadeOnly=false){
  return best;
 }
 function steer(p,foe,speed){
+ // Returning true skips the normal speed-lerp fallback in SkillForge too.
+ // A short bounce grace therefore preserves physical velocity and heading.
+ if(g.BounceMomentum?.enabled?.(p)&&p?._pinballReboundHold>0){
+   p._pinballReboundHold--;
+   return true;
+ }
  if(!p||p.hp<=0||!foe||foe.hp<=0||p.forgeDash>0||
    p.movementOnlyFrames>0||p.manualTower||p.impactSpeed>5||
    (p.jumpState&&p.jumpState!=='ground'))return false;
