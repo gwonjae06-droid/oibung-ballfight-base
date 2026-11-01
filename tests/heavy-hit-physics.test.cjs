@@ -68,13 +68,13 @@ test('custom fighter hits use the physics pipeline only on actual attacks, never
 });
 test('all five classic fighters, high-level attacks, and aftershock wire to the same confirmed-hit response',()=>{
   const characters=['bae','lee','park','oh','choi'];
+  const skill=read('js/features/original-momentum-ultimates.js');
+  assert.match(skill,/ImpactPhysics\?\.hit\?\./,'confirmed-hit impulse has moved to unified signature engine');
   for(const id of characters){
-    const src=read('js/characters/'+id+'.js');
-    const count=(src.match(/ImpactPhysics\?\.hit\?\./g)||[]).length;
-    assert.ok(count>=1,'no physical impact wired for '+id);
+    const source=read('js/characters/'+id+'.js');
+    assert.match(source,/ArenaOriginalMomentum\?\.onContact\?/);
+    assert.doesNotMatch(source,/ImpactPhysics\?\.hit\?\./,'old periodic/basic damage handler must be gone');
   }
-  assert.equal((read('js/characters/oh.js').match(/ImpactPhysics\?\.hit\?\./g)||[]).length,4,
-    'projectiles, tear shots, aura and rush must each be physical');
   assert.ok(read('js/features/character-remix.js').includes('ImpactPhysics?.hit?.'));
   const engine=read('js/core/engine.js');
   assert.ok(engine.includes('ImpactPhysics?.integrate?.(p)'));
