@@ -162,7 +162,7 @@ const isDefense=type=>R?.get(type)?R.get(type).category==='defense'||DEFENSE.has
 const duration=a=>R?.duration(a.type)||(PROJECTILE.has(a.type)?1050:MOVE.has(a.type)?850:EXPLOSION.has(a.type)?1120:950);
 const label=t=>global.SkillForge.TYPE[t]||t||'동작';
 let focus=0,profile=null,sequence=null,elapsed=0,raf=0,stamp=null,playing=true,shown=true;
-let pinball=null;
+let pinball=null,lastPinballData='',lastLabTime=-1;
 let lastText='',lastPicker='',pickedIndex=-1;
 const reduced=()=>!!global.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
 // Only the preview planner uses these values: no global engine clocks change.
@@ -286,7 +286,14 @@ function dpi(){
     ctx.setTransform(ratio,0,0,ratio,0,0);ctx.imageSmoothingEnabled=true;
   }
 }
-function draw(ms){dpi();render(clamp(ms,0,sequence?.duration||1));}
+function draw(ms){
+  const next=clamp(ms,0,sequence?.duration||1);
+  if(global.StudioPinballLab&&next<lastLabTime){
+    pinball=global.StudioPinballLab.make(profile,focus);
+  }
+  lastLabTime=next;
+  dpi();render(next);
+}
 function refresh(reset=false){
   const draft=global.SkillForge.getDraft();
   const old=focus;
@@ -295,7 +302,13 @@ function refresh(reset=false){
   if(global.StudioPinballLab){
     // Practice uses one 12s energy cycle instead of obsolete cooldown clocks.
     sequence.duration=12000;
-    if(reset||!pinball)pinball=global.StudioPinballLab.make(draft,focus);
+    const fingerprint=JSON.stringify([draft.signatureVersion,draft.skills,draft.color,draft.name,focus,draft.allAbilities]);
+    if(reset||!pinball||fingerprint!==lastPinballData){
+      pinball=global.StudioPinballLab.make(draft,focus);
+      lastPinballData=fingerprint;
+      lastLabTime=-1;
+      elapsed=0;
+    }
   }
   const options=sequence.skills.map((skill,i)=>String(i)+':'+String(skill.name));
   const pickerKey=options.join('|')+'|'+String(draft.allAbilities);
