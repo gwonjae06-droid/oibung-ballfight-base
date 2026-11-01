@@ -46,6 +46,7 @@ function add(p,amount,kind){
  if(previous<MAX&&p._bounceMomentum===MAX){
   p._bounceReadyAt=clock;
   g.addFloatingText?.('⚡ 기세 충전!',p.x,p.y-(p.radius||32)-18,p.forge.effectColor||'#afdcff',15);
+  if(p.playerNum===1&&g.ArenaCombatV2?.eligible?.(p))g.BattleFX?.sound?.('signature-ready',.37);
  }
  return p._bounceMomentum>previous;
 }
