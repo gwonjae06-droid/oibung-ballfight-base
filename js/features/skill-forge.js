@@ -93,7 +93,7 @@ function normalize(value,{towerEnemy=false}={}){
       return {name:clean(s.name,18)||'스킬 '+(i+1),
         // Block program is an inert, validated AST; saved and exported with the fighter.
         program:signature&&Array.isArray(s.program)?global.SignatureScratch?.normalize?.(s.program):undefined,
-        trigger:TRIGGER[s.trigger]?s.trigger:'auto',
+        trigger:signature?'auto':TRIGGER[s.trigger]?s.trigger:'auto',
         cooldown:number(s.cooldown,.2,30,3),threshold:number(s.threshold,5,95,40),
         actions:s.actions.slice(0,signature?global.SignatureProgram?.MAX_ACTIONS||12:3).map(a=>({
           type:TYPE[a.type]?a.type:'wave',
@@ -552,10 +552,14 @@ function update(p,target){
       if(global.ForgeExpansion?.blocked(p))return;
       if(p.forgeTicks[i]<cooldownFrames(p,s))return;
       if(global.BounceMomentum?.enabled?.(p)&&!global.BounceMomentum.ready(p))return;
-      const active=global.SignatureProgram?.eligible?.(p,target,s,loss)??
+      // New signature fighters ALWAYS cast when energy reaches 100.
+      // Tactical situations belong inside the Scratch program, not a second
+      // trigger that could leave a full energy gauge stuck indefinitely.
+      const energyOnly=global.BounceMomentum?.enabled?.(p);
+      const active=energyOnly?!!target:(global.SignatureProgram?.eligible?.(p,target,s,loss)?? 
         ((s.trigger==='auto'&&target)||(s.trigger==='lowhp'&&p.hp/p.maxHp*100<=s.threshold)
-        ||(s.trigger==='damaged'&&loss>0));
-      if(active&&global.ArenaAutoAI?.canCast?.(p,target,s)!==false&&cast(p,s,target,i)){
+        ||(s.trigger==='damaged'&&loss>0)));
+      if(active&&(energyOnly||global.ArenaAutoAI?.canCast?.(p,target,s)!==false)&&cast(p,s,target,i)){
         global.BounceMomentum?.spend?.(p);
         p.forgeTicks[i]=0;
         if(s.trigger==='dodge')p._forgeDodgeConsumed=p._forgeDodgeSerial||0;
@@ -692,6 +696,8 @@ function contact(p,e){
   if(global.ForgeExpansion?.blocked(p))return;
   p.forge.skills.forEach((s,i)=>{
     if(global.ForgeExpansion?.blocked(p))return;
+    // New characters cast during update() at full momentum only.
+    if(global.BounceMomentum?.enabled?.(p))return;
     if(s.trigger!=='contact'||p.forgeTicks[i]<cooldownFrames(p,s))return;
     if(global.BounceMomentum?.enabled?.(p)&&!global.BounceMomentum.ready(p))return;
     if(cast(p,s,e,i)){
