@@ -287,7 +287,6 @@ function create({width=500,height=500,hero,boss,damage,weakpoint}){
    }
    ctx.restore();
   }
-  ctx.restore();
  }
  return {begin,step,draw,clear,gravity,bendProjectile,galaxyBeam,
   get active(){return !!spell;},get spell(){return spell;},get stars(){return stars;},
