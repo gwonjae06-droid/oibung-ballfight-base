@@ -114,7 +114,7 @@ test('combo cannot score PvP, tower enemies, or repeated overlap spam',()=>{
 });
 test('new versions load correctly and engine clock updates legacy fighters every tick',()=>{
  const html=read('index.html'),engine=read('js/core/engine.js'),css=read('css/combo-celebration.css');
- assert.match(html,/arena-combat-v2\.js\?v=3-visible-all-pve/);
+ assert.match(html,/arena-combat-v2\.js\?v=4-visible-tower-sibling/);
  assert.match(html,/tower-flat-arena\.js\?v=5-surface-chain/);
  assert.match(html,/engine\.js\?v=[^"]+combo-all/);
  assert.match(engine,/p\._combat2Tick=\(p\._combat2Tick\|\|0\)\+1/);
