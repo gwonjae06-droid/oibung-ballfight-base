@@ -19,7 +19,7 @@
   <link rel="stylesheet" href="css/ancient-one-portrait.css?v=eldritch1">
   <link rel="stylesheet" href="css/lobby-atmosphere.css?v=arena-lobby1">
   <link rel="stylesheet" href="css/arena-countdown.css?v=fight-countdown1">
-  <link rel="stylesheet" href="css/arena-cinematic-ui.css?v=flat-arcade3">
+  <link rel="stylesheet" href="css/arena-cinematic-ui.css?v=flat-arcade4-broadcast">
   <link rel="stylesheet" href="css/tower-engagement.css?v=1">
   <link rel="stylesheet" href="css/forge-archetypes.css?v=1">
   <link rel="stylesheet" href="css/signature-program.css?v=1">
@@ -79,6 +79,15 @@
         <strong id="title-text">1 VS 1</strong>
         <small class="arena-match-objective">목표: 마지막까지 살아남기</small>
       </div>
+      <div class="arena-commentary" id="arena-commentary" role="region" aria-label="실시간 전투 해설">
+        <div class="commentator-text"><span class="eyebrow"><span class="commentator-live-dot" aria-hidden="true"></span> 실시간 해설</span><p id="arena-commentary-line" aria-live="off">경기를 시작하면 전투 해설이 표시됩니다.</p></div>
+        <div class="arena-commentary-settings">
+          <label class="arena-commentary-voice-label"><input id="arena-commentary-voice" type="checkbox"> <span>음성</span></label>
+          <label class="arena-commentary-rate-label" for="arena-commentary-rate">속도 <select id="arena-commentary-rate" aria-label="음성 해설 속도">
+            <option value="1.05">느림</option><option value="1.22">보통</option><option value="1.38" selected>빠름</option><option value="1.55">매우 빠름</option>
+          </select></label>
+        </div>
+      </div>
       <div class="canvas-wrapper">
         <canvas id="arena" width="500" height="500" aria-label="캐릭터 자동 전투 화면"></canvas>
         <div class="arena-overtime-banner" id="arena-overtime-banner" role="status" hidden>
@@ -102,7 +111,7 @@
         </div>
       </div>
 
-      <div class="arena-commentary" id="arena-commentary" aria-label="실시간 전투 해설"><div><span class="eyebrow">LIVE COMMENTARY</span><p id="arena-commentary-line" aria-live="off">경기를 시작하면 전투 해설이 표시됩니다.</p></div><label class="arena-commentary-voice-label"><input id="arena-commentary-voice" type="checkbox"> 음성 해설</label></div>
+
       <section class="arena-defeat-analysis" id="arena-defeat-analysis" aria-live="polite" hidden></section>
       <div class="ui-container" id="ui-container" aria-label="캐릭터 체력">
         <div class="player-section" id="sec-p1">
@@ -281,7 +290,8 @@
   <script src="js/features/advanced-combat.js?v=fx25d1-pinball-time1"></script>
   <script src="js/features/forge-expansion.js?v=fx25d1-pinball-time2"></script>
   <script src="js/features/status-vfx.js?v=fx25d1-time1"></script>
-  <script src="js/features/battle-director.js?v=flat-arcade3"></script>
+  <script src="js/features/commentary-voice.js?v=1-naturalkr"></script>
+  <script src="js/features/battle-director.js?v=flat-arcade4-voice-reactive"></script>
   <script src="js/features/tower-tactics.js?v=1"></script>
   <script src="js/features/arena-pinball-motion.js?v=3-zero-gravity-kinetic"></script>
   <script src="js/features/arena-auto-ai.js?v=bridge-ai2-tactics1-classes1-signature1-pinball4"></script>

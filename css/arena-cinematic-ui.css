@@ -103,6 +103,81 @@
  .director-pop,.player-section,.arena-purpose-steps li,.tower-challenge,.tower-doorway{animation:none!important}
  .arena-category-nav a,.control-panel button,#screen-tower button{transition:none!important}}
 
+
+/* Broadcast bar sits directly ABOVE the battle canvas in both routed modes.
+ * Keeping it outside the canvas preserves full sight of balls and hitboxes.
+ * Desktop aligns it to the arena width; mobile limits it to two concise lines.
+ */
+#container .battle-screen>.arena-commentary{
+ box-sizing:border-box;width:min(100%,700px);margin:7px auto 10px;
+ padding:9px 12px;min-height:68px;display:grid;
+ grid-template-columns:52px minmax(0,1fr) auto;align-items:center;gap:11px;
+ border:1px solid #678fa8;border-left:3px solid #d2e6a8;
+ border-radius:11px;background:linear-gradient(104deg,#12253a,#172c3e 68%,#1f3242);
+ box-shadow:0 4px 16px #050e1999;color:#f3f8fc;
+}
+.battle-screen #arena-commentary .commentator-face{
+ box-sizing:border-box;width:52px;height:54px;flex:none;
+ border-radius:9px;object-fit:cover;object-position:top;
+ box-shadow:0 0 0 1px #9bc4d855;
+}
+#arena-commentary .commentator-text{min-width:0;align-self:center}
+#arena-commentary .commentator-text .eyebrow{
+ display:flex;align-items:center;gap:7px;color:#cde2ee;
+ font-size:10px;letter-spacing:.09em;font-weight:850;
+}
+#arena-commentary .commentator-live-dot{
+ display:inline-block;width:7px;height:7px;flex:none;background:#92e9bb;
+ border-radius:50%;box-shadow:0 0 7px #67e9ae88;
+}
+#arena-commentary #arena-commentary-line{
+ margin:3px 0 0;font-size:clamp(13px,1.55vw,16px);
+ font-weight:800;line-height:1.45;color:#f3f8ff;letter-spacing:-.015em;
+ overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;
+ overflow-wrap:anywhere;min-height:19px;
+}
+#arena-commentary[data-kind="low"] #arena-commentary-line,
+#arena-commentary[data-kind="heavy"] #arena-commentary-line,
+#arena-commentary[data-kind="overtime"] #arena-commentary-line{color:#ffe4bb}
+#arena-commentary .arena-commentary-settings{
+ display:flex;justify-content:flex-end;align-items:center;
+ flex-wrap:wrap;gap:6px;max-width:190px;
+}
+#arena-commentary .arena-commentary-voice-label,
+#arena-commentary .arena-commentary-rate-label{
+ box-sizing:border-box;display:flex;align-items:center;justify-content:center;gap:5px;
+ margin:0;white-space:nowrap;font-size:11px;font-weight:780;color:#dcebf8;
+}
+#arena-commentary .arena-commentary-voice-label{
+ padding:7px 8px;background:#263e54;border:1px solid #55758e;
+ border-radius:8px;min-height:38px;cursor:pointer;
+}
+#arena-commentary #arena-commentary-voice{accent-color:#9fe8bc;width:16px;height:16px}
+#arena-commentary .arena-commentary-rate-label select{
+ min-height:38px;border:1px solid #58788d;border-radius:8px;
+ background:#253c51;color:#fff;padding:5px 7px;font-size:11px;
+}
+#arena-commentary :is(input,select):focus-visible{
+ outline:2px solid #c2f2c2;outline-offset:3px;
+}
+@media(max-width:650px){
+ #container .battle-screen>.arena-commentary{
+  grid-template-columns:44px minmax(0,1fr);gap:6px 10px;
+  padding:8px 9px;min-height:65px;
+ }
+ .battle-screen #arena-commentary .commentator-face{
+  width:44px;height:48px;grid-column:1;grid-row:1 / span 2;
+ }
+ #arena-commentary .commentator-text{grid-column:2;grid-row:1}
+ #arena-commentary .arena-commentary-settings{
+  grid-column:2;grid-row:2;max-width:none;justify-content:flex-start;
+  flex-direction:row;gap:7px;
+ }
+ #arena-commentary .arena-commentary-voice-label,
+ #arena-commentary .arena-commentary-rate-label select{min-height:30px}
+ #arena-commentary #arena-commentary-line{font-size:13px;line-height:1.36}
+}
+
 /* Keep the completed floor report visible during the between-floor intermission. */
 #screen-tower .tower-last-report{margin:10px 0 16px;padding:12px 15px;background:#142333;border:1px solid #67859c88;border-radius:12px;color:#e6f0ff}
 #screen-tower .tower-last-report[hidden]{display:none!important}
