@@ -692,7 +692,12 @@ function contact(p,e){
   if(global.ForgeExpansion?.blocked(p))return;
   p.forge.skills.forEach((s,i)=>{
     if(global.ForgeExpansion?.blocked(p))return;
-    if(s.trigger==='contact'&&p.forgeTicks[i]>=cooldownFrames(p,s)&&cast(p,s,e,i))p.forgeTicks[i]=0;
+    if(s.trigger!=='contact'||p.forgeTicks[i]<cooldownFrames(p,s))return;
+    if(global.BounceMomentum?.enabled?.(p)&&!global.BounceMomentum.ready(p))return;
+    if(cast(p,s,e,i)){
+      global.BounceMomentum?.spend?.(p);
+      p.forgeTicks[i]=0;
+    }
   });
 }
 function drawFighter(p,renderCtx){
