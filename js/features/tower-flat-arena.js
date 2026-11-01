@@ -79,7 +79,8 @@ function rebound(p,nx,ny,speed,kind='wall'){
  if(velocity>11.5){p.vx*=11.5/velocity;p.vy*=11.5/velocity;}
  g.ArenaPinballJuice?.wall?.(p,nx,ny,power);
  g.ArenaBallSquash?.wall?.(p,nx,ny,power);
- g.BounceMomentum?.wall?.(p,power,kind);
+ if(g.BounceMomentum?.enabled?.(p))g.BounceMomentum.wall(p,power,kind);
+ else g.ArenaCombatV2?.signal?.(p,kind,power);
  if(g.BounceMomentum?.enabled?.(p))
   p._pinballReboundHold=Math.max(p._pinballReboundHold||0,17);
  p._towerRimBounce=(p._towerRimBounce||0)+1;
@@ -90,19 +91,19 @@ function bounce(p,realm,w=500,h=500,level=1,tick=0){
  const sx=w/500,sy=h/500;
  const l=LEFT*sx+radius,r=RIGHT*sx-radius,t=LEFT*sy+radius,b=RIGHT*sy-radius;
  let hit=false;
- if(p.x<l){p.x=l;rebound(p,1,0);hit=true;}
- else if(p.x>r){p.x=r;rebound(p,-1,0);hit=true;}
- if(p.y<t){p.y=t;rebound(p,0,1);hit=true;}
- else if(p.y>b){p.y=b;rebound(p,0,-1);hit=true;}
+ if(p.x<l){p.x=l;rebound(p,1,0,undefined,'wall-left');hit=true;}
+ else if(p.x>r){p.x=r;rebound(p,-1,0,undefined,'wall-right');hit=true;}
+ if(p.y<t){p.y=t;rebound(p,0,1,undefined,'wall-top');hit=true;}
+ else if(p.y>b){p.y=b;rebound(p,0,-1,undefined,'wall-bottom');hit=true;}
  // Small well-separated round bumpers near corners do not obstruct the
  // wide centre or create dead ends. They match the glowing art exactly.
- for(const o of m.obstacles.concat(m.rails)){
+ for(const [i,o] of m.obstacles.concat(m.rails).entries()){
   const point=o.kind==='rail'?closest(p,o):{x:o.x,y:o.y,d:Math.hypot(p.x-o.x,p.y-o.y)};
   const dx=p.x-point.x,dy=p.y-point.y,d=point.d,limit=o.r+radius;
   if(d>=limit)continue;
   const nx=d>.0001?dx/d:1,ny=d>.0001?dy/d:0;
   p.x=point.x+nx*(limit+.1);p.y=point.y+ny*(limit+.1);
-  rebound(p,nx,ny,undefined,'bumper');hit=true;
+  rebound(p,nx,ny,undefined,'bumper-'+i);hit=true;
  }
  if(hit){p._towerSafeX=p.x;p._towerSafeY=p.y;}
  return hit;
