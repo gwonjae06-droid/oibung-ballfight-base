@@ -227,9 +227,14 @@ function handleCombat(pA,pB) {
       pA._pinballReboundHold=Math.max(pA._pinballReboundHold||0,9);
       pB._pinballReboundHold=Math.max(pB._pinballReboundHold||0,9);
     }
-    const impulse=Math.min(5,Math.max(1.8,-approach*.58));
-    pA.vx-=nx*impulse;pA.vy-=ny*impulse;
-    pB.vx+=nx*impulse;pB.vy+=ny*impulse;
+    // Physically transfer velocity according to each disc's mass and normal
+    // approach. No additional HP damage or forced targeting.
+    const impact=globalThis.ArenaBodyPhysics?.pair?.(pA,pB,nx,ny);
+    if(!impact){
+      const impulse=Math.min(5,Math.max(1.8,-approach*.58));
+      pA.vx-=nx*impulse;pA.vy-=ny*impulse;
+      pB.vx+=nx*impulse;pB.vy+=ny*impulse;
+    }
     const pair=[pA.playerNum,pB.playerNum].sort((a,b)=>a-b).join(':');
     if(!openingCollisionPairs.has(pair)&&approach<-.2){
       openingCollisionPairs.add(pair);
@@ -291,7 +296,9 @@ function update() {
       if(p.y-p.radius<0){p.y=p.radius;p.vy=Math.abs(p.vy);bounceY=true;}
       if(p.y+p.radius>canvas.height){p.y=canvas.height-p.radius;p.vy=-Math.abs(p.vy);bounceY=true;}
       if(bounceX||bounceY){
-        globalThis.ArenaBallSquash?.wall?.(p,bounceX?(p.x<p.radius*2?1:-1):0,bounceY?(p.y<p.radius*2?1:-1):0,Math.hypot(p.vx||0,p.vy||0));
+        // React to the impact NORMAL, not unrelated tangential travel.
+        const normalSpeed=Math.hypot(bounceX?(p.vx||0):0,bounceY?(p.vy||0):0);
+        globalThis.ArenaBallSquash?.wall?.(p,bounceX?(p.x<p.radius*2?1:-1):0,bounceY?(p.y<p.radius*2?1:-1):0,normalSpeed);
         globalThis.BounceMomentum?.wall?.(p,Math.hypot(p.vx||0,p.vy||0));
         if(globalThis.BounceMomentum?.enabled?.(p))
           p._pinballReboundHold=Math.max(p._pinballReboundHold||0,8);
