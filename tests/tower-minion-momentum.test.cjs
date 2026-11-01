@@ -118,7 +118,7 @@ test('tower interface and game HUD show one shared minion energy bar',()=>{
  assert.match(hud,/const visibleIndices=sharedEnergy\?\[0\]/);
  for(const file of ['index.html','pvp-runtime.html']){
   const html=read(file);
-  assert.ok(html.includes('js/features/bounce-momentum.js?v=3-minions-time1'));
+  assert.ok(html.includes('js/features/bounce-momentum.js?v=3-minions-time2'));
   assert.ok(html.includes('js/features/skill-forge.js?v=classes2-skillsonly2'));
   assert.ok(html.includes('js/core/engine.js?v=elastic2-bodyphysics2-minionhud'));
  }
