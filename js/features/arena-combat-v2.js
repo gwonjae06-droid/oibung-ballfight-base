@@ -12,10 +12,16 @@ function eligible(p){
  return !!p?.forge&&p.forge.signatureVersion===1&&!p.towerEnemy&&!p.manualTower&&
    g.ArenaScreenRouter?.active!=='pvp';
 }
-function clock(p){return Number(p?._forgeActionClock)||0;}
+function clock(p){return Number(p?._forgeActionClock)||Number(p?._combat2Tick)||0;}
+// Score all visible local automatic PvE fighters, not only signature profiles.
+// eligible() remains signature-only: older fighters get spectacle, NOT new damage or energy.
+function trackable(p){return !!p&&p.playerNum===1&&p.hp>0&&!p.towerEnemy&&
+ !p.manualTower&&g.ArenaScreenRouter?.active!=='pvp';}
+function validSource(kind){return kind==='contact'||kind==='wall'||kind==='bumper'||
+ /^wall-(left|right|top|bottom)$/.test(kind)||/^bumper-\d+$/.test(kind);}
 function grade(speed){return speed>=7?'perfect':speed>=3.8?'heavy':'normal';}
 function signal(p,kind,speed){
- if(!eligible(p)||!(speed>=1.15)||!['wall','bumper','contact'].includes(kind))return false;
+ if(!trackable(p)||!(speed>=1.15)||!validSource(kind))return false;
  const now=clock(p),prior=p._combat2Combo||null;
  // Genuine momentum-gated collisions only. Within 18 ticks, duplicate
  // overlap/wall loops never multiply the number or celebration.
@@ -30,7 +36,7 @@ function signal(p,kind,speed){
  // Bonus is a reward for a real three-hit route, never an extra attack.
  // Four genuine milestones total can grant 16 energy, one 10% signature
  // bonus (not 10% per hit) and nothing more even with a long combo.
- if(chain>=3&&chain<=12&&chain%3===0){
+ if(eligible(p)&&chain>=3&&chain<=12&&chain%3===0){
    p._combat2NextBoost=Math.max(p._combat2NextBoost||1,1.10);
    g.BounceMomentum?.add?.(p,4,'ricochet');
  }
@@ -44,7 +50,7 @@ function signal(p,kind,speed){
  return true;
 }
 function afterEnergy(p,kind,speed,wallKind){
- return signal(p,kind==='contact'?'contact':wallKind==='bumper'?'bumper':'wall',speed);
+ return signal(p,kind==='contact'?'contact':wallKind||'wall',speed);
 }
 function timing(profile){return Object.hasOwn(TIMINGS,profile?.signatureTiming)?
  profile.signatureTiming:'instant';}
@@ -72,8 +78,9 @@ function damageFactor(p){
   cap(p._combat2CastBoost||1,1,1.10):1;
 }
 function reset(){
- const el=g.document?.getElementById?.('arena-combo-status');
- if(el){el.hidden=true;el.dataset.combo='0';}
+ const el=ensure();if(!el)return;
+ el.classList?.remove?.('combo-burst');
+ displayZero(el);
 }
 function ensure(){
  const doc=g.document;
@@ -98,13 +105,20 @@ function ensure(){
    '<span class="combo-progress" aria-hidden="true"></span>';
  top.append(el);return el;
 }
+function displayZero(el){
+ el.hidden=false;el.dataset.combo='0';el.dataset.tier='base';
+ const number=el.querySelector?.('.combo-number');if(number)number.textContent='0';
+ const message=el.querySelector?.('.combo-message');if(message)message.textContent='다음 충돌을 기다리는 중';
+ const progress=el.querySelector?.('.combo-progress');if(progress)progress.style.width='0%';
+ el.setAttribute?.('aria-label','연속 반사 0콤보 · 첫 충돌을 기다리는 중');
+}
 function ui(p,burst=false){
  if(!p||p.playerNum!==1)return;
  const el=ensure();if(!el)return;
- if(!eligible(p)){el.hidden=true;return;}
+ if(!trackable(p)){if(!el.hidden)displayZero(el);return;}
  const combo=p._combat2Combo,now=clock(p),alive=combo&&now-combo.last<=COMBO_GAP;
  if(!alive){
-   if(!el.hidden){el.hidden=true;el.dataset.combo='0';}
+   if(el.hidden||el.dataset.combo!=='0')displayZero(el);
    return;
  }
  if(!burst&&now%8!==0)return;
@@ -130,5 +144,5 @@ function ui(p,burst=false){
  }
 }
 g.ArenaCombatV2=Object.freeze({TIMINGS,WAIT,COMBO_GAP,grade,signal,afterEnergy,
- eligible,timing,shouldCast,onCast,damageFactor,ui,reset});
+ eligible,trackable,timing,shouldCast,onCast,damageFactor,ui,reset});
 })(typeof window!=='undefined'?window:globalThis);
