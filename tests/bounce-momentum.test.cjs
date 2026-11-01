@@ -109,7 +109,7 @@ test('arena collision, wall, script loading and gauge reuse the existing physics
  assert.match(game,/BounceMomentum\?\.contact/);
  assert.match(game,/BounceMomentum\?\.wall/);
  assert.match(game,/BounceMomentum\?\.meter/);
- assert.match(forge,/BounceMomentum\?\.ready/);
+ assert.match(forge,/BounceMomentum\.ready/);
  assert.match(forge,/BounceMomentum\?\.spend/);
  assert.match(forge,/function contact/);
  assert.match(forge,/basicAttack/);
