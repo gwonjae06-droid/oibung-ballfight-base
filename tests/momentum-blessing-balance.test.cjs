@@ -76,6 +76,6 @@ test('shared healing and shield reserves limit infinite sustain without forbiddi
   }
   if(p.invincible>0)protectedFrames++;
  }
- assert.ok(total<1000&&total>200);
+ assert.ok(total<2100&&total>1600,'900 frames allow a 200-HP reserve plus 2 HP/tick, not an arbitrary 1000-HP cap');
  assert.ok(protectedFrames<850&&protectedFrames>400);
 });
