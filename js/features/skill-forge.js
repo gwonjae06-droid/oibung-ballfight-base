@@ -525,7 +525,7 @@ function update(p,target){
   // Repeat tiny ornamental pulses without triggering extra damage, healing or
   // CC. The true combat cooldown is unchanged (at least 0.2 s).
   p._forgeVisualFrame=(p._forgeVisualFrame||0)+1;
-  if(target?.hp>0&&!global.ForgeExpansion?.blocked(p))p.forge.skills.forEach((s,i)=>{
+  if(target?.hp>0&&!global.BounceMomentum?.enabled?.(p)&&!global.ForgeExpansion?.blocked(p))p.forge.skills.forEach((s,i)=>{
     if(s.trigger==='auto'&&s.cooldown<=.6&&(p._forgeVisualFrame+i*2)%6===0)
       global.ForgeComboFX?.pulse?.(p,s.actions[0],i);
   });
