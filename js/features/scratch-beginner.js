@@ -114,7 +114,7 @@ function displayPlan(nodes,depth=0){
    +(depth===0?'<span class="kid-item-controls"><button type="button" data-kid-move="'+i+'" data-kid-dir="-1" '+(i===0?'disabled':'')+' aria-label="위로 이동">↑</button>'
     +'<button type="button" data-kid-move="'+i+'" data-kid-dir="1" '+(i===nodes.length-1?'disabled':'')+' aria-label="아래로 이동">↓</button>'
     +'<button type="button" data-kid-delete="'+i+'" aria-label="'+escape(caption)+' 삭제">×</button></span>':'')+'</div>';
-  if(basic)result+='<details class="kid-action-settings"><summary>⚙ '+(i+1)+'번 행동 상세 설정</summary><div class="kid-action-fields">'
+  if(basic)result+='<details class="kid-action-settings" data-kid-settings="'+i+'"><summary>⚙ '+(i+1)+'번 행동 상세 설정</summary><div class="kid-action-fields">'
    +'<label>동작<select data-kid-edit="'+i+'" data-kid-key="type">'+typeOptions+'</select></label>'
    +'<label>대상<select data-kid-edit="'+i+'" data-kid-key="target">'+option(g.AbilityAtlas?.TARGETS||{nearest:'가장 가까운 적',lowest:'체력이 낮은 적',random:'무작위 적'},a.target||'nearest')+'</select></label>'
    +'<label>연계<select data-kid-edit="'+i+'" data-kid-key="link">'+option({after:'앞 동작 다음에',with:'앞 동작과 동시에',and:'함께 실행'},a.link||'after')+'</select></label>'
@@ -139,7 +139,9 @@ function refresh(){
  $('.kid-action-grid').innerHTML=actions.map(a=>'<button type="button" class="kid-action kid-action-'+a.group+'" data-kid-add="'+a.id+'" title="'+escape(a.tip)+'">'
    +'<span class="kid-action-icon" aria-hidden="true">'+a.icon+'</span><strong>'+a.name+'</strong><small>'+a.tip+'</small><span class="kid-action-plus" aria-hidden="true">＋</span></button>').join('');
  $('#kid-skill-name').value=fighter.skills[0].name;
+ const openCards=[...$('.kid-plan').querySelectorAll('[data-kid-settings][open]')].map(n=>n.dataset.kidSettings);
  const code=program();$('.kid-plan').innerHTML=code.length?displayPlan(code):'<div class="kid-empty">아직 블록이 없어요. 왼쪽(또는 위)의 색깔 블록을 눌러 주세요!</div>';
+ for(const n of $('.kid-plan').querySelectorAll('[data-kid-settings]'))if(openCards.includes(n.dataset.kidSettings))n.open=true;
  $('.kid-count').textContent='기본 설계 '+code.length+'/4개 행동 · 고급 코딩은 별도';
  // Signature fighters now earn their casts through contact and rebounds.
  // Legacy cooldown values remain in their saved JSON for compatibility.
