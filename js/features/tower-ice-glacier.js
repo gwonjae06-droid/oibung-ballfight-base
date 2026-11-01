@@ -255,7 +255,15 @@ function create({width=500,height=500,hero,boss,damage,weakpoint}){
    }
    for(let i=0;i<(tier===2?5:3);i++){
     const s=lanceAt(i,a);
-    if(a<s.start-58||s.progress<=0||s.progress>=1)continue;
+    if(a>=s.start-60&&a<s.start){
+     // The spear's track is visibly warned before the collidable lance moves.
+     ctx.save();ctx.globalAlpha=fade*(.19+.23*clamp((a-s.start+60)/60,0,1));
+     ctx.setLineDash([9*unit,7*unit]);ctx.strokeStyle=COLORS.glass;
+     ctx.lineWidth=2*unit;ctx.beginPath();
+     ctx.moveTo(24*unit,s.y);ctx.lineTo(width-24*unit,s.y);ctx.stroke();
+     ctx.setLineDash([]);ctx.restore();
+    }
+    if(a<s.start||s.progress<=0||s.progress>=1)continue;
     ctx.save();ctx.globalAlpha=fade*.89;ctx.lineCap='round';
     ctx.strokeStyle=COLORS.glass;ctx.lineWidth=s.width;
     ctx.shadowColor=COLORS.core;ctx.shadowBlur=15*unit;
