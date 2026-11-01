@@ -408,7 +408,7 @@ function updateUI() {
       if(!meters){
         meters=document.createElement('div');
         meters.className='forge-cooldown-list';
-        meters.setAttribute('aria-label','스킬별 독립 재사용 대기시간');
+        meters.setAttribute('aria-label','고유 스킬 준비 상태');
         hud.append(meters);
       }
       // The full-catalog fighter owns every cooldown, but only four
