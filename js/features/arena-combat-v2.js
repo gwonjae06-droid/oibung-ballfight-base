@@ -33,7 +33,12 @@ function signal(p,kind,speed){
  const quality=grade(speed);
  const old=prior?.chain||0;
  p._combat2Combo={chain,kind,last:now,quality};
- featured=p;best=Math.max(best,chain);
+ // One global HUD shows the strongest live chain; a second fighter's
+ // smaller 1-hit bounce must not overwrite a player's existing 3-combo.
+ const shown=featured?._combat2Combo;
+ if(!featured||!trackable(featured)||!shown||
+    clock(featured)-shown.last>COMBO_GAP||chain>shown.chain)featured=p;
+ best=Math.max(best,chain);
  p._combat2Flash={text:(quality==='perfect'?'완벽 충돌!':quality==='heavy'?'강타!':'반사!')+
    (chain>=2?' · 콤보 ×'+chain:''),until:now+54};
  // Bonus is a reward for a real three-hit route, never an extra attack.
@@ -47,7 +52,7 @@ function signal(p,kind,speed){
      g.BattleFX?.sound?.(chain>=6?'combo-streak':chain>=3?'bounce-combo':'combo-step',
        chain>=6?.62:chain>=3?.54:.35);
  else if(quality==='perfect')g.BattleFX?.sound?.('bounce-perfect',.38);
- ui(p,true);
+ ui(p,featured===p);
  return true;
 }
 function afterEnergy(p,kind,speed,wallKind){
