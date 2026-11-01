@@ -117,7 +117,9 @@ test('space only on boss floors, isolated from other towers and repeated attacks
  assert.equal(normal.event,null);
  const boss=g.ArenaTowerSpectacle.create({realm:'space',level:10,width:500,height:500,hero:h,boss:b,damage(){}});
  const variants=new Set();
- for(let i=0;i<1940;i++){
+ // The isolated fallback harness has no BounceMomentum, so spectacles
+ // cycle every 900 frames; the third variant begins at simulation tick 2041.
+ for(let i=0;i<2300;i++){
   boss.step();
   if(boss.event)variants.add(boss.event.variant);
  }
