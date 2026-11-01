@@ -316,7 +316,7 @@ function create({realm,level,width=500,height=500,hero,boss,damage,environmentMa
   world?.draw(ctx);
   // Gameplay language: dashed amber warning, solid white edge on live hazards.
   // This small legend remains independent of the realm accent colour.
-  if(zones.length||world?.event){
+  if(zones.length||world?.event||spectacle?.event){
    ctx.save();ctx.font='bold 10px system-ui';ctx.textAlign='left';
    ctx.strokeStyle='#161e2c';ctx.lineWidth=3;
    const label='┄ 예고  ·  ━ 발동  ·  공격 끝 = 안전';
