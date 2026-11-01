@@ -16,6 +16,7 @@ function add(p,amount,kind){
  const name='_bounceLast_'+kind;
  if(gaps[kind]&&clock-(Number(p[name])||-1000)<gaps[kind])return false;
  if(gaps[kind])p[name]=clock;
+ if(kind==='contact'||kind==='wall')g.SignatureLive?.record?.(p,kind);
  const previous=meter(p);
  p._bounceMomentum=clamp(previous+amount);
  if(previous<MAX&&p._bounceMomentum===MAX){
@@ -29,7 +30,8 @@ function contact(a,b,approach){
  const speed=Math.min(5,Math.max(0,-approach-1.15));
  // Stronger collisions reward a little more, but all gains are bounded.
  const boost=CONTACT+Math.round(speed*.7);
- return add(a,boost,'contact')||add(b,boost,'contact');
+ const first=add(a,boost,'contact'),second=add(b,boost,'contact');
+ return first||second;
 }
 function wall(p,speed){
  return Number.isFinite(speed)&&speed>=1.15&&add(p,WALL,'wall');
