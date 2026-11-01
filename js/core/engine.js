@@ -232,8 +232,15 @@ function handleCombat(pA,pB) {
     // Physically transfer velocity according to each disc's mass and normal
     // approach. No additional HP damage or forced targeting.
     const impact=globalThis.ArenaBodyPhysics?.pair?.(pA,pB,nx,ny);
-    if((pA.impactSpeed||0)<=4&&(pB.impactSpeed||0)<=4)
+    if((pA.impactSpeed||0)<=4&&(pB.impactSpeed||0)<=4){
+      // Old four-slot and built-in fighters do not have a bounce energy
+      // meter. They still deserve the same visible physical combo count.
+      if(impact&&!globalThis.BounceMomentum?.enabled?.(pA))
+        globalThis.ArenaCombatV2?.signal?.(pA,'contact',-approach);
+      if(impact&&!globalThis.BounceMomentum?.enabled?.(pB))
+        globalThis.ArenaCombatV2?.signal?.(pB,'contact',-approach);
       globalThis.ArenaPinballJuice?.pair?.(pA,pB,nx,ny,approach,impact?.impulse||Math.abs(approach));
+    }
     if(!impact){
       const impulse=Math.min(5,Math.max(1.8,-approach*.58));
       pA.vx-=nx*impulse;pA.vy-=ny*impulse;
@@ -268,6 +275,8 @@ function update() {
   spectacle?.temporal?.capture();
   const healthAtStart=players.map(p=>p.hp);
   players.forEach(p=>{
+    // Simulation-owned clock for original fighters without a Forge timer.
+    p._combat2Tick=(p._combat2Tick||0)+1;
     globalThis.ArenaBallSquash?.tick?.(p);
     if(p.movementOnlyFrames>0)p.movementOnlyFrames--;
     globalThis.ForgeExpansion?.tick(p);
@@ -310,7 +319,12 @@ function update() {
         // React to the impact NORMAL, not unrelated tangential travel.
         const normalSpeed=Math.hypot(bounceX?(p.vx||0):0,bounceY?(p.vy||0):0);
         globalThis.ArenaBallSquash?.wall?.(p,bounceX?(p.x<p.radius*2?1:-1):0,bounceY?(p.y<p.radius*2?1:-1):0,normalSpeed);
-        globalThis.BounceMomentum?.wall?.(p,Math.hypot(p.vx||0,p.vy||0));
+        const wallSource=bounceX?
+          (p.x<=p.radius?'wall-left':'wall-right'):
+          (p.y<=p.radius?'wall-top':'wall-bottom');
+        if(globalThis.BounceMomentum?.enabled?.(p))
+          globalThis.BounceMomentum.wall(p,Math.hypot(p.vx||0,p.vy||0),wallSource);
+        else globalThis.ArenaCombatV2?.signal?.(p,wallSource,normalSpeed);
         if(globalThis.BounceMomentum?.enabled?.(p))
           p._pinballReboundHold=Math.max(p._pinballReboundHold||0,17);
         // Subtle, bounded wall energy and a tiny off-axis nudge: no
@@ -355,6 +369,7 @@ function update() {
   const alive=players.filter(p=>p.hp>0);
   for(let i=0;i<alive.length;i++)for(let j=i+1;j<alive.length;j++)handleCombat(alive[i],alive[j]);
   globalThis.ArenaPinballJuice?.tick?.(players);
+  globalThis.ArenaCombatV2?.ui?.(players[0]);
   for(let i=shockwaves.length-1;i>=0;i--){const sw=shockwaves[i];sw.radius+=5.5;sw.alpha-=0.03;if(sw.alpha<=0||sw.radius>=sw.maxRadius)shockwaves.splice(i,1);}
   // Visual particles follow simulation time and respect pause.
   for(let i=particles.length-1;i>=0;i--){
