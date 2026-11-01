@@ -16,7 +16,7 @@ function boot(){
  const g={Math,Date,Number,Set,Map,WeakMap,console,players:[],
   CUSTOM_DEFS:[],CHARACTER_PHOTOS:{},BEHAVIORS:{},canvas:{width:500,height:500},
   createHitParticles(){},addFloatingText(){},getClosestAliveEnemy(p){
-   return this.players.find(e=>e!==p&&e.hp>0)||null;},
+   return g.players.find(e=>e!==p&&e.hp>0)||null;},
   document:{querySelector(){return null;},getElementById(){return null;}}};
  g.window=g;g.globalThis=g;
  vm.createContext(g);
