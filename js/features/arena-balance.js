@@ -27,10 +27,15 @@ function skillPressure(s,signatureMomentum=false){
 }
 function accelerationUptime(skills,signatureMomentum=false){
  return cap(skills.reduce((uptime,s)=>{
-  const bursts=(s.actions||[]).filter(a=>a.type==='timeburst');
+  const bursts=(s.actions||[]).filter(a=>a.type==='timeburst'||a.type==='haste');
   if(!bursts.length)return uptime;
-  const duration=Math.max(...bursts.map(a=>n(a.duration,1.5)));
-  return uptime+Math.min(1,duration/(signatureMomentum?5:Math.max(.2,n(s.cooldown,3))));
+  // Accelerated energy is also an offensive advantage for custom skills.
+  // A 1.25x haste is weighted less than a 1.75x timeburst and the two never
+  // multiply together in the live momentum engine.
+  const weighted=Math.max(...bursts.map(a=>
+    (a.type==='timeburst'?1:1/3)*Math.min(1,n(a.duration,1.5)/
+      (signatureMomentum?5:Math.max(.2,n(s.cooldown,3))))));
+  return uptime+weighted;
  },0),0,1);
 }
 function summary(profile){
