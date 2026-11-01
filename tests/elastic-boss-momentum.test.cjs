@@ -59,8 +59,9 @@ test('all tower bosses gain energy through real contact, wall and confirmed dama
  assert.equal(M.damageTaken(p,70),true);
  assert.ok(M.meter(p)>previous);
  const p2=boss({towerPatternBoss:false});
- assert.equal(M.enabled(p2),false,'regular tower minions remain unchanged');
- assert.equal(M.damageTaken(p2,80),false);
+ assert.equal(M.enabled(p2),true,'normal tower enemies now also build one meter');
+ assert.equal(M.isMinion(p2),true);
+ assert.equal(M.damageTaken(p2,80),true);
  const manual=fighter({manualTower:true});
  assert.equal(M.enabled(manual),false);
 });
