@@ -155,9 +155,10 @@ function updateCharacter(self) {
     }
     return;
   }
-  // Tower pattern bosses use stationary arena mechanics, not roaming AI.
-  // Keep their actual defensive Forge skill clock running.
-  if(globalThis.ArenaTower?.active&&self.towerPatternBoss){
+  // The Ancient One remains an anchored stage boss. Other boss BALLS now
+  // bounce around the map while their own pattern scripts keep functioning.
+  if(globalThis.ArenaTower?.active&&self.towerPatternBoss&&
+    !globalThis.ArenaPinballMotion?.enabled?.(self)){
     if(self.forge)globalThis.SkillForge?.autoUpdate?.(self,foe);
     self.vx=0;self.vy=0;
     return;
@@ -267,7 +268,13 @@ function update() {
   if(screenShake>0.5)screenShake*=0.88;
   globalThis.ImpactPhysics?.tick?.();
   globalThis.ArenaAutoAI?.setRoster?.(players);
-  players.forEach(updateCharacter);
+  players.forEach(p=>{
+    // Existing built-in behavior updates may still aim projectiles or start
+    // target-aware dashes. Ignore only their ordinary chase/spacing changes.
+    const before=globalThis.ArenaPinballMotion?.begin?.(p);
+    updateCharacter(p);
+    globalThis.ArenaPinballMotion?.end?.(p,before);
+  });
   players.forEach(p=>{
     if(p.hp>0&&(!p.jumpState||p.jumpState==='ground')){
       const m=(p.slowTimer>0?p.slowMultiplier:1)*(globalThis.ForgeExpansion?.movement(p)??1)*(p.towerTerrainSpeed??1);
