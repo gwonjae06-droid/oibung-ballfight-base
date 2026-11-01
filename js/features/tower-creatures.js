@@ -92,7 +92,46 @@ function draw(c,p,r){
  }else if(realm==='ice'){
   for(let i=0;i<(tier?7:4);i++){const a=i*T/(tier?7:4);c.save();c.rotate(a);poly([[-.18,-.5],[0,-1.3],[.2,-.55]],'#8bd8ee');c.restore();}
   poly([[-.65,.7],[-.8,-.2],[-.3,-.85],[.45,-.65],[.8,.1],[.55,.8]],'#468eae');poly([[0,-.7],[.5,-.45],[.6,.1],[0,.5],[-.2,0]],'#b5f4ff');
-  if(tier||v===1){poly([[-.7,-.1],[-1.2,.1],[-1.1,.75],[-.65,.5]],'#71bddb');poly([[.7,-.1],[1.2,.1],[1.1,.75],[.65,.5]],'#71bddb');}
+  if(tier){
+   // Guardian = crystalline compact heart. Eternal Glacier King =
+   // a faceted halo of independent ice plates; neither has human anatomy.
+   const count=tier===2?12:7;
+   c.save();c.rotate(t*(tier===2?-.12:.21));
+   for(let i=0;i<count;i++){
+    c.save();c.rotate(i*T/count);
+    const reach=tier===2?1.52:1.22;
+    poly([[-.14,-.76],[0,-reach],[.15,-.78],[0,-.64]],
+      i%3===0?'#e4ffff':i%2?'#66a8cd':'#a0e6ef');
+    c.strokeStyle='#ebffff';c.lineWidth=1.3;
+    c.beginPath();c.moveTo(0,-r*.84);c.lineTo(0,-r*(reach-.12));c.stroke();
+    c.restore();
+   }
+   c.restore();
+   const glass=c.createRadialGradient(-r*.18,-r*.2,1,0,0,r*.76);
+   glass.addColorStop(0,'#f8ffff');glass.addColorStop(.36,'#c0f6ff');
+   glass.addColorStop(.66,'#5ca5d3');glass.addColorStop(1,'#2f668b');
+   c.fillStyle=glass;c.beginPath();c.arc(0,0,r*(tier===2?.55:.43),0,T);c.fill();
+   c.strokeStyle='#ffffff';c.lineWidth=tier===2?2.6:2;
+   for(let k=0;k<(tier===2?6:4);k++){
+    const angle=k*T/(tier===2?6:4)+t*.06;
+    c.beginPath();c.moveTo(Math.cos(angle)*r*.25,Math.sin(angle)*r*.25);
+    c.lineTo(Math.cos(angle+.13)*r*.55,Math.sin(angle+.13)*r*.55);
+    c.lineTo(Math.cos(angle+.26)*r*.74,Math.sin(angle+.26)*r*.74);
+    c.stroke();
+   }
+   if(tier===2){
+    c.save();c.rotate(-t*.16);
+    for(let i=0;i<3;i++){
+     c.strokeStyle=i%2?'#e0ffff':'#8ed9ff';c.lineWidth=i===0?3:1.4;
+     c.beginPath();c.ellipse(0,0,r*(1.02+i*.15),r*(.43+i*.1),i*.56,0,T);
+     c.stroke();
+    }
+    c.restore();
+   }
+  }else if(v===1){
+   poly([[-.8,-.3],[-1.07,.15],[-.7,.56]],'#71bddb');
+   poly([[.8,-.3],[1.07,.15],[.7,.56]],'#71bddb');
+  }
  }else{
   for(let i=0;i<5;i++){const x=(i-2)*.32;c.beginPath();c.moveTo(0,r*.3);c.bezierCurveTo(x*r,r*.55,(x+Math.sin(t+i)*.1)*r,r*.9,x*r*1.4,r*1.25);c.lineWidth=tier?6:3;c.strokeStyle='#896344';c.stroke();}
   poly([[-.38,.65],[-.2,-.55],[.15,-.8],[.4,.65]],'#654a31');
