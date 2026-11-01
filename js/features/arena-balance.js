@@ -47,7 +47,7 @@ function summary(profile){
  const signature=profile?.signatureVersion===1;
  const timeAcceleration=accelerationUptime(skills,signature);
  const pressure=perSkill.reduce((sum,x)=>sum+x,0)*bonus*
-  (1+timeAcceleration*(signature?.75:1));
+  (1+timeAcceleration*(signature?0.75:1));
  const multiplier=cap(pressure>BUDGET?Math.pow(BUDGET/pressure,.82):1,.18,1);
  return {pressure:Number(pressure.toFixed(1)),budget:BUDGET,
   percent:Math.round(multiplier*100),multiplier:Number(multiplier.toFixed(4)),
@@ -80,7 +80,7 @@ function defenseSkillPressure(s,signatureMomentum=false){
 }
 function defenseSummary(profile){
  const skills=profile?.allAbilities&&g.SkillForge?.allSkillset?g.SkillForge.allSkillset():profile?.skills||[];
- const perSkill=skills.map(s=>defenseSkillPressure(s,profile?.signatureVersion===1)),pressure=perSkill.reduce((a,b)=>a+b,0)*(1+accelerationUptime(skills,profile?.signatureVersion===1)*(profile?.signatureVersion===1?.75:1));
+ const perSkill=skills.map(s=>defenseSkillPressure(s,profile?.signatureVersion===1)),pressure=perSkill.reduce((a,b)=>a+b,0)*(1+accelerationUptime(skills,profile?.signatureVersion===1)*(profile?.signatureVersion===1?0.75:1));
  // A gentle soft curve, with a floor instead of a hard cap. Even very long
  // shields can overlap; that is a legitimate authored defense strategy.
  const multiplier=cap(pressure>DEFENSE_BUDGET?
