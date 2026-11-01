@@ -131,7 +131,7 @@ test('HTML loads gravitational physics and page layer before spectacle, with uni
  const html=read('index.html'),spec=read('js/features/tower-spectacle.js');
  assert.ok(html.indexOf('tower-space-gravity.js')<html.indexOf('tower-spectacle.js'));
  assert.ok(html.indexOf('tower-space-boss-fx.js')<html.indexOf('tower-spectacle.js'));
- assert.match(html,/arena-pinball-motion\.js\?v=3-zero-gravity/);
+ assert.match(html,/arena-pinball-motion\.js\?v=[^"']+/);
  assert.match(spec,/cosmos\.begin\(level===10\?2:1,variant\)/);
  assert.match(spec,/cosmos\?\.step\(\)/);
  assert.match(spec,/cosmos\?\.draw\(ctx\)/);

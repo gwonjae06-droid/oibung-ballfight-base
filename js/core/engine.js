@@ -168,6 +168,10 @@ function updateCharacter(self) {
   if(globalThis.ArenaTower?.active&&self.towerHero&&self.forge){
     globalThis.SkillForge?.autoUpdate?.(self,foe);return;
   }
+  if(globalThis.ArenaOriginalMomentum?.isOriginal?.(self)){
+    globalThis.ArenaOriginalMomentum.update(self,foe,players);
+    return;
+  }
   const b=BEHAVIORS[self.id];
   if(b&&b.update){
     if(globalThis.ForgeExpansion&&!self.forge)globalThis.ForgeExpansion.legacy(self,()=>b.update(self,foe));
@@ -263,6 +267,10 @@ function handleCombat(pA,pB) {
     .sort((x,y)=>(BEHAVIORS[x[0].id].order||99)-(BEHAVIORS[y[0].id].order||99))
     .forEach(([a,b])=>{
       const hp=b.hp;
+      if(globalThis.ArenaOriginalMomentum?.isOriginal?.(a)){
+        globalThis.ArenaOriginalMomentum.onContact(a,b);
+        return;
+      }
       if(globalThis.ForgeExpansion&&!a.forge)globalThis.ForgeExpansion.legacy(a,()=>BEHAVIORS[a.id].onContact(a,b));
       else BEHAVIORS[a.id].onContact(a,b);
       if(b.hp<hp)globalThis.SkillVisuals?.contact?.(a,b);
@@ -461,7 +469,7 @@ function updateUI() {
         }
       }
     }
-    if(p.forge&&hud&&globalThis.SkillForge){
+    if((p.forge||globalThis.ArenaOriginalMomentum?.isOriginal?.(p))&&hud){
       let meters=hud.querySelector?.('.forge-cooldown-list');
       if(!meters){
         meters=document.createElement('div');
@@ -471,14 +479,14 @@ function updateUI() {
       }
       // The full-catalog fighter owns every cooldown, but only four
       // upcoming actions are shown here so the HUD never becomes 50 rows.
-      const total=p.forge.skills.length;
+      const total=p.forge?.skills?.length||1;
       // Every energy-driven fighter has exactly ONE shared gauge: do not
       // duplicate the same 100% bar for every minion or boss skill.
       const sharedEnergy=globalThis.BounceMomentum?.enabled?.(p);
-      const visibleIndices=sharedEnergy?[0]:p.forge.allAbilities?
+      const visibleIndices=sharedEnergy?[0]:p.forge?.allAbilities?
         Array.from({length:Math.min(4,total)},(_,j)=>((p.forgeCursor||0)+j)%total):
         p.forge.skills.map((_,i)=>i);
-      meters.dataset.full=sharedEnergy?'기세 100마다 스킬 1개씩 순차 발동':p.forge.allAbilities?'전체 '+total+'개 능력 · 다음 발동 순서':'';
+      meters.dataset.full=sharedEnergy?'기세 100마다 고유 기술 발동':p.forge?.allAbilities?'전체 '+total+'개 능력 · 다음 발동 순서':'';
       if(meters.children.length!==visibleIndices.length){
         meters.replaceChildren();
         visibleIndices.forEach(()=>{
@@ -491,13 +499,13 @@ function updateUI() {
         });
       }
       visibleIndices.forEach((index,j)=>{
-        const skill=p.forge.skills[index];
+        const skill=p.forge?.skills?.[index]||{name:globalThis.ArenaOriginalMomentum?.nextSkill?.(p)||'고유 필살기',cooldown:1};
         const momentum=globalThis.BounceMomentum?.meter?.(p);
         const usingEnergy=momentum!==null&&momentum!==undefined;
-        const max=usingEnergy?100:SkillForge.cooldownFrames(p,skill);
-        const ticks=usingEnergy?momentum:Math.min(max,p.forgeTicks[index]||0),ready=ticks>=max;
+        const max=usingEnergy?100:globalThis.SkillForge.cooldownFrames(p,skill);
+        const ticks=usingEnergy?momentum:Math.min(max,p.forgeTicks?.[index]||0),ready=ticks>=max;
         const item=meters.children[j];
-        item.children[0].textContent=usingEnergy?'⚡ 기세':skill.name;
+        item.children[0].textContent=usingEnergy?'⚡ 기세 · '+(globalThis.ArenaOriginalMomentum?.nextSkill?.(p)||skill.name):skill.name;
         item.children[1].firstElementChild.style.width=(ticks/max*100).toFixed(1)+'%';
         item.children[2].textContent=usingEnergy?(ready?'필살기 준비':Math.floor(ticks)+'%'):(ready?'준비':((max-ticks)/60).toFixed(1)+'s');
         item.classList.toggle('forge-energy-meter',usingEnergy);

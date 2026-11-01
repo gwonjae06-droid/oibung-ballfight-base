@@ -83,7 +83,7 @@ test('ancient background boss remains anchored, and manual controls stay untouch
  const hero=ball();assert.equal(M.enabled(hero),true);
  hero.manualTower=true;assert.equal(M.enabled(hero),false);
 });
-test('built-in homing movement is removed while its actual ability update still runs',()=>{
+test('auto Oh no longer chases or fires periodic attacks; only 100 energy changes form',()=>{
  const g=world(),M=g.ArenaPinballMotion;
  g.CHARACTER_DEFS=[];g.BEHAVIORS={};g.CHARACTER_PHOTOS={};
  g.players=[];g.particles=[];g.addFloatingText=()=>{};
@@ -93,16 +93,17 @@ test('built-in homing movement is removed while its actual ability update still 
  const foe=target(400,200),before=M.begin(p);
  g.players=[p,foe];
  g.BEHAVIORS.oh.update(p,foe);
- assert.ok(p.vx>before.vx,'original legacy movement did chase before suppression');
+
+ assert.equal(p.vx,before.vx,'ordinary movement must not chase the foe');
  M.end(p,before);
- assert.ok(p.vx>0&&p.vy>0,'pinball restores independent heading');
- assert.equal(p.modeTimer,1,'ability timers still advance');
- p.mode='menhera';p.shootTimer=p.shootCooldown-1;
- const beforeShot=M.begin(p);
+ assert.ok(p.vx>0&&p.vy>0);
+ assert.equal(p.projectiles.length,0,'off-meter ranged attacks are retired');
+ vm.runInContext(read('js/features/bounce-momentum.js'),g);
+ vm.runInContext(read('js/features/original-momentum-ultimates.js'),g);
+ p._combat2Tick=1;
+ g.BounceMomentum.add(p,100,'tactic');
  g.BEHAVIORS.oh.update(p,foe);
- M.end(p,beforeShot);
- assert.equal(p.projectiles.length,1,'target-aware projectile still fires');
- assert.ok(p.projectiles[0].vx>0,'projectile tracks enemy position');
+ assert.equal(p.mode,'menhera','form change only after 100 points');
 });
 test('auto combat AI movement is disabled but aiming and canCast logic remain available',()=>{
  const g=world(),p=ball(),foe=target(420,250);

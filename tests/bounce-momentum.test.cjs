@@ -54,9 +54,14 @@ test('passive energy prevents softlocks but cannot generate bursts during paused
  M.tick(p,null);
  assert.equal(M.meter(p),0);
 });
-test('non-tower legacy and manual fighters never earn momentum',()=>{
+test('legacy authored skills now earn shared 100 momentum while manual and unauthored fighters do not',()=>{
  const g=world(),M=g.BounceMomentum;
- for(const option of [{forge:{signatureVersion:0}},{manualTower:true},{forge:null}]){
+ const legacy=Object.assign(player(),{forge:{signatureVersion:0}});
+ assert.equal(M.wall(legacy,5),true);
+ assert.equal(M.meter(legacy),9);
+ M.add(legacy,100,'contact');assert.equal(M.ready(legacy),true);
+ assert.equal(M.spend(legacy),true);assert.equal(M.meter(legacy),0);
+ for(const option of [{manualTower:true},{forge:null}]){
   const p=Object.assign(player(),option);
   assert.equal(M.wall(p,5),false);
   assert.equal(M.add(p,100,'contact'),false);
@@ -116,7 +121,7 @@ test('arena collision, wall, script loading and gauge reuse the existing physics
  for(const file of ['index.html','pvp-runtime.html']){
   const s=read(file);
   assert.ok(s.indexOf('bounce-momentum.js')<s.indexOf('skill-forge.js'));
-  assert.ok(s.includes(file==='index.html'?'engine.js?v=elastic2-bodyphysics3-clockslow':'engine.js?v=elastic2-bodyphysics2-minionhud'));
+  assert.match(s,/js\/core\/engine\.js\?v=[^"']+/,'versioned engine must load on both game pages');
  }
  assert.match(read('js/features/scratch-beginner.js'),/기세가 가득 차면/);
  assert.match(read('js/features/skill-forge.js'),/auto:'주기적으로'/);

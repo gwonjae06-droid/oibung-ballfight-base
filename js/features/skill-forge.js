@@ -540,7 +540,7 @@ function update(p,target){
   if(p.forgeCharge?.phase==='charging'){
     advanceWorld(p,target);return;
   }
-  if(p.forge.allAbilities){
+  if(p.forge.allAbilities&&!global.BounceMomentum?.enabled?.(p)){
     // Each move has a separate clock; round-robin selection prevents 50+
     // casts on one tick from flooding the limited projectile/effect pools.
     p.forgeClock++;
@@ -559,6 +559,7 @@ function update(p,target){
   }else{
     const chargedBoss=global.BounceMomentum?.isBoss?.(p);
     const chargedMinion=global.BounceMomentum?.isMinion?.(p);
+    const chargedPlayer=global.BounceMomentum?.enabled?.(p)&&!p.towerEnemy;
     p.forge.skills.forEach((s,i)=>{
       // Each boss has ONE 100-point gauge for its full authored arsenal and
       // its large scripted attacks. Rotate skills after each filled cast.
@@ -568,8 +569,9 @@ function update(p,target){
       // A regular tower enemy uses only ONE of its authored actions per
       // full meter, cycling through skills rather than dumping them at once.
       if(chargedMinion&&i!==(p._minionEnergyCursor||0)%p.forge.skills.length)return;
+      if(chargedPlayer&&i!==(p._playerEnergyCursor||0)%p.forge.skills.length)return;
       if(global.ForgeExpansion?.blocked(p))return;
-      if(p.forgeTicks[i]<cooldownFrames(p,s))return;
+      if(!global.BounceMomentum?.enabled?.(p)&&p.forgeTicks[i]<cooldownFrames(p,s))return;
       if(global.BounceMomentum?.enabled?.(p)&&!global.BounceMomentum.ready(p))return;
       if(p.forge.signatureVersion===1&&!p.towerEnemy&&
          global.ArenaCombatV2?.shouldCast?.(p,target)===false)return;
@@ -581,8 +583,10 @@ function update(p,target){
         ||(s.trigger==='damaged'&&loss>0)));
       if(active&&(energyOnly||global.ArenaAutoAI?.canCast?.(p,target,s)!==false)&&cast(p,s,target,i)){
         if(chargedBoss)global.BounceMomentum?.bossSpend?.(p,'skill');
-        else if(global.BounceMomentum?.spend?.(p)&&chargedMinion)
-          p._minionEnergyCursor=(p._minionEnergyCursor||0)+1;
+        else if(global.BounceMomentum?.spend?.(p)){
+          if(chargedMinion)p._minionEnergyCursor=(p._minionEnergyCursor||0)+1;
+          if(chargedPlayer)p._playerEnergyCursor=(p._playerEnergyCursor||0)+1;
+        }
         p.forgeTicks[i]=0;
         if(s.trigger==='dodge')p._forgeDodgeConsumed=p._forgeDodgeSerial||0;
         if(s.trigger==='basicHit')p._scratchBasicHitConsumed=p._scratchEvents?.basicHit?.count||0;

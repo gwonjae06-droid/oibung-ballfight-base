@@ -43,10 +43,13 @@ test('projectile and contact source routes correctly tag actual damaging attacks
   const engine=read('js/core/engine.js');
   assert.match(skill,/ImpactPhysics\?\.hit\?\.\(p,e,d,\{[^\n]+type:action\.type/);
   assert.match(engine,/ImpactPhysics\?\.hit\?\.\(attacker,defender,value,\{[^\n]+type:action\.type/);
-  for(const id of ['bae','park','choi'])assert.match(read('js/characters/'+id+'.js'),/type:'contact'/);
-  const oh=read('js/characters/oh.js');
-  assert.equal((oh.match(/type:'shot'/g)||[]).length,2);
-  assert.match(oh,/type:'contact'/);
+  const originals=read('js/features/original-momentum-ultimates.js');
+  assert.match(originals,/type:'signature'/);
+  assert.match(originals,/p\.id!=='choi'\|\|p\.suneungState!=='success'/);
+  for(const id of ['bae','oh','park','choi','lee']){
+    assert.doesNotMatch(read('js/characters/'+id+'.js'),/type:'contact'/,
+      'uncharged contact attacks have been removed from original fighters');
+  }
 });
 test('one-click music activation unsets persisted mute/off/zero volume and starts audio',async()=>{
   const {MusicPlayer}=require('../js/features/background-music.js');

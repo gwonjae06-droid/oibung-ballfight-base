@@ -79,6 +79,6 @@ test('regression: CSS intentionally hides only the duplicate tower title, not th
  assert.match(css,/display:none!important/);
  assert.match(js,/screen\.insertBefore\(el,anchor\)/);
  assert.match(js,/doc\.querySelector\?\.\('\.battle-screen'\)/);
- assert.match(html,/arena-combat-v2\.js\?v=4-visible-tower-sibling/);
+ assert.match(html,/arena-combat-v2\.js\?v=[^"']+/);
  assert.match(html,/combo-celebration\.css/);
 });

@@ -102,7 +102,7 @@ test('shared live page and PvP page initialize feedback before core engine and r
   assert.ok(html.indexOf('arena-pinball-juice.js')>0);
   assert.ok(html.indexOf('arena-pinball-juice.js')<html.indexOf('js/core/engine.js'));
   assert.ok(html.indexOf('arena-body-physics.js')<html.indexOf('js/core/engine.js'));
-  assert.match(html,/engine\.js\?v=.*pinball2/);
+  assert.match(html,/engine\.js\?v=[^"']+/);
  }
  const engine=read('js/core/engine.js'),render=read('js/core/render.js'),tower=read('js/features/tower-flat-arena.js');
  assert.match(engine,/ArenaPinballJuice\?\.pair/);

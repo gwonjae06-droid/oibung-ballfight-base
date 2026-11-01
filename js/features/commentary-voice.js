@@ -39,6 +39,11 @@ function spoken(kind,args,full){
   case 'overtime':return '결전 돌입! 이제 시간도 적입니다.';
   case 'recovery':return String(n||'파이터')+', '+(Number(s)||0)+' 체력 회복!';
   case 'comeback':return String(n||'파이터')+'이 반격을 노립니다!';
+  case 'combo':return String(n||'파이터')+', '+String(s||0)+' 콤보!';
+  case 'charge':return String(n||'파이터')+'의 기세가 '+String(s||70)+'!';
+  case 'ready':return String(n||'파이터')+', 기세 100! 필살기 준비!';
+  case 'pattern':return '보스 위험 지역! 반사 방향을 보세요!';
+  case 'ultimate':case 'critical':return String(n||'파이터')+'의 '+String(s||'필살기')+'!';
   case 'finish':return full;
   default:return full;
  }

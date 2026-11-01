@@ -14,8 +14,9 @@ const clamp=n=>Math.max(0,Math.min(MAX,Number.isFinite(n)?n:0));
 function isBoss(p){return !!p?.forge&&p.towerEnemy&&p.towerPatternBoss&&!p.manualTower;}
 function isMinion(p){return !!p?.forge&&p.towerEnemy&&!p.towerPatternBoss&&!p.manualTower;}
 function enabled(p){
- return !!p?.forge&&!p.manualTower&&
-  (isBoss(p)||isMinion(p)||(p.forge.signatureVersion===1&&!p.towerEnemy));
+ // All automatic combatants share one 100 energy gauge: original five,
+ // legacy saved custom multi-skill profiles, new signatures and tower foes.
+ return !!p&&!p.manualTower&&(!!p.forge||!!g.ArenaOriginalMomentum?.isOriginal?.(p));
 }
 function meter(p){return enabled(p)?clamp(p._bounceMomentum||0):null;}
 function add(p,amount,kind){
@@ -33,7 +34,7 @@ function add(p,amount,kind){
  // the existing 100 cap, wall/contact cooldowns, and time-effect priority stay.
  if(timed&&!p.towerEnemy&&p.towerHero&&Number.isFinite(p._towerMomentumBoost))
    amount*=Math.max(1,Math.min(1.3225,p._towerMomentumBoost));
- const clock=Number(p._forgeActionClock)||0;
+ const clock=Number(p._forgeActionClock)||Number(p._combat2Tick)||0;
  const gaps={contact:34,wall:26,basic:23};
  const name='_bounceLast_'+kind;
  // Clock 0 is valid (the first simulation tick); do not treat it as
@@ -43,9 +44,12 @@ function add(p,amount,kind){
  if(kind==='contact'||kind==='wall')g.SignatureLive?.record?.(p,kind);
  const previous=meter(p);
  p._bounceMomentum=clamp(previous+amount);
+ if(previous<70&&p._bounceMomentum>=70)
+   g.ArenaBattleDirector?.charge?.(p,70);
  if(previous<MAX&&p._bounceMomentum===MAX){
   p._bounceReadyAt=clock;
-  g.addFloatingText?.('⚡ 기세 충전!',p.x,p.y-(p.radius||32)-18,p.forge.effectColor||'#afdcff',15);
+  g.ArenaBattleDirector?.charge?.(p,100);
+  g.addFloatingText?.('⚡ 기세 충전!',p.x,p.y-(p.radius||32)-18,p.forge?.effectColor||p.tagColor||'#afdcff',15);
   if(p.playerNum===1&&g.ArenaCombatV2?.eligible?.(p)&&g.ArenaCombatV2.timing(p.forge)!=='instant')g.BattleFX?.sound?.('signature-ready',.37);
  }
  return p._bounceMomentum>previous;
