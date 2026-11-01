@@ -79,6 +79,7 @@ function reRollMatch(forcedDef) {
   particles=[];floatingTexts=[];shockwaves=[];screenShake=0;
   globalThis.ImpactPhysics?.reset?.();
   globalThis.ArenaPinballJuice?.reset?.();
+  globalThis.ArenaCombatV2?.reset?.();
   globalThis.AdvancedCombat?.reset();
   isGameOver=false;isPlaying=false;roundStarted=false;roundStopped=false;roundSettled=false;selectedBetPlayerNum=null;activeBet=null;
   globalThis.BackgroundMusic?.setBattle(false);
