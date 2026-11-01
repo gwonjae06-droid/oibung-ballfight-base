@@ -18,19 +18,41 @@ function create({realm,level,width:w,height:h,hero,boss,damage}){
      g.addFloatingText?.('⏳ 시계 코어 파괴 · 약점 노출!',boss.x,boss.y-64,'#ffe7a4',18);
    }
  }):null;
+ const cosmos=realm==='space'&&level%5===0?g.ArenaSpaceGravity?.create({
+   width:w,height:h,hero,boss,damage,weakpoint(){
+     // Two real pinball contacts with spawned star bumpers expose a
+     // temporary, reversible vulnerability; never reapply on every tick.
+     if(!boss._towerSpaceWeakFrames)
+       boss._towerSpaceDefenseBase=Number.isFinite(boss.towerDefense)?boss.towerDefense:1;
+     boss.towerDefense=boss._towerSpaceDefenseBase*1.5;
+     boss._towerSpaceWeakFrames=level===10?240:180;
+     g.addFloatingText?.('✦ 별의 핵 붕괴 · 약점 노출!',boss.x,boss.y-60,'#e8d8ff',18);
+   }
+ }):null;
  function zone(shape,delay,life=30){const z={...shape,kind:'boss',realm,label:names[realm][event.variant],born:tick,fire:tick+delay,end:tick+delay+life,hits:new Set(),spectacle:true};zones.push(z);return z;}
  function spawn(kind,x,y,hp=60){const p={id:'tower-construct',name:kind==='meteor'?'종말 운석':kind==='golem'?'빙정 골렘':kind==='mirror'?'얼음 거울상':'가시 수호수',kind,x,y,vx:0,vy:0,z:0,radius:kind==='meteor'?42:22,hp,maxHp:hp,invincible:0,playerNum:++entitySerial,jumpState:'ground',born:tick,expires:tick+600};entities.push(p);return p;}
  function clear(){
-  event=null;zones.length=0;entities.length=0;clock?.clear();
+  event=null;zones.length=0;entities.length=0;clock?.clear();cosmos?.clear();
   if(boss._towerClockWeakFrames>0){
    boss.towerDefense=boss._towerClockDefenseBase||boss.towerDefense;
    boss._towerClockWeakFrames=0;
+  }
+  if(boss._towerSpaceWeakFrames>0){
+   boss.towerDefense=boss._towerSpaceDefenseBase||boss.towerDefense;
+   boss._towerSpaceWeakFrames=0;
   }
   page(null);
  }
  function targets(p){return p===hero?entities.filter(e=>e.hp>0&&tick>=e.born+60):[];}
  function begin(){
   const variant=turn++%(level===10?3:2);event={realm,variant,start:tick,end:tick+540,title:names[realm][variant],progress:0};
+  if(realm==='space'&&cosmos){
+    cosmos.begin(level===10?2:1,variant);
+    event.hint=variant===0?'사건의 지평선 · 공과 탄환이 중력에 휘고 중심 핵은 반사':
+      variant===1?'태초의 빅뱅 · 수축 뒤 밀어내는 충격파 · 별 범퍼 2회 충돌로 약점':
+      '무중력 밀키웨이 · 회전 은하를 튕겨내며 행성 절단선 돌파';
+    return;
+  }
   if(variant===2){
    if(realm==='time'){
      event.hint='멈춘 세계 · 보스만 움직임 · 태엽 코어를 충돌로 타격';
@@ -92,7 +114,9 @@ function create({realm,level,width:w,height:h,hero,boss,damage}){
       boss.towerDefense=boss._towerClockDefenseBase||boss.towerDefense;
     }
   }
-  clock?.step();
+  clock?.step();cosmos?.step();
+  if(boss._towerSpaceWeakFrames>0&&--boss._towerSpaceWeakFrames===0)
+    boss.towerDefense=boss._towerSpaceDefenseBase||boss.towerDefense;
   for(const e of entities){if(e.hp<=0)continue;if(e.invincible>0)e.invincible--;g.ForgeExpansion?.tick(e);if(e.kind!=='meteor'&&tick>e.born+90){const dx=hero.x-e.x,dy=hero.y-e.y,d=Math.hypot(dx,dy)||1,speed=e.kind==='golem'?.6:e.kind==='swarm'?1.8:1;e.x=cap(e.x+dx/d*speed,e.radius,w-e.radius);e.y=cap(e.y+dy/d*speed,e.radius,h-e.radius);if(d<e.radius+hero.radius+12&&tick%65===0)damage(hero,e.kind==='golem'?14:8,{realm,kind:'boss',label:e.name});}}
   for(let i=entities.length-1;i>=0;i--)if(entities[i].hp<=0||tick>entities[i].expires)entities.splice(i,1);
   history.push({x:hero.x,y:hero.y});if(history.length>240)history.shift();
@@ -144,7 +168,7 @@ function create({realm,level,width:w,height:h,hero,boss,damage}){
    if(inside&&!z.hits.has(hero)&&damage(hero,level===10?38:25,z)!==false){z.hits.add(hero);if(z.frost||z.root)g.ForgeExpansion?.applyStatus(boss,hero,{status:z.root?'root':'freeze',duration:.6,damage:0});}
   }
   for(let i=zones.length-1;i>=0;i--)if(tick>=zones[i].end)zones.splice(i,1);
-  if(tick>=event.end){boss.z=0;event=null;zones.length=0;entities.length=0;clock?.clear();}
+  if(tick>=event.end){boss.z=0;event=null;zones.length=0;entities.length=0;clock?.clear();cosmos?.clear();}
  }
  function draw(ctx){
   if(!event)return;
@@ -160,12 +184,13 @@ function create({realm,level,width:w,height:h,hero,boss,damage}){
    ctx.restore();g.ArenaTowerSpectacleArt?.zone(ctx,z,realm,tick);
   }
   if(realm==='time')clock?.draw(ctx);
+  if(realm==='space')cosmos?.draw(ctx);
   for(const e of entities){if(e.kind==='meteor')continue;ctx.save();ctx.translate(e.x,e.y);ctx.globalAlpha=tick<e.born+60?.35:1;if(e.kind==='mirror'){ctx.fillStyle=hero.themeColor||'#78d3ed';ctx.globalAlpha=.65;ctx.beginPath();ctx.arc(0,0,e.radius,0,TAU);ctx.fill();ctx.strokeStyle='#dbfcff';ctx.lineWidth=3;ctx.stroke();ctx.fillStyle='#fff';ctx.font='bold 18px system-ui';ctx.textAlign='center';ctx.fillText((hero.name||'나')[0],0,6);}
    else if(e.kind==='swarm'){ctx.fillStyle='#d6e8b1';for(const side of [-1,1]){ctx.beginPath();ctx.ellipse(side*12,-4,12,4+Math.abs(Math.sin(tick*.4))*7,side*.5,0,TAU);ctx.fill();}ctx.fillStyle='#c6a636';ctx.beginPath();ctx.ellipse(0,0,8,14,0,0,TAU);ctx.fill();ctx.strokeStyle='#3b3420';ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(-6,0);ctx.lineTo(6,0);ctx.stroke();}
    else g.ArenaTowerCreatures?.draw(ctx,{towerEnemy:true,towerRealm:e.kind==='meteor'?'fire':realm,towerBossTier:0,towerEnemyType:e.kind==='golem'?1:2,forgeClock:tick},e.radius);ctx.fillStyle='#111827';ctx.fillRect(-e.radius,e.radius+10,e.radius*2,6);ctx.fillStyle='#9af0ac';ctx.fillRect(-e.radius,e.radius+10,e.radius*2*Math.max(0,e.hp/e.maxHp),6);ctx.restore();}
   ctx.fillStyle='#fff';ctx.strokeStyle='#111';ctx.lineWidth=4;ctx.font='bold 16px system-ui';ctx.textAlign='center';const label=event.hint?event.hint+(event.deadline?' · '+(event.failed?'폭발!':event.remaining+'초 남음'):''):event.title;ctx.font='bold 12px system-ui';let lines=[''];for(const word of label.split(' ')){const i=lines.length-1;if(ctx.measureText(lines[i]+' '+word).width>w-35)lines.push(word);else lines[i]+=(lines[i]?' ':'')+word;}lines.slice(0,3).forEach((line,i)=>{const y=h-16-(Math.min(3,lines.length)-1-i)*16;ctx.strokeText(line,cx,y);ctx.fillText(line,cx,y);});ctx.restore();
  }
- return {step,draw,targets,temporal,clock,clear,get entities(){return entities;},get zones(){return zones;},get event(){return event;},get tick(){return temporal?.active?tick-temporal.age:tick;}};
+ return {step,draw,targets,temporal,clock,cosmos,clear,get entities(){return entities;},get zones(){return zones;},get event(){return event;},get tick(){return temporal?.active?tick-temporal.age:tick;}};
 }
 function glyph(c,realm,t,r,live){
  c.save();c.lineWidth=2;c.strokeStyle=C[realm];c.fillStyle=C[realm];
@@ -192,6 +217,7 @@ function page(event,tick){
  g.ArenaTowerSpectacleArt?.viewport(c,event,t,w,h);
   g.ArenaTowerPageReality?.render?.(c,event,t,w,h,reduced);
   g.ArenaTimeBossFX?.page?.(c,event,t,w,h,reduced);
+  g.ArenaSpaceBossFX?.page?.(c,event,t,w,h,reduced);
  // Viewport art leaves the old subtle vignette alpha behind; the meteor
  // must NOT inherit it or disappear at progress 0/1.
  c.globalAlpha=1;
