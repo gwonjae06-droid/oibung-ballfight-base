@@ -35,8 +35,8 @@ function begin(p){
 function baseSpeed(p){
  // Ordinary fighter type alters only movement SPEED, never AI direction.
  const forge=Number(p.forge?.speed);
- if(Number.isFinite(forge)&&forge>0)return clamp(forge,1.4,4.6);
- return p.id==='oh'?2.85:p.id==='choi'?2.55:p.id==='park'?2.65:2.75;
+ if(Number.isFinite(forge)&&forge>0)return clamp(forge*1.13,1.4,5.25);
+ return p.id==='oh'?3.27:p.id==='choi'?3.06:p.id==='park'?3.12:3.18;
 }
 function initialDirection(p){
  // Distinct, deterministic launch headings, independent of opponents.
@@ -67,8 +67,8 @@ function end(p,before){
  }else{
   // Slowly restore ordinary rolling speed without changing the heading.
   // Preserve real contact/bumper impulse for multiple frames.
-  const weight=magnitude>cruise? .012:.052;
-  const next=clamp(magnitude+(cruise-magnitude)*weight,.65,10);
+  const weight=magnitude>cruise?(p._pinballReboundHold>0?.006:.014):.060;
+  const next=clamp(magnitude+(cruise-magnitude)*weight,.65,11.4);
   x=x/magnitude*next;y=y/magnitude*next;
  }
  p.vx=x;p.vy=y;
