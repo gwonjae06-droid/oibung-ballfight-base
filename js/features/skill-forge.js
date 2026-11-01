@@ -310,7 +310,7 @@ function hit(p,e,action,multiplier=1,attackZ) {
 const transitionLead={leap:14,hover:12,glide:12,erupt:12,uppercut:7,
   dash:7,blink:4,slash:8,spinslash:8,thrust:8,aircombo:7,
   arcshot:7,splitshot:7,dive:8,wall:5,portal:5,summon:5,turret:5};
-const cooldownFrames=(p,s)=>global.BounceMomentum?.enabled?.(p)?60:
+const cooldownFrames=(p,s)=>global.BounceMomentum?.enabled?.(p)?1:
  Math.max(12,Math.round((p.forgeRush?Math.min(1,s.cooldown):s.cooldown)*60));
 function cast(p,s,target,index){
   // A Scratch program is a coroutine: evaluate each branch AFTER the previous
