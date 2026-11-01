@@ -4,9 +4,9 @@
 (function(g){
 'use strict';
 const OPTIONS=Object.freeze({
- attack:{name:'슬링샷',hint:'현재 진행 방향으로 한 번 강하게 가속 · 기세 +8',icon:'⚔'},
- evade:{name:'긴급 회피',hint:'현재 이동에 수직으로 튕기며 약 0.35초 피해 방지',icon:'🛡'},
- hold:{name:'앵커',hint:'3초 동안 물리 충돌에 강한 무게 중심 · 짧은 방호',icon:'◎'}
+ attack:{name:'강하게 튕기기',hint:'지금 즉시 이동 방향으로 크게 튕겨 나갑니다 · 기세 +8',icon:'⚡'},
+ evade:{name:'옆으로 피하기',hint:'누르는 순간 옆으로 방향을 바꾸고 약 0.35초 피해를 막습니다',icon:'🛡'},
+ hold:{name:'단단하게 버티기',hint:'누른 즉시 짧은 보호막과 3초 동안 더 무거운 충돌 판정을 얻습니다',icon:'🪨'}
 });
 const LIMIT=2,DURATION=300;
 let used=0,mode='',left=0,host=null;
@@ -16,8 +16,8 @@ function update(){
  if(!host)return;
  host.hidden=!allowed();
  const status=host.querySelector('[data-tactics-status]');
- if(status)status.textContent='전술 명령 '+Math.max(0,LIMIT-used)+' / '+LIMIT+
-   (mode&&left>0?' · '+OPTIONS[mode].name+' '+(left/60).toFixed(1)+'초':' · 명령 대기');
+ if(status)status.textContent='전술 사용 가능 '+Math.max(0,LIMIT-used)+' / '+LIMIT+
+   (mode&&left>0?(mode==='hold'?' · 단단하게 버티기 '+Math.min(3,left/60).toFixed(1)+'초 남음':' · '+OPTIONS[mode].name+' 즉시 적용됨'):' · 버튼을 누르는 즉시 사용');
  for(const b of host.querySelectorAll('[data-tactical-order]')){
   b.disabled=!allowed()||used>=LIMIT;
   b.setAttribute('aria-pressed',String(mode===b.dataset.tacticalOrder&&left>0));
@@ -51,8 +51,9 @@ function mount(){
 function reset(){used=0;mode='';left=0;update();}
 function choose(id){
  if(!allowed()||!OPTIONS[id]||used>=LIMIT)return false;
- const p=g.players?.[0];
- if(p&&p.hp>0&&p.towerHero&&!p.manualTower){
+ const p=g.ArenaTower?.hero||g.players?.find?.(f=>f?.towerHero)||g.players?.[0];
+ if(!p||p.hp<=0||!p.towerHero||p.manualTower)return false;
+ {
   const vx=Number(p.vx)||0,vy=Number(p.vy)||0,mag=Math.hypot(vx,vy)||1;
   const x=mag>1?vx/mag:1,y=mag>1?vy/mag:0;
   if(id==='attack'){
@@ -69,7 +70,7 @@ function choose(id){
    p._tacticalAnchorUntil=(Number(p._forgeActionClock)||0)+180;
    p.invincible=Math.max(p.invincible||0,12);
   }
-  g.addFloatingText?.(OPTIONS[id].name,p.x,p.y-(p.radius||30)-18,'#e2f5ff',17);
+  g.addFloatingText?.(OPTIONS[id].name+' 즉시 적용!',p.x,p.y-(p.radius||30)-18,'#e2f5ff',17);
   g.BattleFX?.sound?.(id==='attack'?'tactic-sling':id==='evade'?'tactic-evade':'tactic-anchor',.58);
  }
  used++;mode=id;left=DURATION;update();return true;
