@@ -1,0 +1,139 @@
+/* Universal 100-energy HUD and lively but legible broadcast presenter.
+ * Positioned outside the canvas; accessible on narrow mobile screens.
+ */
+#container .battle-screen .forge-cooldown-list:has(.forge-energy-meter){
+ grid-template-columns:minmax(0,1fr)!important;
+ gap:4px;margin-top:10px
+}
+#container .battle-screen .forge-cooldown-item.forge-energy-meter{
+ display:grid;grid-template-columns:minmax(0,1fr) minmax(96px,1.2fr) auto;
+ gap:9px;align-items:center;
+ min-height:45px;padding:7px 10px;
+ border-radius:11px;background:linear-gradient(100deg,#223751,#3d3156);
+ border:1px solid #9f96df88;
+ box-shadow:inset 0 1px #ffffff16,0 2px 6px #0b0b1677;
+ font-size:12px
+}
+#container .battle-screen .forge-energy-meter .forge-cooldown-name{
+ font-weight:900;font-size:clamp(11px,1.3vw,14px);color:#e9ecff;
+ max-width:none;letter-spacing:-.015em
+}
+#container .battle-screen .forge-energy-meter .forge-cooldown-track{
+ height:15px;border-radius:9px;background:#081622;
+ border:1px solid #ffffff55;box-shadow:inset 0 2px 3px #000b;
+ min-width:75px
+}
+#container .battle-screen .forge-energy-meter .forge-cooldown-fill{
+ background:linear-gradient(90deg,#308fcd,#6baae5 48%,#eec477)!important;
+ box-shadow:inset 0 1px 3px #fff7,0 0 14px #9dc8ed77;
+ border-radius:9px;transition:width .11s linear
+}
+#container .battle-screen .forge-energy-meter .forge-cooldown-time{
+ font-size:clamp(11px,1.4vw,15px);font-weight:900;color:#f4d7a0;
+ text-align:right;white-space:nowrap
+}
+#container .battle-screen .forge-energy-meter[data-ready="true"]{
+ border-color:#ffd278;animation:energyReadyBeat .85s ease-in-out infinite alternate
+}
+#container .battle-screen .forge-energy-meter[data-ready="true"] .forge-cooldown-fill{
+ background:linear-gradient(90deg,#ffbd69,#ffefb4)!important
+}
+@keyframes energyReadyBeat{
+ from{box-shadow:0 0 4px #ffd08033}
+ to{box-shadow:0 0 14px #ffe096a1,0 2px 15px #0009}
+}
+#arena-commentary{
+ --broadcast-color:#8ad8f4;
+ position:relative
+}
+#arena-commentary[data-kind="combo"]{--broadcast-color:#ffd47b}
+#arena-commentary[data-kind="charge"],
+#arena-commentary[data-kind="ready"]{--broadcast-color:#b7a1ff}
+#arena-commentary[data-kind="pattern"],
+#arena-commentary[data-kind="low"]{--broadcast-color:#ffa397}
+#arena-commentary[data-kind="critical"],
+#arena-commentary[data-kind="ultimate"]{--broadcast-color:#f7d46e}
+#arena-commentary[data-kind="combo"],
+#arena-commentary[data-kind="charge"],
+#arena-commentary[data-kind="ready"],
+#arena-commentary[data-kind="pattern"],
+#arena-commentary[data-kind="critical"],
+#arena-commentary[data-kind="ultimate"]{
+ border-color:var(--broadcast-color)!important;
+ box-shadow:0 0 20px color-mix(in srgb,var(--broadcast-color) 27%,transparent),
+ inset 0 0 10px #ffffff0c
+}
+#arena-commentary .commentator-face{
+ border-radius:13px;
+ filter:drop-shadow(0 2px 5px #080b15ac);
+ transform-origin:50% 85%;
+ transition:filter .15s ease
+}
+#arena-commentary[data-mood="excited"] .commentator-face{
+ animation:broadcastAvatarBounce .64s cubic-bezier(.15,.9,.2,1.3)
+}
+#arena-commentary[data-mood="alert"] .commentator-face{
+ animation:broadcastAvatarTilt .52s ease-out
+}
+#arena-commentary .commentator-text .eyebrow{
+ display:inline-flex;align-items:center;gap:5px;letter-spacing:.09em
+}
+#arena-commentary .commentator-text .eyebrow::after{
+ content:'● ON AIR';font-size:9px;letter-spacing:.06em;
+ font-weight:900;color:var(--broadcast-color);margin-left:5px;
+ text-shadow:0 0 8px var(--broadcast-color)
+}
+#arena-commentary[data-kind="combo"] .commentator-text .eyebrow::before{
+ content:'콤보 중계';background:#6d4e1a;border:1px solid #eec47a;border-radius:5px;
+ color:#ffedbd;font-size:9px;padding:1px 5px
+}
+#arena-commentary[data-kind="pattern"] .commentator-text .eyebrow::before{
+ content:'위험 패턴!';background:#6f3030;border:1px solid #ffb1a1;border-radius:5px;
+ color:#ffe0d9;font-size:9px;padding:1px 5px
+}
+#arena-commentary[data-kind="ready"] .commentator-text .eyebrow::before{
+ content:'필살기 준비';background:#513d70;border:1px solid #ddbcff;border-radius:5px;
+ color:#fff;font-size:9px;padding:1px 5px
+}
+#arena-commentary.commentary-react #arena-commentary-line{
+ animation:broadcastHeadlineIn .53s cubic-bezier(.12,.77,.21,1) both
+}
+#arena-commentary[data-mood="excited"] #arena-commentary-line{
+ color:#fff4c5!important;text-shadow:0 0 8px #ffdd8c66
+}
+#arena-commentary[data-kind="pattern"] #arena-commentary-line{
+ color:#ffc8bd!important
+}
+@keyframes broadcastHeadlineIn{
+ 0%{transform:translateX(-19px) scale(.95);opacity:.25}
+ 36%{transform:translateX(4px) scale(1.045);opacity:1}
+ 70%{transform:translateX(-2px)}
+ 100%{transform:none;opacity:1}
+}
+@keyframes broadcastAvatarBounce{
+ 0%{transform:translateY(5px) rotate(-8deg) scale(.9)}
+ 40%{transform:translateY(-7px) rotate(9deg) scale(1.15)}
+ 67%{transform:translateY(2px) rotate(-4deg)}
+ 100%{transform:none}
+}
+@keyframes broadcastAvatarTilt{
+ 0%{transform:rotate(0)}
+ 30%{transform:rotate(-9deg) scale(1.06)}
+ 55%{transform:rotate(6deg)}
+ 100%{transform:none}
+}
+@media(max-width:600px){
+ #container .battle-screen .forge-cooldown-item.forge-energy-meter{
+  grid-template-columns:minmax(0,1fr) minmax(75px,1fr) auto;
+  padding:7px;min-height:41px;gap:6px
+ }
+ #container .battle-screen .forge-energy-meter .forge-cooldown-track{height:13px}
+ #arena-commentary .commentator-text .eyebrow::after{font-size:8px}
+}
+@media(prefers-reduced-motion:reduce){
+ #arena-commentary .commentator-face,
+ #arena-commentary #arena-commentary-line,
+ #container .battle-screen .forge-energy-meter[data-ready="true"]{
+  animation:none!important;transition:none!important
+ }
+}
