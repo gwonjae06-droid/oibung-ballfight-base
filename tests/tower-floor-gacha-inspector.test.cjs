@@ -110,7 +110,7 @@ test('action inspector uses native collapsed details and keeps selection and edi
   assert.match(read('index.html'),/css\/tower-mine-ui\.css/);
 });
 
-test('all ten floors disclose every actual skill trigger, cooldown, effects and power',()=>{
+test('all ten floors disclose shared 100-energy trigger, effects and power',()=>{
   const w=world(),model=w.ArenaTowerModel;
   for(let n=1;n<=10;n++){
     const foe=model.makeEnemy(n),floor=model.floor(n);
@@ -119,13 +119,15 @@ test('all ten floors disclose every actual skill trigger, cooldown, effects and 
       const info=model.skillDetail(s),action=s.actions[0];
       assert.equal(info.name,s.name);
       assert.ok(info.description.length>=15,n+'F '+s.name);
-      assert.ok(info.tags.includes('쿨타임 '+s.cooldown.toFixed(2)+'초'));
+      assert.ok(info.tags.includes('공통 기세 게이지 사용'));
+      assert.equal(info.condition,'기세 100 충전 시');
       assert.ok(info.tags.includes('기본 위력 '+action.damage)||
         info.tags.includes('직접 피해 없음'));
       assert.ok(info.condition);
       if(action.status==='fire')assert.ok(info.tags.includes('화상 · 지속 피해'));
       if(action.status==='poison')assert.ok(info.tags.includes('중독 · 지속 피해'));
-      if(s.trigger==='lowhp')assert.match(info.condition,/HP 70% 이하/);
+      if(s.trigger==='lowhp')assert.ok(!info.tags.some(t=>t.startsWith('HP ')),
+        'old metadata does not change full-momentum skill activation');
     }
   }
   assert.equal(model.makeEnemy(9).skills[4].actions[0].count,3,
