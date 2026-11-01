@@ -7,5 +7,6 @@
 .scratch-friendly-mode .kid-momentum-guide p{font-size:12px;line-height:1.6;color:#cde6f5;margin:3px 0 0}
 .scratch-energy-hint{font-size:13px;color:#d1efff;background:#204564;border:1px solid #467d9e;border-radius:10px;padding:11px 13px;line-height:1.6;margin:0}
 .scratch-old-cooldown[hidden]{display:none!important}
+.scratch-workbench[data-legacy=true] .scratch-energy-hint{display:none!important}
 @media(max-width:570px){.scratch-friendly-mode .kid-momentum-guide{padding:10px}.scratch-energy-hint{font-size:12px}}
 @media(prefers-reduced-motion:reduce){.forge-cooldown-item.forge-energy-meter .forge-cooldown-fill{transition:none!important}}
