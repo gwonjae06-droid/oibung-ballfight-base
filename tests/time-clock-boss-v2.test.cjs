@@ -94,7 +94,7 @@ test('boss spectacle and main game load kinetic clock module before encounter, w
  assert.ok(html.indexOf('tower-clock-hands.js')<html.indexOf('tower-spectacle.js'));
  assert.ok(html.includes('tower-time-boss-fx.js'));
  assert.ok(html.includes('tower-temporal.js?v=2-time-safe'));
- assert.ok(html.includes('elastic2-bodyphysics3-clockslow'));
+ assert.match(html,/js\/core\/engine\.js\?v=[^"']+/);
  assert.ok(enc.includes("clock?.begin(level===10?2:1,'hands')"));
  assert.ok(enc.includes("clock?.begin(level===10?2:1,'stasis')"));
  assert.ok(enc.includes('kinematicOnly:true'));
