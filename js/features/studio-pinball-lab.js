@@ -13,7 +13,7 @@ const MOVE=new Set(['dash','blink','retreat','swap','leap','hover','glide','flig
 const AREA=new Set(['wave','nova','slash','spinslash','thrust','uppercut','aircombo','erupt','zone','blackhole','mine','trap','pull']);
 const SUPPORT=new Set(['shield','fortify','regen','heal','lifebloom','haste','timestop','timeburst','rewind','grow','shrink','resurrect','cleanse']);
 const BUMPERS=[[60,60],[420,60],[60,240],[420,240]];
-function actionsFor(profile,index){
+function actionsFor(profile,index,actionIndex=-1){
  const list=profile?.allAbilities?g.SkillForge?.allSkillset?.()||[]:profile?.skills||[];
  if(!list.length)return [];
  const selected=index==='all'?list.slice(0,Math.min(list.length,5)):
@@ -23,11 +23,13 @@ function actionsFor(profile,index){
   // for conditional samples; never execute arbitrary source or mutate a draft.
   const actions=profile?.signatureVersion===1&&Array.isArray(s.program)?
    g.SignatureScratch?.preview?.(s.program)||[]:(s.actions||[]);
-  return {name:s.name||'내 필살기',actions:actions.slice(0,12)};
+  const limited=actions.slice(0,12);
+  const chosen=Number.isInteger(actionIndex)&&actionIndex>=0?limited.slice(actionIndex,actionIndex+1):limited;
+  return {name:s.name||'내 필살기',actions:chosen};
  });
 }
-function make(profile={},focus=0){
- const skills=actionsFor(profile,focus);
+function make(profile={},focus=0,actionIndex=-1){
+ const skills=actionsFor(profile,focus,actionIndex);
  let frame=0,simMs=0,energy=86,casts=0,active='',activity=0;
  const color=profile.effectColor||profile.color||'#a68fff';
  const hero={x:129,y:143,vx:3.5,vy:2.5,radius:18,hp:100,playerNum:1,
