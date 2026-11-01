@@ -357,7 +357,8 @@ function cast(p,s,target,index){
   return true;
 }
 function tickSkills(p,blocked=false){
-  const speed=global.ForgeExpansion?.active(p,'timeburst')?2:1;
+  const speed=global.BounceMomentum?.enabled?.(p)?1:
+    global.ForgeExpansion?.active(p,'timeburst')?2:1;
   p.forge.skills.forEach((s,i)=>{
     const max=cooldownFrames(p,s);
     p.forgeTicks[i]=Math.min(max,Math.max(0,(p.forgeTicks[i]||0)+speed));
