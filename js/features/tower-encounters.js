@@ -38,6 +38,9 @@ function create({realm,level,width=500,height=500,hero,boss,damage,environmentMa
  let exposure=0,nextExpose=0,avoided=0;
  const spectacle=g.ArenaTowerSpectacle?.create({realm,level,width,height,hero,boss,damage});
  const zones=[];const isBoss=level%5===0,cx=width/2,cy=height/2;
+ const world=!isBoss?g.ArenaTowerWorldMechanics?.create({
+   realm,level,width,height,hero,boss,damage
+ }):null;
  const MAX_ZONES=30;
  const circle=(x,y,r)=>({shape:'circle',x,y,r});
  const line=(x,y,angle,thickness=48)=>({shape:'line',x,y,angle,width:thickness,length:Math.hypot(width,height)});
@@ -215,6 +218,7 @@ function create({realm,level,width=500,height=500,hero,boss,damage,environmentMa
   tick++;
   if(exposure>0&&--exposure===0)boss.towerDefense=baseDefense;
   spectacle?.step();
+  world?.step();
   if(isBoss&&phase===1&&boss.hp<=boss.maxHp*.5){phase=2;nextBoss=Math.max(tick+90,nextBoss);}
   // No extra terrain on boss floors; every pattern has safe geometry.
   if(!isBoss&&!environmentManaged&&tick>=nextTerrain){terrain();nextTerrain=tick+Math.max(205,300-level*9);}
@@ -309,6 +313,16 @@ function create({realm,level,width=500,height=500,hero,boss,damage,environmentMa
    if(!raised&&!live){const label=z.label+' '+(warning/60).toFixed(1)+'s';
      ctx.strokeText(label,x,y);ctx.fillText(label,x,y);}
   }
+  world?.draw(ctx);
+  // Gameplay language: dashed amber warning, solid white edge on live hazards.
+  // This small legend remains independent of the realm accent colour.
+  if(zones.length||world?.event||spectacle?.event){
+   ctx.save();ctx.font='bold 10px system-ui';ctx.textAlign='left';
+   ctx.strokeStyle='#161e2c';ctx.lineWidth=3;
+   const label='┄ 예고  ·  ━ 발동  ·  공격 끝 = 안전';
+   ctx.strokeText(label,12,height-12);ctx.fillStyle='#f2f7ff';ctx.fillText(label,12,height-12);
+   ctx.restore();
+  }
   if(isBoss){
    ctx.font='bold 14px system-ui';ctx.textAlign='center';ctx.fillStyle='#ffffff';
    ctx.fillText('PHASE '+phase+' · '+(phase===2?'격화':'탐색'),width/2,24);
@@ -316,7 +330,7 @@ function create({realm,level,width=500,height=500,hero,boss,damage,environmentMa
   }
   ctx.restore();
  }
- return {step,draw: function(ctx,color){draw(ctx,color);spectacle?.draw(ctx);g.ArenaTowerSpectacle?.page(g.ArenaScreenRouter?.active&&g.ArenaScreenRouter.active!=='tower'?null:spectacle?.event,spectacle?.tick);},get spectacle(){return spectacle;},get zones(){return zones.concat(spectacle?.zones||[]);},get tick(){return tick;},get phase(){return phase;},get weakpointFrames(){return exposure;},isBoss,
+ return {step,draw: function(ctx,color){draw(ctx,color);spectacle?.draw(ctx);g.ArenaTowerSpectacle?.page(g.ArenaScreenRouter?.active&&g.ArenaScreenRouter.active!=='tower'?null:spectacle?.event,spectacle?.tick);},get spectacle(){return spectacle;},get zones(){return zones.concat(spectacle?.zones||[],world?.zones||[]);},get world(){return world;},clear(){world?.clear();spectacle?.clear();},get tick(){return tick;},get phase(){return phase;},get weakpointFrames(){return exposure;},isBoss,
     get attackIndex(){return bossTurn;}};
 }
 g.ArenaEncounter={create,contains,patternNames:(id,level=5)=>[...((level===10?ULTIMATES:NAMES)[id]||NAMES.time)],bossCatalog:{middle:NAMES,final:ULTIMATES}};

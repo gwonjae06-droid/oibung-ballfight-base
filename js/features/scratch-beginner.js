@@ -8,9 +8,9 @@ if(!studio||!workspace||!forge||!g.ScratchStudio||!g.SignatureScratch)return;
 const S=g.ScratchStudio,compiler=g.SignatureScratch,conds=g.SignatureProgram;
 const escape=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','"':'&quot;'}[c]));
 const actions=[
- {id:'slash',icon:'⚔️',name:'가까이 베기',tip:'가까운 적을 때려요',group:'attack',damage:26},
- {id:'wave',icon:'💥',name:'충격파',tip:'주변을 넓게 공격해요',group:'attack',damage:22},
- {id:'shot',icon:'✨',name:'구슬 발사',tip:'멀리 있는 적을 공격해요',group:'attack',damage:21},
+ {id:'slash',icon:'⚔️',name:'가까이 베기',tip:'가까운 적을 때려요',group:'attack',damage:31},
+ {id:'wave',icon:'💥',name:'충격파',tip:'주변을 넓게 공격해요',group:'attack',damage:30},
+ {id:'shot',icon:'✨',name:'구슬 발사',tip:'멀리 있는 적을 공격해요',group:'attack',damage:27},
  {id:'bolt',icon:'⚡',name:'번개 공격',tip:'적 위치에 번개를 떨어뜨려요',group:'attack',damage:24},
  {id:'dash',icon:'💨',name:'빠르게 돌진',tip:'적에게 빠르게 다가가요',group:'move',damage:0},
  {id:'blink',icon:'🌟',name:'순간이동',tip:'다른 위치로 이동해요',group:'move',damage:0},
@@ -49,16 +49,16 @@ const nodeOf=(id)=>{const item=actions.find(a=>a.id===id);
  return {kind:'action',action:compiler.safeAction(d)};
 };
 const panel=doc.createElement('section');panel.id='scratch-beginner';panel.className='scratch-beginner';
-panel.setAttribute('aria-label','쉬운 고유 스킬 만들기');
-panel.innerHTML='<div class="kid-top"><div><span class="kid-overline">MY SPECIAL MOVE</span><h3>내 필살기 만들기 ✨</h3><p>원하는 색깔 블록을 누르면 기술이 만들어져요. 순서대로 골라 보세요!</p></div><div class="kid-display" role="group" aria-label="코딩 화면 보기 선택"><button type="button" data-kid-view="easy" aria-pressed="true">😊 쉽게 만들기</button><button type="button" data-kid-view="advanced" aria-pressed="false">🧩 블록 자세히 보기</button></div></div>'
+panel.setAttribute('aria-label','중급 고유 스킬 설계 작업실');
+panel.innerHTML='<div class="kid-top"><div><span class="kid-overline">MY SPECIAL MOVE</span><h3>나만의 전투 기술 설계</h3><p>전투 유형을 고르고 행동 4개를 조립하세요. 순서·대상·연계·위력을 직접 수정할 수 있습니다.</p></div><div class="kid-display" role="group" aria-label="코딩 화면 보기 선택"><button type="button" data-kid-view="easy" aria-pressed="true">✏️ 기본 설계</button><button type="button" data-kid-view="advanced" aria-pressed="false">⚙ 고급 코딩</button></div></div>'
  +'<div class="kid-legacy" hidden><strong>이 캐릭터는 예전 스킬을 사용하고 있어요.</strong><p>기존 기술은 그대로 보관돼요. 새 필살기 방식으로 바꾸고 싶을 때만 선택하세요.</p><button type="button" data-kid-command="convert">한 가지 필살기로 바꾸기</button></div>'
  +'<div class="kid-easy-body">'
- +'<section class="kid-section" aria-labelledby="kid-step-one"><div class="kid-step-heading"><span class="kid-step-no">1</span><div><h4 id="kid-step-one">언제 기술을 쓸까?</h4><p>⚡ 기세가 100이 되면 자동 사용! 발동 시점은 모두 같아요.</p></div></div><div class="kid-trigger-options"></div></section>'
- +'<section class="kid-section" aria-labelledby="kid-step-two"><div class="kid-step-heading"><span class="kid-step-no">2</span><div><h4 id="kid-step-two">무엇을 할까?</h4><p>블록을 누르면 내 기술에 차례대로 추가돼요.</p></div></div><div class="kid-action-grid"></div></section>'
- +'<section class="kid-section kid-plan-section" aria-labelledby="kid-step-three"><div class="kid-step-heading"><span class="kid-step-no">3</span><div><h4 id="kid-step-three">완성한 기술 확인하기</h4><p>위에서 아래로 순서대로 실행돼요.</p></div></div>'
+ +'<section class="kid-section" aria-labelledby="kid-step-one"><div class="kid-step-heading"><span class="kid-step-no">1</span><div><h4 id="kid-step-one">① 기세가 100이 되면</h4><p>⚡ 기세가 100이 되면 자동 사용! 발동 시점은 모두 같아요.</p></div></div><div class="kid-trigger-options"></div></section>'
+ +'<section class="kid-section" aria-labelledby="kid-step-two"><div class="kid-step-heading"><span class="kid-step-no">2</span><div><h4 id="kid-step-two">② 행동을 최대 4개 선택</h4><p>블록을 누르면 내 기술에 차례대로 추가돼요.</p></div></div><div class="kid-action-grid"></div></section>'
+ +'<section class="kid-section kid-plan-section" aria-labelledby="kid-step-three"><div class="kid-step-heading"><span class="kid-step-no">3</span><div><h4 id="kid-step-three">③ 순서와 연계 편집</h4><p>위에서 아래로 순서대로 실행돼요.</p></div></div>'
  +'<label class="kid-name-label">내 필살기 이름<input id="kid-skill-name" type="text" maxlength="18" placeholder="예: 번개 돌진"></label><div class="kid-skill-summary"><div class="kid-plan"></div><div class="kid-count"></div></div>'
  +'<div class="kid-tempo kid-momentum-guide"><strong>⚡ 필살기는 기세가 100이 되면 준비돼요</strong><p>상대와 부딪히거나 벽에 튕기면 빨리 충전돼요. 충돌과 벽 반사로 쌓이고, 전투 중에는 천천히 자동 충전돼요.</p></div>'
- +'<button type="button" class="kid-preview-action" data-kid-command="preview">▶ 미니 핀볼 실험장에서 시험</button></section>'
+ +'<button type="button" class="kid-preview-action" data-kid-command="preview">▶ 스킬 동작 시연 (승률 예측 아님)</button></section>'
  +'<section class="kid-templates" aria-labelledby="kid-templates-title"><div class="kid-templates-heading"><h4 id="kid-templates-title">무엇부터 만들지 모르겠나요?</h4><p>마음에 드는 예시를 누르면 블록이 자동으로 채워져요. 나중에 바꿀 수도 있어요.</p></div><div class="kid-template-grid"></div><button type="button" class="kid-random" data-kid-command="random">🎲 아무거나 재미있는 기술 만들기</button></section>'
  +'</div><div class="kid-feedback" role="status" aria-live="polite">기세 100이 되면 기술이 발동해요. 원하는 행동 블록을 골라 보세요.</div>';
 const work=studio.querySelector('#studio-panel-skills');work.insertBefore(panel,workspace);
@@ -89,7 +89,7 @@ function changeFields(fields){if(!migrate())return;S.applyFields(fields,'기술�
 function add(id){
  if(!migrate())return;
  const code=program();
- if(code.length>=compiler.MAX_NODES||compiler.preview(code).length>=compiler.LIMIT){tell('한 번에 쓸 수 있는 행동이 가득 찼어요! 블록을 빼거나 자세히 보기에서 고쳐 보세요.');return;}
+ if(code.length>=4||compiler.preview(code).length>=4){tell('기본 설계는 행동 4개까지 가능합니다. 더 복잡한 조건·반복은 고급 코딩에서 수정하세요.');return;}
  code.push(nodeOf(id));
  setProgram(code,{},'좋아요! '+(actions.find(x=>x.id===id)?.name||'행동')+' 블록을 추가했어요.');
  g.CharacterStudioWorkspace?.selectPreviewSkill?.('all');
@@ -107,8 +107,20 @@ function displayPlan(nodes,depth=0){
    n.kind==='set'?'충전 숫자를 '+n.value+'로 정하기':
    n.kind==='change'?'충전 숫자 '+n.value+' 바꾸기':'동작';
   const icon=n.kind==='action'?(action?.icon||'✨'):n.kind==='if'?'❓':n.kind==='repeat'||n.kind==='repeatUntil'?'🔁':n.kind==='wait'||n.kind==='waitUntil'?'⏳':'🔢';
+  const basic=depth===0&&n.kind==='action',a=n.action||{};
+  const option=(vals,val)=>Object.entries(vals).map(([k,v])=>'<option value="'+escape(k)+'"'+(k===val?' selected':'')+'>'+escape(v)+'</option>').join('');
+  const typeOptions=actions.map(t=>'<option value="'+escape(t.id)+'"'+(t.id===a.type?' selected':'')+'>'+escape(t.name)+'</option>').join('');
   result+='<div class="kid-plan-item kid-plan-'+(n.kind==='action'?'action':'control')+'" style="--kid-indent:'+Math.min(depth,3)+'"><span aria-hidden="true">'+icon+'</span><span>'+escape(caption)+'</span>'
-   +(depth===0?'<button type="button" data-kid-delete="'+i+'" aria-label="'+escape(caption)+' 블록 삭제">×</button>':'')+'</div>';
+   +(depth===0?'<span class="kid-item-controls"><button type="button" data-kid-move="'+i+'" data-kid-dir="-1" '+(i===0?'disabled':'')+' aria-label="위로 이동">↑</button>'
+    +'<button type="button" data-kid-move="'+i+'" data-kid-dir="1" '+(i===nodes.length-1?'disabled':'')+' aria-label="아래로 이동">↓</button>'
+    +'<button type="button" data-kid-delete="'+i+'" aria-label="'+escape(caption)+' 삭제">×</button></span>':'')+'</div>';
+  if(basic)result+='<details class="kid-action-settings" data-kid-settings="'+i+'"><summary>⚙ '+(i+1)+'번 행동 상세 설정</summary><div class="kid-action-fields">'
+   +'<label>동작<select data-kid-edit="'+i+'" data-kid-key="type">'+typeOptions+'</select></label>'
+   +'<label>대상<select data-kid-edit="'+i+'" data-kid-key="target">'+option(g.AbilityAtlas?.TARGETS||{nearest:'가장 가까운 적',lowest:'체력이 낮은 적',random:'무작위 적'},a.target||'nearest')+'</select></label>'
+   +'<label>연계<select data-kid-edit="'+i+'" data-kid-key="link">'+option({after:'앞 동작 다음에',with:'앞 동작과 동시에',and:'함께 실행'},a.link||'after')+'</select></label>'
+   +'<label>위력<input type="number" min="0" max="120" step="1" data-kid-edit="'+i+'" data-kid-key="damage" value="'+Number(a.damage||0)+'"></label>'
+   +'<label>범위<input type="number" min="30" max="300" step="5" data-kid-edit="'+i+'" data-kid-key="radius" value="'+Number(a.radius||120)+'"></label>'
+   +'<label>상태 효과<select data-kid-edit="'+i+'" data-kid-key="status">'+option({none:'없음',ice:'둔화',fire:'화상',poison:'중독'},a.status||'none')+'</select></label></div></details>';
   if(n.kind==='if'){
    if(n.then?.length)result+='<div class="kid-plan-subtitle">그러면</div>'+displayPlan(n.then,depth+1);
    if(n.else?.length)result+='<div class="kid-plan-subtitle">아니면</div>'+displayPlan(n.else,depth+1);
@@ -127,8 +139,10 @@ function refresh(){
  $('.kid-action-grid').innerHTML=actions.map(a=>'<button type="button" class="kid-action kid-action-'+a.group+'" data-kid-add="'+a.id+'" title="'+escape(a.tip)+'">'
    +'<span class="kid-action-icon" aria-hidden="true">'+a.icon+'</span><strong>'+a.name+'</strong><small>'+a.tip+'</small><span class="kid-action-plus" aria-hidden="true">＋</span></button>').join('');
  $('#kid-skill-name').value=fighter.skills[0].name;
+ const openCards=[...$('.kid-plan').querySelectorAll('[data-kid-settings][open]')].map(n=>n.dataset.kidSettings);
  const code=program();$('.kid-plan').innerHTML=code.length?displayPlan(code):'<div class="kid-empty">아직 블록이 없어요. 왼쪽(또는 위)의 색깔 블록을 눌러 주세요!</div>';
- $('.kid-count').textContent='현재 '+code.length+'개 블록 · 기술당 최대 '+compiler.LIMIT+'회 행동';
+ for(const n of $('.kid-plan').querySelectorAll('[data-kid-settings]'))if(openCards.includes(n.dataset.kidSettings))n.open=true;
+ $('.kid-count').textContent='기본 설계 '+code.length+'/4개 행동 · 고급 코딩은 별도';
  // Signature fighters now earn their casts through contact and rebounds.
  // Legacy cooldown values remain in their saved JSON for compatibility.
 }
@@ -154,7 +168,7 @@ function chooseMode(next){
  studio.classList.toggle('scratch-friendly-advanced',mode==='advanced');
  for(const b of panel.querySelectorAll('[data-kid-view]'))b.setAttribute('aria-pressed',String(b.dataset.kidView===mode));
  if(mode==='advanced')S.render();
- tell(mode==='advanced'?'블록을 옮기고, 만약·반복 같은 코딩도 해보세요.':'색깔 블록을 눌러 기술을 만들어 보세요!');
+ tell(mode==='advanced'?'블록을 옮기고, 만약·반복 같은 코딩도 해보세요.':'행동 4개를 고르고 카드에서 연계·대상·위력을 조정하세요!');
 }
 panel.addEventListener('click',e=>{
  const button=e.target.closest('button');if(!button)return;
@@ -163,6 +177,12 @@ panel.addEventListener('click',e=>{
  if(trigger){return;}
  if(addId){add(addId);return;}
  if(templateId){replaceWithTemplate(templates.find(t=>t.id===templateId));return;}
+ if(button.dataset.kidMove!==undefined){
+  if(!migrate())return;
+  const code=program(),i=Number(button.dataset.kidMove),to=i+Number(button.dataset.kidDir);
+  if(i>=0&&to>=0&&to<code.length){[code[i],code[to]]=[code[to],code[i]];
+   setProgram(code,{},'행동 순서를 변경했습니다.');}return;
+ }
  if(button.dataset.kidDelete!==undefined){if(!migrate())return;const code=program(),index=Number(button.dataset.kidDelete);if(index>=0&&index<code.length){code.splice(index,1);setProgram(code,{},'블록 하나를 지웠어요. 다시 추가할 수 있어요.');}return;}
  const command=button.dataset.kidCommand;
  if(command==='random'){replaceWithTemplate(templates[Math.floor(Math.random()*templates.length)],true);return;}
@@ -170,6 +190,22 @@ panel.addEventListener('click',e=>{
  if(command==='convert')migrate();
 });
 panel.addEventListener('change',event=>{
+ const input=event.target.closest('[data-kid-edit]');
+ if(input){
+  if(!migrate())return;
+  const code=program(),i=Number(input.dataset.kidEdit),key=input.dataset.kidKey;
+  if(i<0||i>=code.length||code[i].kind!=='action')return;
+  const action={...code[i].action};
+  let val=input.value;
+  if(key==='damage'||key==='radius')val=Number(val);
+  if(key==='type'&&!forge.TYPE[val])return;
+  action[key]=val;
+  if(key==='type'&&['dash','blink','retreat','leap','portal','swap','hover','glide'].includes(val)){
+   action.damage=0;action.status='none';action.knockback=0;
+  }
+  code[i]={...code[i],action:compiler.safeAction(action)};
+  setProgram(code,{},'행동 설정을 변경했습니다.');return;
+ }
  if(event.target.id!=='kid-skill-name')return;
  if(!migrate())return;
  S.applyFields({name:event.target.value.trim()||'나만의 필살기'},'필살기 이름을 바꿨어요!');

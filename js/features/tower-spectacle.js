@@ -284,7 +284,11 @@ function create({realm,level,width:w,height:h,hero,boss,damage}){
   for(const e of entities){if(e.kind==='meteor')continue;ctx.save();ctx.translate(e.x,e.y);ctx.globalAlpha=tick<e.born+60?.35:1;if(e.kind==='mirror'){ctx.fillStyle=hero.themeColor||'#78d3ed';ctx.globalAlpha=.65;ctx.beginPath();ctx.arc(0,0,e.radius,0,TAU);ctx.fill();ctx.strokeStyle='#dbfcff';ctx.lineWidth=3;ctx.stroke();ctx.fillStyle='#fff';ctx.font='bold 18px system-ui';ctx.textAlign='center';ctx.fillText((hero.name||'나')[0],0,6);}
    else if(e.kind==='swarm'){ctx.fillStyle='#d6e8b1';for(const side of [-1,1]){ctx.beginPath();ctx.ellipse(side*12,-4,12,4+Math.abs(Math.sin(tick*.4))*7,side*.5,0,TAU);ctx.fill();}ctx.fillStyle='#c6a636';ctx.beginPath();ctx.ellipse(0,0,8,14,0,0,TAU);ctx.fill();ctx.strokeStyle='#3b3420';ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(-6,0);ctx.lineTo(6,0);ctx.stroke();}
    else g.ArenaTowerCreatures?.draw(ctx,{towerEnemy:true,towerRealm:e.kind==='meteor'?'fire':realm,towerBossTier:0,towerEnemyType:e.kind==='golem'?1:2,forgeClock:tick},e.radius);ctx.fillStyle='#111827';ctx.fillRect(-e.radius,e.radius+10,e.radius*2,6);ctx.fillStyle='#9af0ac';ctx.fillRect(-e.radius,e.radius+10,e.radius*2*Math.max(0,e.hp/e.maxHp),6);ctx.restore();}
-  ctx.fillStyle='#fff';ctx.strokeStyle='#111';ctx.lineWidth=4;ctx.font='bold 16px system-ui';ctx.textAlign='center';const label=event.hint?event.hint+(event.deadline?' · '+(event.failed?'폭발!':event.remaining+'초 남음'):''):event.title;ctx.font='bold 12px system-ui';let lines=[''];for(const word of label.split(' ')){const i=lines.length-1;if(ctx.measureText(lines[i]+' '+word).width>w-35)lines.push(word);else lines[i]+=(lines[i]?' ':'')+word;}lines.slice(0,3).forEach((line,i)=>{const y=h-16-(Math.min(3,lines.length)-1-i)*16;ctx.strokeText(line,cx,y);ctx.fillText(line,cx,y);});ctx.restore();
+  ctx.fillStyle='#fff';ctx.strokeStyle='#111';ctx.lineWidth=4;ctx.font='bold 16px system-ui';ctx.textAlign='center';const label=event.hint?event.hint+(event.deadline?' · '+(event.failed?'폭발!':event.remaining+'초 남음'):''):event.title;ctx.font='bold 12px system-ui';let lines=[''];for(const word of label.split(' ')){const i=lines.length-1;if(ctx.measureText(lines[i]+' '+word).width>w-35)lines.push(word);else lines[i]+=(lines[i]?' ':'')+word;}lines.slice(0,3).forEach((line,i)=>{const y=h-16-(Math.min(3,lines.length)-1-i)*16;ctx.strokeText(line,cx,y);ctx.fillText(line,cx,y);});
+  // One short high-contrast move name is legible even while the full hint sits below.
+  ctx.font='bold 13px system-ui';ctx.lineWidth=4;
+  ctx.strokeText('⚠ '+event.title,cx,58);ctx.fillText('⚠ '+event.title,cx,58);
+  ctx.restore();
  }
  return {step,draw,targets,temporal,clock,cosmos,volcano,supercell,glacier,living,clear,get entities(){return entities;},get zones(){return zones;},get event(){return event;},get tick(){return temporal?.active?tick-temporal.age:tick;}};
 }
@@ -307,9 +311,10 @@ function page(event,tick){
  if(!overlay){overlay=document.createElement('canvas');overlay.setAttribute('aria-hidden','true');overlay.style.cssText='position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:900;';document.body.appendChild(overlay);}
  overlay.hidden=false;const w=g.innerWidth,h=g.innerHeight;if(overlay.width!==w||overlay.height!==h){overlay.width=w;overlay.height=h;}
  const c=overlay.getContext('2d');c.clearRect(0,0,w,h);const reduced=g.matchMedia?.('(prefers-reduced-motion: reduce)').matches||!!document.querySelector('.bf-preference input')?.checked;const t=reduced?0:tick;
- if((event.realm==='storm'||event.realm==='fire'&&event.deadline)&&!reduced){if(!shaken){shaken=event.realm==='fire'?document.body:document.querySelector('.battle-screen');previousTranslate=shaken?.style?.translate||'';}if(shaken?.style){const intensity=event.realm==='fire'?Math.max(0,Math.pow(event.progress||0,2)*8):3;
+ if((event.realm==='storm'||event.realm==='fire'&&event.deadline)&&!reduced){if(!shaken){shaken=event.realm==='fire'?document.body:document.querySelector('.battle-screen');previousTranslate=shaken?.style?.translate||'';}if(shaken?.style){const intensity=event.realm==='fire'?Math.max(0,Math.pow(event.progress||0,2)*3):1;
   shaken.style.translate=(Math.sin(t*.43)*intensity).toFixed(2)+'px '+(Math.sin(t*.31)*intensity*.7).toFixed(2)+'px';}}else unshake();
- c.globalAlpha=.3*Math.sin(Math.PI*Math.min(1,event.progress));
+ // Keep page breach subordinate to arena attack outlines and character silhouettes.
+ c.save?.();c.globalAlpha=.22*Math.sin(Math.PI*Math.min(1,event.progress));
  g.ArenaTowerSpectacleArt?.viewport(c,event,t,w,h);
   g.ArenaTowerPageReality?.render?.(c,event,t,w,h,reduced);
   g.ArenaTimeBossFX?.page?.(c,event,t,w,h,reduced);
@@ -318,6 +323,7 @@ function page(event,tick){
   g.ArenaStormBossFX?.page?.(c,event,t,w,h,reduced);
   g.ArenaIceBossFX?.page?.(c,event,t,w,h,reduced);
   g.ArenaForestBossFX?.page?.(c,event,t,w,h,reduced);
+ c.restore?.();
  // Viewport art leaves the old subtle vignette alpha behind; the meteor
  // must NOT inherit it or disappear at progress 0/1.
  c.globalAlpha=1;

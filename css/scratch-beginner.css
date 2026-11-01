@@ -99,3 +99,15 @@
 .scratch-friendly-mode .kid-name-label{display:grid;gap:6px;font-size:13px;color:#d4e8fb;font-weight:800}
 .scratch-friendly-mode .kid-name-label input{width:100%;min-height:47px;padding:10px 12px;border:1px solid #91b7da;border-radius:9px;background:#11253a;color:#fff;font-size:16px}
 .scratch-friendly-mode .kid-name-label input::placeholder{color:#9ab9d1}
+
+/* Intermediate authoring: action order and target are visible, advanced tuning is opt-in. */
+.scratch-friendly-mode .kid-item-controls{display:inline-flex;gap:4px;margin-left:auto;align-items:center}
+.scratch-friendly-mode .kid-item-controls button{min-width:33px;min-height:34px;border:1px solid #7598b6;background:#263f59;color:#f3f8fc;border-radius:7px;cursor:pointer}
+.scratch-friendly-mode .kid-action-settings{margin:0 0 9px 0;border:1px solid #476783;border-radius:9px;background:#15283a;color:#dfedfa}
+.scratch-friendly-mode .kid-action-settings summary{cursor:pointer;min-height:40px;padding:11px 12px;font-size:.78rem;font-weight:770;list-style-position:inside}
+.scratch-friendly-mode .kid-action-settings[open] summary{border-bottom:1px solid #456481}
+.scratch-friendly-mode .kid-action-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;padding:12px}
+.scratch-friendly-mode .kid-action-fields label{display:grid;gap:5px;font-size:.75rem;color:#d7e9fa;min-width:0}
+.scratch-friendly-mode .kid-action-fields input,.scratch-friendly-mode .kid-action-fields select{width:100%;min-width:0;min-height:42px;padding:8px;background:#0c1e30;color:#f9fcff;border:1px solid #7098bd;border-radius:7px}
+.scratch-friendly-mode .kid-plan-item{flex-wrap:wrap;gap:9px}
+@media(max-width:480px){.scratch-friendly-mode .kid-action-fields{grid-template-columns:1fr}.scratch-friendly-mode .kid-plan-item{gap:5px}.scratch-friendly-mode .kid-item-controls{margin-left:0}}

@@ -9,10 +9,10 @@ test('six realms produce distinct combat loadouts and escalating enemy stats',()
  const pairs=new Set();
  for(const r of R.REALMS){
   const skills=R.enemyLoadout(r.id,8);
-  assert.equal(skills.length,3);
+  assert.equal(skills.length,5);
   pairs.add(skills.map(s=>s[1]).join(','));
   assert.equal(R.enemyLoadout(r.id,1).length,2);
-  assert.equal(R.enemyLoadout(r.id,4).length,3);
+  assert.equal(R.enemyLoadout(r.id,4).length,4);
   assert.ok(R.floor({number:10,boss:true},r.id).hp>R.floor({number:5,boss:true},r.id).hp);
  }
  assert.equal(pairs.size,6);

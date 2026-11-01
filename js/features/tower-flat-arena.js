@@ -9,6 +9,21 @@
 'use strict';
 const TWO=Math.PI*2,clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
 const LEFT=26,RIGHT=474,BUMPERS=[[124,124],[376,124],[124,376],[376,376]];
+// Continuous floor is intentionally preserved: varying physical bumpers and
+// short edge rails create six different rebound routes without dead-end islands.
+const MAP_GEOMETRY=Object.freeze({
+ time:{bumpers:[[124,124,13],[376,124,13],[124,376,13],[376,376,13]],rails:[[70,218,105,252,10],[395,248,430,282,10]]},
+ space:{bumpers:[[250,106,17],[391,250,16],[250,394,17],[109,250,16]],rails:[[92,108,146,124,9],[356,376,408,392,9]]},
+ fire:{bumpers:[[115,189,15],[385,189,18],[115,311,18],[385,311,15]],rails:[[68,85,115,111,13],[381,395,430,419,13]]},
+ storm:{bumpers:[[249,95,15],[405,231,12],[248,405,15],[95,269,12]],rails:[[102,115,154,157,8],[346,345,398,387,8]]},
+ ice:{bumpers:[[156,128,18],[344,128,18],[156,372,18],[344,372,18]],rails:[[70,85,119,85,12],[377,415,429,415,12]]},
+ forest:{bumpers:[[110,192,17],[385,160,15],[137,386,19],[389,385,16]],rails:[[73,280,114,317,11],[390,270,429,312,11]]}
+});
+const closest=(p,o)=>{
+ const dx=o.x2-o.x1,dy=o.y2-o.y1,t=clamp(((p.x-o.x1)*dx+(p.y-o.y1)*dy)/(dx*dx+dy*dy||1),0,1);
+ const x=o.x1+t*dx,y=o.y1+t*dy,d=Math.hypot(p.x-x,p.y-y);
+ return {x,y,d};
+};
 const THEMES=Object.freeze({
  time:{name:'시간의 탑',back:'#110c1a',floor:'#493c37',tile:'#80634c',line:'#c9a477',edge:'#e6bb6a',bright:'#ffe7a4',dark:'#241820',glow:'#ffc568'},
  space:{name:'우주의 탑',back:'#100725',floor:'#252047',tile:'#4e367b',line:'#7c65ac',edge:'#b586ef',bright:'#e7c5ff',dark:'#0d102e',glow:'#9c57f4'},
@@ -21,15 +36,18 @@ const names=Object.keys(THEMES);
 const floor={id:'flat-arena-floor',kind:'deck',z:0,cx:250,cy:250,vertices:[]};
 let cached=null;
 function getMap(realm,level=1,w=500,h=500,tick=0){
- const name=THEMES[realm]?realm:'time',key=[name,w,h].join(':');
+ const name=THEMES[realm]?realm:'time',key=[name,level,w,h].join(':');
  if(cached?.key===key)return cached.value;
  const sx=w/500,sy=h/500,dim=Math.min(sx,sy);
  const vertices=[{x:LEFT*sx,y:LEFT*sy},{x:RIGHT*sx,y:LEFT*sy},
   {x:RIGHT*sx,y:RIGHT*sy},{x:LEFT*sx,y:RIGHT*sy}];
  const surface={...floor,vertices,cx:w/2,cy:h/2,bbox:{minX:vertices[0].x,minY:vertices[0].y,maxX:vertices[2].x,maxY:vertices[2].y}};
- const obstacles=BUMPERS.map(([x,y],i)=>({id:'bounce-bumper-'+i,x:x*sx,y:y*sy,r:13*dim,kind:'bumper'}));
+ const geometry=MAP_GEOMETRY[name];
+ const obstacles=geometry.bumpers.map(([x,y,r],i)=>({id:'bounce-bumper-'+i,x:x*sx,y:y*sy,r:r*dim,kind:'bumper'}));
+ const rails=geometry.rails.map(([x1,y1,x2,y2,r],i)=>({id:'rebound-rail-'+i,kind:'rail',
+   x1:x1*sx,y1:y1*sy,x2:x2*sx,y2:y2*sy,r:r*dim}));
  const value={realm:name,level,width:w,height:h,tick,surfaces:[surface],
-  nav:[{id:surface.id,x:w/2,y:h/2,z:0,kind:'deck'}],obstacles};
+  nav:[{id:surface.id,x:w/2,y:h/2,z:0,kind:'deck'}],obstacles,rails};
  cached={key,value};return value;
 }
 function at(realm,level,x,y,w=500,h=500,tick=0){
@@ -43,6 +61,7 @@ function clearance(realm,x,y,w=500,h=500,tick=0,level=1){
  const m=getMap(realm,level,w,h,tick);
  let d=at(realm,level,x,y,w,h,tick).clearance;
  for(const o of m.obstacles)d=Math.min(d,Math.hypot(x-o.x,y-o.y)-o.r);
+ for(const r of m.rails)d=Math.min(d,closest({x,y},r).d-r.r);
  return d;
 }
 function isWalkable(realm,x,y,w=500,h=500,radius=0,level=1,tick=0){
@@ -74,11 +93,12 @@ function bounce(p,realm,w=500,h=500,level=1,tick=0){
  else if(p.y>b){p.y=b;rebound(p,0,-1);hit=true;}
  // Small well-separated round bumpers near corners do not obstruct the
  // wide centre or create dead ends. They match the glowing art exactly.
- for(const o of m.obstacles){
-  const dx=p.x-o.x,dy=p.y-o.y,d=Math.hypot(dx,dy),limit=o.r+radius;
+ for(const o of m.obstacles.concat(m.rails)){
+  const point=o.kind==='rail'?closest(p,o):{x:o.x,y:o.y,d:Math.hypot(p.x-o.x,p.y-o.y)};
+  const dx=p.x-point.x,dy=p.y-point.y,d=point.d,limit=o.r+radius;
   if(d>=limit)continue;
   const nx=d>.0001?dx/d:1,ny=d>.0001?dy/d:0;
-  p.x=o.x+nx*(limit+.1);p.y=o.y+ny*(limit+.1);
+  p.x=point.x+nx*(limit+.1);p.y=point.y+ny*(limit+.1);
   rebound(p,nx,ny);hit=true;
  }
  if(hit){p._towerSafeX=p.x;p._towerSafeY=p.y;}
@@ -205,14 +225,30 @@ function paint(ctx,realm,level,w=500,h=500,tick=0){
  ctx.fillStyle=floorPaint;ctx.fillRect(26,26,448,448);
  ctx.save();ctx.beginPath();ctx.rect(27,27,446,446);ctx.clip();
  ctx.globalAlpha=.46;ctx.lineWidth=1;ctx.strokeStyle=pal.line;
- for(let k=50;k<474;k+=36){
-  line(ctx,k,26,k,474,pal.line,1);
-  line(ctx,26,k,474,k,pal.line,1);
- }
- // Subtle alternating square tiles, kept under all combatants.
- for(let i=0;i<12;i++)for(let j=0;j<12;j++)if((i+j)%2===0){
-  ctx.fillStyle=pal.bright;ctx.globalAlpha=.027;
-  ctx.fillRect(27+i*36,27+j*36,35,35);
+ if(realm==='time'){
+   for(let r=50;r<=215;r+=32)ring(ctx,250,250,r,pal.line,1);
+   for(let i=0;i<24;i++){const a=i*TWO/24;line(ctx,250+Math.cos(a)*45,250+Math.sin(a)*45,
+      250+Math.cos(a)*220,250+Math.sin(a)*220,pal.line,1);}
+ }else if(realm==='space'){
+   ctx.strokeStyle=pal.line;for(let i=0;i<11;i++){const a=i*.57;ctx.beginPath();ctx.ellipse(250,250,55+i*14,23+i*9,a,0,TWO);ctx.stroke();}
+   for(let k=0;k<55;k++)disc(ctx,45+(k*83)%413,45+(k*157)%410,k%5===0?2:1,pal.line);
+ }else if(realm==='fire'){
+   for(let i=0;i<12;i++){const x=45+i*35;line(ctx,x,26,x+40,154,pal.line,2);
+     line(ctx,x+40,154,x-9,333,pal.line,1);line(ctx,x-9,333,x+50,474,pal.line,2);}
+ }else if(realm==='storm'){
+   for(let i=-450;i<800;i+=36)line(ctx,i,26,i+340,474,pal.line,1.5);
+   for(let i=0;i<8;i++){const y=75+i*49;line(ctx,37,y,463,y-27,pal.line,1);}
+ }else if(realm==='ice'){
+   for(let i=30;i<480;i+=59){line(ctx,i,26,i-25,250,pal.line,2);
+      line(ctx,i-25,250,i+35,474,pal.line,1);}
+   for(let i=45;i<470;i+=75)line(ctx,26,i,474,i+31,pal.line,1);
+ }else{
+   ctx.strokeStyle=pal.line;
+   for(let i=0;i<16;i++){
+    const x=43+(i*71)%415,y=35+(i*113)%417;
+    ctx.beginPath();ctx.ellipse(x,y,18+(i%3)*12,8+i%4*5,i*.74,0,TWO);ctx.stroke();
+    line(ctx,x,y,x+18+(i%2?8:-8),y+28,pal.line,2);
+   }
  }
  ctx.globalAlpha=.88;
  decorations(ctx,realm,tick,pal);
@@ -228,11 +264,19 @@ function paint(ctx,realm,level,w=500,h=500,tick=0){
   disc(ctx,x,y,11,pal.dark);ring(ctx,x,y,10,pal.edge,3);star(ctx,x,y,6,4);ctx.fillStyle=pal.bright;ctx.fill();
  }
  const map=getMap(realm,level,w,h,tick);
+ for(const r of map.rails){
+   const x1=r.x/sx, y1=r.y/sy; // Rails use unscaled endpoints, like the bumpers.
+   ctx.save();ctx.lineCap='round';ctx.shadowColor=pal.glow;ctx.shadowBlur=10;
+   ctx.lineWidth=r.r*2/Math.min(sx,sy);ctx.strokeStyle=pal.dark;ctx.beginPath();
+   ctx.moveTo(r.x1/sx,r.y1/sy);ctx.lineTo(r.x2/sx,r.y2/sy);ctx.stroke();
+   ctx.shadowBlur=0;ctx.lineWidth=2;ctx.strokeStyle=pal.bright;
+   ctx.beginPath();ctx.moveTo(r.x1/sx,r.y1/sy);ctx.lineTo(r.x2/sx,r.y2/sy);ctx.stroke();ctx.restore();
+ }
  for(const o of map.obstacles){drawBumper(ctx,{...o,_w:w,_h:h,_scale:Math.min(sx,sy)},pal,tick);}
  ctx.restore();return true;
 }
 function reset(){cached=null;}
 const flat={getMap,at,heightAt,isWalkable,clearance,bounce,nextWaypoint,paint,reset,style:THEMES};
 g.ArenaTowerArchitecture=Object.freeze(flat);
-g.ArenaTowerFlat=Object.freeze({enabled:true,THEMES,LEFT,RIGHT,BUMPERS,getMap,at,bounce,paint});
+g.ArenaTowerFlat=Object.freeze({enabled:true,THEMES,LEFT,RIGHT,BUMPERS,MAP_GEOMETRY,getMap,at,bounce,paint});
 })(typeof window!=='undefined'?window:globalThis);

@@ -80,14 +80,33 @@ test('outer edge rebounds with near-original velocity and refills momentum',()=>
 test('four bumpers reflect instead of trapping the ball; center never obstructed',()=>{
  const g=boot(),A=g.ArenaTowerArchitecture;
  for(const realm of realms){
-  const p=actor(124,100,0,5);
+  const site=A.getMap(realm,3,500,500).obstacles[0];
+  const p=actor(site.x,site.y-site.r-20+1,0,5);
   assert.equal(A.bounce(p,realm,500,500,3,0),true);
   assert.ok(p.vy<0,realm+' bumper reverses entry');
-  assert.ok(Math.hypot(p.x-124,p.y-124)>=35-.1);
+  assert.ok(Math.hypot(p.x-site.x,p.y-site.y)>=site.r+p.radius-.1);
   const middle=actor(250,250,3,1);
   assert.equal(A.bounce(middle,realm,500,500,3,0),false);
   assert.equal(middle.vx,3);
  }
+});
+test('tower physical layouts are different without splitting the navigable floor',()=>{
+ const g=boot(),A=g.ArenaTowerArchitecture;
+ const placements=new Set();
+ for(const realm of realms){
+  const map=A.getMap(realm,7,500,500,0);
+  const signature=map.obstacles.map(o=>[o.x,o.y,o.r].join(':')).join('|')+
+   ':'+map.rails.map(o=>[o.x1,o.y1,o.x2,o.y2].join(':')).join('|');
+  placements.add(signature);
+  assert.equal(map.rails.length,2,realm+' two short real rebound rails');
+  for(const q of map.rails){
+   const p=actor((q.x1+q.x2)/2,(q.y1+q.y2)/2,2,1);
+   assert.equal(A.bounce(p,realm,500,500,7,0),true);
+   assert.ok(Number.isFinite(p.x)&&Number.isFinite(p.y));
+  }
+  assert.ok(A.clearance(realm,250,250,500,500,0,7)>38);
+ }
+ assert.equal(placements.size,6,'real collision arrangements must differ across all towers');
 });
 test('tower terrain on the new map never introduces height, cliff falls or cover',()=>{
  const g=boot(),T=g.ArenaTowerTerrain,hero=actor(250,250,1,.6);

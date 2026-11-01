@@ -13,8 +13,8 @@ const action=(type)=>({kind:'action',action:{type,damage:22,radius:120,count:1,
  speed:5,duration:1.5,status:'none',knockback:0,link:'after'}});
 test('elementary-friendly builder offers obvious 3-step creation, plain speech and visible preview',()=>{
  const s=src('js/features/scratch-beginner.js');
- for(const phrase of ['언제 기술을 쓸까?','무엇을 할까?','완성한 기술 확인하기',
-  '내 필살기 만들기','▶ 미니 핀볼 실험장에서 시험','쉬운','블록 자세히 보기',
+ for(const phrase of ['① 기세가 100이 되면','② 행동을 최대 4개 선택','③ 순서와 연계 편집',
+  '나만의 전투 기술 설계','▶ 스킬 동작 시연 (승률 예측 아님)','기본 설계','고급 코딩',
   'kid-trigger-options','kid-action-grid','kid-plan','data-kid-command="random"']){
    assert.ok(s.includes(phrase),phrase);
  }
@@ -75,4 +75,16 @@ test('advanced view and appearance UI remain reachable, original Scratch has no 
  assert.match(easy,/compiler\.safeAction/);
  assert.match(easy,/get mode\(\)/);
  assert.match(easy,/g\.CharacterStudioWorkspace\?\.selectPreviewSkill/);
+});
+
+test('intermediate workbench edits validated action attributes and preserves advanced Scratch workflow',()=>{
+ const ui=src('js/features/scratch-beginner.js'),css=src('css/scratch-beginner.css');
+ for(const word of ['data-kid-edit','data-kid-move','data-kid-dir','data-kid-key="link"',
+  'data-kid-key="target"','data-kid-key="damage"','data-kid-key="radius"',
+  'compiler.safeAction','S.applyProgram','if(code.length>=4']){
+  assert.ok(ui.includes(word),word);
+ }
+ assert.match(ui,/scratch-friendly-advanced/);
+ assert.match(css,/kid-action-fields/);
+ assert.match(css,/min-height:42px/);
 });
