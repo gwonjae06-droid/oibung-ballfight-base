@@ -286,8 +286,10 @@ function install(){
   global.addEventListener?.('DOMContentLoaded',()=>{
     const area=settings.querySelector('.lobby-settings-body');
     const bar=doc.querySelector('.bf-music');
+    const sfx=doc.querySelector('.bf-audio');
     const quick=doc.getElementById('bgm-quick-start');
     if(area&&bar)area.append(bar);
+    if(area&&sfx)area.append(sfx);
     if(area&&quick)area.prepend(quick);
   });
   // Custom studio save/reopen retains its old events and the one DOM tree.
