@@ -1,0 +1,129 @@
+/* Original bouncy arcade combo celebration. All motion is DOM/CSS,
+   not a gameplay hitbox and never steals touches from the battlefield. */
+.battle-screen .arena-heading{flex-wrap:wrap;overflow:visible}
+#arena-combo-status.arena-combo-status{
+ --combo-accent:#8ce3ef;--combo-glow:#4acfea66;
+ isolation:isolate;position:relative;box-sizing:border-box;
+ display:grid;grid-template-columns:auto auto 1fr;
+ grid-template-areas:"echo number message" "caption number progress";
+ align-items:center;column-gap:8px;row-gap:0;flex:1 1 100%;
+ max-width:700px;min-width:0;min-height:78px;overflow:hidden;
+ margin:8px auto 2px;padding:9px 16px;
+ border-radius:17px;border:2px solid var(--combo-accent);
+ background:linear-gradient(110deg,#102536,#183447 52%,#202b46);
+ box-shadow:0 0 0 2px #07131d,0 5px 17px #0007,inset 0 1px 12px #ffffff12;
+ color:#fff;pointer-events:none;transform-origin:center 65%;
+}
+#arena-combo-status[hidden]{display:none!important}
+#arena-combo-status[data-tier="rise"]{--combo-accent:#ffce72;--combo-glow:#e7a35285}
+#arena-combo-status[data-tier="hot"]{--combo-accent:#ff9956;--combo-glow:#ff783f99}
+#arena-combo-status[data-tier="epic"]{--combo-accent:#ff67bf;--combo-glow:#f758cfaa}
+#arena-combo-status[data-tier="legend"]{--combo-accent:#d8b5ff;--combo-glow:#966fffbb}
+#arena-combo-status .combo-echo{
+ grid-area:echo;font-weight:1000;font-size:clamp(15px,2.9vw,26px);
+ font-style:italic;letter-spacing:.02em;transform:skewX(-10deg);
+ color:var(--combo-accent);white-space:nowrap;
+ text-shadow:1px 2px #0c1825,0 0 12px var(--combo-glow);
+}
+#arena-combo-status .combo-caption{
+ grid-area:caption;font-weight:900;font-size:10px;letter-spacing:.17em;color:#d2eafa;
+ white-space:nowrap
+}
+#arena-combo-status .combo-number{
+ grid-area:number;z-index:3;justify-self:center;display:block;
+ min-width:62px;font-weight:1000;font-family:system-ui,sans-serif;
+ font-size:clamp(37px,5.8vw,66px);font-variant-numeric:tabular-nums;
+ line-height:.95;text-align:center;letter-spacing:-.085em;
+ color:#fff4cf;transform-origin:50% 75%;
+ -webkit-text-stroke:1.2px #633c2f;
+ text-shadow:-2px 2px #c05e39,2px 3px #77253d,0 0 19px var(--combo-glow);
+}
+#arena-combo-status .combo-times{
+ position:absolute;left:calc(55% - 14px);bottom:11px;
+ font-size:18px;font-weight:900;color:var(--combo-accent);
+ transform:rotate(15deg);opacity:.84
+}
+#arena-combo-status .combo-message{
+ grid-area:message;justify-self:end;text-align:right;max-width:260px;
+ font-size:clamp(11px,1.7vw,15px);line-height:1.3;
+ font-weight:900;color:#fff4d9;text-shadow:0 2px 4px #050b15;
+ overflow-wrap:anywhere
+}
+#arena-combo-status .combo-progress{
+ grid-area:progress;justify-self:end;width:100%;
+ max-width:260px;height:5px;border-radius:8px;
+ background:linear-gradient(90deg,var(--combo-accent),#fff4b6);
+ box-shadow:0 0 9px var(--combo-glow);
+}
+#arena-combo-status .combo-sparks{position:absolute;inset:0;pointer-events:none;z-index:2}
+#arena-combo-status .combo-sparks i{
+ position:absolute;left:48%;top:51%;width:10px;height:4px;border-radius:2px;
+ background:var(--combo-accent);opacity:0;
+ box-shadow:0 0 9px var(--combo-glow)
+}
+#arena-combo-status .combo-sparks i:nth-child(1){--tx:-96px;--ty:-35px;--rot:10deg}
+#arena-combo-status .combo-sparks i:nth-child(2){--tx:87px;--ty:-29px;--rot:90deg}
+#arena-combo-status .combo-sparks i:nth-child(3){--tx:-53px;--ty:35px;--rot:110deg}
+#arena-combo-status .combo-sparks i:nth-child(4){--tx:65px;--ty:43px;--rot:30deg}
+#arena-combo-status .combo-sparks i:nth-child(5){--tx:8px;--ty:-43px;--rot:145deg}
+#arena-combo-status .combo-sparks i:nth-child(6){--tx:-105px;--ty:6px;--rot:70deg}
+#arena-combo-status.combo-burst{animation:comboStageBounce .54s cubic-bezier(.18,.92,.15,1.2) both}
+#arena-combo-status.combo-burst .combo-number{animation:comboNumberWild .65s cubic-bezier(.16,.8,.25,1.3) both}
+#arena-combo-status.combo-burst .combo-echo{animation:comboLetterKick .56s ease-out both}
+#arena-combo-status.combo-burst .combo-message{animation:comboMsgSlide .48s ease-out both}
+#arena-combo-status.combo-burst .combo-sparks i{animation:comboSparkPop .65s ease-out both}
+#arena-combo-status[data-tier="epic"].combo-burst .combo-number,
+#arena-combo-status[data-tier="legend"].combo-burst .combo-number{
+ animation:comboNumberWild .85s cubic-bezier(.16,.8,.25,1.3) both
+}
+@keyframes comboStageBounce{
+ 0%{transform:translateY(8px) scale(.91);filter:brightness(1.7)}
+ 27%{transform:translateY(-5px) scale(1.035)}
+ 52%{transform:translateX(4px) rotate(1deg) scale(1.018)}
+ 76%{transform:translateX(-2px) rotate(-.5deg)}
+ 100%{transform:none;filter:none}
+}
+@keyframes comboNumberWild{
+ 0%{transform:translateY(28px) rotate(-18deg) scale(.3);opacity:.2}
+ 24%{transform:translateY(-14px) rotate(13deg) scale(1.75)}
+ 42%{transform:translateY(6px) rotate(-10deg) scale(1.24)}
+ 63%{transform:translateY(-5px) rotate(8deg) scale(1.42)}
+ 80%{transform:translateY(1px) rotate(-3deg) scale(1.11)}
+ 100%{transform:none;opacity:1}
+}
+@keyframes comboLetterKick{
+ 0%{transform:translateX(-33px) rotate(-15deg) scale(.7);opacity:.2}
+ 35%{transform:translateX(6px) rotate(9deg) scale(1.2)}
+ 70%{transform:translateX(-3px) rotate(-6deg)}
+ 100%{transform:skewX(-10deg);opacity:1}
+}
+@keyframes comboMsgSlide{
+ 0%{transform:translateX(32px);opacity:0}
+ 50%{transform:translateX(-6px);opacity:1}
+ 100%{transform:none;opacity:1}
+}
+@keyframes comboSparkPop{
+ 0%,8%{transform:translate(0,0) rotate(0deg) scale(.1);opacity:0}
+ 25%{opacity:1}
+ 85%{opacity:.65}
+ 100%{transform:translate(var(--tx),var(--ty)) rotate(var(--rot)) scale(.12);opacity:0}
+}
+@media(max-width:600px){
+ #arena-combo-status.arena-combo-status{padding:8px 9px;gap:4px;min-height:65px;
+ grid-template-columns:auto 68px minmax(0,1fr)}
+ #arena-combo-status .combo-number{font-size:42px;min-width:50px}
+ #arena-combo-status .combo-echo{font-size:14px}
+ #arena-combo-status .combo-caption{font-size:9px}
+ #arena-combo-status .combo-message{font-size:10px}
+ #arena-combo-status .combo-times{display:none}
+}
+@media(prefers-reduced-motion:reduce){
+ #arena-combo-status.combo-burst,
+ #arena-combo-status.combo-burst .combo-number,
+ #arena-combo-status.combo-burst .combo-echo,
+ #arena-combo-status.combo-burst .combo-message,
+ #arena-combo-status.combo-burst .combo-sparks i{
+ animation:none!important;transition:none!important;transform:none!important
+ }
+ #arena-combo-status.combo-burst .combo-echo{transform:skewX(-10deg)!important}
+}
