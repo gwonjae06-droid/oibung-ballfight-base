@@ -16,14 +16,17 @@ function pair(a,b,nx,ny){
  const approach=(bvx-avx)*nx+(bvy-avy)*ny;
  if(!Number.isFinite(approach)||approach>=-.08)return false;
  const invA=1/mass(a),invB=1/mass(b);
- const restitution=.89;
- const impulse=Math.min(15,-(1+restitution)*approach/(invA+invB));
+ // Arcade spring, conserving mass-weighted momentum while making
+ // genuine head-on hits audibly and visibly punchier. No effects on retreat.
+ const speed=-approach;
+ const restitution=clamp(1.06+Math.max(0,speed-2)*.019,1.06,1.22);
+ const impulse=Math.min(18,-(1+restitution)*approach/(invA+invB));
  const ix=impulse*nx,iy=impulse*ny;
  a.vx=clamp(avx-ix*invA,-12,12);
  a.vy=clamp(avy-iy*invA,-12,12);
  b.vx=clamp(bvx+ix*invB,-12,12);
  b.vy=clamp(bvy+iy*invB,-12,12);
- for(const p of [a,b])p._pinballReboundHold=Math.max(10,p._pinballReboundHold||0);
+ for(const p of [a,b])p._pinballReboundHold=Math.max(19,p._pinballReboundHold||0);
  return {approach,impulse,massA:mass(a),massB:mass(b)};
 }
 g.ArenaBodyPhysics=Object.freeze({mass,pair});
