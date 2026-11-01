@@ -36,7 +36,7 @@ function baseSpeed(p){
  // Ordinary fighter type alters only movement SPEED, never AI direction.
  const forge=Number(p.forge?.speed);
  if(Number.isFinite(forge)&&forge>0)return clamp(forge*1.13,1.4,5.25);
- return p.id==='oh'?3.27:p.id==='choi'?3.06:p.id==='park'?3.12:3.18;
+ return p.id==='oh'?(p.mode==='boin'?4.05:2.65):p.id==='choi'?3.06:p.id==='park'?3.12:3.18;
 }
 function initialDirection(p){
  // Distinct, deterministic launch headings, independent of opponents.
