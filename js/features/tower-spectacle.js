@@ -191,6 +191,7 @@ function page(event,tick){
  c.globalAlpha=.3*Math.sin(Math.PI*Math.min(1,event.progress));
  g.ArenaTowerSpectacleArt?.viewport(c,event,t,w,h);
   g.ArenaTowerPageReality?.render?.(c,event,t,w,h,reduced);
+  g.ArenaTimeBossFX?.page?.(c,event,t,w,h,reduced);
  // Viewport art leaves the old subtle vignette alpha behind; the meteor
  // must NOT inherit it or disappear at progress 0/1.
  c.globalAlpha=1;
