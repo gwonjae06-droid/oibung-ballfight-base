@@ -28,6 +28,11 @@ function add(p,amount,kind){
    if(g.ForgeExpansion?.active?.(p,'timeburst'))amount*=TIME_ACCEL;
    else if(g.ForgeExpansion?.active?.(p,'haste'))amount*=TIME_HASTE;
  }
+ // +15% per Tower haste blessing (max 2 stacks, +32.25% total).
+ // Counts only naturally earned energy, never synthetic time-steal refunds;
+ // the existing 100 cap, wall/contact cooldowns, and time-effect priority stay.
+ if(timed&&!p.towerEnemy&&p.towerHero&&Number.isFinite(p._towerMomentumBoost))
+   amount*=Math.max(1,Math.min(1.3225,p._towerMomentumBoost));
  const clock=Number(p._forgeActionClock)||0;
  const gaps={contact:34,wall:26,basic:23};
  const name='_bounceLast_'+kind;

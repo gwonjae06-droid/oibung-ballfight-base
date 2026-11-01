@@ -10,11 +10,11 @@ const PLANS=Object.freeze({
   assault:{name:'공격형',icon:'⚔️',hint:'여러 공격을 연결해 빠르게 승부',skills:[
     ['속사','shot',26,2],['강타','wave',39,3.5],['낙뢰','bolt',31,4],['돌진','dash',0,4]]},
   guardian:{name:'수호형',icon:'🛡️',hint:'보호막·회복을 중심으로 버티기',skills:[
-    ['방어막','shield',0,3.5],['자가 회복','heal',35,4],['방어 태세','fortify',0,5],['반격 파동','wave',32,4]]},
+    ['방어막','shield',0,3.5],['자가 회복','heal',35,4],['흡혈 반격','drain',32,4.5],['반격 파동','wave',34,4]]},
   control:{name:'제어형',icon:'❄️',hint:'장판과 상태이상으로 상대 움직임 제한',skills:[
     ['빙결 파동','wave',17,3],['독 장판','zone',15,4],['속박 지뢰','mine',16,5],['집중 낙뢰','bolt',24,4]]},
   agile:{name:'기동형',icon:'💨',hint:'이동과 회피를 활용한 전술',skills:[
-    ['순간 이동','blink',0,4],['원거리 공격','shot',22,2.5],['후퇴','retreat',0,4],['회전 구슬','orbit',16,5]]}
+    ['순간 이동','blink',0,4],['원거리 공격','shot',28,2.5],['관통 속공','pierce',26,4],['회전 구슬','orbit',22,5]]}
 });
 const QUICK={
   '공격':['wave','shot','bolt','beam','slash','chain','nova','arcshot'],

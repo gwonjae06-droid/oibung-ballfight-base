@@ -38,7 +38,7 @@ test('choosing a starter style retains saved character name, appearance and HP',
  for(const key of ['name','color','effectColor','hp','speed','artKey'])assert.equal(result[key],p[key],key);
  assert.equal(result.skills[0].actions[0].type,'shield');
  assert.equal(result.skills[0].actions[1].type,'heal');
- assert.equal(result.skills[0].actions[2].type,'fortify');
+ assert.equal(result.skills[0].actions[2].type,'drain');
 });
 test('simple edits modify exactly the same recipe accepted by the expert BlockForge',()=>{
  const h=world(),easy=h.StudioEasyDesigner,block=h.BlockForge;
