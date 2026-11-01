@@ -17,15 +17,22 @@ const actions=[
  {id:'retreat',icon:'↩️',name:'뒤로 피하기',tip:'적과 거리를 벌려요',group:'move',damage:0},
  {id:'shield',icon:'🛡️',name:'보호막',tip:'공격을 잠시 막아요',group:'defense',damage:0},
  {id:'heal',icon:'💚',name:'체력 회복',tip:'내 체력을 회복해요',group:'defense',damage:22},
- {id:'zone',icon:'❄️',name:'얼음 장판',tip:'적의 움직임을 느리게 해요',group:'special',damage:12,status:'ice'}
+ {id:'zone',icon:'❄️',name:'얼음 장판',tip:'공이 미끄러지는 지역을 만들어요',group:'special',damage:12,status:'ice'},
+ {id:'timestop',icon:'🕰️',name:'시간 정지',tip:'적의 굴러감과 기세 충전을 잠깐 멈춰요',group:'special',damage:0},
+ {id:'timeburst',icon:'⏩',name:'시간 가속',tip:'공 충돌·벽 반사로 얻는 기세가 1.75배',group:'special',damage:0},
+ {id:'rewind',icon:'⏪',name:'시간 되감기',tip:'이전 위치·속도·기세 일부 복원',group:'special',damage:0},
+ {id:'pull',icon:'🧲',name:'끌어당기기',tip:'공을 끌어와 충돌을 유도해요',group:'special',damage:16},
+ {id:'wall',icon:'🧱',name:'벽 세우기',tip:'새로운 반사 벽을 만들어요',group:'special',damage:0},
+ {id:'homing',icon:'🎯',name:'유도탄',tip:'상대를 찾아가는 투사체를 발사해요',group:'attack',damage:17},
+ {id:'splitshot',icon:'💎',name:'분열탄',tip:'날아가는 중 여러 탄환으로 분열해요',group:'attack',damage:15}
 ].filter(a=>forge.TYPE[a.id]);
 const starters=[
  {id:'auto',icon:'⚡',name:'기세가 가득 차면',tip:'충돌로 기세 100을 모으면 자동 발동'}, 
  {id:'lowhp',icon:'❤️',name:'체력이 적을 때',tip:'위험할 때 기술 사용'},
  {id:'danger',icon:'🚨',name:'보스가 공격할 때',tip:'보스의 큰 공격을 보고 반응'},
  {id:'dodge',icon:'💨',name:'보스 공격을 피한 뒤',tip:'회피 성공 후 반격'},
- {id:'basicHit',icon:'🎯',name:'기본 공격이 맞은 뒤',tip:'기본 공격 다음에 필살기 연계'},
- {id:'basicStatus',icon:'❄️',name:'기본 공격으로 느려지면',tip:'상태이상에 성공하면 필살기'}
+ {id:'contact',icon:'🎱',name:'공끼리 부딪힌 뒤',tip:'충돌로 얻은 기세를 판단'},
+ {id:'wall',icon:'🧱',name:'벽에 튕긴 뒤',tip:'벽 반사 후 동작을 조합'}
 ];
 const templates=[
  {id:'brawler',icon:'⚔️',name:'달려가서 공격!',desc:'돌진 → 베기 → 충격파',trigger:'auto',sequence:['dash','slash','wave']},
@@ -33,11 +40,12 @@ const templates=[
  {id:'guardian',icon:'🛡️',name:'위험할 때 보호!',desc:'보호막 → 회복 → 충격파',trigger:'lowhp',sequence:['shield','heal','wave']},
  {id:'frost',icon:'❄️',name:'얼려서 공격!',desc:'얼음 장판 → 번개',trigger:'auto',sequence:['zone','bolt']},
  {id:'evasion',icon:'💫',name:'피한 뒤 반격!',desc:'회피 성공 → 순간이동 → 공격',trigger:'dodge',sequence:['blink','wave']},
- {id:'pinball',icon:'🎱',name:'벽 반사 돌격!',desc:'벽 반사 → 돌진 → 충격파',trigger:'wallEnergy',sequence:['dash','wave']}
+ {id:'pinball',icon:'🎱',name:'벽 반사 돌격!',desc:'돌진 → 충격파',trigger:'auto',sequence:['dash','wave']},
+ {id:'chrono',icon:'🕰️',name:'시간 튕김 조합!',desc:'시간 가속 → 끌어당기기 → 충격파',trigger:'auto',sequence:['timeburst','pull','wave']}
 ];
 const nodeOf=(id)=>{const item=actions.find(a=>a.id===id);
  const d={type:id,damage:item?.damage??20,radius:id==='wave'?130:120,
-  speed:5,duration:id==='shield'?1.4:1.5,status:item?.status||'none',link:'after'};
+  speed:5,duration:id==='shield'?1.4:id==='timestop'?1.2:id==='rewind'?2.5:1.5,status:item?.status||'none',link:'after'};
  return {kind:'action',action:compiler.safeAction(d)};
 };
 const panel=doc.createElement('section');panel.id='scratch-beginner';panel.className='scratch-beginner';

@@ -6,6 +6,10 @@
 (function(g){
 'use strict';
 const MAX=100, PASSIVE=.17, CONTACT=16, WALL=9, BASIC_HIT=3;
+// Authored time skills modify this one meter, not a second cooldown clock.
+// Time acceleration magnifies positive recharge, but never instantly casts
+// another skill. Time stop disables the victim's recharge while it lasts.
+const TIME_ACCEL=1.75;
 const clamp=n=>Math.max(0,Math.min(MAX,Number.isFinite(n)?n:0));
 function isBoss(p){return !!p?.forge&&p.towerEnemy&&p.towerPatternBoss&&!p.manualTower;}
 function isMinion(p){return !!p?.forge&&p.towerEnemy&&!p.towerPatternBoss&&!p.manualTower;}
@@ -16,6 +20,9 @@ function enabled(p){
 function meter(p){return enabled(p)?clamp(p._bounceMomentum||0):null;}
 function add(p,amount,kind){
  if(!enabled(p)||p.hp<=0||!Number.isFinite(amount)||amount<=0)return false;
+ const timed=kind==='passive'||kind==='contact'||kind==='wall'||kind==='damage';
+ if(timed&&g.ForgeExpansion?.active?.(p,'momentumStasis'))return false;
+ if(timed&&g.ForgeExpansion?.active?.(p,'timeburst'))amount*=TIME_ACCEL;
  const clock=Number(p._forgeActionClock)||0;
  const gaps={contact:34,wall:26,basic:23};
  const name='_bounceLast_'+kind;
@@ -74,5 +81,5 @@ function spend(p){
  p._bounceCasts=(p._bounceCasts||0)+1;
  return true;
 }
-g.BounceMomentum=Object.freeze({MAX,PASSIVE,CONTACT,WALL,BASIC_HIT,isBoss,isMinion,bossPhase,bossCan,bossSpend,damageTaken,enabled,meter,add,contact,wall,basicHit,tick,ready,spend});
+g.BounceMomentum=Object.freeze({MAX,PASSIVE,CONTACT,WALL,BASIC_HIT,TIME_ACCEL,isBoss,isMinion,bossPhase,bossCan,bossSpend,damageTaken,enabled,meter,add,contact,wall,basicHit,tick,ready,spend});
 })(typeof window!=='undefined'?window:globalThis);

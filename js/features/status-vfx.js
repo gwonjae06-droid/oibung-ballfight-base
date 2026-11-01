@@ -7,10 +7,10 @@ const M={
  bleed:['출혈','♦','#ff7287','drop'],shock:['감전','ϟ','#ffe279','bolt'],vulnerable:['취약','!','#ff9270','crack'],weak:['약화','↓','#ad9ed8','down'],
  fear:['공포','!','#ad9cff','ghost'],charm:['매혹','♥','#ff91c3','heart'],blind:['실명','◉','#a1b0c3','blind'],curse:['저주','☾','#cf91ee','moon'],
  ice:['둔화','❄','#9be4ff','ice'],fire:['화상','♨','#ff974e','flame'],poison:['중독','☣','#a9e65d','bubble'],dot:['지속피해','•','#ffb26c','drop'],
- regen:['재생','+','#7ceaaa','plus'],haste:['가속','»','#5ad8fc','speed'],fortify:['강화','⬡','#8ab3ff','shield'],timeburst:['시간가속','◷','#e2bcff','clock'],
+ regen:['재생','+','#7ceaaa','plus'],haste:['가속','»','#5ad8fc','speed'],fortify:['강화','⬡','#8ab3ff','shield'],timeburst:['기세가속','◷','#e2bcff','clock'],momentumStasis:['기세정지','◷','#a7a3ff','clock'],
  shield:['방어','◆','#8bd1ff','shield'],resist:['저항','◇','#d0c6e8','shield']
 };
-const ORDER=['freeze','stun','root','silence','fire','poison','ice','shock','bleed','vulnerable','weak','blind','fear','charm','curse','regen','haste','fortify','timeburst'];
+const ORDER=['freeze','momentumStasis','stun','root','silence','fire','poison','ice','shock','bleed','vulnerable','weak','blind','fear','charm','curse','regen','haste','fortify','timeburst'];
 let reduced=false;
 const valid=n=>Number.isFinite(n)&&n>0;
 function collect(p){
