@@ -1,7 +1,7 @@
 const test=require('node:test'),assert=require('node:assert/strict'),vm=require('node:vm'),fs=require('node:fs');
 function setup(realm,level=10){
  const g={};vm.createContext(g);
- for(const f of ['tower-spectacle','tower-encounters'])vm.runInContext(fs.readFileSync('js/features/'+f+'.js','utf8'),g);
+ for(const f of ['tower-clock-hands','tower-spectacle','tower-encounters'])vm.runInContext(fs.readFileSync('js/features/'+f+'.js','utf8'),g);
  const hero={x:30,y:30,hp:10000,maxHp:10000,radius:12},boss={x:300,y:300,hp:10000,maxHp:10000},hits=[];
  const s=g.ArenaTowerSpectacle.create({realm,level,width:500,height:500,hero,boss,damage(p,n,z){hits.push({n,z});return true;}});
  return {g,s,hero,boss,hits};
@@ -56,7 +56,7 @@ test('meteor viewport art descends and grows while preserving reduced motion',()
  for(let i=1;i<motion.length;i++)assert.ok(motion[i]>motion[i-1],`meteor must descend at ${i}`);
  assert.doesNotThrow(()=>g.ArenaTowerMeteorArt.draw(c,{realm:'fire',deadline:900,impactTick:948,exploded:true,failed:true,remaining:0,progress:1},925,390,844,true));
 });
-test('rotating hands change collision geometry and death clears effects',()=>{const {s,hero}=setup('time');for(let i=0;i<241;i++)s.step();const a=s.zones[0].angle;s.step();assert.notEqual(s.zones[0].angle,a);hero.hp=0;s.step();assert.equal(s.event,null);assert.equal(s.zones.length,0);});
+test('rotating hands change ACTUAL capsule collision geometry and death clears effects',()=>{const {s,hero}=setup('time');for(let i=0;i<241;i++)s.step();assert.equal(s.clock.active,true);for(let i=0;i<95;i++)s.step();const a=s.clock.handAt(0).angle;s.step();assert.notEqual(s.clock.handAt(0).angle,a);hero.hp=0;s.step();assert.equal(s.event,null);assert.equal(s.clock.active,false);assert.equal(s.zones.length,0);});
 test('full-screen meteor does not inherit vanishing background alpha, and page cleanup hides it',()=>{
  const g={},c={globalAlpha:1,clearRect(){},getContext(){return this;}},canvas={width:0,height:0,hidden:false,style:{},getContext(){return c;},setAttribute(){}};
  const root={appendChild(el){this.child=el;}},doc={body:root,createElement(){return canvas;},querySelector(){return null;},getElementById(){return null;}};
