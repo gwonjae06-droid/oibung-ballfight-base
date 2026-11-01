@@ -78,6 +78,7 @@ function reRollMatch(forcedDef) {
   openingCollisionPairs.clear();
   particles=[];floatingTexts=[];shockwaves=[];screenShake=0;
   globalThis.ImpactPhysics?.reset?.();
+  globalThis.ArenaPinballJuice?.reset?.();
   globalThis.AdvancedCombat?.reset();
   isGameOver=false;isPlaying=false;roundStarted=false;roundStopped=false;roundSettled=false;selectedBetPlayerNum=null;activeBet=null;
   globalThis.BackgroundMusic?.setBattle(false);
@@ -230,6 +231,8 @@ function handleCombat(pA,pB) {
     // Physically transfer velocity according to each disc's mass and normal
     // approach. No additional HP damage or forced targeting.
     const impact=globalThis.ArenaBodyPhysics?.pair?.(pA,pB,nx,ny);
+    if((pA.impactSpeed||0)<=4&&(pB.impactSpeed||0)<=4)
+      globalThis.ArenaPinballJuice?.pair?.(pA,pB,nx,ny,approach,impact?.impulse||Math.abs(approach));
     if(!impact){
       const impulse=Math.min(5,Math.max(1.8,-approach*.58));
       pA.vx-=nx*impulse;pA.vy-=ny*impulse;
@@ -308,15 +311,16 @@ function update() {
         globalThis.ArenaBallSquash?.wall?.(p,bounceX?(p.x<p.radius*2?1:-1):0,bounceY?(p.y<p.radius*2?1:-1):0,normalSpeed);
         globalThis.BounceMomentum?.wall?.(p,Math.hypot(p.vx||0,p.vy||0));
         if(globalThis.BounceMomentum?.enabled?.(p))
-          p._pinballReboundHold=Math.max(p._pinballReboundHold||0,8);
+          p._pinballReboundHold=Math.max(p._pinballReboundHold||0,17);
         // Subtle, bounded wall energy and a tiny off-axis nudge: no
         // repeated sticking on straight corridors and no runaway speed.
         const before=Math.hypot(p.vx,p.vy);
         if(bounceX)p.vy+=(p.vy<0?-1:1)*.09;
         if(bounceY)p.vx+=(p.playerNum%2===0?-1:1)*.09;
         const after=Math.hypot(p.vx,p.vy);
-        const newSpeed=Math.min(12,Math.max(after,Math.min(12,before*1.035+.03)));
+        const newSpeed=Math.min(11.4,Math.max(after,Math.min(11.4,before*(normalSpeed>2.4?1.21:1.08)+.06)));
         if(after>0){p.vx=p.vx/after*newSpeed;p.vy=p.vy/after*newSpeed;}
+        globalThis.ArenaPinballJuice?.wall?.(p,bounceX?(p.x<p.radius*2?1:-1):0,bounceY?(p.y<p.radius*2?1:-1):0,normalSpeed);
       }
     }else if(p.hp>0){
       // Airborne targets can still be hurled by an actual grounded hit.
@@ -349,6 +353,7 @@ function update() {
   for(const p of players)for(const e of spectacle?.targets(p)||[])handleCombat(p,e);
   const alive=players.filter(p=>p.hp>0);
   for(let i=0;i<alive.length;i++)for(let j=i+1;j<alive.length;j++)handleCombat(alive[i],alive[j]);
+  globalThis.ArenaPinballJuice?.tick?.(players);
   for(let i=shockwaves.length-1;i>=0;i--){const sw=shockwaves[i];sw.radius+=5.5;sw.alpha-=0.03;if(sw.alpha<=0||sw.radius>=sw.maxRadius)shockwaves.splice(i,1);}
   // Visual particles follow simulation time and respect pause.
   for(let i=particles.length-1;i>=0;i--){

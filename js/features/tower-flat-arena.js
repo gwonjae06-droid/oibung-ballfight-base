@@ -72,13 +72,16 @@ function rebound(p,nx,ny,speed){
  const dot=(p.vx||0)*nx+(p.vy||0)*ny;
  if(!(dot<-.06))return;
  const power=-dot;
- const elasticity=.91,drag=.985;
+ const elasticity=1.15,drag=.994;
  p.vx=((p.vx||0)-(1+elasticity)*dot*nx)*drag;
  p.vy=((p.vy||0)-(1+elasticity)*dot*ny)*drag;
+ const velocity=Math.hypot(p.vx,p.vy);
+ if(velocity>11.5){p.vx*=11.5/velocity;p.vy*=11.5/velocity;}
+ g.ArenaPinballJuice?.wall?.(p,nx,ny,power);
  g.ArenaBallSquash?.wall?.(p,nx,ny,power);
  g.BounceMomentum?.wall?.(p,power);
  if(g.BounceMomentum?.enabled?.(p))
-  p._pinballReboundHold=Math.max(p._pinballReboundHold||0,9);
+  p._pinballReboundHold=Math.max(p._pinballReboundHold||0,17);
  p._towerRimBounce=(p._towerRimBounce||0)+1;
 }
 function bounce(p,realm,w=500,h=500,level=1,tick=0){
