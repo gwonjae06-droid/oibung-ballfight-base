@@ -46,6 +46,20 @@ test('custom signature uses its actual Scratch program rather than an obsolete b
  assert.equal(selected[0].actions[0].speed,9);
  assert.notEqual(selected[0].actions[0].type,a.skills[0].actions[0].type);
 });
+test('previous basic-hit Scratch condition is migrated into skill-hit condition',()=>{
+ const g=sandbox();
+ const data=g.SignatureScratch.normalize([
+  {kind:'if',condition:'basicHit',
+   then:[{kind:'action',action:{type:'wave',damage:14}}],else:[]},
+  {kind:'if',condition:'basicStatus',
+   then:[{kind:'action',action:{type:'shot',damage:12}}],else:[]}
+ ]);
+ assert.equal(data[0].condition,'hit');
+ assert.equal(data[1].condition,'status');
+ assert.ok(!Object.hasOwn(g.SignatureProgram.CONDITIONS,'basicHit'));
+ assert.ok(!Object.hasOwn(g.SignatureProgram.CONDITIONS,'basicStatus'));
+});
+
 test('force energy button changes only isolated practice energy and launches one skill',()=>{
  const g=sandbox(),a=demo({type:'wave',radius:90});
  const lab=g.StudioPinballLab.make(a);
