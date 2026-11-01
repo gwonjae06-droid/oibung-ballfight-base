@@ -178,6 +178,8 @@ function ricochet(p,nx,ny,dot){
  p.vy=(vy-(1+restitution)*dot*ny)*drag;
  g.ArenaBallSquash?.wall?.(p,nx,ny,-dot);
  g.BounceMomentum?.wall?.(p,-dot);
+ if(g.BounceMomentum?.enabled?.(p))
+   p._pinballReboundHold=Math.max(p._pinballReboundHold||0,9);
  return true;
 }
 const bounce=(p,realm,w,h,level=1,tick=0)=>{
