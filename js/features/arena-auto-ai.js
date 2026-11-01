@@ -300,6 +300,10 @@ function plan(p,foe,speed,evadeOnly=false){
  return best;
 }
 function steer(p,foe,speed){
+ // Passive ball movement is owned by ArenaPinballMotion after abilities tick.
+ // This suppresses chasing, fleeing, strafing and hazard steering but does
+ // NOT touch target selection or skill canCast/aiming.
+ if(g.ArenaPinballMotion?.enabled?.(p))return true;
  // Returning true skips the normal speed-lerp fallback in SkillForge too.
  // A short bounce grace therefore preserves physical velocity and heading.
  if(g.BounceMomentum?.enabled?.(p)&&p?._pinballReboundHold>0){
@@ -321,6 +325,7 @@ function steer(p,foe,speed){
  return true;
 }
 function react(p,foe){
+ if(g.ArenaPinballMotion?.enabled?.(p))return false;
  // Legacy character skills remain authoritative; guide only ordinary movement.
  // Scripted dashes, launches, knockback and manual input are never overwritten.
  if(!p||!foe||p.hp<=0||foe.hp<=0||p.forge||
