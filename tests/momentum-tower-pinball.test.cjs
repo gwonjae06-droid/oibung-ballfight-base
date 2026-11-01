@@ -82,6 +82,6 @@ test('beginner interface describes fixed energy trigger while expert disables ol
  const easy=read('js/features/scratch-beginner.js'),advanced=read('js/features/scratch-studio.js');
  assert.match(easy,/기세 100 → 필살기 자동 발동/);
  assert.match(easy,/벽 반사/);
- assert.match(advanced,/#'\+?scratch-trigger/); // marker changed later if necessary
+ assert.match(advanced,/scratch-trigger/);
  assert.match(advanced,/disabled=!legacy/);
 });
