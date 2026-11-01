@@ -71,5 +71,7 @@ test('integration loads both visual-only squash and new map before the Tower eng
  assert.ok(html.indexOf('ball-impact-squash.js')<html.indexOf('js/core/engine.js'));
  assert.ok(html.indexOf('tower-map-architecture.js')<html.indexOf('tower-terrain-25d.js'));
  assert.match(engine,/ArenaBallSquash\?\.pair/);assert.match(render,/ArenaBallSquash\?\.pose/);
- assert.match(read('js/features/tower-challenge.js'),/Real architectural islands/);
+ assert.ok(html.indexOf('tower-map-architecture.js')<html.indexOf('tower-flat-arena.js'));
+ assert.ok(html.indexOf('tower-flat-arena.js')<html.indexOf('tower-terrain-25d.js'));
+ assert.match(read('js/features/tower-challenge.js'),/\[\[157,250\],\[343,250\]\]/);
 });
