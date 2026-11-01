@@ -59,7 +59,36 @@ function draw(c,p,r){
  }else if(realm==='storm'){
   for(let i=0;i<5;i++){const y=(i-2)*r*.3;c.beginPath();c.ellipse(Math.sin(t*3+i)*r*.1,y,r*(.25+i*.18),r*.22,-.14,0,T);c.fillStyle=i%2?'#4a6d86':'#263c56';c.fill();c.stroke();}
   c.strokeStyle='#ecffff';c.lineWidth=3;c.beginPath();c.moveTo(-r*.1,-r*.65);c.lineTo(r*.2,-r*.15);c.lineTo(-r*.18,r*.05);c.lineTo(r*.14,r*.65);c.stroke();
-  if(tier)for(const side of [-1,1])poly([[side*.65,-.35],[side*1.65,-.9],[side*1.25,-.15],[side*.7,.25]],'#405e78');
+  if(tier){
+   // 5F = layered cumulonimbus stone; 10F = charged supercell halo.
+   // No humanoid wings/arms, even at the highest boss tier.
+   const count=tier===2?14:9;
+   c.save();c.rotate(t*(tier===2?-.23:.16));
+   for(let i=0;i<count;i++){
+    const a=i*T/count,dist=(tier===2?1.18:1.07)*r;
+    c.save();c.rotate(a);
+    c.fillStyle=i%2?'#344f6c':'#557d9a';
+    c.beginPath();c.ellipse(0,-dist,r*(tier===2?.23:.18),
+      r*(tier===2?.37:.26),0,0,T);c.fill();
+    c.strokeStyle=i%3===0?'#ecffff':'#8ee7ff';c.lineWidth=tier===2?2.5:1.7;
+    c.beginPath();c.moveTo(0,-dist+r*.02);c.lineTo(0,-dist-r*(tier===2?.27:.15));c.stroke();
+    c.restore();
+   }
+   c.restore();
+   c.save();c.rotate(t*(tier===2?-.37:.25));
+   for(let j=0;j<(tier===2?4:2);j++){
+    c.strokeStyle=j%2?'#d7faff':'#85b9ff';c.lineWidth=j===0?3:1.5;
+    c.beginPath();c.ellipse(0,0,r*(.85+j*.14),r*(.42+j*.085),j*.43,0,T);c.stroke();
+   }
+   c.restore();
+   const electric=c.createRadialGradient(-r*.16,-r*.18,1,0,0,r*.6);
+   electric.addColorStop(0,'#f5ffff');electric.addColorStop(.36,'#abf4ff');
+   electric.addColorStop(.72,'#538ebd');electric.addColorStop(1,'#263950');
+   c.fillStyle=electric;c.beginPath();c.arc(0,0,r*(tier===2?.51:.39),0,T);c.fill();
+   c.strokeStyle='#e6ffff';c.lineWidth=tier===2?3.2:2;
+   c.beginPath();c.moveTo(-r*.11,-r*.3);c.lineTo(r*.03,-r*.03);
+   c.lineTo(-r*.07,r*.01);c.lineTo(r*.13,r*.3);c.stroke();
+  }
  }else if(realm==='ice'){
   for(let i=0;i<(tier?7:4);i++){const a=i*T/(tier?7:4);c.save();c.rotate(a);poly([[-.18,-.5],[0,-1.3],[.2,-.55]],'#8bd8ee');c.restore();}
   poly([[-.65,.7],[-.8,-.2],[-.3,-.85],[.45,-.65],[.8,.1],[.55,.8]],'#468eae');poly([[0,-.7],[.5,-.45],[.6,.1],[0,.5],[-.2,0]],'#b5f4ff');
