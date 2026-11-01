@@ -91,6 +91,7 @@ function boundaryBounce(p,realm,width,height){
     p.vx-=(1+elasticity)*towardWall*m.normalX;
     p.vy-=(1+elasticity)*towardWall*m.normalY;
     p._towerRimBounce=(p._towerRimBounce||0)+1;
+    g.BounceMomentum?.wall?.(p,Math.abs(towardWall));
    }
   }
   hit=true;
@@ -386,9 +387,20 @@ function sync(roster){
    if(g.ArenaTowerArchitecture&&goal-oldZ>16&&p.z<4&&
       current?.surface&&!current.surface.from&&
       Number.isFinite(oldX)&&Number.isFinite(oldY)&&!(p.movementOnlyFrames>0)){
+     // A steep step is a pinball wall, not a speed-killing reset.
+     const dx=p.x-oldX,dy=p.y-oldY,dist=Math.hypot(dx,dy)||1;
+     const nx=dx/dist,ny=dy/dist;
+     const vx=Number(p.vx)||0,vy=Number(p.vy)||0;
+     const incoming=Math.max(0,vx*nx+vy*ny);
      p.x=oldX;p.y=oldY;
-     p.vx=-(p.vx||0)*.14;p.vy=-(p.vy||0)*.14;
-     g.ArenaBallSquash?.wall?.(p,1,0,Math.hypot(p.vx,p.vy));
+     if(incoming>.08){
+       p.vx=(vx-1.87*incoming*nx)*.97;
+       p.vy=(vy-1.87*incoming*ny)*.97;
+       g.ArenaBallSquash?.wall?.(p,-nx,-ny,incoming);
+       g.BounceMomentum?.wall?.(p,incoming);
+       if(g.BounceMomentum?.enabled?.(p))
+         p._pinballReboundHold=Math.max(p._pinballReboundHold||0,9);
+     }
    }
    p._towerPreviousFloor=oldZ;
    p.towerGroundZ=worldHeight(p.x,p.y);

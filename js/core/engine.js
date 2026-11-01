@@ -178,7 +178,15 @@ function updateCharacter(self) {
 
 function handleCombat(pA,pB) {
   if(pA.hp<=0||pB.hp<=0||pA.forgePhase||pB.forgePhase)return;
-  if(globalThis.AdvancedCombat&&!AdvancedCombat.canHit(pA,pB))return;
+  // Tower levels are rendered on raised decks. Body-to-body bounce still
+  // needs to work in the shared top-down collision plane; attack/projectile
+  // vertical hit checks remain untouched in AdvancedCombat.canHit().
+  const towerPinball=!!globalThis.ArenaTower?.active&&
+    (globalThis.BounceMomentum?.enabled?.(pA)||globalThis.BounceMomentum?.enabled?.(pB));
+  const groundedA=(pA.z||0)<10&&(!pA.jumpState||pA.jumpState==='ground');
+  const groundedB=(pB.z||0)<10&&(!pB.jumpState||pB.jumpState==='ground');
+  if(globalThis.AdvancedCombat&&!AdvancedCombat.canHit(pA,pB)&&
+     !(towerPinball&&groundedA&&groundedB))return;
   if(!globalThis.AdvancedCombat&&pA.jumpState&&pA.jumpState!=='ground')return;
   if(!globalThis.AdvancedCombat&&pB.jumpState&&pB.jumpState!=='ground')return;
   const dx=pB.x-pA.x,dy=pB.y-pA.y;
@@ -212,6 +220,12 @@ function handleCombat(pA,pB) {
   if((pA.impactSpeed||0)<=4&&(pB.impactSpeed||0)<=4)
     globalThis.BounceMomentum?.contact?.(pA,pB,approach);
   if(approach<0){
+    // Briefly honor the collision response before steering tries to chase
+    // again. This makes physical impacts visible without changing damage.
+    if(towerPinball){
+      pA._pinballReboundHold=Math.max(pA._pinballReboundHold||0,9);
+      pB._pinballReboundHold=Math.max(pB._pinballReboundHold||0,9);
+    }
     const impulse=Math.min(5,Math.max(1.8,-approach*.58));
     pA.vx-=nx*impulse;pA.vy-=ny*impulse;
     pB.vx+=nx*impulse;pB.vy+=ny*impulse;
@@ -272,6 +286,8 @@ function update() {
       if(bounceX||bounceY){
         globalThis.ArenaBallSquash?.wall?.(p,bounceX?(p.x<p.radius*2?1:-1):0,bounceY?(p.y<p.radius*2?1:-1):0,Math.hypot(p.vx||0,p.vy||0));
         globalThis.BounceMomentum?.wall?.(p,Math.hypot(p.vx||0,p.vy||0));
+        if(globalThis.BounceMomentum?.enabled?.(p))
+          p._pinballReboundHold=Math.max(p._pinballReboundHold||0,8);
         // Subtle, bounded wall energy and a tiny off-axis nudge: no
         // repeated sticking on straight corridors and no runaway speed.
         const before=Math.hypot(p.vx,p.vy);

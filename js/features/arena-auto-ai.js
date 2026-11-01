@@ -40,7 +40,8 @@ function loadout(p){
  const close=actions.filter(a=>MELEE.has(a.type));
  const far=actions.filter(a=>RANGED.has(a.type)||['zone','blackhole','turret','summon'].includes(a.type));
  const sustain=actions.filter(a=>HEAL.has(a.type)||SUPPORT.has(a.type));
- const ready=skills.some((s,i)=>s.trigger==='auto'&&
+ const ready=g.BounceMomentum?.enabled?.(p)?
+   g.BounceMomentum.ready(p):skills.some((s,i)=>s.trigger==='auto'&&
    (p.forgeTicks?.[i]??0)>=Math.max(12,Math.round((s.cooldown||3)*60))*.80);
  const hp=clamp(finite(p.hp,1)/Math.max(1,finite(p.maxHp,1)),0,1);
  const classId=p.forge?.archetype;
@@ -203,6 +204,9 @@ function stance(p,foe,data){
  if(profile.classId==='ranged'&&d<profile.preferred-12)mode='reposition';
  if(profile.classId==='control'&&d<profile.preferred-15)mode='bait';
  if(profile.classId==='mobility'&&windup)mode='bait';
+ // Collision-charged fighters need actual clashes to build energy.
+ if(g.BounceMomentum?.enabled?.(p)&&d>safeRadius(p)+safeRadius(foe)+10&&
+   d<175&&!windup&&Math.floor(finite(p._aiClock)/100)%3!==2)mode='clash';
  // Tactical does not mean sterile: occasionally *commit* to a real-body
  // collision at a favorable moment. The normal collision solver owns bounce.
  if(profile.role==='melee'&&profile.ready&&d>=58&&d<135&&!windup&&
@@ -210,7 +214,7 @@ function stance(p,foe,data){
  const order=g.ArenaTowerTactics?.modeFor?.(p)||'';
  const pressure=order==='attack'?1.35:order==='evade'?-1.12:order==='hold'?
    (d>profile.preferred+15?.6:d<profile.preferred-15?-.7:0):
-   mode==='clash'?1.16:mode==='approach'?1:mode==='bait'?-.84:mode==='recover'?-.8:
+   mode==='clash'?1.28:mode==='approach'?1:mode==='bait'?-.84:mode==='recover'?-.8:
    mode==='reposition'?-.58:d>profile.preferred+9?.16:0;
  // Commit to one flank until a new tactical beat, not a direction flip each tick.
  const tick=finite(p._aiClock),beat=Math.floor((tick+(p.playerNum||1)*23)/95);
@@ -287,7 +291,7 @@ function plan(p,foe,speed,evadeOnly=false){
      }
    }
    const still=ux===0&&uy===0;
-   const score=-safety*(urgent?17:15)-border*12-gap*.009+
+   const score=-safety*(urgent?17:15)-border*12-gap*(intent.mode==='clash'?.004:.009)+
      preference*(urgent?.75:3.1)+inertia*.38-separation*2.3+elevation+
      (still&&intent.mode==='strafe'?-1:0);
    if(score>bestScore){bestScore=score;best={x:ux,y:uy,threat:baseline,danger:safety,
@@ -296,6 +300,12 @@ function plan(p,foe,speed,evadeOnly=false){
  return best;
 }
 function steer(p,foe,speed){
+ // Returning true skips the normal speed-lerp fallback in SkillForge too.
+ // A short bounce grace therefore preserves physical velocity and heading.
+ if(g.BounceMomentum?.enabled?.(p)&&p?._pinballReboundHold>0){
+   p._pinballReboundHold--;
+   return true;
+ }
  if(!p||p.hp<=0||!foe||foe.hp<=0||p.forgeDash>0||
    p.movementOnlyFrames>0||p.manualTower||p.impactSpeed>5||
    (p.jumpState&&p.jumpState!=='ground'))return false;

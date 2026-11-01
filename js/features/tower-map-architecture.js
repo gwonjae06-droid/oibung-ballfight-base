@@ -168,6 +168,20 @@ function clearance(realm,x,y,w=500,h=500,tick=0,level=1){
  for(const o of getMap(realm,level,w,h,tick).obstacles)value=Math.min(value,Math.hypot(x-o.x,y-o.y)-o.r);
  return value;
 }
+// Tower ledges are pinball bumpers, not heavy friction brakes. The movement
+// speed stays bounded by the normal arena solver, and bounce never deals damage.
+function ricochet(p,nx,ny,dot){
+ if(dot>=-.08)return false;
+ const vx=Number(p.vx)||0,vy=Number(p.vy)||0;
+ const restitution=.87,drag=.97;
+ p.vx=(vx-(1+restitution)*dot*nx)*drag;
+ p.vy=(vy-(1+restitution)*dot*ny)*drag;
+ g.ArenaBallSquash?.wall?.(p,nx,ny,-dot);
+ g.BounceMomentum?.wall?.(p,-dot);
+ if(g.BounceMomentum?.enabled?.(p))
+   p._pinballReboundHold=Math.max(p._pinballReboundHold||0,9);
+ return true;
+}
 const bounce=(p,realm,w,h,level=1,tick=0)=>{
  const map=getMap(realm,level,w,h,tick),q=at(realm,level,p.x,p.y,w,h,tick),pad=2.5;
  // Immovable scenery blocks walking and projectiles independently of the
@@ -177,8 +191,7 @@ const bounce=(p,realm,w,h,level=1,tick=0)=>{
    const nx=dist>.001?dx/dist:1,ny=dist>.001?dy/dist:0;
    p.x=o.x+nx*(limit+1);p.y=o.y+ny*(limit+1);
    const dot=(p.vx||0)*nx+(p.vy||0)*ny;
-   if(dot<0){p.vx=((p.vx||0)-1.2*dot*nx)*.64;p.vy=((p.vy||0)-1.2*dot*ny)*.64;
-     g.ArenaBallSquash?.wall?.(p,nx,ny,Math.abs(dot));}
+   ricochet(p,nx,ny,dot);
    p._towerRimBounce=(p._towerRimBounce||0)+1;return true;
  }
  if(q.surface&&q.clearance>=pad){p._towerSafeX=p.x;p._towerSafeY=p.y;return false;}
@@ -191,8 +204,7 @@ const bounce=(p,realm,w,h,level=1,tick=0)=>{
        p.y=nearest.point.y+nearest.normal.y*(pad+2);}
  const vx=Number(p.vx)||0,vy=Number(p.vy)||0;
  const nx=nearest.normal.x,ny=nearest.normal.y,dot=vx*nx+vy*ny;
- if(dot<0){p.vx=(vx-1.22*dot*nx)*.65;p.vy=(vy-1.22*dot*ny)*.65;
-  g.ArenaBallSquash?.wall?.(p,nx,ny,Math.abs(dot));}
+ ricochet(p,nx,ny,dot);
  p._towerRimBounce=(p._towerRimBounce||0)+1;
  if(Math.hypot(vx,vy)>8&&(!p._towerVoidCooldown||p._towerVoidCooldown<tick)){
   p._towerVoidCooldown=tick+100;p._towerVoidFallPending=true;

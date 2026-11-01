@@ -73,7 +73,7 @@ test('real runtime filters skipped condition blocks before the combat queue',()=
  const srcForge=src('js/features/skill-forge.js');
  assert.match(srcForge,/s\.actions\.filter\(a=>global\.SignatureProgram\?\.condition/);
  assert.match(srcForge,/if\(!actions\.length\)return false/);
- assert.match(srcForge,/if\(active&&global\.ArenaAutoAI\?\.canCast/);
+ assert.match(srcForge,/if\(active&&\(energyOnly\|\|global\.ArenaAutoAI\?\.canCast/);
  const arena=src('js/features/tower-encounters.js');
  assert.match(arena,/_forgeDodgeSerial=/);
  assert.match(arena, /!z\.hits\.has\(hero\)/);
