@@ -93,7 +93,8 @@ function make(profile={},focus=0,actionIndex=-1){
   if(bullets.length>=35)bullets.splice(0,bullets.length-9);
   const speed=clamp(Number(a.speed)||5,2,12)*.8;
   bullets.push({x:hero.x,y:hero.y,vx:Math.cos(angle)*speed,vy:Math.sin(angle)*speed,
-   life:220,r:5,color,status:a.status||'none',type:a.type,reflects:0,split:false});
+   life:220,r:5,color,status:a.status||'none',type:a.type,reflects:0,split:false,
+   maxRebounds:a.type==='shot'?clamp(Math.round(Number(a.ricochet)||0),0,3):0});
  }
  function perform(action){
   const a=action||{},type=a.type||'wave';
@@ -189,6 +190,9 @@ function make(profile={},focus=0,actionIndex=-1){
    }
    if(reflected){
     b.reflects++;spark(b.x,b.y,b.color,9);
+    // The practice lab follows the same actual skill-only reflection option:
+    // a plain shot expires at the wall; an authored rebound shot can reflect.
+    if(b.reflects>b.maxRebounds)b.life=0;
     if(b.type==='splitshot'&&!b.split&&bullets.length<30){
      b.split=true;
      for(const sign of [-1,1]){
