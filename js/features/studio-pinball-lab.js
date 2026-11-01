@@ -37,6 +37,7 @@ function make(profile={},focus=0,actionIndex=-1){
  const target={x:355,y:148,vx:-2.7,vy:2.0,radius:19,hp:100,playerNum:2};
  const bullets=[],rings=[],sparks=[],queue=[];
  let cursor=0,lastContact=-100,lastWall=-100;
+ const history=[];
  function spark(x,y,color='#f1ddac',strength=10){
   if(sparks.length>44)sparks.splice(0,sparks.length-28);
   sparks.push({x,y,color,t:0,life:clamp(strength,6,20)});
@@ -129,7 +130,16 @@ function make(profile={},focus=0,actionIndex=-1){
     pull:type==='blackhole'});
    if(AREA.has(type)&&near(hero,target)<clamp(a.radius||105,45,230)+target.radius)
     hitTarget(hero.x,hero.y,true);
-   if(type==='timestop')target.frozen=50;
+   if(type==='timestop')target.frozen=Math.min(84,Math.round((Number(a.duration)||1.5)*60));
+   if(type==='timeburst')hero.fastTime=clamp(Math.round((Number(a.duration)||1.5)*60),12,480);
+   if(type==='rewind'){
+     const past=history[Math.max(0,history.length-1-Math.round((Number(a.duration)||2)*60))];
+     if(past){
+       hero.x=past.x;hero.y=past.y;hero.vx=past.vx;hero.vy=past.vy;
+       energy=clamp(energy+Math.min(30,Math.max(0,past.energy-energy)),0,100);
+       spark(hero.x,hero.y,color,18);
+     }
+   }
   }
  }
  function launch(){
@@ -152,7 +162,11 @@ function make(profile={},focus=0,actionIndex=-1){
   g.ArenaBallSquash?.tick?.(hero);g.ArenaBallSquash?.tick?.(target);
   // Fast preview recharge is explicitly marked as simulated: practice is not
   // a deterministic balance prediction for PvE.
-  energy=Math.min(100,energy+.29);
+  history.push({x:hero.x,y:hero.y,vx:hero.vx,vy:hero.vy,energy});
+  if(history.length>185)history.shift();
+  const boost=hero.fastTime>0?1.75:1;
+  if(hero.fastTime>0)hero.fastTime--;
+  energy=Math.min(100,energy+.29*boost);
   if(energy>=100&&queue.length===0)launch();
   for(let i=queue.length-1;i>=0;i--)if(queue[i].when<=frame){
    perform(queue[i].action);queue.splice(i,1);
