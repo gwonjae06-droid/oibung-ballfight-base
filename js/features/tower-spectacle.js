@@ -60,7 +60,14 @@ function create({realm,level,width:w,height:h,hero,boss,damage}){
   for(let i=entities.length-1;i>=0;i--)if(entities[i].hp<=0||tick>entities[i].expires)entities.splice(i,1);
   history.push({x:hero.x,y:hero.y});if(history.length>240)history.shift();
   if(level%5!==0)return;
-  if(!event&&tick>240&&(tick-241)%900===0)begin();
+  if(!event&&tick>240){
+   const energy=g.BounceMomentum?.isBoss?.(boss);
+   if(energy){
+    if(g.BounceMomentum.bossCan(boss,'spectacle')){
+     begin();g.BounceMomentum.bossSpend(boss,'spectacle');
+    }
+   }else if((tick-241)%900===0)begin();
+  }
   if(!event)return;
   event.progress=cap((tick-event.start)/((event.deadline||event.end)-event.start),0,1);
   const age=tick-event.start;
