@@ -78,6 +78,21 @@ test('AI genuinely promotes physical momentum clashes without removing hazard av
  assert.equal(g.ArenaAutoAI.stance(p,foe).mode,'clash');
  assert.equal(p.hp,250);
 });
+test('physical ricochet keeps original velocity for several steering ticks',()=>{
+ const g={Math,Number,Set,Map,console,canvas:{width:500,height:500}};
+ g.window=g;g.globalThis=g;
+ g.BounceMomentum={enabled:p=>!!p?.forge&&p.forge.signatureVersion===1,ready:()=>false};
+ vm.createContext(g);vm.runInContext(read('js/features/arena-auto-ai.js'),g);
+ const fighter={playerNum:1,forge:{signatureVersion:1,archetype:'melee',skills:[]},
+  hp:250,maxHp:250,x:120,y:220,radius:22,vx:-4,vy:2,_pinballReboundHold:9};
+ const foe={playerNum:2,hp:250,maxHp:250,x:180,y:220,radius:22,vx:0,vy:0};
+ for(let i=0;i<9;i++){
+  assert.equal(g.ArenaAutoAI.steer(fighter,foe,2.4),true);
+  assert.equal(fighter.vx,-4);assert.equal(fighter.vy,2);
+ }
+ assert.equal(fighter._pinballReboundHold,0);
+});
+
 test('beginner interface describes fixed energy trigger while expert disables old trigger selection',()=>{
  const easy=read('js/features/scratch-beginner.js'),advanced=read('js/features/scratch-studio.js');
  assert.match(easy,/기세 100 → 필살기 자동 발동/);
