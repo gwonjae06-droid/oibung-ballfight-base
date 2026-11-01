@@ -55,10 +55,15 @@ function contact(a,b,approach){
  // Stronger collisions reward a little more, but all gains are bounded.
  const boost=CONTACT+Math.round(speed*.7);
  const first=add(a,boost,'contact'),second=add(b,boost,'contact');
+ if(first)g.ArenaCombatV2?.afterEnergy?.(a,'contact',-approach);
+ if(second)g.ArenaCombatV2?.afterEnergy?.(b,'contact',-approach);
  return first||second;
 }
-function wall(p,speed){
- return Number.isFinite(speed)&&speed>=1.15&&add(p,WALL,'wall');
+function wall(p,speed,kind='wall'){
+ if(!Number.isFinite(speed)||speed<1.15)return false;
+ const gained=add(p,WALL,'wall');
+ if(gained)g.ArenaCombatV2?.afterEnergy?.(p,'wall',speed,kind);
+ return gained;
 }
 // Time stop is a non-damaging momentum swing. Only a real CC application
 // may steal; an immune target or old four-slot fighter contributes nothing.
