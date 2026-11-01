@@ -21,6 +21,7 @@ const safeAction=a=>{
   count:Math.round(clamp(src.count,1,8,1)),speed:clamp(src.speed,2,14,5),
   duration:clamp(src.duration,.2,8,1.5),status:Object.hasOwn(status,src.status)?src.status:'none',
   knockback:clamp(src.knockback,0,9,2),delay:clamp(src.delay,0,2,0),
+  ricochet:type==='shot'?Math.round(clamp(src.ricochet,0,3,0)):0,
   link:['and','after','with'].includes(src.link)?src.link:'after'};
 };
 function normalize(program){
