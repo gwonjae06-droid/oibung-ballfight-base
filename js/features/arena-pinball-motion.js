@@ -22,6 +22,7 @@ function enabled(p){
 }
 function scripted(p){
  return !!(p.forgeDash>0||p.movementOnlyFrames>0||p._scratchMove||
+   (p._pinballRewindUntil||0)>(p._forgeActionClock||0)||
    p.forgeCharge?.phase==='charging'||p.forgePhase?.time>0||
    p.jumpState&&p.jumpState!=='ground'||
    // A real temporary 'mad bull' charge is allowed to home in on the target.
