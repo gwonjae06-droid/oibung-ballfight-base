@@ -14,13 +14,13 @@ function actionPressure(a){
   (REPEAT.has(a.type)?1+Math.min(1.1,duration*.13):1)*
   (a.status&&a.status!=='none'?1.13:1);
 }
-function skillPressure(s){
+function skillPressure(s,signatureMomentum=false){
  const actions=(s?.actions||[]).slice(0,12),charge=actions.find(a=>a.type==='charge');
  const base=Array.isArray(s?.program)&&g.SignatureScratch?.worstPressure?
    g.SignatureScratch.worstPressure(s.program,actionPressure):
    actions.reduce((sum,a)=>sum+actionPressure(a),0);
  const raw=base*(charge?1+Math.min(.48,cap(n(charge.duration,1.2),.2,8)*.12):1);
- const cd=Math.max(.2,cap(n(s?.cooldown,3),.2,30),
+ const cd=Math.max(.2,signatureMomentum?5:cap(n(s?.cooldown,3),.2,30),
     charge?Math.min(3,cap(n(charge.duration,1.2),.2,8))+.18:0);
  const availability=s?.trigger==='lowhp'?.7+.3*cap((n(s.threshold,40)-40)/55,0,1):s?.trigger==='damaged'?.65:s?.trigger==='contact'?.7:1;
  return raw/cd*availability;
@@ -35,7 +35,7 @@ function accelerationUptime(skills){
 }
 function summary(profile){
  const skills=profile?.allAbilities&&g.SkillForge?.allSkillset?g.SkillForge.allSkillset():profile?.skills||[];
- const perSkill=skills.map(skillPressure);
+ const perSkill=skills.map(s=>skillPressure(s,profile?.signatureVersion===1));
  const charges=skills.flatMap(s=>s.actions||[]).filter(a=>a.type==='charge');
  // A separately authored charge skill also benefits other offensive slots,
  // so factor that benefit into the shared offensive budget.
@@ -54,8 +54,8 @@ function summary(profile){
 // Raw authored values, cooldowns, targets, and the ability to build near-
 // permanent shields remain available. No blanket healing or immunity ban.
 const DEFENSE_BUDGET=90;
-function defenseSkillPressure(s){
- const cd=Math.max(.2,cap(n(s?.cooldown,3),.2,30));
+function defenseSkillPressure(s,signatureMomentum=false){
+ const cd=Math.max(.2,signatureMomentum?5:cap(n(s?.cooldown,3),.2,30));
  const availability=s?.trigger==='lowhp'?.7+.3*cap((n(s.threshold,40)-40)/55,0,1):s?.trigger==='damaged'?.65:s?.trigger==='contact'?.7:1;
  const perAction=a=>{
   const duration=cap(n(a.duration,1.5),.2,8),power=cap(n(a.damage),0,120);
@@ -77,7 +77,7 @@ function defenseSkillPressure(s){
 }
 function defenseSummary(profile){
  const skills=profile?.allAbilities&&g.SkillForge?.allSkillset?g.SkillForge.allSkillset():profile?.skills||[];
- const perSkill=skills.map(defenseSkillPressure),pressure=perSkill.reduce((a,b)=>a+b,0)*(1+accelerationUptime(skills));
+ const perSkill=skills.map(s=>defenseSkillPressure(s,profile?.signatureVersion===1)),pressure=perSkill.reduce((a,b)=>a+b,0)*(1+accelerationUptime(skills));
  // A gentle soft curve, with a floor instead of a hard cap. Even very long
  // shields can overlap; that is a legitimate authored defense strategy.
  const multiplier=cap(pressure>DEFENSE_BUDGET?
