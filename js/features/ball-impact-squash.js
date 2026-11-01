@@ -7,7 +7,7 @@ function impulse(p,energy,nx,ny){
  if(!p||p.hp<=0||!Number.isFinite(energy)||energy<1.15)return false;
  const old=p._ballSquash;
  if(old&&old.age<4)return false; // one impact, one compression; no jitter storms
- const strength=cap((energy-.85)/7,.32,1);
+ const strength=cap((energy-.75)/5.5,.42,1);
  p._ballSquash={age:0,strength,angle:Math.atan2(ny||0,nx||1)};
  return true;
 }
