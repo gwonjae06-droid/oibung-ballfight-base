@@ -25,12 +25,12 @@ function skillPressure(s,signatureMomentum=false){
  const availability=s?.trigger==='lowhp'?.7+.3*cap((n(s.threshold,40)-40)/55,0,1):s?.trigger==='damaged'?.65:s?.trigger==='contact'?.7:1;
  return raw/cd*availability;
 }
-function accelerationUptime(skills){
+function accelerationUptime(skills,signatureMomentum=false){
  return cap(skills.reduce((uptime,s)=>{
   const bursts=(s.actions||[]).filter(a=>a.type==='timeburst');
   if(!bursts.length)return uptime;
   const duration=Math.max(...bursts.map(a=>n(a.duration,1.5)));
-  return uptime+Math.min(1,duration/Math.max(.2,n(s.cooldown,3)));
+  return uptime+Math.min(1,duration/(signatureMomentum?5:Math.max(.2,n(s.cooldown,3))));
  },0),0,1);
 }
 function summary(profile){
@@ -41,10 +41,13 @@ function summary(profile){
  // so factor that benefit into the shared offensive budget.
  const bonus=charges.length?1+Math.min(.4,
    Math.max(...charges.map(a=>cap(n(a.duration,1.2),.2,8)))*.11):1;
- // Time acceleration doubles cooldown progression, not only its visuals. Estimate
- // the upkeep across independently recharging skills when computing damage.
- const timeAcceleration=accelerationUptime(skills);
- const pressure=perSkill.reduce((sum,x)=>sum+x,0)*bonus*(1+timeAcceleration);
+ // Time acceleration now multiplies momentum gain for signature fighters,
+ // not independent cooldown progression. Charge-up is bounded and the
+ // estimated duration is measured against a 100-point energy cycle.
+ const signature=profile?.signatureVersion===1;
+ const timeAcceleration=accelerationUptime(skills,signature);
+ const pressure=perSkill.reduce((sum,x)=>sum+x,0)*bonus*
+  (1+timeAcceleration*(signature?.75:1));
  const multiplier=cap(pressure>BUDGET?Math.pow(BUDGET/pressure,.82):1,.18,1);
  return {pressure:Number(pressure.toFixed(1)),budget:BUDGET,
   percent:Math.round(multiplier*100),multiplier:Number(multiplier.toFixed(4)),
@@ -77,7 +80,7 @@ function defenseSkillPressure(s,signatureMomentum=false){
 }
 function defenseSummary(profile){
  const skills=profile?.allAbilities&&g.SkillForge?.allSkillset?g.SkillForge.allSkillset():profile?.skills||[];
- const perSkill=skills.map(s=>defenseSkillPressure(s,profile?.signatureVersion===1)),pressure=perSkill.reduce((a,b)=>a+b,0)*(1+accelerationUptime(skills));
+ const perSkill=skills.map(s=>defenseSkillPressure(s,profile?.signatureVersion===1)),pressure=perSkill.reduce((a,b)=>a+b,0)*(1+accelerationUptime(skills,profile?.signatureVersion===1)*(profile?.signatureVersion===1?.75:1));
  // A gentle soft curve, with a floor instead of a hard cap. Even very long
  // shields can overlap; that is a legitimate authored defense strategy.
  const multiplier=cap(pressure>DEFENSE_BUDGET?
