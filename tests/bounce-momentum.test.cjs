@@ -116,7 +116,7 @@ test('arena collision, wall, script loading and gauge reuse the existing physics
  for(const file of ['index.html','pvp-runtime.html']){
   const s=read(file);
   assert.ok(s.indexOf('bounce-momentum.js')<s.indexOf('skill-forge.js'));
-  assert.ok(s.includes('engine.js?v=elastic2-bodyphysics2-minionhud'));
+  assert.ok(s.includes(file==='index.html'?'engine.js?v=elastic2-bodyphysics3-clockslow':'engine.js?v=elastic2-bodyphysics2-minionhud'));
  }
  assert.match(read('js/features/scratch-beginner.js'),/기세가 가득 차면/);
  assert.match(read('js/features/skill-forge.js'),/auto:'주기적으로'/);
