@@ -34,8 +34,9 @@ function make(profile={},focus=0,actionIndex=-1){
  const color=profile.effectColor||profile.color||'#a68fff';
  const hero={x:129,y:143,vx:3.5,vy:2.5,radius:18,hp:100,playerNum:1,
   forge:{speed:2.7,effectColor:color}};
- const target={x:355,y:148,vx:-2.7,vy:2.0,radius:19,hp:100,playerNum:2};
- const bullets=[],rings=[],sparks=[],queue=[];
+ const target={x:355,y:148,vx:-2.7,vy:2.0,radius:19,hp:100,playerNum:2,energy:62};
+ hero.baseRadius=hero.radius;
+ const bullets=[],rings=[],sparks=[],queue=[],walls=[],portals=[];
  let cursor=0,lastContact=-100,lastWall=-100;
  const history=[];
  function spark(x,y,color='#f1ddac',strength=10){
@@ -53,6 +54,13 @@ function make(profile={},focus=0,actionIndex=-1){
  }
  function bounds(p,isHero){
   const r=p.radius;
+  for(const o of walls){
+   const d=Math.hypot(p.x-o.x,p.y-o.y),limit=p.radius+o.r;
+   if(d>=limit)continue;
+   const nx=d>.001?(p.x-o.x)/d:1,ny=d>.001?(p.y-o.y)/d:0;
+   p.x=o.x+nx*(limit+.1);p.y=o.y+ny*(limit+.1);
+   rebound(p,nx,ny,isHero);
+  }
   if(p.x<19+r){p.x=19+r;rebound(p,1,0,isHero);}
   if(p.x>W-19-r){p.x=W-19-r;rebound(p,-1,0,isHero);}
   if(p.y<19+r){p.y=19+r;rebound(p,0,1,isHero);}
@@ -111,7 +119,17 @@ function make(profile={},focus=0,actionIndex=-1){
     for(let j=0;j<count;j++)projectile(a,angle+(j-(count-1)/2)*.17);
    }
   }else if(MOVE.has(type)){
-   if(type==='blink'||type==='swap'||type==='portal'){
+   if(type==='portal'){
+    const aPos={x:clamp(hero.x+Math.cos(angle)*65,37,W-37),
+      y:clamp(hero.y+Math.sin(angle)*65,37,H-37)};
+    const bPos={x:clamp(target.x-Math.cos(angle)*65,37,W-37),
+      y:clamp(target.y-Math.sin(angle)*65,37,H-37)};
+    portals.push({a:aPos,b:bPos,life:clamp(Math.round((Number(a.duration)||1.5)*60),20,300)});
+   }else if(type==='swap'){
+    [hero.x,target.x]=[target.x,hero.x];
+    [hero.y,target.y]=[target.y,hero.y];
+    spark(hero.x,hero.y,color,17);spark(target.x,target.y,'#f5a8a8',17);
+   }else if(type==='blink'){
     spark(hero.x,hero.y,color,17);
     const distance=Math.hypot(dx,dy)||1;
     hero.x=clamp(target.x-dx/distance*65,45,W-45);
@@ -130,8 +148,21 @@ function make(profile={},focus=0,actionIndex=-1){
     pull:type==='blackhole'});
    if(AREA.has(type)&&near(hero,target)<clamp(a.radius||105,45,230)+target.radius)
     hitTarget(hero.x,hero.y,true);
-   if(type==='timestop')target.frozen=Math.min(84,Math.round((Number(a.duration)||1.5)*60));
+   if(type==='timestop'&&near(hero,target)<=clamp(a.radius||120,30,300)+target.radius){
+     target.frozen=Math.min(84,Math.round((Number(a.duration)||1.5)*60));
+     const taken=Math.min(20,target.energy);
+     target.energy-=taken;energy=clamp(energy+taken*.5,0,100);
+   }
+   if(type==='wall')walls.push({x:clamp((hero.x+target.x)*.5,40,W-40),
+     y:clamp((hero.y+target.y)*.5,40,H-40),r:clamp((a.radius||95)*.32,22,45),
+     life:clamp(Math.round((Number(a.duration)||1.5)*60),30,300)});
    if(type==='timeburst')hero.fastTime=clamp(Math.round((Number(a.duration)||1.5)*60),12,480);
+   if(type==='haste')hero.hasteTime=clamp(Math.round((Number(a.duration)||1.5)*60),12,480);
+   if(type==='grow'||type==='shrink'){
+     hero.radius=type==='grow'?clamp(hero.baseRadius*(1.25+(Number(a.count)||1)*.08),22,44):
+       clamp(hero.baseRadius*(.6-(Number(a.count)||1)*.015),9,18);
+     hero.sizeTime=clamp(Math.round((Number(a.duration)||1.5)*60),12,400);
+   }
    if(type==='rewind'){
      const past=history[Math.max(0,history.length-1-Math.round((Number(a.duration)||2)*60))];
      if(past){
@@ -164,22 +195,39 @@ function make(profile={},focus=0,actionIndex=-1){
   // a deterministic balance prediction for PvE.
   history.push({x:hero.x,y:hero.y,vx:hero.vx,vy:hero.vy,energy});
   if(history.length>185)history.shift();
-  const boost=hero.fastTime>0?1.75:1;
+  const boost=hero.fastTime>0?1.75:hero.hasteTime>0?1.25:1;
   if(hero.fastTime>0)hero.fastTime--;
+  if(hero.hasteTime>0)hero.hasteTime--;
+  if(hero.sizeTime>0&&--hero.sizeTime===0)hero.radius=hero.baseRadius;
   energy=Math.min(100,energy+.29*boost);
   if(energy>=100&&queue.length===0)launch();
   for(let i=queue.length-1;i>=0;i--)if(queue[i].when<=frame){
    perform(queue[i].action);queue.splice(i,1);
   }
   for(const p of [hero,target]){
+   if(p.portalCooldown>0)p.portalCooldown--;
    if(p===target&&p.frozen>0){p.frozen--;continue;}
    const speed=Math.hypot(p.vx,p.vy)||1;
    if(speed<2){const ratio=2.25/speed;p.vx*=ratio;p.vy*=ratio;}
    if(speed>10){p.vx*=10/speed;p.vy*=10/speed;}
-   p.x+=p.vx;p.y+=p.vy;
+   const speedEffect=p===hero&&hero.hasteTime>0?1.6:1;
+   p.x+=p.vx*speedEffect;p.y+=p.vy*speedEffect;
    bounds(p,p===hero);
+   if(!p.portalCooldown)for(const pair of portals){
+     const from=near(p,pair.a)<p.radius+13?pair.a:
+       near(p,pair.b)<p.radius+13?pair.b:null;
+     if(from){
+       const to=from===pair.a?pair.b:pair.a;
+       p.x=clamp(to.x,20+p.radius,W-20-p.radius);
+       p.y=clamp(to.y,20+p.radius,H-20-p.radius);
+       p.portalCooldown=65;spark(p.x,p.y,'#bdb0ff',18);break;
+     }
+   }
   }
   bodyCollision();
+  if(target.frozen<=0)target.energy=Math.min(100,target.energy+.16);
+  for(let i=walls.length-1;i>=0;i--)if(--walls[i].life<=0)walls.splice(i,1);
+  for(let i=portals.length-1;i>=0;i--)if(--portals[i].life<=0)portals.splice(i,1);
   for(let i=bullets.length-1;i>=0;i--){
    const b=bullets[i];
    if(b.type==='homing'){
@@ -245,6 +293,14 @@ function make(profile={},focus=0,actionIndex=-1){
   for(let x=35;x<W-20;x+=32){ctx.beginPath();ctx.moveTo(x,19);ctx.lineTo(x,H-18);ctx.stroke();}
   for(let y=32;y<H-20;y+=32){ctx.beginPath();ctx.moveTo(19,y);ctx.lineTo(W-18,y);ctx.stroke();}
   ctx.strokeStyle='#8bd7f1';ctx.lineWidth=5;ctx.strokeRect(18,18,W-36,H-36);
+  for(const o of walls){
+   ctx.strokeStyle='#f3c58e';ctx.lineWidth=4;
+   ctx.beginPath();ctx.arc(o.x,o.y,o.r,0,TAU);ctx.stroke();
+  }
+  for(const pair of portals)for(const pt of [pair.a,pair.b]){
+   ctx.strokeStyle='#c1a4ff';ctx.lineWidth=3;
+   ctx.beginPath();ctx.arc(pt.x,pt.y,17,0,TAU);ctx.stroke();
+  }
   for(const [x,y] of BUMPERS){
    ctx.shadowColor='#74e1ff';ctx.shadowBlur=9;fill(ctx,x,y,13,'#327a9d');
    ctx.shadowBlur=0;fill(ctx,x,y,7,'#c0f5ff');
@@ -283,12 +339,12 @@ function make(profile={},focus=0,actionIndex=-1){
   ctx.fillStyle='#8ad4ff';ctx.fillRect(35,H-41,166*(energy/100),12);
   ctx.fillStyle='#d9f2ff';ctx.font='700 11px sans-serif';
   ctx.fillText('⚡ 기세 '+Math.floor(energy)+' / 100',212,H-30);
-  ctx.textAlign='right';ctx.fillText('스킬 발동 '+casts+'회',W-35,H-30);
+  ctx.textAlign='right';ctx.fillText('스킬 '+casts+'회 · 적 기세 '+Math.floor(target.energy),W-35,H-30);
   ctx.restore();
  }
  return {advanceTo,render,fire:()=>{energy=100;},get frame(){return frame;},
   get energy(){return energy;},get casts(){return casts;},get title(){return frame<activity?active:'벽·공 충돌로 기세 충전 중';},
-  get projectiles(){return bullets.length;},get balls(){return [hero,target];}};
+  get projectiles(){return bullets.length;},get walls(){return walls.length;},get portals(){return portals.length;},get balls(){return [hero,target];}};
 }
 g.StudioPinballLab=Object.freeze({make,actionsFor,WIDTH:W,HEIGHT:H});
 })(typeof window!=='undefined'?window:globalThis);

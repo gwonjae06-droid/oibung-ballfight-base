@@ -9,7 +9,7 @@ const MAX=100, PASSIVE=.17, CONTACT=16, WALL=9, BASIC_HIT=3;
 // Authored time skills modify this one meter, not a second cooldown clock.
 // Time acceleration magnifies positive recharge, but never instantly casts
 // another skill. Time stop disables the victim's recharge while it lasts.
-const TIME_ACCEL=1.75;
+const TIME_ACCEL=1.75,TIME_HASTE=1.25,TIME_STEAL_CAP=20;
 const clamp=n=>Math.max(0,Math.min(MAX,Number.isFinite(n)?n:0));
 function isBoss(p){return !!p?.forge&&p.towerEnemy&&p.towerPatternBoss&&!p.manualTower;}
 function isMinion(p){return !!p?.forge&&p.towerEnemy&&!p.towerPatternBoss&&!p.manualTower;}
@@ -22,7 +22,12 @@ function add(p,amount,kind){
  if(!enabled(p)||p.hp<=0||!Number.isFinite(amount)||amount<=0)return false;
  const timed=kind==='passive'||kind==='contact'||kind==='wall'||kind==='damage';
  if(timed&&g.ForgeExpansion?.active?.(p,'momentumStasis'))return false;
- if(timed&&g.ForgeExpansion?.active?.(p,'timeburst'))amount*=TIME_ACCEL;
+ if(timed){
+   // The strongest temporary time effect wins; combining two speed blocks
+   // cannot multiply the same recharge twice in one physics tick.
+   if(g.ForgeExpansion?.active?.(p,'timeburst'))amount*=TIME_ACCEL;
+   else if(g.ForgeExpansion?.active?.(p,'haste'))amount*=TIME_HASTE;
+ }
  const clock=Number(p._forgeActionClock)||0;
  const gaps={contact:34,wall:26,basic:23};
  const name='_bounceLast_'+kind;
@@ -50,7 +55,20 @@ function contact(a,b,approach){
 function wall(p,speed){
  return Number.isFinite(speed)&&speed>=1.15&&add(p,WALL,'wall');
 }
-function basicHit(p){return add(p,BASIC_HIT,'basic');}
+// Time stop is a non-damaging momentum swing. Only a real CC application
+// may steal; an immune target or old four-slot fighter contributes nothing.
+function timeSteal(caster,victim,cap=TIME_STEAL_CAP){
+ if(!enabled(caster)||!enabled(victim)||caster===victim||
+    caster.hp<=0||victim.hp<=0)return 0;
+ const taken=Math.min(clamp(cap),TIME_STEAL_CAP,meter(victim));
+ if(taken<=0)return 0;
+ victim._bounceMomentum=clamp(meter(victim)-taken);
+ // Give back only half: stasis is powerful without granting free immediate
+ // 100-energy chains. The remainder is removed from the encounter.
+ add(caster,taken*.5,'timeSteal');
+ return taken;
+}
+function basicHit(p){return false;} // retired automatic basic attacks
 function damageTaken(p,damage){
  if(!(isBoss(p)||isMinion(p))||!Number.isFinite(damage)||damage<=0)return false;
  // Only confirmed positive-damage hits count, never shielded/blocked hits.
@@ -81,5 +99,5 @@ function spend(p){
  p._bounceCasts=(p._bounceCasts||0)+1;
  return true;
 }
-g.BounceMomentum=Object.freeze({MAX,PASSIVE,CONTACT,WALL,BASIC_HIT,TIME_ACCEL,isBoss,isMinion,bossPhase,bossCan,bossSpend,damageTaken,enabled,meter,add,contact,wall,basicHit,tick,ready,spend});
+g.BounceMomentum=Object.freeze({MAX,PASSIVE,CONTACT,WALL,BASIC_HIT,TIME_ACCEL,TIME_HASTE,TIME_STEAL_CAP,timeSteal,isBoss,isMinion,bossPhase,bossCan,bossSpend,damageTaken,enabled,meter,add,contact,wall,basicHit,tick,ready,spend});
 })(typeof window!=='undefined'?window:globalThis);

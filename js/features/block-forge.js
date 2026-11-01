@@ -143,7 +143,8 @@ function phrase(skill){
     else if(link==='after')result+='한 뒤 → '+verb(a)+' 사용';
     else result+='하고 → '+verb(a)+' 사용';
   }
-  return result+' · '+(TRIGGER[skill.trigger]||TRIGGER.auto)+' / '+skill.cooldown+'초 쿨타임';
+  return result+(forge.getDraft()?.signatureVersion===1?
+   ' · ⚡ 기세 100에서만 실행':' · '+(TRIGGER[skill.trigger]||TRIGGER.auto)+' / '+skill.cooldown+'초 쿨타임');
 }
 function options(values,selected){return Object.entries(values).map(([key,value])=>
   '<option value="'+escape(key)+'"'+(key===selected?' selected':'')+'>'+escape(value)+'</option>').join('');}
@@ -256,31 +257,31 @@ function draw(){
     +'<strong>⚖ 스킬 화력 밸런스</strong><span>설계 화력 지수 '+budget.pressure+' / 기준 '+budget.budget+'</span>'
     +'<div class="block-power-meter"><i style="width:'+Math.round(Math.min(100,budget.pressure/budget.budget*100))+'%"></i></div>'
     +'<p>'+(budget.excess?'과도한 화력이 겹쳐 실제 피해가 약 '+budget.percent+'% 적용됩니다.':'기본 피해가 100% 적용됩니다.')
-    +preview+'. 설정값은 그대로 저장됩니다. 0.6초 이하 주기 공격은 0.1초마다 보조 이펙트가 재생되지만, 실제 피해·회복은 별도로 계산됩니다. 실제 DPS는 명중률에 따라 달라집니다.</p></div>':'';
+    +preview+'. 설정값은 그대로 저장됩니다. '+(signature?'기세가 100이 되어야 스킬이 실행되며 추가 기본 공격은 없습니다.':'짧은 쿨타임의 장식용 연출은 실제 추가 피해를 주지 않습니다.')+' 실제 DPS는 명중률에 따라 달라집니다.</p></div>':'';
   const defensiveNotice=defense&&defense.pressure>0?
     '<div class="block-power-budget" role="status" aria-label="회복·보호 밸런스">'
     +'<strong>🛡 회복·보호 밸런스</strong><span>유지력 지수 '+defense.pressure+' / 기준 '+defense.budget+'</span>'
     +'<p>'+(defense.excess?'회복량·보호막 지속시간·방어 효율에 약 '+defense.percent+'%가 적용됩니다.':'유지력 효과가 100% 적용됩니다.')
     +' 스킬 설정값은 그대로 저장되며, 방어형 조합과 지속 보호막은 계속 사용할 수 있습니다.</p></div>':'';
-  const signatureHeader=signature?'<div class="signature-program-intro"><strong>🧩 나만의 고유 스킬 · 1 / 1</strong><p>블록을 원하는 순서로 연결하고, 각 행동 앞에 조건을 넣어 자동전투를 코딩하세요. 조건이 거짓이면 해당 행동은 발동하지 않습니다. 최대 12블록 · 하나의 쿨타임을 공유합니다.</p></div>':'<div class="signature-program-legacy"><strong>기존 캐릭터의 독립 스킬</strong><p>기존 캐릭터는 변함없이 전투합니다. 새 고유 스킬 방식으로 전환하면 행동들을 하나로 합치고 공통 쿨타임을 사용합니다. 저장 전에는 원래 스킬을 복구할 수 있습니다.</p><button type="button" data-op="migrate-signature">고유 스킬 1개로 전환</button></div>';
+  const signatureHeader=signature?'<div class="signature-program-intro"><strong>🧩 나만의 고유 스킬 · 1 / 1</strong><p>블록을 원하는 순서로 연결하고, 각 행동 앞에 조건을 넣어 자동전투를 코딩하세요. 조건이 거짓이면 해당 행동은 발동하지 않습니다. 최대 12블록 · 별도 쿨타임 없이 ⚡ 기세 100마다 필살기를 1회 실행합니다.</p></div>':'<div class="signature-program-legacy"><strong>기존 캐릭터의 독립 스킬</strong><p>기존 캐릭터는 변함없이 전투합니다. 새 고유 스킬 방식으로 전환하면 행동들을 하나로 합치고 공통 쿨타임을 사용합니다. 저장 전에는 원래 스킬을 복구할 수 있습니다.</p><button type="button" data-op="migrate-signature">고유 스킬 1개로 전환</button></div>';
   workspace.innerHTML=signatureHeader+allNotice+balanceNotice+defensiveNotice+skills.map((s,i)=>
     '<section class="block-quick-skill '+(i===selectedSkill?'is-selected':'')+(signature?' signature-single':'')+'">'
     +'<div class="block-quick-skill-head">'
     +'<button type="button" class="block-quick-select" data-op="select" data-skill="'+i+'" aria-pressed="'+String(i===selectedSkill)+'">'+(i===selectedSkill?'◆ ':'◇ ')+(signature?'고유 스킬':'스킬 '+(i+1))+'</button>'
     +'<input type="text" maxlength="18" data-edit="meta" data-key="name" data-skill="'+i+'" aria-label="스킬 이름" value="'+escape(s.name)+'">'
     +(signature?'':'<button type="button" data-op="remove-skill" data-skill="'+i+'" aria-label="스킬 삭제" '+(skills.length===1?'disabled':'')+'>삭제</button>')+'</div>'
-    +'<div class="block-quick-facts"><span>'+escape(TRIGGER[s.trigger]||TRIGGER.auto)+'</span><span>↻ '+escape(s.cooldown)+'초</span><span>'+s.actions.length+'개 동작</span></div>'
+    +'<div class="block-quick-facts"><span>'+(signature?'⚡ 기세 100':escape(TRIGGER[s.trigger]||TRIGGER.auto))+'</span><span>'+(signature?'공 충돌·벽 반사 충전':'↻ '+escape(s.cooldown)+'초')+'</span><span>'+s.actions.length+'개 동작</span></div>'
     +'<div class="block-quick-stack">'+s.actions.map((a,j)=>actionRow(a,i,j,s.actions.length,signature)).join('')+'</div>'
     +(i===selectedSkill?inspector(s,i):'')
     +'<p class="block-quick-description">'+escape(phrase(s))+'</p>'
-    +'<details class="block-quick-settings"><summary>발동 조건 · 쿨타임</summary><div class="block-quick-settings-grid">'
-    +'<label>발동<select data-edit="meta" data-key="trigger" data-skill="'+i+'">'+options(TRIGGER,s.trigger)+'</select></label>'
-    +'<label>쿨타임(초)<input type="number" min=".2" max="30" step=".1" data-edit="meta" data-key="cooldown" data-skill="'+i+'" value="'+escape(s.cooldown)+'"></label>'
-    +(s.trigger==='lowhp'?'<label>HP 조건(%)<input type="number" min="5" max="95" step="5" data-edit="meta" data-key="threshold" data-skill="'+i+'" value="'+escape(s.threshold)+'"></label>':'')
-    +'</div></details>'
+    +(signature?'':'<details class="block-quick-settings"><summary>발동 조건 · 쿨타임</summary><div class="block-quick-settings-grid">')
+    +(signature?'':'<label>발동<select data-edit="meta" data-key="trigger" data-skill="'+i+'">'+options(TRIGGER,s.trigger)+'</select></label>')
+    +(signature?'':'<label>쿨타임(초)<input type="number" min=".2" max="30" step=".1" data-edit="meta" data-key="cooldown" data-skill="'+i+'" value="'+escape(s.cooldown)+'"></label>')
+    +(!signature&&s.trigger==='lowhp'?'<label>HP 조건(%)<input type="number" min="5" max="95" step="5" data-edit="meta" data-key="threshold" data-skill="'+i+'" value="'+escape(s.threshold)+'"></label>':'')
+    +(signature?'':'</div></details>')
     +(!signature&&i>0?'<button type="button" class="block-quick-merge" data-op="merge" data-skill="'+i+'" '+(skills[i-1].actions.length+s.actions.length>3?'disabled':'')+'>↑ 이전 스킬과 합치기</button>':'')
     +'</section>').join('')
-    +(signature?'<p class="signature-execution">기본 전투 유형은 자동 이동·기본 공격을 맡고, 이 한 개의 고유 스킬이 상황에 따라 반격·이동·방어·공격을 연계합니다.</p>':
+    +(signature?'<p class="signature-execution">공은 벽과 충돌하며 기세를 모으고, 이 고유 스킬 하나가 조건에 따라 공격·이동·방어를 연계합니다. 시간 정지는 상대 기세를 봉쇄·흡수하고, 시간 가속·되감기는 내 기세에 작용합니다.</p>':
       '<button type="button" class="block-quick-new" data-op="new-skill" '+(skills.length>=4?'disabled':'')+'>+ 별도 스킬 만들기 ('+skills.length+'/4)</button>');
 }
 function refreshTypes(){
