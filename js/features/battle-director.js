@@ -135,16 +135,21 @@ function expression(kind){const img=g.document?.getElementById?.('arena-commenta
  img.alt='해설자 '+({neutral:'기본',talk:'열정',surprise:'놀람',grim:'긴장'}[mood]||'기본')+' 표정';
  img.classList?.toggle?.('exclaim',mood==='surprise');
 }
-function speak(text){
+function speak(text,options={}){
  if(!text||text===lastSentence)return false;
  lastSentence=text;
  const line=g.document?.getElementById?.('arena-commentary-line');
- if(line){line.textContent=text;line.dataset.pulse=String(frame);line.classList.remove('director-pop');void line.offsetWidth;line.classList.add('director-pop');}
- const live=g.document?.getElementById?.('arena-commentary');
- if(live)live.dataset.event=String(frame);
- if(g.document?.getElementById?.('arena-commentary-voice')?.checked&&g.speechSynthesis&&g.SpeechSynthesisUtterance){
-  try{g.speechSynthesis.cancel();const u=new g.SpeechSynthesisUtterance(text);u.lang='ko-KR';u.rate=1.18;g.speechSynthesis.speak(u);}catch(_){}
+ if(line){
+  line.textContent=text;
+  line.dataset.pulse=String(frame);
+  line.dataset.priority=String(options.priority||2);
+  line.classList.remove('director-pop');void line.offsetWidth;line.classList.add('director-pop');
  }
+ const live=g.document?.getElementById?.('arena-commentary');
+ if(live){live.dataset.event=String(frame);live.dataset.kind=String(options.kind||'start');}
+ // The fast speech controller always chooses the shortest truthful spoken
+ // version; subtitles can keep the fuller authored commentary.
+ g.ArenaCommentaryVoice?.say?.(text,options);
  return true;
 }
 function offer(kind,args,priority=2,key=kind){
@@ -156,17 +161,22 @@ function offer(kind,args,priority=2,key=kind){
  queue.push({kind,args,priority,key,at:frame});
 }
 function dispatch(){
- if(frame-lastNarrated<115||!queue.length)return;
- queue=queue.filter(e=>frame-e.at<320&&!recent.some(r=>r.key===e.key&&frame-r.frame<240));
+ if(!queue.length)return;
+ // A dangerous hit, status effect or low-HP warning should react sooner than
+ // ordinary casting, but visual commentary remains bounded under spam.
+ const urgent=queue.some(e=>e.priority>=5);
+ if(frame-lastNarrated<(urgent?88:115))return;
+ queue=queue.filter(e=>frame-e.at<270&&!recent.some(r=>r.key===e.key&&frame-r.frame<240));
  if(!queue.length)return;
  queue.sort((a,b)=>b.priority-a.priority||a.at-b.at);
  const choice=queue.shift(),sentence=phrase(choice.kind,choice.args);
  expression(choice.kind);
- if(speak(sentence)){
+ if(speak(sentence,{kind:choice.kind,args:choice.args,priority:choice.priority})){
   lastNarrated=frame;recent.push({key:choice.key,frame});if(recent.length>15)recent.shift();
  }
 }
 function reset(players=[]){
+ g.ArenaCommentaryVoice?.stop?.();
  expression('start');
  frame=0;lastNarrated=0;roster=players.slice();history=new Map();overTimeWas=false;ended=false;
  queue=[];recent=[];actionNames=new WeakMap();lastSkillUsed=new WeakMap();skillTotals=new Map();confirmedHits=0;
@@ -174,7 +184,7 @@ function reset(players=[]){
  const panel=g.document?.getElementById?.('arena-defeat-analysis');if(panel){panel.hidden=true;panel.replaceChildren();}
  // Tower enemies are already prepared in the intermission. Narrate only
  // once the player presses Next Floor and the actual countdown begins.
- if(!g.ArenaTower?.active)speak(phrase('start'));
+ if(!g.ArenaTower?.active)speak(phrase('start'),{kind:'start',priority:7});
 }
 function floorReady(level,realm){
  const lv=Math.max(1,Number(level)||1),name=String(realm||'탑');
@@ -184,7 +194,7 @@ function floorReady(level,realm){
   `${lv}층 준비 완료. 이번 충돌도 지켜보시죠.`,
   `${lv}층에 도착했습니다. 상대의 움직임을 보겠습니다.`,
   `${name} ${lv}층, 새로운 대결을 준비합니다.`];
- return speak(intros[(lv+phraseSerial++)%intros.length]);
+ return speak(intros[(lv+phraseSerial++)%intros.length],{kind:'start',priority:7});
 }
 function skillUsed(attacker,target,action,skillName){
  if(ended||!attacker||!action)return;
@@ -298,7 +308,7 @@ function finish(players,winner=null,reason=''){
    }
   }
   const note=g.document.createElement('small');note.textContent='기술별 피해는 확인된 커스텀 공격만 집계합니다. 기본 챔피언 공격, 낙하, 지속 피해, 결전 피해는 기술별 합계에서 제외될 수 있습니다. 회복·받은 피해는 체력 변화 관측치입니다.';panel.append(note);panel.hidden=false;}
- speak(winner?`${name(winner)} 승리! 전투가 종료됐습니다.`:'무승부! 치열한 경기가 마무리됐습니다.');
+ speak(winner?`${name(winner)} 승리! 전투가 종료됐습니다.`:'무승부! 치열한 경기가 마무리됐습니다.',{kind:'finish',priority:10});
  return lines;
 }
 g.ArenaBattleDirector=Object.freeze({reset,observe,finish,reportLines,explanations,skillUsed,skillHit,legacyHit,constructHit,floorReady,get skillTotals(){return skillTotals;},get frame(){return frame;},catalogSize});
