@@ -8,9 +8,9 @@ if(!studio||!workspace||!forge||!g.ScratchStudio||!g.SignatureScratch)return;
 const S=g.ScratchStudio,compiler=g.SignatureScratch,conds=g.SignatureProgram;
 const escape=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','"':'&quot;'}[c]));
 const actions=[
- {id:'slash',icon:'⚔️',name:'가까이 베기',tip:'가까운 적을 때려요',group:'attack',damage:26},
- {id:'wave',icon:'💥',name:'충격파',tip:'주변을 넓게 공격해요',group:'attack',damage:22},
- {id:'shot',icon:'✨',name:'구슬 발사',tip:'멀리 있는 적을 공격해요',group:'attack',damage:21},
+ {id:'slash',icon:'⚔️',name:'가까이 베기',tip:'가까운 적을 때려요',group:'attack',damage:31},
+ {id:'wave',icon:'💥',name:'충격파',tip:'주변을 넓게 공격해요',group:'attack',damage:30},
+ {id:'shot',icon:'✨',name:'구슬 발사',tip:'멀리 있는 적을 공격해요',group:'attack',damage:27},
  {id:'bolt',icon:'⚡',name:'번개 공격',tip:'적 위치에 번개를 떨어뜨려요',group:'attack',damage:24},
  {id:'dash',icon:'💨',name:'빠르게 돌진',tip:'적에게 빠르게 다가가요',group:'move',damage:0},
  {id:'blink',icon:'🌟',name:'순간이동',tip:'다른 위치로 이동해요',group:'move',damage:0},
