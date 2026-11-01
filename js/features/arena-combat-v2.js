@@ -8,6 +8,8 @@
 const cap=(n,a,b)=>Math.max(a,Math.min(b,n));
 const TIMINGS=Object.freeze({instant:'기세 100 즉시 발동',contact:'충전 후 다음 충돌',danger:'위험 패턴 예고 시'});
 const WAIT=138,COMBO_GAP=150;
+let featured=null;
+let best=0;
 function eligible(p){
  return !!p?.forge&&p.forge.signatureVersion===1&&!p.towerEnemy&&!p.manualTower&&
    g.ArenaScreenRouter?.active!=='pvp';
@@ -15,7 +17,7 @@ function eligible(p){
 function clock(p){return Number(p?._forgeActionClock)||Number(p?._combat2Tick)||0;}
 // Score all visible local automatic PvE fighters, not only signature profiles.
 // eligible() remains signature-only: older fighters get spectacle, NOT new damage or energy.
-function trackable(p){return !!p&&p.playerNum===1&&p.hp>0&&!p.towerEnemy&&
+function trackable(p){return !!p&&Number(p.playerNum)>0&&p.hp>0&&!p.towerEnemy&&
  !p.manualTower&&g.ArenaScreenRouter?.active!=='pvp';}
 function validSource(kind){return kind==='contact'||kind==='wall'||kind==='bumper'||
  /^wall-(left|right|top|bottom)$/.test(kind)||/^bumper-\d+$/.test(kind);}
@@ -31,6 +33,7 @@ function signal(p,kind,speed){
  const quality=grade(speed);
  const old=prior?.chain||0;
  p._combat2Combo={chain,kind,last:now,quality};
+ featured=p;best=Math.max(best,chain);
  p._combat2Flash={text:(quality==='perfect'?'완벽 충돌!':quality==='heavy'?'강타!':'반사!')+
    (chain>=2?' · 콤보 ×'+chain:''),until:now+54};
  // Bonus is a reward for a real three-hit route, never an extra attack.
@@ -40,12 +43,10 @@ function signal(p,kind,speed){
    p._combat2NextBoost=Math.max(p._combat2NextBoost||1,1.10);
    g.BounceMomentum?.add?.(p,4,'ricochet');
  }
- if(p.playerNum===1){
-   if(chain>old&&chain>=2)
+ if(chain>old&&chain>=2)
      g.BattleFX?.sound?.(chain>=6?'combo-streak':chain>=3?'bounce-combo':'combo-step',
        chain>=6?.62:chain>=3?.54:.35);
-   else if(quality==='perfect')g.BattleFX?.sound?.('bounce-perfect',.38);
- }
+ else if(quality==='perfect')g.BattleFX?.sound?.('bounce-perfect',.38);
  ui(p,true);
  return true;
 }
@@ -78,6 +79,7 @@ function damageFactor(p){
   cap(p._combat2CastBoost||1,1,1.10):1;
 }
 function reset(){
+ featured=null;best=0;
  const el=ensure();if(!el)return;
  el.classList?.remove?.('combo-burst');
  displayZero(el);
@@ -106,17 +108,20 @@ function ensure(){
  top.append(el);return el;
 }
 function displayZero(el){
- el.hidden=false;el.dataset.combo='0';el.dataset.tier='base';
+ el.hidden=false;el.dataset.combo='0';el.dataset.best=String(best);el.dataset.tier='base';
  const number=el.querySelector?.('.combo-number');if(number)number.textContent='0';
- const message=el.querySelector?.('.combo-message');if(message)message.textContent='다음 충돌을 기다리는 중';
+ const message=el.querySelector?.('.combo-message');if(message)message.textContent=best>0?'연계 종료 · 최고 '+best+'콤보':'첫 충돌을 기다리는 중';
  const progress=el.querySelector?.('.combo-progress');if(progress)progress.style.width='0%';
- el.setAttribute?.('aria-label','연속 반사 0콤보 · 첫 충돌을 기다리는 중');
+ el.setAttribute?.('aria-label','현재 연속 반사 0콤보 · '+(best>0?'최고 '+best+'콤보':'첫 충돌 대기'));
+ el.classList?.remove?.('combo-burst');
 }
 function ui(p,burst=false){
- if(!p||p.playerNum!==1)return;
+ // The arena has just one top HUD: show the last real PvE fighter to
+ // ricochet, instead of silently ignoring every fighter other than P1.
+ const actor=featured&&trackable(featured)?featured:p;
+ if(!actor||!trackable(actor))return;
  const el=ensure();if(!el)return;
- if(!trackable(p)){if(!el.hidden)displayZero(el);return;}
- const combo=p._combat2Combo,now=clock(p),alive=combo&&now-combo.last<=COMBO_GAP;
+ const combo=actor._combat2Combo,now=clock(actor),alive=combo&&now-combo.last<=COMBO_GAP;
  if(!alive){
    if(el.hidden||el.dataset.combo!=='0')displayZero(el);
    return;
@@ -125,16 +130,17 @@ function ui(p,burst=false){
  el.hidden=false;
  const tier=combo.chain>=12?'legend':combo.chain>=8?'epic':combo.chain>=5?'hot':combo.chain>=3?'rise':'base';
  const rank=combo.quality==='perfect'?'완벽 충돌':combo.quality==='heavy'?'강한 충돌':'일반 충돌';
- const bonus=(p._combat2NextBoost||1)>1?' · 다음 필살기 강화 준비':'';
+ const bonus=(actor._combat2NextBoost||1)>1?' · 다음 필살기 강화 준비':'';
  const caption=el.querySelector?.('.combo-caption'),number=el.querySelector?.('.combo-number'),
    message=el.querySelector?.('.combo-message'),progress=el.querySelector?.('.combo-progress');
  if(caption)caption.textContent='연속 반사';
  if(number)number.textContent=String(combo.chain);
- if(message)message.textContent=rank+bonus;
+ if(message)message.textContent='P'+actor.playerNum+' · '+rank+bonus;
  if(progress)progress.style.width=Math.max(0,100-(now-combo.last)/COMBO_GAP*100).toFixed(1)+'%';
  el.dataset.tier=tier;
  el.dataset.combo=String(combo.chain);
- el.setAttribute('aria-label','연속 반사 '+combo.chain+'콤보 · '+rank+bonus);
+ el.dataset.best=String(best);
+ el.setAttribute('aria-label','P'+actor.playerNum+' 연속 반사 '+combo.chain+'콤보 · '+rank+bonus);
  if(burst){
    // Replaying the motion only on actual accepted collision events prevents
    // animations resetting every frame, even at 100x simulation.
