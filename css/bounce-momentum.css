@@ -10,3 +10,16 @@
 .scratch-workbench[data-legacy=true] .scratch-energy-hint{display:none!important}
 @media(max-width:570px){.scratch-friendly-mode .kid-momentum-guide{padding:10px}.scratch-energy-hint{font-size:12px}}
 @media(prefers-reduced-motion:reduce){.forge-cooldown-item.forge-energy-meter .forge-cooldown-fill{transition:none!important}}
+
+/* Compact collision feedback sits beside the existing arena heading. No
+   pointer events and no graphics painted over hero, boss or danger zones. */
+.arena-combo-status{display:inline-flex;align-items:center;min-height:27px;
+ max-width:100%;margin:4px 0 0;padding:3px 9px;border-radius:8px;
+ border:1px solid #83a6c3;background:#173048;color:#f6eab1;
+ font-size:12px;font-weight:850;letter-spacing:-.01em;line-height:1.4;
+ pointer-events:none}
+.arena-combo-status[hidden]{display:none!important}
+.studio-easy-tip{grid-column:1/-1;font-size:12px;line-height:1.5;
+ color:#b9e4fa;padding:7px 9px;background:#14354a;border-radius:8px}
+@media(max-width:550px){.arena-combo-status{font-size:11px;padding:3px 6px}
+.studio-easy-tip{font-size:11px}}
