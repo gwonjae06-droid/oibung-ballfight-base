@@ -10,7 +10,7 @@ function mass(p){
  // Bosses feel heavier without becoming immovable or unlaunchable.
  const anchored=!!p?.towerHero&&!p?.towerEnemy&&
   (Number(p?._tacticalAnchorUntil)||0)>(Number(p?._forgeActionClock)||0);
- return clamp(Math.pow(r/28,2)*(p?.towerPatternBoss?1.35:anchored?1.65:1),.55,4.2);
+ return clamp(Math.pow(r/28,2)*(p?.towerPatternBoss?1.35:anchored?1.65:Number(p?._originalMassBoost)||1),.55,4.2);
 }
 function pair(a,b,nx,ny){
  const avx=Number(a?.vx)||0,avy=Number(a?.vy)||0;
