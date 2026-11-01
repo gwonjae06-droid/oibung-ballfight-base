@@ -60,6 +60,19 @@ test('previous basic-hit Scratch condition is migrated into skill-hit condition'
  assert.ok(!Object.hasOwn(g.SignatureProgram.CONDITIONS,'basicStatus'));
 });
 
+test('an expert block preview tests that selected action rather than the whole combo',()=>{
+ const g=sandbox(),p=demo({type:'shot',damage:10});
+ p.skills[0].program=[{kind:'action',action:{type:'wave'}},
+  {kind:'action',action:{type:'homing',speed:8}},
+  {kind:'action',action:{type:'shield'}}];
+ const all=g.StudioPinballLab.actionsFor(p,0)[0].actions;
+ const chosen=g.StudioPinballLab.actionsFor(p,0,1)[0].actions;
+ assert.equal(all.length,3);
+ assert.equal(chosen.length,1);
+ assert.equal(chosen[0].type,'homing');
+ assert.doesNotThrow(()=>g.StudioPinballLab.make(p,0,1).advanceTo(1000));
+});
+
 test('force energy button changes only isolated practice energy and launches one skill',()=>{
  const g=sandbox(),a=demo({type:'wave',radius:90});
  const lab=g.StudioPinballLab.make(a);
