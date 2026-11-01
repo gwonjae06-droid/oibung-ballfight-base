@@ -3,13 +3,17 @@
 'use strict';
 const TYPES={homing:'유도탄',pierce:'관통탄',boomerang:'부메랑',chain:'연쇄 번개',nova:'주변 폭발',meteor:'운석',mine:'지뢰',drain:'흡혈',swap:'위치 교환',retreat:'후퇴',cleanse:'정화',haste:'가속',regen:'지속 재생',fortify:'피해 감소'};
 const STATUSES={freeze:'빙결',stun:'기절',root:'속박',silence:'침묵',bleed:'출혈',shock:'감전',vulnerable:'취약',weak:'공격 약화',fear:'공포',charm:'매혹',blind:'실명',curse:'회복 저주'};
-const DESCRIPTIONS={homing:'선택한 적을 따라가는 탄환',pierce:'적을 맞혀도 사라지지 않는 탄환 (적마다 1회)',boomerang:'발사 후 시전자에게 돌아오는 탄환 (적마다 1회)',chain:'범위 안의 다른 적에게 80% 위력으로 연쇄',nova:'자신 중심 범위 공격',meteor:'커다란 암석이 그림자·불꽃 꼬리와 함께 지면으로 낙하합니다. 착지 시점에만 표시된 반경 안에 피해를 줍니다',mine:'자신 위치에 설치, 0.33초 후 접근한 적에게 폭발',drain:'범위 안 적에게 준 피해의 50% 회복',swap:'선택한 적과 위치 교환',retreat:'적 반대 방향으로 범위만큼 후퇴',cleanse:'이 제작기의 상태이상·지속 피해·둔화 제거',haste:'지속 시간 동안 이동량 60% 증가',regen:'0.5초마다 위력의 25% 회복',fortify:'직접 공격으로 받는 피해 45% 감소'};
+const DESCRIPTIONS={homing:'선택한 적을 따라가는 탄환',pierce:'적을 맞혀도 사라지지 않는 탄환 (적마다 1회)',boomerang:'발사 후 시전자에게 돌아오는 탄환 (적마다 1회)',chain:'범위 안의 다른 적에게 80% 위력으로 연쇄',nova:'자신 중심 범위 공격',meteor:'커다란 암석이 그림자·불꽃 꼬리와 함께 지면으로 낙하합니다. 착지 시점에만 표시된 반경 안에 피해를 줍니다',mine:'자신 위치에 설치, 0.33초 후 접근한 적에게 폭발',drain:'범위 안 적에게 준 피해의 50% 회복',swap:'선택한 적과 위치 교환',retreat:'적 반대 방향으로 순간 가속. 벽·공 충돌 판정을 그대로 적용',cleanse:'이 제작기의 상태이상·지속 피해·둔화 제거',haste:'지속 시간 동안 튕기기 이동량 60% 증가 (방향 자동 조종 없음)',regen:'0.5초마다 위력의 25% 회복',fortify:'직접 공격으로 받는 피해 45% 감소'};
 const STATUS_HELP={none:'추가 효과 없음',ice:'1.5초간 이동 50% 감소',fire:'지속 시간 동안 0.5초마다 지속 피해',poison:'지속 시간 동안 0.5초마다 지속 피해',freeze:'이동과 행동 정지',stun:'이동과 행동 정지',root:'이동 정지, 공격 가능',silence:'행동과 접촉 공격 정지, 이동 가능',bleed:'0.5초마다 체력 3 감소',shock:'이동 30% 감소, 0.5초마다 체력 2 감소',vulnerable:'직접 받는 피해 35% 증가',weak:'직접 주는 피해 40% 감소',fear:'시전자 반대 방향으로 이동',charm:'시전자 방향으로 이동',blind:'직접 주는 피해 35% 감소',curse:'회복량 60% 감소'};
 Object.assign(TYPES,{flight:'공중 강하',burrow:'지하 습격',blackhole:'블랙홀',starfall:'우주 별비',dung:'똥 폭탄',lifebloom:'생명의 꽃',resurrect:'부활',timestop:'시간 정지',rewind:'시간 되감기',timeburst:'시간 가속'});
-Object.assign(DESCRIPTIONS,{flight:'최대 3초간 공중에서 직접 공격 회피 후 주변에 착지 피해',burrow:'최대 3초간 지하에서 회피 후 적 위치로 솟아올라 공격',blackhole:'적 위치에 중력장을 만들어 끌어당기고 주기적 피해',starfall:'시전자 상공에서 별이 줄지어 낙하합니다. 각 별은 꼬리·지면 그림자를 표시하고, 실제 착지한 순간에만 주변 적에게 피해를 줍니다',dung:'갈색 똥 폭탄이 날아가 명중 시 중독과 둔화',lifebloom:'자신 위치에 꽃을 심어 머무르는 동안 회복',resurrect:'스킬에 포함하면 경기당 1회 자동 부활, 최대 체력의 35% 회복',timestop:'범위 내 적의 움직임과 기세 충전을 잠시 정지 (제어 면역 적용)',rewind:'최대 3초 전 위치·진행 방향 복원 + 기세 일부 회수 (최대 30)',timeburst:'지속 시간 동안 충돌·벽 반사·자연 기세 충전량 1.75배'});
+Object.assign(DESCRIPTIONS,{flight:'최대 3초간 공중에서 직접 공격 회피 후 주변에 착지 피해',burrow:'최대 3초간 지하에서 회피 후 적 위치로 솟아올라 공격',blackhole:'적 위치에 중력장을 만들어 끌어당기고 주기적 피해',starfall:'시전자 상공에서 별이 줄지어 낙하합니다. 각 별은 꼬리·지면 그림자를 표시하고, 실제 착지한 순간에만 주변 적에게 피해를 줍니다',dung:'갈색 똥 폭탄이 날아가 명중 시 중독과 둔화',lifebloom:'자신 위치에 꽃을 심어 머무르는 동안 회복',resurrect:'기세 100 스킬로 부활을 미리 준비하면, 해당 경기에서 한 번 최대 체력의 35%로 부활',timestop:'범위 내 적의 움직임과 기세 충전을 잠시 정지 (제어 면역 적용)',rewind:'최대 3초 전 위치·진행 방향 복원 + 기세 일부 회수 (최대 30)',timeburst:'지속 시간 동안 충돌·벽 반사·자연 기세 충전량 1.75배'});
 function revive(p){
   if(p.hp>0||p.forgeRevived||!p.forge?.skills.some(s=>s.actions.some(a=>a.type==='resurrect')))return false;
-  p.forgeRevived=true;p.hp=Math.max(1,Math.round(p.maxHp*.35));p.invincible=90;
+  // New signature characters must FIRST activate resurrection inside their
+  // full-energy authored program. Owning an inactive block is not a free
+  // passive death-save. Keep legacy four-slot saves compatible.
+  if(p.forge.signatureVersion===1&&!p._forgeRevivePrepared)return false;
+  p.forgeRevived=true;p._forgeRevivePrepared=false;p.hp=Math.max(1,Math.round(p.maxHp*.35));p.invincible=90;
   p._forgeImpactGrace=0;
   p.forgeEffects={};p.bfDot=0;p._forgeDotKind=null;p.slowTimer=0;p.slowMultiplier=1;p.forgePhase=null;p.forgeHistory=[];
   addFloatingText('부활',p.x,p.y-35,'#047857',18);return true;
@@ -116,7 +120,12 @@ function execute(p,a,target,api){
   const show=(x,y,r)=>{if(global.BattleFX?.mark)global.BattleFX.mark('wave',x,y,(p.forge.effectColor||p.forge.color),r);};
   const around=(x,y,r)=>foes.filter(e=>Math.hypot(e.x-x,e.y-y)<=r+e.radius);
   p.forgeExtras ||= [];
-  if(a.type==='resurrect')return true;
+  if(a.type==='resurrect'){
+    if(p.forge?.signatureVersion===1&&!p.forgeRevived)
+      p._forgeRevivePrepared=true;
+    show(p.x,p.y,p.radius+12);
+    return true;
+  }
   if(a.type==='rewind'){
     const history=p.forgeHistory||[],old=history[Math.max(0,history.length-1-Math.min(180,Math.round(a.duration*60)))];
     if(old){p.x=old.x;p.y=old.y;
