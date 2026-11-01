@@ -162,7 +162,7 @@ const isDefense=type=>R?.get(type)?R.get(type).category==='defense'||DEFENSE.has
 const duration=a=>R?.duration(a.type)||(PROJECTILE.has(a.type)?1050:MOVE.has(a.type)?850:EXPLOSION.has(a.type)?1120:950);
 const label=t=>global.SkillForge.TYPE[t]||t||'동작';
 let focus=0,profile=null,sequence=null,elapsed=0,raf=0,stamp=null,playing=true,shown=true;
-let pinball=null,lastPinballData='',lastLabTime=-1;
+let pinball=null,lastPinballData='',lastLabTime=-1,focusAction=-1;
 let lastText='',lastPicker='',pickedIndex=-1;
 const reduced=()=>!!global.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
 // Only the preview planner uses these values: no global engine clocks change.
@@ -289,7 +289,7 @@ function dpi(){
 function draw(ms){
   const next=clamp(ms,0,sequence?.duration||1);
   if(global.StudioPinballLab&&next<lastLabTime){
-    pinball=global.StudioPinballLab.make(profile,focus);
+    pinball=global.StudioPinballLab.make(profile,focus,focusAction);
   }
   lastLabTime=next;
   dpi();render(next);
@@ -302,9 +302,9 @@ function refresh(reset=false){
   if(global.StudioPinballLab){
     // Practice uses one 12s energy cycle instead of obsolete cooldown clocks.
     sequence.duration=12000;
-    const fingerprint=JSON.stringify([draft.signatureVersion,draft.skills,draft.color,draft.name,focus,draft.allAbilities]);
+    const fingerprint=JSON.stringify([draft.signatureVersion,draft.skills,draft.color,draft.name,focus,focusAction,draft.allAbilities]);
     if(reset||!pinball||fingerprint!==lastPinballData){
-      pinball=global.StudioPinballLab.make(draft,focus);
+      pinball=global.StudioPinballLab.make(draft,focus,focusAction);
       lastPinballData=fingerprint;
       lastLabTime=-1;
       elapsed=0;
@@ -323,7 +323,7 @@ function refresh(reset=false){
   elapsed=Math.min(elapsed,sequence.duration);
   const selected=sequence.skills[focus]||sequence.skills[0];
   cooldown.textContent=global.StudioPinballLab?
-    '모의 실험 · 기세 100마다 스킬 발동 · 실제 전투 HP·DPS 판정과 별개 · 조건 분기는 참 조건 예시':
+    '모의 실험 · 초기 기세 86 · 충전 속도는 실제 전투와 다름 · 피해·명중률 미측정 · 조건 분기는 참 조건 예시':
     focus==='all'?'전체 스킬 시연':('발동: '+(global.SkillForge.TRIGGER[selected?.trigger]||'자동'));
   draw(elapsed);
 }
@@ -351,6 +351,7 @@ function start(){
 function setVisible(on){shown=!!on;if(!shown)stop();else start();}
 function selectSkill(si,index=-1){
   focus=si==='all'?'all':Number(si)||0;
+  focusAction=Number.isInteger(Number(index))&&Number(index)>=0?Number(index):-1;
   elapsed=0;refresh(true);
   const found=sequence.events.find(e=>e.skillIndex===focus&&e.actionIndex===Number(index));
   if(found&&!global.StudioPinballLab)elapsed=found.start;
@@ -368,7 +369,7 @@ playButton.addEventListener('click',()=>{
 replayButton.addEventListener('click',()=>{elapsed=0;pinball=null;playing=!reduced();updateToggle();refresh(true);start();});
 preview.querySelector('#studio-motion-fire')?.addEventListener('click',()=>{
   if(global.StudioPinballLab){
-    if(!pinball)pinball=global.StudioPinballLab.make(profile,focus);
+    if(!pinball)pinball=global.StudioPinballLab.make(profile,focus,focusAction);
     pinball.fire();draw(elapsed);
     if(!playing){playing=true;updateToggle();}
     start();
