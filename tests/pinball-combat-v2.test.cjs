@@ -133,7 +133,7 @@ test('new scripts load before engine, UI remains responsive and original movemen
   css=read('css/bounce-momentum.css');
  assert.ok(html.indexOf('arena-combat-v2.js')>0);
  assert.ok(html.indexOf('arena-combat-v2.js')<html.indexOf('js/core/engine.js'));
- assert.match(read('js/features/tower-flat-arena.js'),/undefined,'bumper'/);
+ assert.match(read('js/features/tower-flat-arena.js'),/undefined,'bumper-'\+i/);
  assert.match(read('js/features/studio-easy-designer.js'),/data-easy-key="timing"/);
  assert.match(read('js/features/skill-forge.js'),/signatureTiming/);
  assert.match(css,/arena-combo-status/);
