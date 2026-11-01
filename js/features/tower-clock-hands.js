@@ -59,7 +59,6 @@ function create({width=500,height=500,hero,boss,damage,weakpoint}){
      // Moving surface velocity at contact point: omega cross radius.
      const rx=q.x-cx,ry=q.y-cy;
      const wallVX=-h.omega*ry,wallVY=h.omega*rx;
-     const relative=(p.vx||0-wallVX)*q.nx+(p.vy||0-wallVY)*q.ny;
      const approaching=(p.vx||0)*q.nx+(p.vy||0)*q.ny-(wallVX*q.nx+wallVY*q.ny);
      // A rotating hand can sweep into stationary targets, so include its
      // surface velocity. Keep impulse bounded for high game speeds.
@@ -149,7 +148,7 @@ function create({width=500,height=500,hero,boss,damage,weakpoint}){
    ctx.beginPath();ctx.arc(0,0,19*scale,0,TAU);ctx.fill();ctx.stroke();
    ctx.shadowBlur=0;ctx.strokeStyle='#b6e8ff';ctx.lineWidth=1.5*scale;
    ctx.beginPath();ctx.arc(0,0,27*scale,0,TAU);ctx.stroke();
-   ctx.restore();ctx.restore();
+   ctx.restore();
  }
  function clear(){spell=null;hero._towerClockSlow=0;}
  return {begin,step,draw,clear,handAt,nearest,get active(){return !!spell;},get spell(){return spell;},get coreHits(){return coreHits;},get tick(){return tick;}};
