@@ -16,8 +16,11 @@ function update(){
  if(!host)return;
  host.hidden=!allowed();
  const status=host.querySelector('[data-tactics-status]');
+ const hero=g.ArenaTower?.hero||g.players?.find?.(p=>p?.towerHero)||null;
+ const anchorRemaining=Math.max(0,(Number(hero?._tacticalAnchorUntil)||0)-
+   (Number(hero?._forgeActionClock)||0))/60;
  if(status)status.textContent='전술 사용 가능 '+Math.max(0,LIMIT-used)+' / '+LIMIT+
-   (mode&&left>0?(mode==='hold'?' · 단단하게 버티기 '+Math.min(3,left/60).toFixed(1)+'초 남음':' · '+OPTIONS[mode].name+' 즉시 적용됨'):' · 버튼을 누르는 즉시 사용');
+   (mode&&left>0?(mode==='hold'?(anchorRemaining>0?' · 단단하게 버티기 '+anchorRemaining.toFixed(1)+'초 남음':' · 버티기 효과 종료'):' · '+OPTIONS[mode].name+' 즉시 적용됨'):' · 버튼을 누르는 즉시 사용');
  for(const b of host.querySelectorAll('[data-tactical-order]')){
   b.disabled=!allowed()||used>=LIMIT;
   b.setAttribute('aria-pressed',String(mode===b.dataset.tacticalOrder&&left>0));
