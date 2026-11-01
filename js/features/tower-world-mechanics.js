@@ -88,7 +88,7 @@ function create({realm,level,width:w=500,height:h=500,hero,boss,damage}){
  }
  return {step,draw,begin,clear(){active=null;},get event(){return active;},get tick(){return tick;},
   get zones(){if(!active)return [];
-   const a=age(),f=active.fire-tick,e=active.end-tick;
+   const a=age(),f=active.fire,e=active.end; // absolute encounter ticks; AI converts to relative.
    if(realm==='time'||realm==='ice'){
     const l=beam(a),cx=(l.x1+l.x2)/2,cy=(l.y1+l.y2)/2;
     return [{shape:'line',x:cx,y:cy,angle:Math.atan2(l.y2-l.y1,l.x2-l.x1),
