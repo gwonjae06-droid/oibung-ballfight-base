@@ -76,8 +76,10 @@ const CONDITION_TEXT={auto:'주기 발동',damaged:'피격 시',lowhp:'체력 �
 const STATUS_TEXT={fire:'화상 · 지속 피해',poison:'중독 · 지속 피해',ice:'둔화'};
 const NO_DIRECT_DAMAGE=new Set(['dash','shield','haste','fortify','wall','regen','retreat','timestop','timeburst','blink','rewind']);
 function skillDetail(skill){
-  const a=skill.actions[0],condition=skill.trigger==='lowhp'?'HP '+skill.threshold+'% 이하':(CONDITION_TEXT[skill.trigger]||skill.trigger);
-  const tags=[condition,'쿨타임 '+skill.cooldown.toFixed(2)+'초'];
+  // All Tower enemies now use one shared energy gauge even when historical
+  // profiles still contain cooldown/low-HP trigger metadata.
+  const a=skill.actions[0],condition='기세 100 충전 시';
+  const tags=[condition,'공통 기세 게이지 사용'];
   if(!NO_DIRECT_DAMAGE.has(a.type))tags.push('기본 위력 '+a.damage);
   else tags.push('직접 피해 없음');
   if(['shot','homing','pierce','dung','arcshot','starfall','orbit','chain','bolt','zone','nova','wave','beam','blackhole','trap','erupt','wall'].includes(a.type))
@@ -479,6 +481,7 @@ function install(){
       players[1]._ancientEnergyOnly=!!ancient;
       players[1]._bossMomentumPhase='pattern';
       players[1]._bossEnergyCursor=0;
+      players[1]._minionEnergyCursor=0;
       if(ancient){players[1].hp=3000;players[1].maxHp=3000;players[1].x=canvas.width/2;players[1].y=canvas.height*.18;players[1].forgeLastHp=3000;}
       players[1].towerRealm=realmId;
       players[1].towerEnemyType=(level<=4?level-1:level-2)%3;
