@@ -53,6 +53,12 @@ function end(p,before){
  // Never override an authored skill's deliberate movement or the physics
  // of a character currently jumping, teleporting, or dashing.
  if(!before||before.scripted||scripted(p))return false;
+ // During the Space God's zero-G phase, inertia is conserved: no ordinary
+ // cruise-speed convergence, chasing, or forced steering between collisions.
+ if(p._towerSpaceZeroG>0){
+   p.vx=before.vx;p.vy=before.vy;p.aiManeuver='zero-gravity';
+   return true;
+ }
  let x=before.vx,y=before.vy,magnitude=Math.hypot(x,y);
  const cruise=baseSpeed(p);
  if(magnitude<.04||!Number.isFinite(magnitude)){
