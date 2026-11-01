@@ -3,7 +3,7 @@
 (function(g){'use strict';
 let frame=0,lastNarrated=-200,roster=[],history=new Map(),overTimeWas=false,ended=false;
 let queue=[],recent=[],lastSentence='',phraseSerial=0,actionNames=new WeakMap(),lastSkillUsed=new WeakMap();
-let skillTotals=new Map(),confirmedHits=0;
+let skillTotals=new Map(),confirmedHits=0,patternLast=-300;
 const name=p=>String(p?.name||'파이터').slice(0,24);
 const sample=p=>({hp:Number(p?.hp)||0,maxHp:Math.max(1,Number(p?.maxHp)||1),
  status:Object.keys(p?.forgeEffects||{}).filter(key=>p.forgeEffects[key]?.time>0),
@@ -61,6 +61,43 @@ const variants={
  comeback:[(n)=>`${n}이(가) 다시 체력을 채우며 반격을 준비합니다!`,
   (n)=>`회복 후 다시 움직이는 ${n}! 전세가 달라질까요?`]
 };
+// Reactive sportscaster lines use measured collision, gauge and boss-zone
+// events, never invented damage or pattern success. Variants deliberately
+// differ in sentence rhythm, not just shuffled adjectives.
+Object.assign(variants,{
+ combo:[
+  (n,c)=>`${n}, 연속 반사 ${c}콤보! 여기서 더 이어질까요?`,
+  (n,c)=>`이게 핀볼의 맛이죠! ${n}, 벌써 ${c}번을 연결했습니다!`,
+  (n,c)=>`벽을 타고, 다시 날아갑니다! ${n}의 ${c}콤보!`,
+  (n,c)=>`${c}콤보! 저 숫자가 멈출 생각을 안 하는군요!`,
+  (n,c)=>`전광판을 보세요. ${n}의 반사가 ${c}콤보까지 올라갑니다!`,
+  (n,c)=>`튕기고, 또 튕기고! ${n}, ${c}연계를 만듭니다!`,
+  (n,c)=>`좋습니다! ${c}콤보! 다음 반사 방향도 중요해요!`,
+  (n,c)=>`${n}, 지금 흐름을 탔어요! ${c}콤보 돌파입니다!`],
+ charge:[
+  (n,v)=>`${n}, 기세 ${v}! 고유 기술 준비가 가까워집니다!`,
+  (n,v)=>`기세가 ${v}까지 찼습니다. ${n}, 큰 기술이 나오겠군요!`,
+  (n,v)=>`주목하세요! ${n}의 기세가 ${v}입니다!`,
+  (n,v)=>`${n}, 충돌로 흐름을 쌓아 갑니다. 현재 기세 ${v}!`],
+ ready:[
+  (n)=>`${n}의 기세가 100! 이제 필살기가 나옵니다!`,
+  (n)=>`게이지가 가득 찼습니다! ${n}의 고유 기술 준비 완료!`,
+  (n)=>`기세 100! ${n}, 이 순간을 기다렸습니다!`,
+  (n)=>`관중 여러분, 기세 만땅입니다! ${n}의 필살기 차례죠!`],
+ pattern:[
+  (n)=>`${n}의 위험 지역이 보입니다. 지금부터 위치를 봐야 합니다!`,
+  (n)=>`전장에 위험 구역이 생겼습니다! ${n}의 다음 움직임을 주목하세요!`,
+  (n)=>`큰 패턴 예고입니다! 공이 어디로 튕길까요?`,
+  (n)=>`주의! 위험 지역이 열렸습니다. 반사 방향이 중요합니다!`],
+ ultimate:[
+  (n,s)=>`${n}의 ${s}! 기다리던 고유 기술이 터집니다!`,
+  (n,s)=>`${s} 발동! ${n}이(가) 전투의 흐름을 흔듭니다!`,
+  (n,s)=>`지금입니다! ${n}이(가) ${s}을(를) 꺼냅니다!`,
+  (n,s)=>`${n}의 필살기! ${s}, 정면 승부입니다!`],
+ critical:[
+  (n,s)=>`대박입니다! ${n}, ${s}! 이런 반전이 나오네요!`,
+  (n,s)=>`${n}, 판을 뒤집습니다! ${s}!`]
+});
 // 576 authored-context combinations (nine events × eight leads × eight
 // outcomes), in addition to the short legacy lines. Dynamic slots only use
 // measured actors, skill names, damage and actual status information.
@@ -129,7 +166,7 @@ function installAvatar(){const panel=g.document?.getElementById?.('arena-comment
  panel.prepend(img);return true;
 }
 if(!installAvatar())g.document?.addEventListener?.('DOMContentLoaded',installAvatar,{once:true});
-const EXPRESSIONS=Object.freeze({start:'neutral',cast:'talk',impact:'talk',control:'surprise',low:'surprise',heavy:'surprise',lead:'neutral',overtime:'grim',recovery:'talk',comeback:'talk'});
+const EXPRESSIONS=Object.freeze({start:'neutral',cast:'talk',impact:'talk',control:'surprise',low:'surprise',heavy:'surprise',lead:'neutral',overtime:'grim',recovery:'talk',comeback:'talk',combo:'surprise',charge:'talk',ready:'surprise',pattern:'grim',ultimate:'surprise',critical:'surprise'});
 function expression(kind){const img=g.document?.getElementById?.('arena-commentator-face');if(!img)return;
  const mood=EXPRESSIONS[kind]||'neutral';img.src='assets/commentator-'+mood+'.svg';
  img.alt='해설자 '+({neutral:'기본',talk:'열정',surprise:'놀람',grim:'긴장'}[mood]||'기본')+' 표정';
@@ -146,7 +183,12 @@ function speak(text,options={}){
   line.classList.remove('director-pop');void line.offsetWidth;line.classList.add('director-pop');
  }
  const live=g.document?.getElementById?.('arena-commentary');
- if(live){live.dataset.event=String(frame);live.dataset.kind=String(options.kind||'start');}
+ if(live){
+  live.dataset.event=String(frame);live.dataset.kind=String(options.kind||'start');
+  live.dataset.mood=(options.priority||2)>=7?'excited':(options.priority||2)>=5?'alert':'calm';
+  live.classList?.remove?.('commentary-react');
+  void live.offsetWidth;live.classList?.add?.('commentary-react');
+ }
  // The fast speech controller always chooses the shortest truthful spoken
  // version; subtitles can keep the fuller authored commentary.
  g.ArenaCommentaryVoice?.say?.(text,options);
@@ -175,11 +217,30 @@ function dispatch(){
   lastNarrated=frame;recent.push({key:choice.key,frame});if(recent.length>15)recent.shift();
  }
 }
+function combo(p,chain){
+ if(!p||!Number.isFinite(chain)||![3,5,8,12,20,30,50].includes(chain))return false;
+ offer('combo',[name(p),chain],chain>=8?7:4,'combo:'+p.playerNum+':'+chain);
+ return true;
+}
+function charge(p,level){
+ if(!p||p.hp<=0)return false;
+ const v=Number(level)||0;
+ offer(v>=100?'ready':'charge',[name(p),v],v>=100?8:3,
+  'energy:'+p.playerNum+':'+v);
+ return true;
+}
+function originalUltimate(p,label,kind='cast'){
+ if(!p||!label)return false;
+ const category=kind==='critical'?'critical':'ultimate';
+ offer(category,[name(p),String(label).slice(0,36)],kind==='critical'?9:6,
+  'original:'+p.playerNum+':'+label);
+ return true;
+}
 function reset(players=[]){
  g.ArenaCommentaryVoice?.stop?.();
  expression('start');
  frame=0;lastNarrated=0;roster=players.slice();history=new Map();overTimeWas=false;ended=false;
- queue=[];recent=[];actionNames=new WeakMap();lastSkillUsed=new WeakMap();skillTotals=new Map();confirmedHits=0;
+ queue=[];recent=[];actionNames=new WeakMap();lastSkillUsed=new WeakMap();skillTotals=new Map();confirmedHits=0;patternLast=-300;
  for(const p of roster)history.set(p,{previous:sample(p),lost:0,healed:0,biggest:0,last:0,low:false,controlled:false});
  const panel=g.document?.getElementById?.('arena-defeat-analysis');if(panel){panel.hidden=true;panel.replaceChildren();}
  // Tower enemies are already prepared in the intermission. Narrate only
@@ -255,6 +316,13 @@ function observe(players,options={}){
  }
  if(overtime&&!overTimeWas)offer('overtime',[],10,'overtime');
  overTimeWas=overtime;
+ const dangerZones=g.ArenaTower?.encounter?.zones;
+ if(Array.isArray(dangerZones)&&dangerZones.some(z=>z&&(
+   (z.fire??z.timer??z.delay??0)>=0))&&frame-patternLast>190){
+   // Actual encounter zone existence, not a guessed boss skill.
+   offer('pattern',[name(players.find(p=>p.towerEnemy)||players[1])],7,'boss-zone');
+   patternLast=frame;
+ }
  if(frame%480===0){const sorted=players.filter(p=>p.hp>0).sort((a,b)=>b.hp/Math.max(1,b.maxHp)-a.hp/Math.max(1,a.maxHp));
    if(sorted.length>=2)offer('lead',[name(sorted[0])],1,'lead');}
  dispatch();
@@ -311,5 +379,5 @@ function finish(players,winner=null,reason=''){
  speak(winner?`${name(winner)} 승리! 전투가 종료됐습니다.`:'무승부! 치열한 경기가 마무리됐습니다.',{kind:'finish',priority:10});
  return lines;
 }
-g.ArenaBattleDirector=Object.freeze({reset,observe,finish,reportLines,explanations,skillUsed,skillHit,legacyHit,constructHit,floorReady,get skillTotals(){return skillTotals;},get frame(){return frame;},catalogSize});
+g.ArenaBattleDirector=Object.freeze({reset,observe,finish,reportLines,explanations,skillUsed,skillHit,legacyHit,constructHit,floorReady,combo,charge,originalUltimate,get skillTotals(){return skillTotals;},get frame(){return frame;},catalogSize});
 })(typeof window!=='undefined'?window:globalThis);
