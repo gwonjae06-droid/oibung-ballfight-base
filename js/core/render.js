@@ -126,6 +126,7 @@ p.poisonTears.forEach(b=>depth?.floatingBall?.(worldCtx,b,'#c084fc'));}
 globalThis.AdvancedCombat?.draw(worldCtx);
 globalThis.ArenaTower?.drawEncounter?.(worldCtx);
 globalThis.CosmeticArcade?.drawUnder?.(worldCtx,players);
+globalThis.ArenaPinballJuice?.drawUnder?.(worldCtx);
 
 players.forEach(p=>{
  globalThis.ForgeExpansion?.draw?.(p,worldCtx);
@@ -154,6 +155,7 @@ players.forEach(p=>{
 
 globalThis.CosmeticArcade?.drawOver?.(worldCtx,players);
 globalThis.ImpactPhysics?.draw?.(worldCtx);
+globalThis.ArenaPinballJuice?.drawOver?.(worldCtx);
 // Render secondary VFX before world transform is restored. The effect layer
 // never applies a second camera or a different random screenshake.
 globalThis.ArenaFXLayer?.draw?.(worldCtx);
