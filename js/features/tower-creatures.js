@@ -22,7 +22,40 @@ function draw(c,p,r){
   for(let i=0;i<7;i++){const x=(i-3)*.25,sway=Math.sin(t*4+i)*.12;poly([[x-.16,.3],[x-.2+sway,-.55],[x+sway,-1.25-Math.sin(t*3+i)*.2],[x+.2,-.3],[x+.16,.3]],i%2?'#f35f26':'#ffba52');}
   poly([[-.85,.6],[-.7,-.3],[-.35,-.7],[.2,-.8],[.75,-.2],[.9,.65],[.2,.9]],dark);
   c.strokeStyle='#ffb54b';c.lineWidth=3;c.beginPath();c.moveTo(-r*.4,-r*.4);c.lineTo(0,0);c.lineTo(-r*.2,r*.4);c.lineTo(r*.5,r*.65);c.stroke();
-  if(tier){poly([[-.8,-.25],[-1.25,-1.1],[-.35,-.6]],dark);poly([[.8,-.25],[1.25,-1.1],[.35,-.6]],dark);}
+  if(tier){
+   // Tier 1 is a cracked magma heart; tier 2 is a fully crowned obsidian
+   // caldera. Both remain non-humanoid stones, without arms or legs.
+   const facets=tier===2?12:8;
+   c.save();c.rotate(t*(tier===2?-.13:.09));
+   for(let i=0;i<facets;i++){
+    const a=i*T/facets,tip=tier===2?1.36:1.14;
+    c.save();c.rotate(a);
+    poly([[-.12,-.73],[0,-tip],[.16,-.78]],i%3===0?'#4a2525':'#2c2028');
+    c.strokeStyle=i%2?'#fa6b37':'#ffcf78';c.lineWidth=tier===2?2.6:1.8;
+    c.beginPath();c.moveTo(0,-r*.79);c.lineTo(0,-r*(tip-.12));c.stroke();
+    c.restore();
+   }
+   c.restore();
+   const glow=c.createRadialGradient(-r*.19,-r*.21,1,0,0,r*.66);
+   glow.addColorStop(0,'#ffefad');glow.addColorStop(.32,'#ffae4b');
+   glow.addColorStop(.64,'#f34e28');glow.addColorStop(1,'#3a1e26');
+   c.fillStyle=glow;c.beginPath();c.arc(0,0,r*(tier===2?.55:.42),0,T);c.fill();
+   c.strokeStyle='#ffd59a';c.lineWidth=tier===2?3:2;
+   for(let i=0;i<(tier===2?6:4);i++){
+    const a=i*T/(tier===2?6:4)+.2;
+    c.beginPath();c.moveTo(Math.cos(a)*r*.27,Math.sin(a)*r*.27);
+    c.lineTo(Math.cos(a+.13)*r*.58,Math.sin(a+.13)*r*.58);
+    c.lineTo(Math.cos(a+.25)*r*.8,Math.sin(a+.25)*r*.8);c.stroke();
+   }
+   if(tier===2){
+    c.save();c.rotate(-t*.19);
+    for(let j=0;j<3;j++){
+     c.strokeStyle=j===1?'#ffe09c':'#fc6b34';c.lineWidth=j===0?4:1.5;
+     c.beginPath();c.ellipse(0,0,r*(1.12+j*.11),r*(.4+j*.13),j*.48,.25,T-.35);c.stroke();
+    }
+    c.restore();
+   }
+  }
  }else if(realm==='storm'){
   for(let i=0;i<5;i++){const y=(i-2)*r*.3;c.beginPath();c.ellipse(Math.sin(t*3+i)*r*.1,y,r*(.25+i*.18),r*.22,-.14,0,T);c.fillStyle=i%2?'#4a6d86':'#263c56';c.fill();c.stroke();}
   c.strokeStyle='#ecffff';c.lineWidth=3;c.beginPath();c.moveTo(-r*.1,-r*.65);c.lineTo(r*.2,-r*.15);c.lineTo(-r*.18,r*.05);c.lineTo(r*.14,r*.65);c.stroke();
