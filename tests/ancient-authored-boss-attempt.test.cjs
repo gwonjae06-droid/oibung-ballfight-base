@@ -27,13 +27,13 @@ const action=(type,damage=0,duration=1.2)=>({type,damage,
  radius:type==='wave'?300:130,count:1,speed:6,duration,
  status:'none',target:'nearest',pattern:'direct',link:'after',
  condition:'always',knockback:0,delay:0});
-function plan(shield,heal,attack){
+function plan(shield,heal,attack,status='none'){
  // One user-saveable signature containing up to 12 meaningful action blocks.
  // All numbers are within SkillForge.normalize parameter bounds.
  const actions=[
  ...Array.from({length:shield},()=>action('shield',0,7.4)),
  ...Array.from({length:heal},()=>action('heal',120,1.5)),
- ...Array.from({length:attack},()=>action('wave',120,1.5))
+ ...Array.from({length:attack},()=>({...action('wave',120,1.5),status}))
  ].slice(0,12);
  return {name:'천공 반사 수호자',archetype:'legacy',signatureVersion:1,
   signatureTiming:'instant',hp:500,speed:4.6,
@@ -41,7 +41,7 @@ function plan(shield,heal,attack){
   skills:[{name:'성운의 연속 파동',trigger:'auto',cooldown:5,
    actions:actions.map((a,i)=>({...a,link:i===0?'and':'after'}))}]};
 }
-function attempt(g,build,limit=13500){
+function attempt(g,build,point,limit=13500){
  const skill=plan(...build);
  const hId=g.SkillForge.register(skill);
  const bId=g.SkillForge.register({name:'고대의 존재의 팔',hp:500,speed:.6,
@@ -49,7 +49,7 @@ function attempt(g,build,limit=13500){
    actions:[action('shield',0,.2)]}]},{towerEnemy:true});
  const hd=g.CUSTOM_DEFS.find(d=>d.id===hId),bd=g.CUSTOM_DEFS.find(d=>d.id===bId);
  const hero=hd.createInstance(1),boss=bd.createInstance(2);
- hero.towerHero=true;hero.x=205;hero.y=370;hero.vx=3.1;hero.vy=-2.5;
+ hero.towerHero=true;hero.x=point.x;hero.y=point.y;hero.vx=point.vx;hero.vy=point.vy;
  boss.towerPatternBoss=true;boss._ancientEnergyOnly=true;boss.towerRealm='space';
  boss.hp=3000;boss.maxHp=3000;boss.forgeLastHp=3000;boss.towerDefense=1;
  boss.x=250;boss.y=90;boss.vx=0;boss.vy=0;
@@ -57,7 +57,7 @@ function attempt(g,build,limit=13500){
  let scene;
  g.ArenaTower={active:true,stage:'fighting',state:{ancient:true,realm:'space',level:10},
   get encounter(){return scene;}};
- const stats={build,startingHp:hero.hp,startingBossHp:boss.hp,
+ const stats={build,point,startingHp:hero.hp,startingBossHp:boss.hp,
   casts:0,hits:0,hazardHits:0,phase:1,limbHits:0,remaining:boss.hp,heroRemaining:hero.hp};
  const dmg=(victim,amount,z)=>{
   if(victim.hp<=0||victim.invincible>0)return false;
@@ -93,9 +93,25 @@ function attempt(g,build,limit=13500){
 }
 test('create real custom single-program skill and attempt Ancient One through real HP and six seals',()=>{
  const g=boot();
- const builds=[[2,2,8],[1,3,8],[2,3,7],[1,2,9]];
- const trials=builds.map(b=>attempt(g,b,13500));
- console.log('ANCIENT_REAL_HP_HEADLESS_ATTEMPT '+JSON.stringify(trials));
+ const builds=[[1,2,9],[2,1,9],[1,1,10],[1,2,9,'fire'],[1,2,9,'vulnerable']];
+ const points=[
+  {x:205,y:370,vx:3.1,vy:-2.5},
+  {x:250,y:340,vx:3.6,vy:-1},
+  {x:120,y:300,vx:3.2,vy:1.5},
+  {x:300,y:410,vx:-3.4,vy:-1.7},
+  {x:100,y:420,vx:4.5,vy:-1.4},
+  {x:370,y:390,vx:-4.3,vy:-2},
+  {x:225,y:160,vx:2.7,vy:2.4},
+  {x:150,y:190,vx:-2,vy:3.2}
+ ];
+ const trials=builds.flatMap(b=>points.map(point=>attempt(g,b,point,13500)));
+ const best=trials.slice().sort((a,b)=>a.remaining-b.remaining)[0];
+ const won=trials.filter(t=>t.won);
+ console.log('ANCIENT_REAL_HP_HEADLESS_ATTEMPT '+JSON.stringify({
+   attempts:trials.length,clears:won.length,best,
+   winners:won.slice(0,4).map(t=>({build:t.build,point:t.point,frames:t.frames,
+     casts:t.casts,remaining:t.remaining,heroRemaining:t.heroRemaining,limbHits:t.limbHits}))
+ }));
  for(const result of trials){
   assert.equal(result.startingBossHp,3000);
   assert.ok(Number.isFinite(result.remaining)&&result.remaining>=0);
