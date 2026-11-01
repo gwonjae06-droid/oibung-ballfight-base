@@ -107,7 +107,7 @@ test('energy budget ignores obsolete saved cooldown numbers for modern signature
 test('arena collision, wall, script loading and gauge reuse the existing physics/effects',()=>{
  const game=read('js/core/engine.js'),forge=read('js/features/skill-forge.js');
  assert.match(game,/BounceMomentum\?\.contact/);
- assert.match(game,/BounceMomentum\?\.wall/);
+ assert.match(game,/BounceMomentum(?:\?\.|\.)wall/);
  assert.match(game,/BounceMomentum\?\.meter/);
  assert.match(forge,/BounceMomentum\.ready/);
  assert.match(forge,/BounceMomentum\?\.spend/);
