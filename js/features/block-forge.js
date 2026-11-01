@@ -275,9 +275,9 @@ function draw(){
     +(i===selectedSkill?inspector(s,i):'')
     +'<p class="block-quick-description">'+escape(phrase(s))+'</p>'
     +(signature?'':'<details class="block-quick-settings"><summary>발동 조건 · 쿨타임</summary><div class="block-quick-settings-grid">')
-    +'<label>발동<select data-edit="meta" data-key="trigger" data-skill="'+i+'">'+options(TRIGGER,s.trigger)+'</select></label>'
-    +'<label>쿨타임(초)<input type="number" min=".2" max="30" step=".1" data-edit="meta" data-key="cooldown" data-skill="'+i+'" value="'+escape(s.cooldown)+'"></label>'
-    +(s.trigger==='lowhp'?'<label>HP 조건(%)<input type="number" min="5" max="95" step="5" data-edit="meta" data-key="threshold" data-skill="'+i+'" value="'+escape(s.threshold)+'"></label>':'')
+    +(signature?'':'<label>발동<select data-edit="meta" data-key="trigger" data-skill="'+i+'">'+options(TRIGGER,s.trigger)+'</select></label>')
+    +(signature?'':'<label>쿨타임(초)<input type="number" min=".2" max="30" step=".1" data-edit="meta" data-key="cooldown" data-skill="'+i+'" value="'+escape(s.cooldown)+'"></label>')
+    +(!signature&&s.trigger==='lowhp'?'<label>HP 조건(%)<input type="number" min="5" max="95" step="5" data-edit="meta" data-key="threshold" data-skill="'+i+'" value="'+escape(s.threshold)+'"></label>':'')
     +(signature?'':'</div></details>')
     +(!signature&&i>0?'<button type="button" class="block-quick-merge" data-op="merge" data-skill="'+i+'" '+(skills[i-1].actions.length+s.actions.length>3?'disabled':'')+'>↑ 이전 스킬과 합치기</button>':'')
     +'</section>').join('')
