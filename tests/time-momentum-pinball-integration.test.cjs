@@ -68,6 +68,34 @@ test('rewind returns recorded pinball position, heading and no more than 30 ener
  assert.equal(g.BounceMomentum.meter(p),30);
  assert.ok(p.hp>100);
 });
+test('time rewind heading survives ordinary pinball AI velocity restoration',()=>{
+ const g=world();
+ vm.runInContext(read('js/features/arena-pinball-motion.js'),g);
+ const p=actor(0),e=actor();e.x=190;e.playerNum=2;g.players=[p,e];
+ p.forgeHistory=[{x:85,y:85,vx:-8,vy:1,hp:260,momentum:30}];
+ const before=g.ArenaPinballMotion.begin(p);
+ assert.equal(before.scripted,false);
+ g.ForgeExpansion.execute(p,{type:'rewind',duration:2},e,api(e));
+ assert.equal(g.ArenaPinballMotion.end(p,before),false,'rewind must not revert to pre-cast direction');
+ assert.equal(p.vx,-8);assert.equal(p.vy,1);
+ assert.ok(p._pinballRewindUntil>p._forgeActionClock);
+});
+test('practice supports 55 action families without live battle access or editing player data',()=>{
+ const g=world();
+ for(const type of g.ActionRegistry.ids()){
+  const profile={name:'action',signatureVersion:1,skills:[{
+    name:type,actions:[{type,radius:110,duration:1,count:2}],
+    program:[{kind:'action',action:{type,radius:110,duration:1,count:2}}]
+  }]};
+  const snapshot=JSON.stringify(profile);
+  const lab=g.StudioPinballLab.make(profile);lab.fire();
+  assert.doesNotThrow(()=>lab.advanceTo(250),type);
+  assert.equal(lab.balls.length,2);
+  assert.ok(lab.balls.every(p=>Number.isFinite(p.x)&&Number.isFinite(p.y)),type);
+  assert.equal(JSON.stringify(profile),snapshot,type+' cannot mutate player recipe');
+ }
+});
+
 test('removed basic attacks cannot charge energy; all registered actions remain available',()=>{
  const g=world(),M=g.BounceMomentum,p=actor();
  assert.equal(M.basicHit(p),false);assert.equal(M.meter(p),0);
