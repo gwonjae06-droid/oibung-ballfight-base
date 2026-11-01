@@ -474,6 +474,11 @@ function install(){
       players[0].manualTower=false;players[0].towerHero=true;
       realms.apply(players[0],realmId,blessings);
       players[1].towerPatternBoss=ancient||level%5===0;
+      // Ancient body is stationary: its telegraphed patterns, not the dummy
+      // shield ability, are what consume the same 100-point boss meter.
+      players[1]._ancientEnergyOnly=!!ancient;
+      players[1]._bossMomentumPhase='pattern';
+      players[1]._bossEnergyCursor=0;
       if(ancient){players[1].hp=3000;players[1].maxHp=3000;players[1].x=canvas.width/2;players[1].y=canvas.height*.18;players[1].forgeLastHp=3000;}
       players[1].towerRealm=realmId;
       players[1].towerEnemyType=(level<=4?level-1:level-2)%3;
