@@ -280,6 +280,7 @@ function hit(p,e,action,multiplier=1,attackZ) {
     action.status==='poison'&&e.bfDot>0?'poison':
     e.forgeEffects?.[action.status]?.time>0?action.status:'none';
   if(d>0){
+    if(action.basicAttack)global.BounceMomentum?.basicHit?.(p);
     global.SignatureLive?.record?.(p,'hit');
     if(action.basicAttack)global.SignatureLive?.record?.(p,'basicHit');
     if(action.basicAttack&&action.basicLifesteal&&p.hp>0){
@@ -309,7 +310,8 @@ function hit(p,e,action,multiplier=1,attackZ) {
 const transitionLead={leap:14,hover:12,glide:12,erupt:12,uppercut:7,
   dash:7,blink:4,slash:8,spinslash:8,thrust:8,aircombo:7,
   arcshot:7,splitshot:7,dive:8,wall:5,portal:5,summon:5,turret:5};
-const cooldownFrames=(p,s)=>Math.max(12,Math.round((p.forgeRush?Math.min(1,s.cooldown):s.cooldown)*60));
+const cooldownFrames=(p,s)=>global.BounceMomentum?.enabled?.(p)?60:
+ Math.max(12,Math.round((p.forgeRush?Math.min(1,s.cooldown):s.cooldown)*60));
 function cast(p,s,target,index){
   // A Scratch program is a coroutine: evaluate each branch AFTER the previous
   // action has actually executed, never by flattening conditions at cast time.
@@ -513,6 +515,7 @@ function update(p,target){
    else if(v>.001&&Number.isFinite(v)){const next=v+(cruise-v)*(v>cruise?.075:.16);p.vx=p.vx/v*next;p.vy=p.vy/v*next;}
   else{p.vx=cruise;p.vy=0;}
   tickSkills(p);
+  global.BounceMomentum?.tick?.(p,target);
   // Basic attacks are deliberately separate from the one signature cooldown.
   // They still pass through execute()/hit() and honor physical collision.
   global.BasicAttacks?.tick?.(p,target,{execute});
@@ -548,14 +551,18 @@ function update(p,target){
     p.forge.skills.forEach((s,i)=>{
       if(global.ForgeExpansion?.blocked(p))return;
       if(p.forgeTicks[i]<cooldownFrames(p,s))return;
+      if(global.BounceMomentum?.enabled?.(p)&&!global.BounceMomentum.ready(p))return;
       const active=global.SignatureProgram?.eligible?.(p,target,s,loss)??
         ((s.trigger==='auto'&&target)||(s.trigger==='lowhp'&&p.hp/p.maxHp*100<=s.threshold)
         ||(s.trigger==='damaged'&&loss>0));
       if(active&&global.ArenaAutoAI?.canCast?.(p,target,s)!==false&&cast(p,s,target,i)){
+        global.BounceMomentum?.spend?.(p);
         p.forgeTicks[i]=0;
         if(s.trigger==='dodge')p._forgeDodgeConsumed=p._forgeDodgeSerial||0;
         if(s.trigger==='basicHit')p._scratchBasicHitConsumed=p._scratchEvents?.basicHit?.count||0;
         if(s.trigger==='basicStatus')p._scratchBasicStatusConsumed=p._scratchEvents?.basicStatus?.count||0;
+        if(s.trigger==='contactEnergy')p._scratchContactConsumed=p._scratchEvents?.contact?.count||0;
+        if(s.trigger==='wallEnergy')p._scratchWallConsumed=p._scratchEvents?.wall?.count||0;
       }
     });
   }
