@@ -83,6 +83,7 @@ function updateWaves(p,roster){
 function morph(p){
  p.mode=p.mode==='boin'?'menhera':'boin';
  p.modeTimer=0;
+ p._originalMassBoost=p.mode==='boin'?1:1.48;
  p._originalFormUntil=(p._combat2Tick||0)+330;
  p.invincible=Math.max(p.invincible||0,12);
  if(p.mode==='boin'){
@@ -223,8 +224,33 @@ function update(p,target,roster=[]){
  return true;
 }
 function shockwave(p){
- if(Array.isArray(g.shockwaves))g.shockwaves.push({x:p.x,y:p.y,radius:10,maxRadius:130,alpha:1});
+ if(Array.isArray(g.shockwaves))
+  g.shockwaves.push({x:p.x,y:p.y,radius:10,maxRadius:130,alpha:1});
 }
+function drawJaw(ctx,p){
+ const v=p._jawVisual;if(!v||v.life<=0||!ctx)return;
+ const alpha=cap(v.life/30,0,1),angle=v.angle,t=1-alpha;
+ ctx.save();ctx.translate(p.x,p.y);ctx.rotate(angle);
+ // Huge luminous NON-HUMANOID two-plate jaw projection. Teeth are
+ // stylized geometric triangles; no change to the gameplay hit arc.
+ ctx.globalAlpha=alpha;ctx.shadowColor='#61d7ff';ctx.shadowBlur=26;
+ ctx.strokeStyle='#abecff';ctx.lineWidth=8;ctx.fillStyle='#185a7d';
+ for(const sign of [-1,1]){
+  ctx.save();ctx.scale(1,sign);ctx.beginPath();
+  ctx.moveTo(20,12);ctx.quadraticCurveTo(104,4,191,35-20*t);
+  ctx.quadraticCurveTo(137,67-17*t,44,44);ctx.closePath();
+  ctx.fill();ctx.stroke();
+  ctx.fillStyle='#f4fcff';ctx.shadowBlur=5;
+  for(let j=0;j<5;j++){
+   const x=65+j*23,y=30+Math.sin(j)*5;
+   ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+14,y);
+   ctx.lineTo(x+8,y-17);ctx.closePath();ctx.fill();
+  }
+  ctx.restore();
+ }
+ ctx.restore();
+}
+
 function install(){
  for(const id of IDS){
   if(!g.BEHAVIORS?.[id])continue;
@@ -232,7 +258,7 @@ function install(){
   g.BEHAVIORS[id].onContact=onContact;
  }
 }
-const api=Object.freeze({IDS,isOriginal,update,onContact,nextSkill,hit,shockwave,install});
+const api=Object.freeze({IDS,isOriginal,update,onContact,nextSkill,hit,shockwave,drawJaw,install});
 g.ArenaOriginalMomentum=api;
 install();
 })(typeof window!=='undefined'?window:globalThis);
