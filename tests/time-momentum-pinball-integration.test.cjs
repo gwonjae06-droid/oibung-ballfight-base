@@ -49,10 +49,10 @@ test('time stop respects CC recovery, shield immunity, and non-energy targets',(
 });
 test('time acceleration boosts real collisions and passive recharge without stacking with haste',()=>{
  const g=world(),p=actor(),F=g.ForgeExpansion,M=g.BounceMomentum;
- F.effect(p,'haste',100,p);
+ F.execute(p,{type:'haste',duration:2},actor(),api(actor()));
  assert.equal(M.add(p,8,'wall'),true);
  assert.equal(M.meter(p),8*M.TIME_HASTE);
- p._forgeActionClock+=40;F.effect(p,'timeburst',90,p);
+ p._forgeActionClock+=40;F.execute(p,{type:'timeburst',duration:2},actor(),api(actor()));
  M.add(p,8,'wall');
  assert.equal(M.meter(p),8*M.TIME_HASTE+8*M.TIME_ACCEL);
  p._forgeActionClock++;M.tick(p,{hp:100});
