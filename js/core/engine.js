@@ -444,10 +444,13 @@ function updateUI() {
       // The full-catalog fighter owns every cooldown, but only four
       // upcoming actions are shown here so the HUD never becomes 50 rows.
       const total=p.forge.skills.length;
-      const visibleIndices=p.forge.allAbilities?
+      // Every energy-driven fighter has exactly ONE shared gauge: do not
+      // duplicate the same 100% bar for every minion or boss skill.
+      const sharedEnergy=globalThis.BounceMomentum?.enabled?.(p);
+      const visibleIndices=sharedEnergy?[0]:p.forge.allAbilities?
         Array.from({length:Math.min(4,total)},(_,j)=>((p.forgeCursor||0)+j)%total):
         p.forge.skills.map((_,i)=>i);
-      meters.dataset.full=p.forge.allAbilities?'전체 '+total+'개 능력 · 다음 발동 순서':'';
+      meters.dataset.full=sharedEnergy?'기세 100마다 스킬 1개씩 순차 발동':p.forge.allAbilities?'전체 '+total+'개 능력 · 다음 발동 순서':'';
       if(meters.children.length!==visibleIndices.length){
         meters.replaceChildren();
         visibleIndices.forEach(()=>{
