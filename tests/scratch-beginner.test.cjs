@@ -14,7 +14,7 @@ const action=(type)=>({kind:'action',action:{type,damage:22,radius:120,count:1,
 test('elementary-friendly builder offers obvious 3-step creation, plain speech and visible preview',()=>{
  const s=src('js/features/scratch-beginner.js');
  for(const phrase of ['언제 기술을 쓸까?','무엇을 할까?','완성한 기술 확인하기',
-  '내 필살기 만들기','▶ 내 기술 움직임 보기','쉬운','블록 자세히 보기',
+  '내 필살기 만들기','▶ 미니 핀볼 실험장에서 시험','쉬운','블록 자세히 보기',
   'kid-trigger-options','kid-action-grid','kid-plan','data-kid-command="random"']){
    assert.ok(s.includes(phrase),phrase);
  }

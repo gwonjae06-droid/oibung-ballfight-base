@@ -143,6 +143,7 @@ function block(n,path,depth){
    +num('count','개수',1,8,1)+num('speed','속도',2,14,.5)
    +num('duration','지속',.2,8,.1)+num('knockback','넉백',0,9,.5)
    +num('delay','발동 지연',0,2,.1)
+   +num('ricochet','벽 반사 횟수',0,3,1)
    +'</div></details>';
  }else if(kind==='wait'){
   inside='<span>기다리기</span><label><input data-scratch-field="seconds" data-scratch-node="'+encoded+'" type="number" min=".1" max="2" step=".1" value="'+Number(n.seconds)+'"> 초</label>';

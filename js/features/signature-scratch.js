@@ -7,7 +7,10 @@ const KINDS=Object.freeze({action:'행동',if:'만약 / 아니면',repeat:'반�
  waitUntil:'조건까지 기다리기',repeatUntil:'조건까지 반복',set:'변수 정하기',change:'변수 바꾸기'});
 const clamp=(v,lo,hi,fallback)=>Number.isFinite(Number(v))?Math.max(lo,Math.min(hi,Number(v))):fallback;
 const allowed=()=>g.ActionRegistry?.TYPE||g.SkillForge?.TYPE||{shot:'투사체',wave:'충격파',dash:'돌진',shield:'방어막'};
-const cond=v=>g.SignatureProgram?.validCondition?.(v)||'always';
+// Old saved 'basic attack landed' conditions cannot occur now that basic
+ // attacks are removed; migrate to any authored skill's confirmed hit/status.
+const cond=v=>g.SignatureProgram?.validCondition?.(
+  v==='basicHit'?'hit':v==='basicStatus'?'status':v)||'always';
 const safeAction=a=>{
  const map=allowed(),src=a&&typeof a==='object'?a:{};
  const type=Object.prototype.hasOwnProperty.call(map,src.type)?src.type:'wave';
@@ -18,6 +21,7 @@ const safeAction=a=>{
   count:Math.round(clamp(src.count,1,8,1)),speed:clamp(src.speed,2,14,5),
   duration:clamp(src.duration,.2,8,1.5),status:Object.hasOwn(status,src.status)?src.status:'none',
   knockback:clamp(src.knockback,0,9,2),delay:clamp(src.delay,0,2,0),
+  ricochet:type==='shot'?Math.round(clamp(src.ricochet,0,3,0)):0,
   link:['and','after','with'].includes(src.link)?src.link:'after'};
 };
 function normalize(program){

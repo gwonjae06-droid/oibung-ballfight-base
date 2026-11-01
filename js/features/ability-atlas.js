@@ -125,7 +125,7 @@ function execute(caster,action,originalTarget,api){
       const heightVelocity=(aimZ-originZ)/Math.max(1,
         Math.hypot(target.x-caster.x,target.y-caster.y)/Math.max(1,action.speed));
       caster.forgeShots.push({x:caster.x,y:caster.y,z:originZ,heightVelocity,vx,vy,
-        life:Math.ceil(action.radius/action.speed*3),a:action,
+        life:action.ricochet>0?Math.max(150,Math.ceil(action.radius/action.speed*3)):Math.ceil(action.radius/action.speed*3),a:action,
         atlas:'shot',targetNum:target.playerNum});
     }
     if(caster.forgeShots.length>100)caster.forgeShots.splice(0,caster.forgeShots.length-100);

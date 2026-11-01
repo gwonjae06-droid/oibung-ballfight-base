@@ -1,5 +1,5 @@
 /* Studio workspace: concise Skills/Appearance tabs and a small live, read-only
- * motion sketch. It previews the validated ability draft; it never casts,
+ * pinball skill practice lab. It previews the validated ability draft; it never casts,
  * mutates battle players, starts matches, or stores a character. */
 (function(global){
 'use strict';
@@ -20,8 +20,8 @@ const classes=global.ForgeArchetypes;
 const rolePicker=document.createElement('section');
 rolePicker.id='forge-role-picker';rolePicker.className='forge-role-picker';
 rolePicker.setAttribute('aria-label','캐릭터 기본 전투 유형');
-rolePicker.innerHTML='<h3>기본 전투 유형 선택</h3>'
- +'<p>다섯 유형의 기본 체력·속도·공격·방어·제어 능력이 다릅니다. 스킬 블록은 유형에 관계없이 자유롭게 조합할 수 있습니다.</p>'
+rolePicker.innerHTML='<h3>공의 특성 선택</h3>'
+ +'<p>이동속도·체력·피해 배율이 다른 공 유형을 고르세요. 기본 공격 없이, 직접 코딩한 스킬만 기세 100에 발동합니다.</p>'
  +'<div class="forge-role-options" role="group" aria-label="전투 유형 다섯 가지">'
  +Object.entries(classes?.TYPES||{}).map(([id,r])=>
    '<button type="button" class="forge-role-option" data-archetype="'+id+'" aria-pressed="false">'
@@ -124,14 +124,14 @@ tabs.addEventListener('keydown',event=>{
 
 const preview=document.createElement('section');
 preview.className='studio-motion-preview';
-preview.setAttribute('aria-label','왼쪽 고정 동작 미리보기 · 실제 전투 데이터와 분리됨');
+preview.setAttribute('aria-label','미니 핀볼 스킬 실험장 · 실제 전투 데이터와 분리됨');
 preview.innerHTML=
-  '<div class="studio-motion-header"><strong>동작 미리보기</strong><small>선택한 코드 블록의 동작을 실시간 확인 · 실제 피해 없음</small></div>'
-  +'<div class="studio-motion-body"><div class="studio-motion-stage"><canvas id="studio-motion-canvas" width="480" height="180" aria-label="2D 캐릭터가 훈련 더미 앞에서 설정한 스킬을 시연하는 화면"></canvas></div>'
-  +'<div class="studio-motion-info"><label for="studio-motion-select">미리볼 스킬</label><select id="studio-motion-select" aria-label="미리보기 스킬 선택"></select>'
-  +'<span id="studio-motion-caption" aria-live="off">스킬을 조합하면 동작을 보여줍니다.</span><span id="studio-motion-cooldown"></span></div></div>'
+  '<div class="studio-motion-header"><strong>🎱 미니 핀볼 실험장</strong><small>벽 반사 · 공 충돌 · 직접 만든 스킬 실험 · 실제 피해 없음</small></div>'
+  +'<div class="studio-motion-body"><div class="studio-motion-stage"><canvas id="studio-motion-canvas" width="480" height="300" aria-label="두 공이 벽과 범퍼에 튕기며 제작한 스킬을 사용하는 미니 핀볼 연습장"></canvas></div>'
+  +'<div class="studio-motion-info"><label for="studio-motion-select">실험할 스킬</label><select id="studio-motion-select" aria-label="미리보기 스킬 선택"></select>'
+  +'<span id="studio-motion-caption" aria-live="off">공이 튕기며 기세를 모읍니다.</span><span id="studio-motion-cooldown"></span></div></div>'
   +'<div class="studio-motion-footer"><div class="studio-motion-buttons"><button id="studio-motion-play" type="button">⏸ 일시정지</button>'
-  +'<button id="studio-motion-replay" type="button">↺ 다시보기</button>'
+  +'<button id="studio-motion-replay" type="button">↺ 처음부터</button><button id="studio-motion-fire" type="button">⚡ 기세 100으로 시험</button>'
   +'<label>속도 <select id="studio-motion-speed" aria-label="미리보기 속도"><option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="2">2×</option></select></label></div>'
   +'<div class="studio-motion-progress" role="progressbar" aria-label="시연 진행률" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div id="studio-motion-fill"></div></div></div>';
 shell.insertBefore(preview,content);
@@ -145,7 +145,7 @@ const replayButton=preview.querySelector('#studio-motion-replay');
 const speed=preview.querySelector('#studio-motion-speed');
 const fill=preview.querySelector('#studio-motion-fill');
 const track=preview.querySelector('.studio-motion-progress');
-const TAU=Math.PI*2,WIDTH=480,HEIGHT=180;
+const TAU=Math.PI*2,WIDTH=480,HEIGHT=300;
 const clamp=(n,lo,hi)=>Math.min(hi,Math.max(lo,n));
 const MOVE=global.ActionRegistry?new Set([...global.ActionRegistry.byGroup('mobility'),'flight','burrow','dive','burrowdash']):new Set(['dash','blink','swap','retreat','flight','burrow','leap','hover','glide','dive','burrowdash','portal']);
 const PURE=global.ActionRegistry?.MOVEMENT_ONLY||new Set(['dash','blink','swap','retreat','leap','hover','glide','portal']);
@@ -162,6 +162,7 @@ const isDefense=type=>R?.get(type)?R.get(type).category==='defense'||DEFENSE.has
 const duration=a=>R?.duration(a.type)||(PROJECTILE.has(a.type)?1050:MOVE.has(a.type)?850:EXPLOSION.has(a.type)?1120:950);
 const label=t=>global.SkillForge.TYPE[t]||t||'동작';
 let focus=0,profile=null,sequence=null,elapsed=0,raf=0,stamp=null,playing=true,shown=true;
+let pinball=null,lastPinballData='',lastLabTime=-1,focusAction=-1;
 let lastText='',lastPicker='',pickedIndex=-1;
 const reduced=()=>!!global.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
 // Only the preview planner uses these values: no global engine clocks change.
@@ -201,6 +202,15 @@ function arm(x,y,action,t,color){
 }
 function render(time){
   if(!sequence)return;
+  if(global.StudioPinballLab&&pinball){
+    pinball.advanceTo(time);
+    pinball.render(ctx);
+    const txt=pinball.title+' · '+pinball.casts+'회 사용 · 현재 탄환 '+pinball.projectiles+'개';
+    if(txt!==lastText){caption.textContent=txt;lastText=txt;}
+    const pct=Math.round(time/sequence.duration*100);
+    fill.style.width=pct+'%';track.setAttribute('aria-valuenow',String(pct));
+    return;
+  }
   const events=sequence.events;
   const active=events.filter(e=>time>=e.start&&time<e.end).slice(-3);
   const primary=active.at(-1);
@@ -276,26 +286,45 @@ function dpi(){
     ctx.setTransform(ratio,0,0,ratio,0,0);ctx.imageSmoothingEnabled=true;
   }
 }
-function draw(ms){dpi();render(clamp(ms,0,sequence?.duration||1));}
+function draw(ms){
+  const next=clamp(ms,0,sequence?.duration||1);
+  if(global.StudioPinballLab&&next<lastLabTime){
+    pinball=global.StudioPinballLab.make(profile,focus,focusAction);
+  }
+  lastLabTime=next;
+  dpi();render(next);
+}
 function refresh(reset=false){
   const draft=global.SkillForge.getDraft();
   const old=focus;
   profile=draft;
   sequence=plan(draft,focus);
+  if(global.StudioPinballLab){
+    // Practice uses one 12s energy cycle instead of obsolete cooldown clocks.
+    sequence.duration=12000;
+    const fingerprint=JSON.stringify([draft.signatureVersion,draft.skills,draft.color,draft.name,focus,focusAction,draft.allAbilities]);
+    if(reset||!pinball||fingerprint!==lastPinballData){
+      pinball=global.StudioPinballLab.make(draft,focus,focusAction);
+      lastPinballData=fingerprint;
+      lastLabTime=-1;
+      elapsed=0;
+    }
+  }
   const options=sequence.skills.map((skill,i)=>String(i)+':'+String(skill.name));
   const pickerKey=options.join('|')+'|'+String(draft.allAbilities);
   if(pickerKey!==lastPicker){
     lastPicker=pickerKey;choose.replaceChildren();
     const add=(value,label)=>{const opt=document.createElement('option');opt.value=value;opt.textContent=label;choose.appendChild(opt);};
-    add('all','전체 스킬 · 독립 쿨타임');
+    add('all','전체 스킬 실험 · 기세 100마다 하나씩');
     sequence.skills.forEach((skill,i)=>add(String(i),(i+1)+'. '+String(skill.name||'스킬').slice(0,22)));
   }
   choose.value=String(focus);
   if(reset)elapsed=0;
   elapsed=Math.min(elapsed,sequence.duration);
   const selected=sequence.skills[focus]||sequence.skills[0];
-  cooldown.textContent=focus==='all'?'스킬 '+sequence.skills.length+'개를 각자의 쿨타임으로 시연합니다.':
-    '발동: '+(global.SkillForge.TRIGGER[selected?.trigger]||'자동')+' · 개별 쿨타임 '+(selected?.cooldown||3)+'초';
+  cooldown.textContent=global.StudioPinballLab?
+    '모의 실험 · 초기 기세 86 · 충전 속도는 실제 전투와 다름 · 피해·명중률 미측정 · 조건 분기는 참 조건 예시':
+    focus==='all'?'전체 스킬 시연':('발동: '+(global.SkillForge.TRIGGER[selected?.trigger]||'자동'));
   draw(elapsed);
 }
 function stop(){
@@ -322,9 +351,10 @@ function start(){
 function setVisible(on){shown=!!on;if(!shown)stop();else start();}
 function selectSkill(si,index=-1){
   focus=si==='all'?'all':Number(si)||0;
+  focusAction=Number.isInteger(Number(index))&&Number(index)>=0?Number(index):-1;
   elapsed=0;refresh(true);
   const found=sequence.events.find(e=>e.skillIndex===focus&&e.actionIndex===Number(index));
-  if(found)elapsed=found.start;
+  if(found&&!global.StudioPinballLab)elapsed=found.start;
   draw(elapsed);start();
 }
 function updateToggle(){
@@ -336,9 +366,17 @@ playButton.addEventListener('click',()=>{
   playing=!playing;updateToggle();
   if(playing)start();else stop();
 });
-replayButton.addEventListener('click',()=>{elapsed=0;playing=!reduced();updateToggle();start();});
+replayButton.addEventListener('click',()=>{elapsed=0;pinball=null;playing=!reduced();updateToggle();refresh(true);start();});
+preview.querySelector('#studio-motion-fire')?.addEventListener('click',()=>{
+  if(global.StudioPinballLab){
+    if(!pinball)pinball=global.StudioPinballLab.make(profile,focus,focusAction);
+    pinball.fire();draw(elapsed);
+    if(!playing){playing=true;updateToggle();}
+    start();
+  }
+});
 speed.addEventListener('change',()=>{stamp=null;draw(elapsed);});
-preview.addEventListener('click',e=>{if(e.target===canvas){elapsed=0;draw(0);}});
+preview.addEventListener('click',e=>{if(e.target===canvas){elapsed=0;pinball=null;refresh(true);}});
 dialog.addEventListener('close',stop);
 if(typeof global.addEventListener==='function'){
   global.addEventListener('studio:open',start);

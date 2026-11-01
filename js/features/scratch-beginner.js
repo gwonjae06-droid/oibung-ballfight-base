@@ -49,10 +49,10 @@ panel.innerHTML='<div class="kid-top"><div><span class="kid-overline">MY SPECIAL
  +'<section class="kid-section" aria-labelledby="kid-step-two"><div class="kid-step-heading"><span class="kid-step-no">2</span><div><h4 id="kid-step-two">무엇을 할까?</h4><p>블록을 누르면 내 기술에 차례대로 추가돼요.</p></div></div><div class="kid-action-grid"></div></section>'
  +'<section class="kid-section kid-plan-section" aria-labelledby="kid-step-three"><div class="kid-step-heading"><span class="kid-step-no">3</span><div><h4 id="kid-step-three">완성한 기술 확인하기</h4><p>위에서 아래로 순서대로 실행돼요.</p></div></div>'
  +'<label class="kid-name-label">내 필살기 이름<input id="kid-skill-name" type="text" maxlength="18" placeholder="예: 번개 돌진"></label><div class="kid-skill-summary"><div class="kid-plan"></div><div class="kid-count"></div></div>'
- +'<div class="kid-tempo kid-momentum-guide"><strong>⚡ 필살기는 기세가 100이 되면 준비돼요</strong><p>상대와 부딪히거나 벽에 튕기면 빨리 충전돼요. 기본 공격을 맞혀도 조금씩 쌓이고, 전투 중에는 천천히 자동 충전돼요.</p></div>'
- +'<button type="button" class="kid-preview-action" data-kid-command="preview">▶ 내 기술 움직임 보기</button></section>'
+ +'<div class="kid-tempo kid-momentum-guide"><strong>⚡ 필살기는 기세가 100이 되면 준비돼요</strong><p>상대와 부딪히거나 벽에 튕기면 빨리 충전돼요. 충돌과 벽 반사로 쌓이고, 전투 중에는 천천히 자동 충전돼요.</p></div>'
+ +'<button type="button" class="kid-preview-action" data-kid-command="preview">▶ 미니 핀볼 실험장에서 시험</button></section>'
  +'<section class="kid-templates" aria-labelledby="kid-templates-title"><div class="kid-templates-heading"><h4 id="kid-templates-title">무엇부터 만들지 모르겠나요?</h4><p>마음에 드는 예시를 누르면 블록이 자동으로 채워져요. 나중에 바꿀 수도 있어요.</p></div><div class="kid-template-grid"></div><button type="button" class="kid-random" data-kid-command="random">🎲 아무거나 재미있는 기술 만들기</button></section>'
- +'</div><div class="kid-feedback" role="status" aria-live="polite">① 기술을 쓸 순간을 고르고, ② 행동 블록을 눌러 보세요.</div>';
+ +'</div><div class="kid-feedback" role="status" aria-live="polite">기세 100이 되면 기술이 발동해요. 원하는 행동 블록을 골라 보세요.</div>';
 const work=studio.querySelector('#studio-panel-skills');work.insertBefore(panel,workspace);
 studio.classList.add('scratch-friendly-mode');
 // Preserve access to appearance editing even when the code panel is hidden.
@@ -158,7 +158,7 @@ panel.addEventListener('click',e=>{
  if(button.dataset.kidDelete!==undefined){if(!migrate())return;const code=program(),index=Number(button.dataset.kidDelete);if(index>=0&&index<code.length){code.splice(index,1);setProgram(code,{},'블록 하나를 지웠어요. 다시 추가할 수 있어요.');}return;}
  const command=button.dataset.kidCommand;
  if(command==='random'){replaceWithTemplate(templates[Math.floor(Math.random()*templates.length)],true);return;}
- if(command==='preview'){g.CharacterStudioWorkspace?.selectPreviewSkill?.('all');tell('왼쪽의 훈련 미리보기를 확인해 보세요.');return;}
+ if(command==='preview'){g.CharacterStudioWorkspace?.selectPreviewSkill?.('all');tell('왼쪽 미니 핀볼 실험장에서 벽 반사와 스킬을 확인해 보세요.');return;}
  if(command==='convert')migrate();
 });
 panel.addEventListener('change',event=>{

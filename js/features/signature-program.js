@@ -16,8 +16,6 @@ const CONDITIONS=Object.freeze({
  move:'이동 동작이 완료되었다면',
  status:'적에게 상태이상을 적용했다면',
  charge3:'충전 변수가 3 이상이라면',
- basicHit:'기본 공격이 명중했다면',
- basicStatus:'기본 공격으로 상태이상을 걸었다면',
  contact:'상대와 실제로 부딪혔다면',
  wall:'벽에 튕겼다면'
 });

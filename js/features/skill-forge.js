@@ -81,7 +81,8 @@ function normalize(value,{towerEnemy=false}={}){
     name:clean(value.name,14)||'커스텀 파이터',blurb:clean(value.blurb,90),
     artKey:clean(value.artKey||'',52).replace(/[^a-zA-Z0-9_-]/g,''),
     archetype,
-    basicAttack:signature&&base?global.BasicAttacks?.normalize?.(value.basicAttack,archetype):undefined,
+    // Legacy basicAttack data is intentionally ignored. All damage comes from
+    // authored skills and their actual hit/collision effects, never passive attacks.
     color:color(value.color),effectColor:color(value.effectColor||value.color),
     hp:base?base.hp:Math.round(number(value.hp,140,towerEnemy?8000:500,250)),
     speed:base?base.speed:number(value.speed,.6,5,1.8),
@@ -104,6 +105,7 @@ function normalize(value,{towerEnemy=false}={}){
           speed:number(a.speed,2,14,5),duration:number(a.duration,.2,8,1.5),
           status:STATUS[a.status]?a.status:'none',
           knockback:number(a.knockback,0,9,2),delay:number(a.delay,0,2,0),
+          ricochet:a.type==='shot'?Math.round(number(a.ricochet,0,3,0)):0,
           link:['and','after','with'].includes(a.link)?a.link:'and',
           condition:signature?global.SignatureProgram?.validCondition?.(a.condition)||'always':'always'
         })).map(a=>MOVEMENT_ONLY.has(a.type)?{...a,damage:0,status:'none',knockback:0}:a)};
@@ -448,7 +450,8 @@ function execute(p,a,target) {
       const aimZ=global.AdvancedCombat?.height?.(near)||0;
       const frames=Math.max(1,Math.hypot(near.x-p.x,near.y-p.y)/Math.max(1,a.speed));
       p.forgeShots.push({x:p.x,y:p.y,z:originZ,heightVelocity:(aimZ-originZ)/frames,
-        vx:Math.cos(t)*a.speed,vy:Math.sin(t)*a.speed,targetNum:near.playerNum,life:Math.ceil(a.radius/a.speed*3),a});
+        vx:Math.cos(t)*a.speed,vy:Math.sin(t)*a.speed,targetNum:near.playerNum,
+        life:a.ricochet>0?Math.max(150,Math.ceil(a.radius/a.speed*3)):Math.ceil(a.radius/a.speed*3),a});
     }
     if(p.forgeShots.length>100)p.forgeShots.splice(0,p.forgeShots.length-100);
   } else if(a.type==='beam'){
@@ -517,13 +520,12 @@ function update(p,target){
   else{p.vx=cruise;p.vy=0;}
   tickSkills(p);
   global.BounceMomentum?.tick?.(p,target);
-  // Basic attacks are deliberately separate from the one signature cooldown.
-  // They still pass through execute()/hit() and honor physical collision.
-  global.BasicAttacks?.tick?.(p,target,{execute});
+  // No automatic normal attack: physical collisions build momentum and
+  // the player's authored program is the sole skill attack at energy 100.
   // Repeat tiny ornamental pulses without triggering extra damage, healing or
   // CC. The true combat cooldown is unchanged (at least 0.2 s).
   p._forgeVisualFrame=(p._forgeVisualFrame||0)+1;
-  if(target?.hp>0&&!global.ForgeExpansion?.blocked(p))p.forge.skills.forEach((s,i)=>{
+  if(target?.hp>0&&!global.BounceMomentum?.enabled?.(p)&&!global.ForgeExpansion?.blocked(p))p.forge.skills.forEach((s,i)=>{
     if(s.trigger==='auto'&&s.cooldown<=.6&&(p._forgeVisualFrame+i*2)%6===0)
       global.ForgeComboFX?.pulse?.(p,s.actions[0],i);
   });
@@ -659,6 +661,24 @@ function advanceWorld(p,target){
       b.z=(b.z||0)+b.heightVelocity;
     }
     b.life--;
+    // Authored '벽 반사' modifier uses the actual square arena perimeter.
+    // Each shot reflects at most 3 times; legacy/basic shots stay unchanged.
+    const maxRebounds=b.a?.type==='shot'?Math.max(0,Math.min(3,Math.round(b.a?.ricochet||0))):0;
+    if(maxRebounds&&(b._reboundCount||0)<maxRebounds){
+      const margin=global.ArenaTowerFlat?.enabled&&global.ArenaTower?.active?27:8;
+      const left=margin,right=canvas.width-margin,top=margin,bottom=canvas.height-margin;
+      let rebounded=false;
+      if(b.x<=left||b.x>=right){
+        b.x=Math.max(left,Math.min(right,b.x));b.vx=-b.vx;rebounded=true;
+      }
+      if(b.y<=top||b.y>=bottom){
+        b.y=Math.max(top,Math.min(bottom,b.y));b.vy=-b.vy;rebounded=true;
+      }
+      if(rebounded){
+        b._reboundCount=(b._reboundCount||0)+1;
+        global.BattleFX?.mark?.('shot',b.x,b.y,p.forge.effectColor||p.forge.color,12);
+      }
+    }
     const flightZ=Number.isFinite(b.z)?b.z:0;
     const initialZ=Number.isFinite(b.z)?b.z-(b.heightVelocity||0):flightZ;
     const terrainBlock=global.ArenaTowerTerrain?.obstructsShot?.(

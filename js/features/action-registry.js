@@ -22,7 +22,7 @@ const GROUP_NAMES=Object.freeze({attacks:'공격',mobility:'이동 · 피해 없
 const FAMILIES=['fist','projectile','wave','movement','time','explosion','cosmos','generic'];
 const EXECUTORS=['basic','atlas','advanced','expansion','custom'];
 const PHYSICS=['none','projectile','contact','strike'];
-const PARAMS=new Set('pattern target damage radius count speed duration status knockback delay'.split(' '));
+const PARAMS=new Set('pattern target damage radius count speed duration status knockback delay ricochet'.split(' '));
 const records=new Map(),types=Object.create(null),parameters=Object.create(null),
       visual=Object.create(null),order=[],movementOnly=new Set(),
       offensive=new Set(),familySets=Object.fromEntries(FAMILIES.map(f=>[f,new Set()]));
@@ -1703,5 +1703,10 @@ const BUILTINS=[
   "movementOnly": false
  }
 ];
-for(const d of BUILTINS)registerBuiltin(d);
+for(const d of BUILTINS){
+ // A normal authored shot may carry 0-3 physical wall rebounds. Expose this
+ // parameter only for the shot executor that actually implements it.
+ if(d.id==='shot')registerBuiltin({...d,parameters:[...d.parameters,'ricochet']});
+ else registerBuiltin(d);
+}
 })(window);
