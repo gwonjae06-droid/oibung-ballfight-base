@@ -2,7 +2,7 @@
 (function(global){
 'use strict';
 const STORE='oibung-forge-v3', TYPE=global.ActionRegistry?.TYPE||{wave:'충격파',shot:'투사체',beam:'레이저',bolt:'낙뢰',dash:'돌진',blink:'순간이동',heal:'회복',shield:'방어막',pull:'흡입',orbit:'회전 소환체',zone:'지속 장판'};
-const TRIGGER={auto:'기세가 찼을 때',lowhp:'체력 이하',contact:'접촉 시',damaged:'피격 시',danger:'보스 패턴 예고 시',dodge:'보스 패턴 회피 성공 시',basicHit:'기본 공격 명중 시',basicStatus:'기본 공격 상태이상 성공 시',contactEnergy:'상대와 충돌한 뒤',wallEnergy:'벽에 튕긴 뒤'};
+const TRIGGER={auto:'주기적으로',lowhp:'체력 이하',contact:'접촉 시',damaged:'피격 시',danger:'보스 패턴 예고 시',dodge:'보스 패턴 회피 성공 시',basicHit:'기본 공격 명중 시',basicStatus:'기본 공격 상태이상 성공 시',contactEnergy:'상대와 충돌한 뒤',wallEnergy:'벽에 튕긴 뒤'};
 const STATUS={none:'없음',ice:'둔화',fire:'화상',poison:'중독'};
 Object.assign(TYPE,global.ForgeExpansion?.TYPES||{});
 Object.assign(TYPE,global.AdvancedCombat?.TYPES||{});
