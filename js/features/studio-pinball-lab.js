@@ -34,7 +34,8 @@ function make(profile={},focus=0,actionIndex=-1){
  const color=profile.effectColor||profile.color||'#a68fff';
  const hero={x:129,y:143,vx:3.5,vy:2.5,radius:18,hp:100,playerNum:1,
   forge:{speed:2.7,effectColor:color}};
- const target={x:355,y:148,vx:-2.7,vy:2.0,radius:19,hp:100,playerNum:2};
+ const target={x:355,y:148,vx:-2.7,vy:2.0,radius:19,hp:100,playerNum:2,energy:62};
+ hero.baseRadius=hero.radius;
  const bullets=[],rings=[],sparks=[],queue=[];
  let cursor=0,lastContact=-100,lastWall=-100;
  const history=[];
@@ -130,8 +131,18 @@ function make(profile={},focus=0,actionIndex=-1){
     pull:type==='blackhole'});
    if(AREA.has(type)&&near(hero,target)<clamp(a.radius||105,45,230)+target.radius)
     hitTarget(hero.x,hero.y,true);
-   if(type==='timestop')target.frozen=Math.min(84,Math.round((Number(a.duration)||1.5)*60));
+   if(type==='timestop'&&near(hero,target)<=clamp(a.radius||120,30,300)+target.radius){
+     target.frozen=Math.min(84,Math.round((Number(a.duration)||1.5)*60));
+     const taken=Math.min(20,target.energy);
+     target.energy-=taken;energy=clamp(energy+taken*.5,0,100);
+   }
    if(type==='timeburst')hero.fastTime=clamp(Math.round((Number(a.duration)||1.5)*60),12,480);
+   if(type==='haste')hero.hasteTime=clamp(Math.round((Number(a.duration)||1.5)*60),12,480);
+   if(type==='grow'||type==='shrink'){
+     hero.radius=type==='grow'?clamp(hero.baseRadius*(1.25+(Number(a.count)||1)*.08),22,44):
+       clamp(hero.baseRadius*(.6-(Number(a.count)||1)*.015),9,18);
+     hero.sizeTime=clamp(Math.round((Number(a.duration)||1.5)*60),12,400);
+   }
    if(type==='rewind'){
      const past=history[Math.max(0,history.length-1-Math.round((Number(a.duration)||2)*60))];
      if(past){
@@ -164,8 +175,10 @@ function make(profile={},focus=0,actionIndex=-1){
   // a deterministic balance prediction for PvE.
   history.push({x:hero.x,y:hero.y,vx:hero.vx,vy:hero.vy,energy});
   if(history.length>185)history.shift();
-  const boost=hero.fastTime>0?1.75:1;
+  const boost=hero.fastTime>0?1.75:hero.hasteTime>0?1.25:1;
   if(hero.fastTime>0)hero.fastTime--;
+  if(hero.hasteTime>0)hero.hasteTime--;
+  if(hero.sizeTime>0&&--hero.sizeTime===0)hero.radius=hero.baseRadius;
   energy=Math.min(100,energy+.29*boost);
   if(energy>=100&&queue.length===0)launch();
   for(let i=queue.length-1;i>=0;i--)if(queue[i].when<=frame){
@@ -176,10 +189,12 @@ function make(profile={},focus=0,actionIndex=-1){
    const speed=Math.hypot(p.vx,p.vy)||1;
    if(speed<2){const ratio=2.25/speed;p.vx*=ratio;p.vy*=ratio;}
    if(speed>10){p.vx*=10/speed;p.vy*=10/speed;}
-   p.x+=p.vx;p.y+=p.vy;
+   const speedEffect=p===hero&&hero.hasteTime>0?1.6:1;
+   p.x+=p.vx*speedEffect;p.y+=p.vy*speedEffect;
    bounds(p,p===hero);
   }
   bodyCollision();
+  if(target.frozen<=0)target.energy=Math.min(100,target.energy+.16);
   for(let i=bullets.length-1;i>=0;i--){
    const b=bullets[i];
    if(b.type==='homing'){
@@ -283,7 +298,7 @@ function make(profile={},focus=0,actionIndex=-1){
   ctx.fillStyle='#8ad4ff';ctx.fillRect(35,H-41,166*(energy/100),12);
   ctx.fillStyle='#d9f2ff';ctx.font='700 11px sans-serif';
   ctx.fillText('⚡ 기세 '+Math.floor(energy)+' / 100',212,H-30);
-  ctx.textAlign='right';ctx.fillText('스킬 발동 '+casts+'회',W-35,H-30);
+  ctx.textAlign='right';ctx.fillText('스킬 '+casts+'회 · 적 기세 '+Math.floor(target.energy),W-35,H-30);
   ctx.restore();
  }
  return {advanceTo,render,fire:()=>{energy=100;},get frame(){return frame;},
