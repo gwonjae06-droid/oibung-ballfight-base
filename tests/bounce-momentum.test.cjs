@@ -119,6 +119,8 @@ test('arena collision, wall, script loading and gauge reuse the existing physics
   assert.ok(s.includes('engine.js?v=elastic1-momentum1'));
  }
  assert.match(read('js/features/scratch-beginner.js'),/기세가 가득 차면/);
+ assert.match(read('js/features/skill-forge.js'),/auto:'주기적으로'/);
+ assert.match(read('js/features/scratch-studio.js'),/legacy\?forge\.TRIGGER/);
  assert.match(read('js/features/scratch-beginner.js'),/벽 반사 돌격/);
  assert.match(read('css/bounce-momentum.css'),/forge-energy-meter/);
 });
