@@ -67,7 +67,7 @@ function clearance(realm,x,y,w=500,h=500,tick=0,level=1){
 function isWalkable(realm,x,y,w=500,h=500,radius=0,level=1,tick=0){
  return clearance(realm,x,y,w,h,tick,level)>=Math.max(0,radius*.5);
 }
-function rebound(p,nx,ny,speed){
+function rebound(p,nx,ny,speed,kind='wall'){
  // nx/ny points INTO free space, not through the bumper or perimeter.
  const dot=(p.vx||0)*nx+(p.vy||0)*ny;
  if(!(dot<-.06))return;
@@ -79,7 +79,7 @@ function rebound(p,nx,ny,speed){
  if(velocity>11.5){p.vx*=11.5/velocity;p.vy*=11.5/velocity;}
  g.ArenaPinballJuice?.wall?.(p,nx,ny,power);
  g.ArenaBallSquash?.wall?.(p,nx,ny,power);
- g.BounceMomentum?.wall?.(p,power);
+ g.BounceMomentum?.wall?.(p,power,kind);
  if(g.BounceMomentum?.enabled?.(p))
   p._pinballReboundHold=Math.max(p._pinballReboundHold||0,17);
  p._towerRimBounce=(p._towerRimBounce||0)+1;
@@ -102,7 +102,7 @@ function bounce(p,realm,w=500,h=500,level=1,tick=0){
   if(d>=limit)continue;
   const nx=d>.0001?dx/d:1,ny=d>.0001?dy/d:0;
   p.x=point.x+nx*(limit+.1);p.y=point.y+ny*(limit+.1);
-  rebound(p,nx,ny);hit=true;
+  rebound(p,nx,ny,undefined,'bumper');hit=true;
  }
  if(hit){p._towerSafeX=p.x;p._towerSafeY=p.y;}
  return hit;

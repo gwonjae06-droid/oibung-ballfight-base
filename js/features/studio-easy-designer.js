@@ -57,6 +57,10 @@ function change(profile,kind,skill,value){
  if(kind==='new-skill')return blocks.modify(profile,{kind:'new-skill',type:'wave'});
  if(kind==='remove-skill')return blocks.modify(profile,{kind:'remove-skill',skill:si});
  if(kind==='type')return blocks.modify(profile,{kind:'type',skill:si,index:0,type:value});
+ if(kind==='timing'){
+  if(profile.signatureVersion!==1)throw Error('기세형 고유 스킬에서만 발동 조건을 설정할 수 있습니다.');
+  return forge.normalize({...profile,signatureTiming:['instant','contact','danger'].includes(value)?value:'instant'});
+ }
  if(['name','trigger','cooldown','threshold'].includes(kind))
    return blocks.modify(profile,{kind:'meta',skill:si,key:kind,value});
  throw Error('설정할 수 없는 항목입니다.');
@@ -110,8 +114,16 @@ function makeCard(s,i){
    +'<label class="studio-easy-name">스킬 이름<input type="text" maxlength="18" data-easy-key="name" data-skill="'+i+'" value="'+E(s.name)+'"></label>'
    +'<div class="studio-easy-fields">'
    +'<label>어떤 행동을 하나요?<select data-easy-key="type" data-skill="'+i+'">'+typeOptions(a.type)+'</select></label>'
-   +'<label>언제 사용하나요?<select data-easy-key="trigger" data-skill="'+i+'">'+triggerOptions(s.trigger)+'</select></label>'
-   +'<label>몇 초마다 사용하나요?<span class="studio-easy-unit"><input type="number" min=".2" max="30" step=".1" inputmode="decimal" data-easy-key="cooldown" data-skill="'+i+'" value="'+E(s.cooldown)+'"><span>초</span></span></label>'
+   +(forge.getDraft().signatureVersion===1?
+    '<label>⚡ 기세 100 이후 사용 조건<select data-easy-key="timing" data-skill="'+i+'">'+
+    Object.entries(global.ArenaCombatV2?.TIMINGS||{
+      instant:'기세 100 즉시 발동',contact:'충전 후 다음 충돌',danger:'위험 패턴 예고 시'
+    }).map(([key,label])=>'<option value="'+key+'"'+(forge.getDraft().signatureTiming===key?' selected':'')+'>'+E(label)+'</option>').join('')+
+    '</select><small>최대 2.3초 대기 후 자동 발동</small></label>':
+    '<label>언제 사용하나요?<select data-easy-key="trigger" data-skill="'+i+'">'+triggerOptions(s.trigger)+'</select></label>')
+   +(forge.getDraft().signatureVersion===1?
+    '<div class="studio-easy-tip">⚡ 충돌·반사로 기세를 100까지 모아 발동합니다. 별도 쿨타임은 적용되지 않습니다.</div>':
+    '<label>몇 초마다 사용하나요?<span class="studio-easy-unit"><input type="number" min=".2" max="30" step=".1" inputmode="decimal" data-easy-key="cooldown" data-skill="'+i+'" value="'+E(s.cooldown)+'"><span>초</span></span></label>')
    +(s.trigger==='lowhp'?'<label>HP가 몇 % 이하일 때?<input type="number" min="5" max="95" step="5" data-easy-key="threshold" data-skill="'+i+'" value="'+E(s.threshold)+'"></label>':'')
    +'</div><div class="studio-easy-card-footer"><span>'+E(forge.TYPE[a.type]||a.type)+rest
    +' · 총 '+s.actions.length+'개 동작</span>'
