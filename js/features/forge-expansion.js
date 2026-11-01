@@ -137,6 +137,9 @@ function execute(p,a,target,api){
       if(Number.isFinite(old.vx)&&Number.isFinite(old.vy)){
         p.vx=Math.max(-10,Math.min(10,old.vx));
         p.vy=Math.max(-10,Math.min(10,old.vy));
+        // The pinball movement wrapper must not restore pre-cast heading
+        // immediately after a genuine time rewind.
+        p._pinballRewindUntil=(p._forgeActionClock||0)+7;
       }
       // The entire gauge was spent to initiate this signature; refunds are
       // capped so history cannot grant free unlimited casts.
