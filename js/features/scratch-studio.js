@@ -34,7 +34,8 @@ root.innerHTML='<div class="scratch-heading"><div><span class="scratch-eyebrow">
  +'<div class="scratch-palette" aria-label="끌어다 놓을 블록"></div></aside>'
  +'<main class="scratch-editor" aria-label="스크래치 스킬 코딩 영역"><div class="scratch-script-top">'
  +'<label>고유 스킬 이름<input id="scratch-skill-name" maxlength="18" type="text"></label>'
- +'<label>재사용 대기시간(초)<input id="scratch-cooldown" type="number" min=".2" max="30" step=".1"></label></div>'
+ +'<label class="scratch-old-cooldown" hidden>이전 방식의 재사용 대기시간(초)<input id="scratch-cooldown" type="number" min=".2" max="30" step=".1"></label></div>'
+ +'<p class="scratch-energy-hint">⚡ 충돌과 벽 반사로 기세를 모아 100이 되면, 선택한 조건에 맞춰 이 프로그램이 실행돼요.</p>'
  +'<div class="scratch-hat"><span>⚑ 언제 실행할까?</span><select id="scratch-trigger" aria-label="고유 스킬 발동 조건"></select></div>'
  +'<div class="scratch-script" aria-label="조립한 스킬 블록"><div class="scratch-block-tree"></div></div>'
  +'<div class="scratch-footer"><span class="scratch-counter" aria-live="polite"></span><button type="button" data-scratch-command="clear">프로그램 비우기</button></div></main>'
@@ -182,7 +183,8 @@ function render(){
  }else $('.scratch-block-tree').innerHTML=drawList(program,[],0);
  $('#scratch-skill-name').value=skill.name;
  $('#scratch-cooldown').value=skill.cooldown;
- $('#scratch-trigger').innerHTML=selectOptions(forge.TRIGGER,skill.trigger);
+ $('.scratch-old-cooldown').hidden=!legacy;
+ $('#scratch-trigger').innerHTML=selectOptions(legacy?forge.TRIGGER:{...forge.TRIGGER,auto:'기세가 가득 차면'},skill.trigger);
  const n=engine.preview(program).length;
  $('.scratch-counter').textContent='블록 '+engine.normalize(program).length+'개 · 예상 실행 행동 '+n+'/'+engine.LIMIT+'개 (반복 포함)';
  root.querySelector('[data-scratch-command="undo"]').disabled=!undo.length;

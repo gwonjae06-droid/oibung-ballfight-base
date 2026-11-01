@@ -24,7 +24,7 @@ function observed(p,event,baseline){
  return !!info&&info.count>(baseline?.[event]||0);
 }
 function condition(p,target,id,run){
- if(id==='hit'||id==='guard'||id==='move'||id==='status'||id==='dodge'||id==='basicHit'||id==='basicStatus'){
+ if(id==='hit'||id==='guard'||id==='move'||id==='status'||id==='dodge'||id==='basicHit'||id==='basicStatus'||id==='contact'||id==='wall'){
    if(id==='dodge'&&Number(p?._forgeDodgeSerial||0)>Number(run?.dodgeBaseline||0))return true;
    return observed(p,id,run?.baseline);
  }
@@ -37,8 +37,9 @@ function begin(program,p,trigger=null){
  const baseline=snapshot(p);
  // If this skill was triggered by a basic hit/status, allow its first
  // Scratch condition to see that confirmed event on the starting frame.
- if(trigger==='basicHit'||trigger==='basicStatus')
-  baseline[trigger]=Math.max(0,(baseline[trigger]||0)-1);
+ const event=({contactEnergy:'contact',wallEnergy:'wall'})[trigger]||trigger;
+ if(event==='basicHit'||event==='basicStatus'||event==='contact'||event==='wall')
+  baseline[event]=Math.max(0,(baseline[event]||0)-1);
  return {stack:[{nodes,index:0}],wait:0,until:null,pending:false,
   ticks:0,actions:0,charge:Math.max(0,Math.min(10,Number(p?._scratchCharge)||0)),finished:false,baseline,
   dodgeBaseline:Number(p?._forgeDodgeSerial)||0};

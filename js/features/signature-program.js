@@ -17,7 +17,9 @@ const CONDITIONS=Object.freeze({
  status:'적에게 상태이상을 적용했다면',
  charge3:'충전 변수가 3 이상이라면',
  basicHit:'기본 공격이 명중했다면',
- basicStatus:'기본 공격으로 상태이상을 걸었다면'
+ basicStatus:'기본 공격으로 상태이상을 걸었다면',
+ contact:'상대와 실제로 부딪혔다면',
+ wall:'벽에 튕겼다면'
 });
 function validCondition(value){return Object.prototype.hasOwnProperty.call(CONDITIONS,value)?value:'always';}
 function danger(p,target){
@@ -44,6 +46,10 @@ function eligible(p,target,skill,loss=0){
  const trigger=skill.trigger||'auto';
  if(trigger==='danger')return danger(p,target);
  if(trigger==='dodge')return condition(p,target,'dodge')&&Number(p._forgeDodgeSerial||0)!==Number(p._forgeDodgeConsumed||0);
+ if(trigger==='contactEnergy')return (p?._scratchEvents?.contact?.count||0)>(p?._scratchContactConsumed||0)&&
+  (p?._forgeActionClock||0)-(p?._scratchEvents?.contact?.frame||0)<=180;
+ if(trigger==='wallEnergy')return (p?._scratchEvents?.wall?.count||0)>(p?._scratchWallConsumed||0)&&
+  (p?._forgeActionClock||0)-(p?._scratchEvents?.wall?.frame||0)<=180;
  if(trigger==='basicHit')return (p?._scratchEvents?.basicHit?.count||0)>(p?._scratchBasicHitConsumed||0);
  if(trigger==='basicStatus')return (p?._scratchEvents?.basicStatus?.count||0)>(p?._scratchBasicStatusConsumed||0);
  if(trigger==='lowhp')return p.hp/Math.max(1,p.maxHp)*100<=(skill.threshold||40);

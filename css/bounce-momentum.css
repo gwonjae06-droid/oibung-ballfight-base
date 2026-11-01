@@ -1,0 +1,12 @@
+/* Momentum is a single readable gauge, not another timer or damage source. */
+.forge-cooldown-item.forge-energy-meter .forge-cooldown-fill{background:linear-gradient(90deg,#4a97d0,#b27be3,#ffe19a)!important}
+.forge-cooldown-item.forge-energy-meter[data-ready=true] .forge-cooldown-name{color:#ffdba0!important;font-weight:900}
+.forge-cooldown-item.forge-energy-meter[data-ready=true] .forge-cooldown-track{box-shadow:0 0 0 1px #ffd89066,0 0 10px #d4a0f555}
+.scratch-friendly-mode .kid-momentum-guide{border:1px solid #72aaca;background:#1b405a;border-radius:11px;padding:12px 14px}
+.scratch-friendly-mode .kid-momentum-guide>strong{font-size:14px;color:#e5f8ff}
+.scratch-friendly-mode .kid-momentum-guide p{font-size:12px;line-height:1.6;color:#cde6f5;margin:3px 0 0}
+.scratch-energy-hint{font-size:13px;color:#d1efff;background:#204564;border:1px solid #467d9e;border-radius:10px;padding:11px 13px;line-height:1.6;margin:0}
+.scratch-old-cooldown[hidden]{display:none!important}
+.scratch-workbench[data-legacy=true] .scratch-energy-hint{display:none!important}
+@media(max-width:570px){.scratch-friendly-mode .kid-momentum-guide{padding:10px}.scratch-energy-hint{font-size:12px}}
+@media(prefers-reduced-motion:reduce){.forge-cooldown-item.forge-energy-meter .forge-cooldown-fill{transition:none!important}}

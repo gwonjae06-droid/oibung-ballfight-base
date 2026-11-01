@@ -207,6 +207,10 @@ function handleCombat(pA,pB) {
   const approach=((pB.vx||0)+(pB.impactVX||0)*.4-(pA.vx||0)-(pA.impactVX||0)*.4)*nx+
     ((pB.vy||0)+(pB.impactVY||0)*.4-(pA.vy||0)-(pA.impactVY||0)*.4)*ny;
   globalThis.ArenaBallSquash?.pair?.(pA,pB,approach,nx,ny);
+  // Only genuine approaching body collisions count; no energy for overlapping
+  // dash reposition or damage knockback, and no extra damage is introduced.
+  if((pA.impactSpeed||0)<=4&&(pB.impactSpeed||0)<=4)
+    globalThis.BounceMomentum?.contact?.(pA,pB,approach);
   if(approach<0){
     const impulse=Math.min(5,Math.max(1.8,-approach*.58));
     pA.vx-=nx*impulse;pA.vy-=ny*impulse;
@@ -267,6 +271,7 @@ function update() {
       if(p.y+p.radius>canvas.height){p.y=canvas.height-p.radius;p.vy=-Math.abs(p.vy);bounceY=true;}
       if(bounceX||bounceY){
         globalThis.ArenaBallSquash?.wall?.(p,bounceX?(p.x<p.radius*2?1:-1):0,bounceY?(p.y<p.radius*2?1:-1):0,Math.hypot(p.vx||0,p.vy||0));
+        globalThis.BounceMomentum?.wall?.(p,Math.hypot(p.vx||0,p.vy||0));
         // Subtle, bounded wall energy and a tiny off-axis nudge: no
         // repeated sticking on straight corridors and no runaway speed.
         const before=Math.hypot(p.vx,p.vy);
@@ -403,7 +408,7 @@ function updateUI() {
       if(!meters){
         meters=document.createElement('div');
         meters.className='forge-cooldown-list';
-        meters.setAttribute('aria-label','스킬별 독립 재사용 대기시간');
+        meters.setAttribute('aria-label','고유 스킬 준비 상태');
         hud.append(meters);
       }
       // The full-catalog fighter owns every cooldown, but only four
@@ -426,12 +431,15 @@ function updateUI() {
       }
       visibleIndices.forEach((index,j)=>{
         const skill=p.forge.skills[index];
-        const max=SkillForge.cooldownFrames(p,skill);
-        const ticks=Math.min(max,p.forgeTicks[index]||0),ready=ticks>=max;
+        const momentum=globalThis.BounceMomentum?.meter?.(p);
+        const usingEnergy=momentum!==null&&momentum!==undefined;
+        const max=usingEnergy?100:SkillForge.cooldownFrames(p,skill);
+        const ticks=usingEnergy?momentum:Math.min(max,p.forgeTicks[index]||0),ready=ticks>=max;
         const item=meters.children[j];
-        item.children[0].textContent=skill.name;
+        item.children[0].textContent=usingEnergy?'⚡ 기세':skill.name;
         item.children[1].firstElementChild.style.width=(ticks/max*100).toFixed(1)+'%';
-        item.children[2].textContent=ready?'준비':((max-ticks)/60).toFixed(1)+'s';
+        item.children[2].textContent=usingEnergy?(ready?'필살기 준비':Math.floor(ticks)+'%'):(ready?'준비':((max-ticks)/60).toFixed(1)+'s');
+        item.classList.toggle('forge-energy-meter',usingEnergy);
         item.dataset.ready=ready?'true':'false';
       });
     }else{
