@@ -123,7 +123,7 @@ function modify(profile,op){
     }
     case 'param':{
       if(!idOk(skills,i)||!idOk(skills[i].actions,j))throw Error('동작을 찾지 못했습니다.');
-      if(!['target','damage','status','radius','pattern','count','speed','duration','knockback','delay'].includes(op.key))
+      if(!['target','damage','status','radius','pattern','count','speed','duration','knockback','delay','ricochet'].includes(op.key))
         throw Error('지원되지 않는 동작 설정입니다.');
       if(!forge.supportedParameter(skills[i].actions[j].type,op.key))throw Error('이 동작에서 지원하지 않는 설정입니다.');
       skills[i].actions[j][op.key]=op.value;break;
@@ -183,7 +183,7 @@ const PARAM_META={
   damage:['피해량',0,120,1],radius:['범위',30,300,5],
   count:['개수',1,8,1],speed:['속도',2,14,.5],
   duration:['지속시간(초)',.2,8,.1],knockback:['밀치기',0,9,.5],
-  delay:['발동 지연(초)',0,2,.1]
+  delay:['발동 지연(초)',0,2,.1],ricochet:['벽 반사 횟수',0,3,1]
 };
 const selectValues=key=>key==='target'?TARGETS:
   key==='pattern'?(global.AbilityAtlas?.PATTERNS||{direct:'직접',fan:'부채꼴',ring:'원형'}):
@@ -191,7 +191,7 @@ const selectValues=key=>key==='target'?TARGETS:
 function inspector(skill,i){
   const j=Math.max(0,Math.min(selectedAction,skill.actions.length-1));
   const action=skill.actions[j],entry=global.ActionRegistry?.get(action.type);
-  const allowed=['target','pattern','damage','radius','count','speed','duration','status','knockback','delay']
+  const allowed=['target','pattern','damage','radius','count','speed','duration','status','knockback','delay','ricochet']
     .filter(key=>forge.supportedParameter(action.type,key));
   const controls=allowed.map(key=>{
     const vals=selectValues(key),m=PARAM_META[key];
