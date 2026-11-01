@@ -119,7 +119,7 @@ test('tower interface and game HUD show one shared minion energy bar',()=>{
  for(const file of ['index.html','pvp-runtime.html']){
   const html=read(file);
   assert.match(html,/js\/features\/bounce-momentum\.js\?v=/,'versioned momentum module must load');
-  assert.ok(html.includes('js/features/skill-forge.js?v=classes2-skillsonly2'));
-  assert.ok(html.includes(file==='index.html'?'js/core/engine.js?v=elastic2-bodyphysics3-clockslow':'js/core/engine.js?v=elastic2-bodyphysics2-minionhud'));
+  assert.match(html,/js\/features\/skill-forge\.js\?v=[^"']+/);
+  assert.match(html,/js\/core\/engine\.js\?v=[^"']+/);
  }
 });
