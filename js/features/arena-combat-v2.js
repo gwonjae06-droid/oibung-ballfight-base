@@ -44,6 +44,8 @@ function signal(p,kind,speed){
  // Bonus is a reward for a real three-hit route, never an extra attack.
  // Four genuine milestones total can grant 16 energy, one 10% signature
  // bonus (not 10% per hit) and nothing more even with a long combo.
+ if(chain>=3&&[3,5,8,12,20,30,50].includes(chain))
+   g.ArenaBattleDirector?.combo?.(p,chain);
  if(eligible(p)&&chain>=3&&chain<=12&&chain%3===0){
    p._combat2NextBoost=Math.max(p._combat2NextBoost||1,1.10);
    g.BounceMomentum?.add?.(p,4,'ricochet');
