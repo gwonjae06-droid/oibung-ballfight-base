@@ -5,11 +5,14 @@ const names=['멸망의 손바닥','심연의 십자가','촉수 감옥','마안
 const hit=(z,p)=>{const dx=p.x-z.x,dy=p.y-z.y,r=p.radius||12;if(z.shape==='circle')return Math.hypot(dx,dy)<=z.r+r;if(z.shape==='ring'){const d=Math.hypot(dx,dy);return d+r>=z.inner&&d-r<=z.r;}return Math.abs(dx*Math.cos(z.a)+dy*Math.sin(z.a))<=z.len/2+r&&Math.abs(-dx*Math.sin(z.a)+dy*Math.cos(z.a))<=z.w/2+r;};
 function create({width:w,height:h,hero,boss,damage}){
  let tick=0,turn=0,phase=1,upcoming=80,serial=0;
+ const seals=g.ArenaAncientSixSeals?.create({width:w,height:h,hero,boss,damage});
+ const sealTurns=[0,0,0],phasePowers=[['time','space'],['fire','storm'],['ice','forest','convergence']];
+ function clear(){seals?.clear();zones.length=0;g.ArenaAncientFinaleFX?.page?.(null);}
  const zones=[], clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
  const C=(x,y,r)=>({shape:'circle',x,y,r}),R=(x,y,inner,r)=>({shape:'ring',x,y,inner,r}),L=(x,y,a,w=45)=>({shape:'line',x,y,a,w,len:Math.hypot(w,h)*1.5});
  function add(s,label,delay=90,life=26,power=200){zones.push({...s,id:++serial,label,born:tick,fire:tick+delay,end:tick+delay+life,power,hit:false});}
  function pattern(){
-  const x=clamp(hero.x,35,w-35),y=clamp(hero.y,50,h-35),cx=w/2,cy=h/2,mode=turn++%names.length,fast=phase===3,d=fast?52:phase===2?72:100;
+  const x=clamp(hero.x,35,w-35),y=clamp(hero.y,50,h-35),cx=w/2,cy=h/2,mode=turn++%names.length,fast=phase===3,d=fast?76:phase===2?88:112;
   switch(mode){
    case 0:add(C(x,y,74),names[mode],d,34);break;
    case 1:add(L(cx,cy,0,48),names[mode],d);add(L(cx,cy,Math.PI/2,48),'교차 압살',d+46);break;
@@ -28,12 +31,23 @@ function create({width:w,height:h,hero,boss,damage}){
    case 14:add(R(cx,cy,68,220),names[mode],d,35,200);break;
    case 15:add(C(x,y,65),names[mode],d+110,40,200);add(R(cx,cy,100,180),'심판의 여진',d+150,35,200);break;
   }
+  // The previous 16 attacks still use the boss's 100-energy budget.
+  // Each opened seal is simulation-owned and runs only one at a time.
+  if(seals&&!seals.event){
+   const index=phase-1,powers=phasePowers[index],realm=powers[sealTurns[index]++%powers.length];
+   seals.begin(realm,phase);
+   g.addFloatingText?.('✦ '+({time:'시간',space:'우주',fire:'화염',
+    storm:'폭풍',ice:'빙결',forest:'숲',convergence:'여섯 봉인 융합'}[realm])+
+    ' 봉인 개방',cx,h*.31,'#dfd1ff',20);
+  }
  }
  function step(){
-  if(hero.hp<=0||boss.hp<=0)return;
+  if(hero.hp<=0||boss.hp<=0){clear();return;}
   tick++;
   const percent=boss.hp/Math.max(1,boss.maxHp);
+  const before=phase;
   if(percent<=.32)phase=3;else if(percent<=.68)phase=2;
+  if(phase!==before)g.addFloatingText?.('고대의 존재 · '+phase+'페이즈 개방!',w/2,h*.23,'#e9d4ff',23);
   if(tick>=upcoming){
    const energy=g.BounceMomentum?.isBoss?.(boss);
    if(!energy||g.BounceMomentum.bossCan(boss,'pattern')){
@@ -47,6 +61,7 @@ function create({width:w,height:h,hero,boss,damage}){
    if(damage(hero,z.power,z)!==false)z.hit=true;
   }
   for(let i=zones.length-1;i>=0;i--)if(tick>=zones[i].end)zones.splice(i,1);
+  seals?.step();
   // The targetable enemy fighter is the exposed central arm. Its health is the ancient body's health.
   boss.x=w/2;boss.y=Math.max(50,h*.18);boss.vx=0;boss.vy=0;
  }
@@ -115,11 +130,20 @@ function create({width:w,height:h,hero,boss,damage}){
    const label=live?'강력한 공격 · 200 HP!':z.label+' '+(remain/60).toFixed(1)+'초';
    ctx.strokeText(label,clamp(z.x,84,w-84),clamp(z.y,25,h-20));ctx.fillText(label,clamp(z.x,84,w-84),clamp(z.y,25,h-20));
   }
+  seals?.draw(ctx);
   ctx.textAlign='center';ctx.font='bold 15px sans-serif';ctx.fillStyle='#ffe3ff';
   ctx.fillText('고대의 존재 · '+Math.ceil(boss.hp)+' / 3000 · PHASE '+phase,cx,h-12);
+  if(seals?.event){
+   ctx.font='bold 12px sans-serif';ctx.fillStyle='#e8d7ff';
+   const realm=seals.event.realm;
+   ctx.fillText('봉인 · '+({time:'시간',space:'우주',fire:'화염',storm:'폭풍',ice:'빙결',
+    forest:'숲',convergence:'여섯 봉인의 융합'}[realm])+
+    ' · '+(seals.event.active?'발동':'예고 중'),cx,26);
+  }
   ctx.restore();
+  g.ArenaAncientFinaleFX?.page?.(seals?.event,phase,tick);
  }
- return {step,draw,get tick(){return tick;},get phase(){return phase;},get zones(){return zones;}};
+ return {step,draw,clear,seals,get tick(){return tick;},get phase(){return phase;},get zones(){return zones;}};
 }
 g.ArenaAncientOne={create,names};
 })(globalThis);
