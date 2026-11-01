@@ -185,7 +185,7 @@ function decorations(ctx,realm,tick,pal){
  ctx.restore();
 }
 function drawBumper(ctx,o,pal,tick){
- const x=o.x*500/o._w,y=o.y*500/o._h,r=o.r*500/o._scale;
+ const x=o.x*500/o._w,y=o.y*500/o._h,r=o.r/o._scale;
  ctx.save();ctx.shadowColor=pal.glow;ctx.shadowBlur=13;disc(ctx,x,y,r+6,pal.dark);
  ring(ctx,x,y,r+5,pal.glow,3);ctx.shadowBlur=0;
  disc(ctx,x,y,r,pal.edge);disc(ctx,x,y,r*.65,pal.dark);
