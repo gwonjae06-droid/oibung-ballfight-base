@@ -94,8 +94,13 @@ function ensure(){
  if(!doc?.getElementById||!doc.createElement)return null;
  let el=doc.getElementById('arena-combo-status');
  if(el)return el;
+ // Tower intentionally hides .arena-heading (duplicate title). The combo
+ // used to be appended INSIDE that hidden node, so no animation or counter
+ // could ever be visible in Tower even while real collision math was correct.
+ // Render it as a sibling directly under the shared battle screen instead.
+ const screen=doc.querySelector?.('.battle-screen');
  const top=doc.querySelector?.('.battle-screen .arena-heading');
- if(!top)return null;
+ if(!screen&&!top)return null;
  el=doc.createElement('div');
  el.id='arena-combo-status';el.className='arena-combo-status';
  el.setAttribute('role','group');
@@ -110,7 +115,18 @@ function ensure(){
    '<span class="combo-sparks" aria-hidden="true">'+
    '<i></i><i></i><i></i><i></i><i></i><i></i></span>'+
    '<span class="combo-progress" aria-hidden="true"></span>';
- top.append(el);return el;
+ if(screen?.insertBefore){
+   // Above commentary / field, never an overlay blocking boss danger zones.
+   const anchor=screen.querySelector?.('#arena-commentary')||
+     screen.querySelector?.('.canvas-wrapper')||null;
+   screen.insertBefore(el,anchor);
+ }else if(screen?.prepend){
+   screen.prepend(el);
+ }else{
+   // Minimal DOM shims used in existing engine unit tests.
+   top.append(el);
+ }
+ return el;
 }
 function displayZero(el){
  el.hidden=false;el.dataset.combo='0';el.dataset.best=String(best);el.dataset.tier='base';
