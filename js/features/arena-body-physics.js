@@ -8,7 +8,9 @@ function mass(p){
  const r=clamp(Number(p?.radius)||28,12,62);
  // Square-radius scaling approximates two-dimensional disc mass.
  // Bosses feel heavier without becoming immovable or unlaunchable.
- return clamp(Math.pow(r/28,2)*(p?.towerPatternBoss?1.35:1),.55,4.2);
+ const anchored=!!p?.towerHero&&!p?.towerEnemy&&
+  (Number(p?._tacticalAnchorUntil)||0)>(Number(p?._forgeActionClock)||0);
+ return clamp(Math.pow(r/28,2)*(p?.towerPatternBoss?1.35:anchored?1.65:1),.55,4.2);
 }
 function pair(a,b,nx,ny){
  const avx=Number(a?.vx)||0,avy=Number(a?.vy)||0;
