@@ -24,6 +24,7 @@ function signal(p,kind,speed){
   Math.min(4,prior.chain+1):1;
  const quality=grade(speed);
  p._combat2Combo={chain,kind,last:now,quality};
+ if(quality==='perfect'&&chain!==3&&p.playerNum===1)g.BattleFX?.sound?.('bounce-perfect',.42);
  p._combat2Flash={text:(quality==='perfect'?'완벽 충돌!':quality==='heavy'?'강타!':'반사!')+
    (chain>=2?' · 콤보 ×'+chain:''),until:now+54};
  if(chain===3){
@@ -31,6 +32,7 @@ function signal(p,kind,speed){
    // This does not stack up with rapid repeated collisions.
    p._combat2NextBoost=Math.max(p._combat2NextBoost||1,1.10);
    g.BounceMomentum?.add?.(p,6,'ricochet');
+   if(p.playerNum===1)g.BattleFX?.sound?.('bounce-combo',.55);
  }
  return true;
 }
@@ -56,6 +58,7 @@ function onCast(p){
  p._combat2CastBoost=cap(p._combat2NextBoost||1,1,1.10);
  p._combat2CastUntil=clock(p)+420;
  p._combat2NextBoost=1;
+ if(p.playerNum===1)g.BattleFX?.sound?.('signature-launch',.55);
 }
 function damageFactor(p){
  return eligible(p)&&clock(p)<=Number(p._combat2CastUntil||-1)?

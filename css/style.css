@@ -532,6 +532,13 @@ h1, h2, h3, p { margin-top: 0; }
 .bf-audio { display:flex; align-items:center; gap:12px; margin-top:14px; flex-wrap:wrap; }
 .bf-audio button { min-height:35px; padding:7px 13px; border-radius:8px; border:1px solid var(--line); background:#263843; color:#e0f0ee; font-size:12px; font-weight:800; cursor:pointer; }
 .bf-audio span { font-size:10px; color:var(--muted); }
+.bf-audio .bf-sfx-level { display:inline-flex;align-items:center;gap:9px;flex-wrap:nowrap;
+ color:#e4ecf3;font-size:12px;font-weight:750; }
+.bf-audio #bf-sfx-volume { min-width:80px;width:clamp(90px,15vw,140px);
+ cursor:pointer;accent-color:#97c9c2; }
+.bf-audio #bf-sfx-volume:focus-visible {outline:2px solid #a7dbe2;outline-offset:3px;}
+@media(max-width:500px){.bf-audio{gap:8px}.bf-audio .bf-sfx-level{font-size:11px}}
+
 @media(max-width:560px){
   .forge-skill { padding:10px; }
   .forge-action { padding:9px; }

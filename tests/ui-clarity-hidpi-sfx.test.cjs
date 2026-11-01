@@ -75,10 +75,10 @@ test('procedural SFX are damped and dynamically limited, while music remains sep
   const s=read('js/features/vfx-audio.js');
   assert.ok(s.includes("f.type='lowpass'"),'percussive noise is filtered');
   assert.ok(s.includes("limiter.threshold.value=-20"),'a compressor must protect against loud peaks');
-  assert.ok(s.includes('recentVoices.length>=7'),'rapid sound stacking must have a bounded voice budget');
+  assert.ok(s.includes('recentVoices.length>=4'),'rapid sound stacking must have the new quieter 4-voice budget');
   assert.ok(s.includes("kind==='hit'")&&s.includes("kind==='heavy'")&&s.includes("kind==='dash'"));
   assert.ok(s.includes("kind==='heal'")&&s.includes("kind==='shield'")&&s.includes("kind==='lightning'"));
-  assert.ok(s.includes("master.gain.value=muted?0:.18"));
+  assert.ok(s.includes("master.gain.value=audioLevel()")&&s.includes("const audioLevel=()=>muted?0:.18*volume"),"SFX master must respect its independent quiet volume");
   assert.ok(s.includes("setMuted(value){muted=!!value"));
   assert.ok(!s.includes("tone(625,990"),'the previous very high bright synth beep is removed');
   assert.ok(read('js/features/background-music.js').includes('assets/music/main.mp3'));
