@@ -52,7 +52,8 @@ test('simple edits modify exactly the same recipe accepted by the expert BlockFo
  p=easy.change(p,'name',0,'내가 만든 기술');
  assert.equal(p.skills[0].name,'내가 만든 기술');
  assert.equal(p.skills[0].cooldown,2.7);
- assert.equal(p.skills[0].trigger,'lowhp');
+ assert.equal(p.skills[0].trigger,p.signatureVersion===1?'auto':'lowhp',
+  'modern signature skills always fire at full momentum; legacy trigger remains selectable');
  assert.equal(p.skills[0].threshold,35);
  assert.equal(JSON.stringify(p.skills[0].actions[1]),untouched,'editing first block must not overwrite other actions');
  p=block.modify(p,{kind:'add',skill:0,type:'zone'});
