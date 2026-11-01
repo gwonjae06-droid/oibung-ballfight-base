@@ -7,6 +7,26 @@
   };
   const fx=[], captions=new Map();
   let audio=null, master=null, noise=null, muted=false, intensity='full', lastSound=-500;
+  // Keep the whole effects bus lower than the music by default. All synthetic
+  // combat cues use this one compressed master, never an extra AudioContext.
+  let volume=.55;
+  const CUE_COOLDOWN=Object.freeze({
+    'bounce-perfect':.34,'bounce-combo':.62,
+    'tactic-sling':.24,'tactic-evade':.24,'tactic-anchor':.3,
+    'signature-ready':.42,'signature-launch':.36
+  });
+  const lastCue=new Map();
+  const EFFECTS_KEY='oibung-sfx-settings-v2';
+  const audioLevel=()=>muted?0:.18*volume;
+  function applyVolume(){
+    if(!master||!audio)return;
+    if(master.gain?.setTargetAtTime)master.gain.setTargetAtTime(audioLevel(),audio.currentTime,.025);
+    else master.gain.value=audioLevel();
+  }
+  function setVolume(value){
+    if(Number.isFinite(Number(value)))volume=clamp(Number(value),0,1);
+    applyVolume();return volume;
+  }
   let simulatedFrame=0, soundSequence=0;
   let lastMixTime=-1000;const recentVoices=[];
   const maxFx=150;
@@ -35,7 +55,7 @@
       const limiter=audio.createDynamicsCompressor();
       limiter.threshold.value=-20;limiter.knee.value=17;limiter.ratio.value=9;
       limiter.attack.value=.003;limiter.release.value=.19;
-      master=audio.createGain();master.gain.value=muted?0:.18;
+      master=audio.createGain();master.gain.value=audioLevel();
       master.connect(limiter);limiter.connect(audio.destination);
       const length=Math.floor(audio.sampleRate*.42), data=new Float32Array(length);
       for(let i=0;i<length;i++)data[i]=Math.random()*2-1;
@@ -62,21 +82,32 @@
    * We cap transient density before DSP and soft-compress the complete SFX bus.
    * This is deliberately independent from MP3 background music volume. */
   function sound(kind,strength=1) {
-    if(muted)return;
+    if(muted||volume<=0)return false;
     const impact=kind==='hit'||kind==='heavy'||kind==='lightning';
-    // At 2x speed or in 10-fighter matches, don't stack a wall of noise.
-    const minFrames=impact?2:kind==='cast'?4:5;
-    if(simulatedFrame-lastSound<minFrames)return;
+    const special=Object.prototype.hasOwnProperty.call(CUE_COOLDOWN,kind);
+    const tactic=kind.startsWith('tactic-');
+    const multiplier=Number(global.ArenaSpeedControl?.multiplier)||1;
+    // Fast-forward has hundreds of impacts per second: prioritize silence over
+    // cacophony. A manual tactical press is still audible at high speeds;
+    // signature milestones are limited by real audio-clock cooldown.
+    if(multiplier>=10&&!tactic&&kind!=='signature-launch')return false;
+    const minFrames=special?3:impact?3:kind==='cast'?5:7;
+    if(simulatedFrame-lastSound<minFrames)return false;
     if(audio){
       const current=audio.currentTime;
-      while(recentVoices.length&&current-recentVoices[0]>.25)recentVoices.shift();
-      if(recentVoices.length>=7||current-lastMixTime<(impact?.018:.045))return;
+      if(special&&current-(lastCue.get(kind)??-999)<CUE_COOLDOWN[kind])return false;
+      while(recentVoices.length&&current-recentVoices[0]>.30)recentVoices.shift();
+      const minGap=special?.082:impact?.045:.07;
+      if(recentVoices.length>=4||current-lastMixTime<minGap)return false;
+      // Reserve enough silence for commentary and full-voice music.
       recentVoices.push(current);lastMixTime=current;
+      if(special)lastCue.set(kind,current);
     }
     lastSound=simulatedFrame;
     soundSequence++;
-    if(!audio)return;
-    const v=clamp(Number(strength)||.6,.15,1.25);
+    if(!audio)return false;
+    const v=clamp(Number(strength)||.6,.12,1.1)*
+      (special?.66:1)*(multiplier>=10?.65:1);
     const variation=.96+Math.random()*.08;
     if(kind==='hit'){
       snap(.075,.068*v,750);
@@ -115,7 +146,6 @@
       snap(.13,.055*v,720);
       tone(137*variation,83,.19,.105*v,'triangle');
     }else if(kind==='clock'){
-      // Small mechanical tick plus an understated metallic knock.
       snap(.045,.045*v,810);
       tone(176*variation,95,.12,.07*v,'triangle');
     }else if(kind==='blast'){
@@ -125,10 +155,38 @@
     }else if(kind==='cosmos'){
       snap(.2,.06*v,430);
       tone(103*variation,43,.34,.10*v,'sine');
-    }else {
+    }else if(kind==='bounce-perfect'){
+      // A rubber mallet on metal, not a sharp high-pitched arcade chime.
+      snap(.062,.055*v,600);
+      tone(151*variation,65,.13,.15*v,'triangle');
+      tone(103,137,.17,.055*v,'sine',.025);
+    }else if(kind==='bounce-combo'){
+      // One short accented double knock for three alternating ricochets.
+      snap(.095,.062*v,610);
+      tone(134*variation,57,.17,.16*v,'triangle');
+      tone(161*variation,85,.12,.055*v,'triangle',.064);
+    }else if(kind==='tactic-sling'){
+      snap(.11,.05*v,920);
+      tone(140*variation,72,.17,.11*v,'triangle');
+    }else if(kind==='tactic-evade'){
+      snap(.07,.022*v,650);
+      tone(175*variation,112,.11,.066*v,'sine');
+    }else if(kind==='tactic-anchor'){
+      snap(.12,.065*v,420);
+      tone(110*variation,44,.22,.13*v,'triangle');
+    }else if(kind==='signature-ready'){
+      // Quiet two-tone prelude; should not fight the commentary.
+      tone(98*variation,122,.11,.047*v,'sine');
+      tone(132*variation,104,.12,.037*v,'triangle',.065);
+    }else if(kind==='signature-launch'){
+      snap(.095,.048*v,580);
+      tone(117*variation,52,.25,.14*v,'triangle');
+      tone(68,43,.18,.045*v,'sine',.02);
+    }else{
       snap(.08,.05*v,770);
       tone(134*variation,80,.13,.08*v,'triangle');
     }
+    return true;
   }
   function caption(p,label,color){
     if(!p||!label)return;
@@ -328,7 +386,9 @@
   global.BattleFX={
     cast,hit,tick,draw,beam,mark,clear,caption,unlock,sound,
     get muted(){return muted;},
-    setMuted(value){muted=!!value;if(master)master.gain.setTargetAtTime(muted?0:.18,audio.currentTime,.025);},
+    get volume(){return volume;},
+    setVolume,
+    setMuted(value){muted=!!value;applyVolume();},
     setIntensity(v){intensity=v==='low'?'low':'full';},
     colorOf
   };
@@ -340,13 +400,31 @@
       if(!panel||panel.querySelector('.bf-audio'))return;
       const bar=document.createElement('div');
       bar.className='bf-audio';
-      bar.innerHTML='<button type="button" id="bf-sound" aria-pressed="true">🔊 효과음 ON</button><span>전투 효과음 · 음악은 별도 조절</span>';
+      bar.innerHTML='<button type="button" id="bf-sound" aria-pressed="true">🔊 효과음 ON</button> <label class="bf-sfx-level" for="bf-sfx-volume">효과음 음량 <input id="bf-sfx-volume" type="range" min="0" max="100" value="55" aria-label="전투 효과음 음량"></label><span>기본 55% · 충돌음 과밀 자동 억제 · 음악과 별도</span>';
       panel.append(bar);
-      bar.querySelector('button').addEventListener('click',()=>{
+      const sfxButton=bar.querySelector('button');
+      const sfxVolume=bar.querySelector('#bf-sfx-volume');
+      const save=()=>{try{global.localStorage?.setItem(EFFECTS_KEY,JSON.stringify({muted,volume}));}catch(_){}};
+      try{
+        const saved=JSON.parse(global.localStorage?.getItem(EFFECTS_KEY)||'null');
+        if(saved&&typeof saved==='object'){
+          if(typeof saved.volume==='number')setVolume(saved.volume);
+          muted=saved.muted===true;
+          applyVolume();
+        }
+      }catch(_){}
+      sfxButton.textContent=muted?'🔇 효과음 OFF':'🔊 효과음 ON';
+      sfxButton.setAttribute('aria-pressed',String(!muted));
+      sfxVolume.value=String(Math.round(volume*100));
+      sfxVolume.addEventListener('input',()=>{
+        setVolume(Number(sfxVolume.value)/100);save();
+      });
+      sfxButton.addEventListener('click',()=>{
         unlock();BattleFX.setMuted(!BattleFX.muted);
         const b=bar.querySelector('button');
         b.textContent=BattleFX.muted?'🔇 효과음 OFF':'🔊 효과음 ON';
         b.setAttribute('aria-pressed',String(!BattleFX.muted));
+        save();
       });
       const gentle=document.querySelector('.bf-preference input');
       if(gentle){BattleFX.setIntensity(gentle.checked?'low':'full');gentle.addEventListener('change',()=>BattleFX.setIntensity(gentle.checked?'low':'full'));}
