@@ -93,9 +93,10 @@ test('physical ricochet keeps original velocity for several steering ticks',()=>
  assert.equal(fighter._pinballReboundHold,0);
 });
 
-test('beginner interface describes fixed energy trigger while expert disables old trigger selection',()=>{
+test('beginner help describes energy readiness and advanced signature timing without legacy trigger confusion',()=>{
  const easy=read('js/features/scratch-beginner.js'),advanced=read('js/features/scratch-studio.js');
- assert.match(easy,/기세 100 → 필살기 자동 발동/);
+ assert.match(easy,/기세 100 → 필살기 준비/);
+ assert.match(easy,/다음 충돌·보스 예고/);
  assert.match(easy,/벽 반사/);
  assert.match(advanced,/scratch-trigger/);
  assert.match(advanced,/disabled=!legacy/);
