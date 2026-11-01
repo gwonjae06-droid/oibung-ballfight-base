@@ -74,6 +74,8 @@ function normalize(value,{towerEnemy=false}={}){
   const signature=!towerEnemy&&Number(value.signatureVersion)===1;
   return {
     signatureVersion:signature?1:0,
+    signatureTiming:signature&&['instant','contact','danger'].includes(value.signatureTiming)?
+      value.signatureTiming:'instant',
     legacySkills:signature&&Array.isArray(value.legacySkills)?value.legacySkills.slice(0,4).map(s=>({
       ...s,actions:(s.actions||[]).slice(0,3).map(a=>({...a}))
     })):undefined,
@@ -236,6 +238,7 @@ function hit(p,e,action,multiplier=1,attackZ) {
   if(!global.AdvancedCombat&&e.jumpState&&e.jumpState!=='ground')return false;
   const d=Math.max(0,Math.round((action.damage||0)*multiplier*(global.ForgeExpansion?.damageScale(p,e)||1)*
     (global.ArenaBalance?.factorOf?.(p)??1)*(global.ArenaStalemate?.attackFactor?.()??1)*
+    (global.ArenaCombatV2?.damageFactor?.(p)??1)*
     (global.ForgeArchetypes?.attack?.(p)??1)*(global.ForgeArchetypes?.received?.(e)??1)*
     (e.towerEnemy&&Number.isFinite(e.towerDefense)?e.towerDefense:1)));
   const frame=Number(p._forgeBalanceFrame)||0;
@@ -323,6 +326,7 @@ function cast(p,s,target,index){
     const run=global.SignatureLive?.begin?.(s.program,p,s.trigger);
     if(!run)return false;
     p.forgeScratchRun=run;
+    global.ArenaCombatV2?.onCast?.(p);
     global.BattleFX?.caption?.(p,s.name,(p.forge.effectColor||p.forge.color));
     return true;
   }
@@ -353,6 +357,7 @@ function cast(p,s,target,index){
         ['dive','aircombo','slash','spinslash','thrust'].includes(a.type)});
   }
   if(p.forgeQueue.length>48)p.forgeQueue.splice(0,p.forgeQueue.length-48);
+  global.ArenaCombatV2?.onCast?.(p);
   global.BattleFX?.caption?.(p,s.name,(p.forge.effectColor||p.forge.color));
   return true;
 }
@@ -566,9 +571,10 @@ function update(p,target){
       if(global.ForgeExpansion?.blocked(p))return;
       if(p.forgeTicks[i]<cooldownFrames(p,s))return;
       if(global.BounceMomentum?.enabled?.(p)&&!global.BounceMomentum.ready(p))return;
-      // New signature fighters ALWAYS cast when energy reaches 100.
-      // Tactical situations belong inside the Scratch program, not a second
-      // trigger that could leave a full energy gauge stuck indefinitely.
+      if(p.forge.signatureVersion===1&&!p.towerEnemy&&
+         global.ArenaCombatV2?.shouldCast?.(p,target)===false)return;
+      // Player signature timing waits at most 138 simulated frames
+      // after reaching 100 energy, never delaying bosses or minions.
       const energyOnly=global.BounceMomentum?.enabled?.(p);
       const active=energyOnly?!!target:(global.SignatureProgram?.eligible?.(p,target,s,loss)?? 
         ((s.trigger==='auto'&&target)||(s.trigger==='lowhp'&&p.hp/p.maxHp*100<=s.threshold)
@@ -587,6 +593,7 @@ function update(p,target){
     });
   }
   advanceWorld(p,target);
+  global.ArenaCombatV2?.ui?.(p);
 }
 // Manual Tower mode uses the same cast queue, cooldown clocks, collision
 // and execution pipeline as an AI Forge fighter; only the cast decision differs.
