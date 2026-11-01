@@ -4,9 +4,9 @@
 (function(g){
 'use strict';
 const OPTIONS=Object.freeze({
- attack:{name:'집중 공격',hint:'AI가 적에게 접근하며 공격 거리를 적극 확보',icon:'⚔'},
- evade:{name:'위험 회피',hint:'AI가 물러나며 위험 지대를 우선 회피',icon:'🛡'},
- hold:{name:'거리 유지',hint:'AI가 현재 스킬 사거리를 유지하며 측면 이동',icon:'◎'}
+ attack:{name:'슬링샷',hint:'현재 진행 방향으로 한 번 강하게 가속 · 기세 +8',icon:'⚔'},
+ evade:{name:'긴급 회피',hint:'현재 이동에 수직으로 튕기며 약 0.35초 피해 방지',icon:'🛡'},
+ hold:{name:'앵커',hint:'3초 동안 물리 충돌에 강한 무게 중심 · 짧은 방호',icon:'◎'}
 });
 const LIMIT=2,DURATION=300;
 let used=0,mode='',left=0,host=null;
@@ -51,6 +51,26 @@ function mount(){
 function reset(){used=0;mode='';left=0;update();}
 function choose(id){
  if(!allowed()||!OPTIONS[id]||used>=LIMIT)return false;
+ const p=g.players?.[0];
+ if(p&&p.hp>0&&p.towerHero&&!p.manualTower){
+  const vx=Number(p.vx)||0,vy=Number(p.vy)||0,mag=Math.hypot(vx,vy)||1;
+  const x=mag>1?vx/mag:1,y=mag>1?vy/mag:0;
+  if(id==='attack'){
+   const speed=Math.min(9.5,Math.max(4.4,mag*1.38+1));
+   p.vx=x*speed;p.vy=y*speed;
+   p._pinballReboundHold=Math.max(p._pinballReboundHold||0,25);
+   g.BounceMomentum?.add?.(p,8,'tactic');
+  }else if(id==='evade'){
+   p.vx=Math.max(-9,Math.min(9,(vx||x)*.55-y*4.1));
+   p.vy=Math.max(-9,Math.min(9,(vy||y)*.55+x*4.1));
+   p.invincible=Math.max(p.invincible||0,21);
+   p._pinballReboundHold=Math.max(p._pinballReboundHold||0,21);
+  }else{
+   p._tacticalAnchorUntil=(Number(p._forgeActionClock)||0)+180;
+   p.invincible=Math.max(p.invincible||0,12);
+  }
+  g.addFloatingText?.(OPTIONS[id].name,p.x,p.y-(p.radius||30)-18,'#e2f5ff',17);
+ }
  used++;mode=id;left=DURATION;update();return true;
 }
 function tick(){
