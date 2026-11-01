@@ -178,7 +178,15 @@ function updateCharacter(self) {
 
 function handleCombat(pA,pB) {
   if(pA.hp<=0||pB.hp<=0||pA.forgePhase||pB.forgePhase)return;
-  if(globalThis.AdvancedCombat&&!AdvancedCombat.canHit(pA,pB))return;
+  // Tower levels are rendered on raised decks. Body-to-body bounce still
+  // needs to work in the shared top-down collision plane; attack/projectile
+  // vertical hit checks remain untouched in AdvancedCombat.canHit().
+  const towerPinball=!!globalThis.ArenaTower?.active&&
+    (globalThis.BounceMomentum?.enabled?.(pA)||globalThis.BounceMomentum?.enabled?.(pB));
+  const groundedA=(pA.z||0)<10&&(!pA.jumpState||pA.jumpState==='ground');
+  const groundedB=(pB.z||0)<10&&(!pB.jumpState||pB.jumpState==='ground');
+  if(globalThis.AdvancedCombat&&!AdvancedCombat.canHit(pA,pB)&&
+     !(towerPinball&&groundedA&&groundedB))return;
   if(!globalThis.AdvancedCombat&&pA.jumpState&&pA.jumpState!=='ground')return;
   if(!globalThis.AdvancedCombat&&pB.jumpState&&pB.jumpState!=='ground')return;
   const dx=pB.x-pA.x,dy=pB.y-pA.y;
