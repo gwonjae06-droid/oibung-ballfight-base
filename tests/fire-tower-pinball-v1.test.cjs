@@ -65,6 +65,8 @@ test('10F cyclones physically change velocity, with true visual impact circles',
 });
 test('caldera fire covers the outer rim but keeps a visible safe central lane',()=>{
  const {h,fx,hits}=setup();fx.begin(2,2);
+ // Start on the safe center before the outer-rim phase activates.
+ h.x=250;h.y=250;
  for(let i=0;i<245;i++)fx.step();
  h.x=250;h.y=250;fx.step();assert.equal(hits(),0);
  h.x=442;h.y=250;h.vx=0;h.vy=0;fx.step();
