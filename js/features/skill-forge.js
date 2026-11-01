@@ -81,7 +81,8 @@ function normalize(value,{towerEnemy=false}={}){
     name:clean(value.name,14)||'커스텀 파이터',blurb:clean(value.blurb,90),
     artKey:clean(value.artKey||'',52).replace(/[^a-zA-Z0-9_-]/g,''),
     archetype,
-    basicAttack:signature&&base?global.BasicAttacks?.normalize?.(value.basicAttack,archetype):undefined,
+    // Legacy basicAttack data is intentionally ignored. All damage comes from
+    // authored skills and their actual hit/collision effects, never passive attacks.
     color:color(value.color),effectColor:color(value.effectColor||value.color),
     hp:base?base.hp:Math.round(number(value.hp,140,towerEnemy?8000:500,250)),
     speed:base?base.speed:number(value.speed,.6,5,1.8),
@@ -517,9 +518,8 @@ function update(p,target){
   else{p.vx=cruise;p.vy=0;}
   tickSkills(p);
   global.BounceMomentum?.tick?.(p,target);
-  // Basic attacks are deliberately separate from the one signature cooldown.
-  // They still pass through execute()/hit() and honor physical collision.
-  global.BasicAttacks?.tick?.(p,target,{execute});
+  // No automatic normal attack: physical collisions build momentum and
+  // the player's authored program is the sole skill attack at energy 100.
   // Repeat tiny ornamental pulses without triggering extra damage, healing or
   // CC. The true combat cooldown is unchanged (at least 0.2 s).
   p._forgeVisualFrame=(p._forgeVisualFrame||0)+1;
