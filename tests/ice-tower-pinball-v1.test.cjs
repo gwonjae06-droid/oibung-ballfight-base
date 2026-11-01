@@ -66,13 +66,14 @@ test('authored projectiles bounce on the same ice prism radius',()=>{
 });
 test('absolute-zero phase slows only the hero, preserving heading without status-damage',()=>{
  const {h,b,s,hits}=make();s.begin(1,1);
- h.x=250;h.y=250;h.vx=5;h.vy=0;b.vx=5;b.vy=0;
+ // Keep the QA ball away from both the exposed ice core and the frost ring.
+ h.x=310;h.y=250;h.vx=5;h.vy=0;b.vx=5;b.vy=0;
  for(let i=0;i<170;i++)s.step();
  assert.ok(h.vx<5&&h.vx>1);
  assert.equal(h.vy,0);assert.equal(b.vx,5,'boss stays at full speed');
  assert.equal(h._towerIceAbsoluteZero,2);
  assert.equal(hits(),0);
- h.forgeShots=[{x:250,y:250,vx:4,vy:-2}];s.step();
+ h.forgeShots=[{x:310,y:250,vx:4,vy:-2}];s.step();
  assert.ok(h.forgeShots[0].vx<4&&h.forgeShots[0].vx>0);
  assert.ok(h.forgeShots[0].vy<0);
  s.clear();assert.equal(h._towerIceAbsoluteZero,0);
@@ -102,6 +103,8 @@ test('10F moving glacier walls have a central navigable gap and reflect contact'
 });
 test('physical ice lance impacts airborne and ground fighters differently',()=>{
  const {h,s,hits}=make();s.begin(2,2);
+ // Start in the open center lane rather than touching an advancing wall.
+ h.x=250;h.y=250;
  for(let i=0;i<247;i++)s.step();
  const q=s.lanceAt(0,248);
  h.x=q.x;h.y=q.y;h.z=100;s.step();
