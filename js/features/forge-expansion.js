@@ -6,7 +6,7 @@ const STATUSES={freeze:'빙결',stun:'기절',root:'속박',silence:'침묵',ble
 const DESCRIPTIONS={homing:'선택한 적을 따라가는 탄환',pierce:'적을 맞혀도 사라지지 않는 탄환 (적마다 1회)',boomerang:'발사 후 시전자에게 돌아오는 탄환 (적마다 1회)',chain:'범위 안의 다른 적에게 80% 위력으로 연쇄',nova:'자신 중심 범위 공격',meteor:'커다란 암석이 그림자·불꽃 꼬리와 함께 지면으로 낙하합니다. 착지 시점에만 표시된 반경 안에 피해를 줍니다',mine:'자신 위치에 설치, 0.33초 후 접근한 적에게 폭발',drain:'범위 안 적에게 준 피해의 50% 회복',swap:'선택한 적과 위치 교환',retreat:'적 반대 방향으로 범위만큼 후퇴',cleanse:'이 제작기의 상태이상·지속 피해·둔화 제거',haste:'지속 시간 동안 이동량 60% 증가',regen:'0.5초마다 위력의 25% 회복',fortify:'직접 공격으로 받는 피해 45% 감소'};
 const STATUS_HELP={none:'추가 효과 없음',ice:'1.5초간 이동 50% 감소',fire:'지속 시간 동안 0.5초마다 지속 피해',poison:'지속 시간 동안 0.5초마다 지속 피해',freeze:'이동과 행동 정지',stun:'이동과 행동 정지',root:'이동 정지, 공격 가능',silence:'행동과 접촉 공격 정지, 이동 가능',bleed:'0.5초마다 체력 3 감소',shock:'이동 30% 감소, 0.5초마다 체력 2 감소',vulnerable:'직접 받는 피해 35% 증가',weak:'직접 주는 피해 40% 감소',fear:'시전자 반대 방향으로 이동',charm:'시전자 방향으로 이동',blind:'직접 주는 피해 35% 감소',curse:'회복량 60% 감소'};
 Object.assign(TYPES,{flight:'공중 강하',burrow:'지하 습격',blackhole:'블랙홀',starfall:'우주 별비',dung:'똥 폭탄',lifebloom:'생명의 꽃',resurrect:'부활',timestop:'시간 정지',rewind:'시간 되감기',timeburst:'시간 가속'});
-Object.assign(DESCRIPTIONS,{flight:'최대 3초간 공중에서 직접 공격 회피 후 주변에 착지 피해',burrow:'최대 3초간 지하에서 회피 후 적 위치로 솟아올라 공격',blackhole:'적 위치에 중력장을 만들어 끌어당기고 주기적 피해',starfall:'시전자 상공에서 별이 줄지어 낙하합니다. 각 별은 꼬리·지면 그림자를 표시하고, 실제 착지한 순간에만 주변 적에게 피해를 줍니다',dung:'갈색 똥 폭탄이 날아가 명중 시 중독과 둔화',lifebloom:'자신 위치에 꽃을 심어 머무르는 동안 회복',resurrect:'스킬에 포함하면 경기당 1회 자동 부활, 최대 체력의 35% 회복',timestop:'범위 안 적을 최대 2초간 이동·행동 정지 (지속 피해는 계속)',rewind:'자신의 체력과 위치를 최대 3초 전으로 복원, 사망 후에는 불가',timeburst:'지속 시간 동안 자신의 스킬 충전 속도 2배'});
+Object.assign(DESCRIPTIONS,{flight:'최대 3초간 공중에서 직접 공격 회피 후 주변에 착지 피해',burrow:'최대 3초간 지하에서 회피 후 적 위치로 솟아올라 공격',blackhole:'적 위치에 중력장을 만들어 끌어당기고 주기적 피해',starfall:'시전자 상공에서 별이 줄지어 낙하합니다. 각 별은 꼬리·지면 그림자를 표시하고, 실제 착지한 순간에만 주변 적에게 피해를 줍니다',dung:'갈색 똥 폭탄이 날아가 명중 시 중독과 둔화',lifebloom:'자신 위치에 꽃을 심어 머무르는 동안 회복',resurrect:'스킬에 포함하면 경기당 1회 자동 부활, 최대 체력의 35% 회복',timestop:'범위 내 적의 움직임과 기세 충전을 잠시 정지 (제어 면역 적용)',rewind:'최대 3초 전 위치·진행 방향 복원 + 기세 일부 회수 (최대 30)',timeburst:'지속 시간 동안 충돌·벽 반사·자연 기세 충전량 1.75배'});
 function revive(p){
   if(p.hp>0||p.forgeRevived||!p.forge?.skills.some(s=>s.actions.some(a=>a.type==='resurrect')))return false;
   p.forgeRevived=true;p.hp=Math.max(1,Math.round(p.maxHp*.35));p.invincible=90;
@@ -37,6 +37,14 @@ function effect(p,key,time,source,power=0){
   // Resetting age to zero every 0.2 s suppressed 0.5 s regen/bleed ticks.
   p.forgeEffects[key]={time:Math.max(previous?.time||0,ticks),source:source?.playerNum,
     power,age:previous?.age||0};
+  if((key==='fear'||key==='charm')&&global.ArenaPinballMotion?.enabled?.(p)&&source){
+    // Single physical shove, no ongoing target-aware steering.
+    const dx=source.x-p.x,dy=source.y-p.y,d=Math.hypot(dx,dy)||1;
+    const dir=key==='fear'?-1:1;
+    p.vx=(p.vx||0)+dir*dx/d*2.4;
+    p.vy=(p.vy||0)+dir*dy/d*2.4;
+    p._pinballReboundHold=Math.max(p._pinballReboundHold||0,8);
+  }
   return true;
 }
 function applyStatus(p,e,a){
@@ -76,7 +84,12 @@ function tick(p){
   }
   if(p.bfDot<=0){p._forgeDotClock=0;p._forgeDotKind=null;}
   if(p.hp<=0)return;
-  if(p.forge){p.forgeHistory ||= [];p.forgeHistory.push({x:p.x,y:p.y,hp:p.hp});if(p.forgeHistory.length>181)p.forgeHistory.shift();}
+  if(p.forge){
+    p.forgeHistory ||= [];
+    p.forgeHistory.push({x:p.x,y:p.y,hp:p.hp,vx:p.vx,vy:p.vy,
+      momentum:global.BounceMomentum?.meter?.(p)});
+    if(p.forgeHistory.length>181)p.forgeHistory.shift();
+  }
   if(p.forgePhase?.time>0){p.forgePhase.time--;p.invincible=Math.max(p.invincible||0,2);p._forgeImpactGrace=0;}
   for(const [key,v] of Object.entries(p.forgeEffects||{})){
     v.age++;v.time--;
@@ -88,7 +101,9 @@ function tick(p){
     }
     if(v.time<=0)delete p.forgeEffects[key];
   }
-  if(active(p,'fear')||active(p,'charm')){
+  // A ball's *ordinary* direction may only change at collisions or by a
+  // one-shot authored impulse. Do not resume homing/fleeing on every tick.
+  if(!global.ArenaPinballMotion?.enabled?.(p)&&(active(p,'fear')||active(p,'charm'))){
     const key=active(p,'fear')?'fear':'charm',src=players.find(e=>e.playerNum===p.forgeEffects[key].source&&e.hp>0);
     if(src){const angle=Math.atan2(src.y-p.y,src.x-p.x)+(key==='fear'?Math.PI:0),speed=Math.max(1,Math.hypot(p.vx,p.vy));p.vx=Math.cos(angle)*speed;p.vy=Math.sin(angle)*speed;}
   }
@@ -108,6 +123,17 @@ function execute(p,a,target,api){
       const recovery=Math.max(0,old.hp-p.hp)*(global.ArenaBalance?.defenseFactorOf?.(p)??1);
       const allowed=global.ArenaBalance?.healingWindow?.(p,recovery)??recovery;
       p.hp=Math.max(1,Math.min(p.maxHp,p.hp+allowed));
+      // A real pinball rewind must restore the previous heading, not only
+      // teleport the marble back while retaining its current trajectory.
+      if(Number.isFinite(old.vx)&&Number.isFinite(old.vy)){
+        p.vx=Math.max(-10,Math.min(10,old.vx));
+        p.vy=Math.max(-10,Math.min(10,old.vy));
+      }
+      // The entire gauge was spent to initiate this signature; refunds are
+      // capped so history cannot grant free unlimited casts.
+      const meter=global.BounceMomentum?.meter?.(p);
+      if(Number.isFinite(meter)&&Number.isFinite(old.momentum))
+        global.BounceMomentum?.add?.(p,Math.min(30,Math.max(0,old.momentum-meter)),'rewind');
       clampPosition(p);show(p.x,p.y,50);}return true;
   }
   if(['cleanse','haste','regen','fortify','timeburst'].includes(a.type)){
@@ -131,7 +157,18 @@ function execute(p,a,target,api){
     if(!p.forgePhase)p.forgePhase={kind:a.type,time:Math.min(180,Math.round(a.duration*60)),a,target:near.playerNum};
     p.invincible=Math.max(p.invincible||0,2);return true;
   }
-  if(a.type==='timestop'){around(p.x,p.y,a.radius).forEach(e=>{if(e.invincible<=0)effect(e,'freeze',Math.min(120,a.duration*60),p);});show(p.x,p.y,a.radius);return true;}
+  if(a.type==='timestop'){
+    around(p.x,p.y,a.radius).forEach(e=>{
+      if(e.invincible>0)return;
+      if(effect(e,'freeze',Math.min(120,a.duration*60),p)){
+        // Stasis runs for the SAME verified CC duration, and cannot stack
+        // into infinite time-locked combat via reapplications.
+        const locked=e.forgeEffects?.freeze?.time||0;
+        if(locked>0)effect(e,'momentumStasis',locked,p);
+      }
+    });
+    show(p.x,p.y,a.radius);return true;
+  }
   if(a.type==='blackhole'||a.type==='lifebloom'){
     p.forgeExtras.push({kind:a.type,x:a.type==='lifebloom'?p.x:near.x,y:a.type==='lifebloom'?p.y:near.y,life:Math.round(a.duration*60),age:0,a});
   }else if(a.type==='starfall'){
@@ -169,9 +206,16 @@ function execute(p,a,target,api){
   }else if(a.type==='drain'){
     if(Math.hypot(near.x-p.x,near.y-p.y)<=a.radius){const hp=near.hp;if(api.hit(p,near,a))heal(p,(hp-near.hp)*.5);show(near.x,near.y,30);}
   }else if(a.type==='swap'){
-    [p.x,near.x]=[near.x,p.x];[p.y,near.y]=[near.y,p.y];clampPosition(p);clampPosition(near);show(p.x,p.y,40);show(near.x,near.y,40);
+    // Swap positions, not identities or rolling momentum.
+    [p.x,near.x]=[near.x,p.x];[p.y,near.y]=[near.y,p.y];
+    clampPosition(p);clampPosition(near);show(p.x,p.y,40);show(near.x,near.y,40);
   }else if(a.type==='retreat'){
-    p.x-=Math.cos(angle)*a.radius;p.y-=Math.sin(angle)*a.radius;clampPosition(p);show(p.x,p.y,30);
+    // Retreat is a SHORT intentional impulse, not a teleport that skips
+    // walls, bumpers, body-to-body collision or squash feedback.
+    const strength=Math.min(10,Math.max(3,Number(a.speed)||6));
+    p.vx=-Math.cos(angle)*strength;p.vy=-Math.sin(angle)*strength;
+    p.movementOnlyFrames=Math.max(p.movementOnlyFrames||0,12);
+    show(p.x,p.y,30);
   }
   if(p.forgeExtras.length>48)p.forgeExtras.splice(0,p.forgeExtras.length-48);
   return true;
