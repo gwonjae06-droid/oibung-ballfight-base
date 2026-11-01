@@ -634,7 +634,7 @@ function install(){
     });
   }}
   function drawEncounter(ctx){if(!active||stage!=='fighting')global.ArenaTowerSpectacle?.page(null);if(active&&stage==='fighting'){global.ArenaTowerAtmosphere?.particles?.(ctx,canvas.width,canvas.height,realmId,encounter?.tick||0);environment?.draw?.(ctx);encounter?.draw(ctx,realm()?.color);}}
-  const api={beginAncient,allRealmsCleared,selectRealm,openSelection,chooseBlessing,chooseRoute,tickEncounter,drawEncounter,get encounter(){return encounter;},get environment(){return environment;},floor,makeEnemy,read,updateRecord,records,begin,forfeit,paintBackground,
+  const api={beginAncient,allRealmsCleared,selectRealm,openSelection,chooseBlessing,chooseRoute,tickEncounter,drawEncounter,get encounter(){return encounter;},get environment(){return environment;},get hero(){return typeof players!=='undefined'?players[0]||null:null;},floor,makeEnemy,read,updateRecord,records,begin,forfeit,paintBackground,
     onBattleEnd,isTransientDef,pauseAway,refresh:show,setMode,get mode(){return mode;},get active(){return active;},
     get stage(){return stage;},get view(){return active?'interior':view;},get state(){return current();}};
   global.ArenaTower=api;return api;
