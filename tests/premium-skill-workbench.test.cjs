@@ -40,7 +40,7 @@ test('fist attacks expose damage, range and impact tuning with validated values'
   const html=b.inspector(p.skills[0],0);
   for(const key of ['damage','radius','knockback','target'])
     assert.ok(html.includes('data-key="'+key+'"'),key);
-  assert.match(html,/미리보기|시연/);
+  assert.match(html,/핀볼 실험/);
   p=b.modify(p,{kind:'param',skill:0,index:0,key:'damage',value:81});
   assert.equal(p.skills[0].actions[0].damage,81);
   const row=b.actionRow(p.skills[0].actions[0],0,0,1);
