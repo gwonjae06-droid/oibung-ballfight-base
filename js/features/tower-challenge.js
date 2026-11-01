@@ -372,6 +372,10 @@ function install(){
       routeHost.innerHTML=routeHost.hidden?'':'<strong>다음 층의 길을 선택하세요 · 한 층만 적용</strong>'+Object.entries(ROUTES).map(([id,r])=>'<button type="button" data-route="'+id+'"><b>'+r.name+'</b><small>'+r.description+'</small></button>').join('');
     }
     nextStart.disabled=offers.length>0||(routePending&&!routeSelected);
+    nextStart.title=offers.length?'먼저 기연을 하나 선택해 주세요.':
+      routePending&&!routeSelected?'먼저 다음 층의 길을 선택해 주세요.':'준비된 층의 전투를 시작합니다.';
+    nextStart.setAttribute('aria-label',nextStart.disabled?
+      '다음 층 시작 불가 · '+nextStart.title:'다음 층 전투 시작');
     const f=floor(level),best=read(global.localStorage).records[recordKey(selectedDef())]?.best||0;
     el('tower-floor').textContent=ancient?'최종 보스':level+' / '+FINISH+'F';
     const picker=el('tower-floor-picker'),options=el('tower-floor-options');
@@ -634,7 +638,7 @@ function install(){
     });
   }}
   function drawEncounter(ctx){if(!active||stage!=='fighting')global.ArenaTowerSpectacle?.page(null);if(active&&stage==='fighting'){global.ArenaTowerAtmosphere?.particles?.(ctx,canvas.width,canvas.height,realmId,encounter?.tick||0);environment?.draw?.(ctx);encounter?.draw(ctx,realm()?.color);}}
-  const api={beginAncient,allRealmsCleared,selectRealm,openSelection,chooseBlessing,chooseRoute,tickEncounter,drawEncounter,get encounter(){return encounter;},get environment(){return environment;},floor,makeEnemy,read,updateRecord,records,begin,forfeit,paintBackground,
+  const api={beginAncient,allRealmsCleared,selectRealm,openSelection,chooseBlessing,chooseRoute,tickEncounter,drawEncounter,get encounter(){return encounter;},get environment(){return environment;},get hero(){return typeof players!=='undefined'?players[0]||null:null;},floor,makeEnemy,read,updateRecord,records,begin,forfeit,paintBackground,
     onBattleEnd,isTransientDef,pauseAway,refresh:show,setMode,get mode(){return mode;},get active(){return active;},
     get stage(){return stage;},get view(){return active?'interior':view;},get state(){return current();}};
   global.ArenaTower=api;return api;

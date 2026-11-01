@@ -53,14 +53,14 @@ panel.setAttribute('aria-label','중급 고유 스킬 설계 작업실');
 panel.innerHTML='<div class="kid-top"><div><span class="kid-overline">MY SPECIAL MOVE</span><h3>나만의 전투 기술 설계</h3><p>전투 유형을 고르고 행동 4개를 조립하세요. 순서·대상·연계·위력을 직접 수정할 수 있습니다.</p></div><div class="kid-display" role="group" aria-label="코딩 화면 보기 선택"><button type="button" data-kid-view="easy" aria-pressed="true">✏️ 기본 설계</button><button type="button" data-kid-view="advanced" aria-pressed="false">⚙ 고급 코딩</button></div></div>'
  +'<div class="kid-legacy" hidden><strong>이 캐릭터는 예전 스킬을 사용하고 있어요.</strong><p>기존 기술은 그대로 보관돼요. 새 필살기 방식으로 바꾸고 싶을 때만 선택하세요.</p><button type="button" data-kid-command="convert">한 가지 필살기로 바꾸기</button></div>'
  +'<div class="kid-easy-body">'
- +'<section class="kid-section" aria-labelledby="kid-step-one"><div class="kid-step-heading"><span class="kid-step-no">1</span><div><h4 id="kid-step-one">① 기세가 100이 되면</h4><p>⚡ 기세가 100이 되면 자동 사용! 발동 시점은 모두 같아요.</p></div></div><div class="kid-trigger-options"></div></section>'
+ +'<section class="kid-section" aria-labelledby="kid-step-one"><div class="kid-step-heading"><span class="kid-step-no">1</span><div><h4 id="kid-step-one">① 기세가 100이 되면</h4><p>⚡ 기세가 100이 되면 준비됩니다. 실제 발동 시점은 쉬운 설계 화면에서 바꿀 수 있어요.</p></div></div><div class="kid-trigger-options"></div></section>'
  +'<section class="kid-section" aria-labelledby="kid-step-two"><div class="kid-step-heading"><span class="kid-step-no">2</span><div><h4 id="kid-step-two">② 행동을 최대 4개 선택</h4><p>블록을 누르면 내 기술에 차례대로 추가돼요.</p></div></div><div class="kid-action-grid"></div></section>'
  +'<section class="kid-section kid-plan-section" aria-labelledby="kid-step-three"><div class="kid-step-heading"><span class="kid-step-no">3</span><div><h4 id="kid-step-three">③ 순서와 연계 편집</h4><p>위에서 아래로 순서대로 실행돼요.</p></div></div>'
  +'<label class="kid-name-label">내 필살기 이름<input id="kid-skill-name" type="text" maxlength="18" placeholder="예: 번개 돌진"></label><div class="kid-skill-summary"><div class="kid-plan"></div><div class="kid-count"></div></div>'
  +'<div class="kid-tempo kid-momentum-guide"><strong>⚡ 필살기는 기세가 100이 되면 준비돼요</strong><p>상대와 부딪히거나 벽에 튕기면 빨리 충전돼요. 충돌과 벽 반사로 쌓이고, 전투 중에는 천천히 자동 충전돼요.</p></div>'
  +'<button type="button" class="kid-preview-action" data-kid-command="preview">▶ 스킬 동작 시연 (승률 예측 아님)</button></section>'
  +'<section class="kid-templates" aria-labelledby="kid-templates-title"><div class="kid-templates-heading"><h4 id="kid-templates-title">무엇부터 만들지 모르겠나요?</h4><p>마음에 드는 예시를 누르면 블록이 자동으로 채워져요. 나중에 바꿀 수도 있어요.</p></div><div class="kid-template-grid"></div><button type="button" class="kid-random" data-kid-command="random">🎲 아무거나 재미있는 기술 만들기</button></section>'
- +'</div><div class="kid-feedback" role="status" aria-live="polite">기세 100이 되면 기술이 발동해요. 원하는 행동 블록을 골라 보세요.</div>';
+ +'</div><div class="kid-feedback" role="status" aria-live="polite">기세 100이면 필살기가 준비돼요. 발동 조건을 설정하고 행동 블록을 골라 보세요.</div>';
 const work=studio.querySelector('#studio-panel-skills');work.insertBefore(panel,workspace);
 studio.classList.add('scratch-friendly-mode');
 // Preserve access to appearance editing even when the code panel is hidden.
@@ -135,7 +135,7 @@ function refresh(){
  $('.kid-legacy').hidden=!legacy;
  const easy=$('.kid-easy-body');easy.hidden=legacy;
  if(legacy)return;
- $('.kid-trigger-options').innerHTML='<div class="kid-fixed-trigger" role="note"><strong>⚡ 기세 100 → 필살기 자동 발동</strong><p>상대와 충돌하거나 벽에 튕길수록 빨라져요. 보스 위험·회피·벽 반사 등의 판단은 자세히 보기에서 <b>만약</b> 블록으로 설정해요.</p></div>';
+ $('.kid-trigger-options').innerHTML='<div class="kid-fixed-trigger" role="note"><strong>⚡ 기세 100 → 필살기 준비</strong><p>기본은 즉시 발동합니다. 쉬운 설계에서 다음 충돌·보스 예고 시 발동도 고를 수 있으며, 2.3초 이내에는 자동 발동해요. 현재 설정: '+escape(({instant:'즉시',contact:'다음 충돌',danger:'보스 예고'}[get().signatureTiming]||'즉시'))+'.</p></div>';
  $('.kid-action-grid').innerHTML=actions.map(a=>'<button type="button" class="kid-action kid-action-'+a.group+'" data-kid-add="'+a.id+'" title="'+escape(a.tip)+'">'
    +'<span class="kid-action-icon" aria-hidden="true">'+a.icon+'</span><strong>'+a.name+'</strong><small>'+a.tip+'</small><span class="kid-action-plus" aria-hidden="true">＋</span></button>').join('');
  $('#kid-skill-name').value=fighter.skills[0].name;

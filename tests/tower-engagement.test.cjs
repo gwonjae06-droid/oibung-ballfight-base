@@ -12,7 +12,8 @@ function moduleAt(rel,extras={}){
  return g;
 }
 test('tactical orders have two per-floor charges, only affect tower hero and expire in simulation ticks',()=>{
- const g=moduleAt('js/features/tower-tactics.js',{ArenaTower:{active:true,stage:'fighting'}});
+ const hero={towerHero:true,manualTower:false,hp:200,maxHp:200,x:200,y:200,vx:3,vy:1,forge:{signatureVersion:1}};
+ const g=moduleAt('js/features/tower-tactics.js',{ArenaTower:{active:true,stage:'fighting'},players:[hero]});
  const t=g.ArenaTowerTactics;
  assert.equal(t.choose('attack'),true);
  assert.equal(t.modeFor({towerHero:true}),'attack');

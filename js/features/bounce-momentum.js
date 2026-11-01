@@ -55,15 +55,23 @@ function contact(a,b,approach){
  const speed=Math.min(5,Math.max(0,-approach-1.15));
  // Stronger collisions reward a little more, but all gains are bounded.
  const boost=CONTACT+Math.round(speed*.7);
+ const beforeA=a?._bounceLast_contact,beforeB=b?._bounceLast_contact;
  const first=add(a,boost,'contact'),second=add(b,boost,'contact');
- if(first)g.ArenaCombatV2?.afterEnergy?.(a,'contact',-approach);
- if(second)g.ArenaCombatV2?.afterEnergy?.(b,'contact',-approach);
+ // Full 100 energy cannot gain more, but a genuine new physical rebound
+ // still contributes to the spectacle. The gauge's 34-frame anti-spam
+ // timestamp changes only on accepted contacts, even when energy is capped.
+ if(first||a?._bounceLast_contact!==beforeA)
+   g.ArenaCombatV2?.afterEnergy?.(a,'contact',-approach);
+ if(second||b?._bounceLast_contact!==beforeB)
+   g.ArenaCombatV2?.afterEnergy?.(b,'contact',-approach);
  return first||second;
 }
 function wall(p,speed,kind='wall'){
  if(!Number.isFinite(speed)||speed<1.15)return false;
+ const before=p?._bounceLast_wall;
  const gained=add(p,WALL,'wall');
- if(gained)g.ArenaCombatV2?.afterEnergy?.(p,'wall',speed,kind);
+ if(gained||p?._bounceLast_wall!==before)
+   g.ArenaCombatV2?.afterEnergy?.(p,'wall',speed,kind);
  return gained;
 }
 // Time stop is a non-damaging momentum swing. Only a real CC application

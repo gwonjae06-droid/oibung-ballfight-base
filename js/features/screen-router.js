@@ -34,7 +34,7 @@ function install(){
   const wallet=node('div','lobby-wallet');wallet.innerHTML='<strong id="lobby-wallet-amount" hidden></strong>';wallet.hidden=true;
   top.append(wallet);
   const settings=node('details','lobby-settings');
-  settings.innerHTML='<summary>⚙ 설정 · 음악</summary><div class="lobby-settings-body"></div>';
+  settings.innerHTML='<summary>⚙ 음악·효과음 설정</summary><div class="lobby-settings-body"></div>';
   top.append(settings);
   const guide=oldNav?.querySelector('.arena-guide-reopen');if(guide)top.append(guide);
   lobby.append(top);
