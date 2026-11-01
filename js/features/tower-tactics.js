@@ -70,6 +70,7 @@ function choose(id){
    p.invincible=Math.max(p.invincible||0,12);
   }
   g.addFloatingText?.(OPTIONS[id].name,p.x,p.y-(p.radius||30)-18,'#e2f5ff',17);
+  g.BattleFX?.sound?.(id==='attack'?'tactic-sling':id==='evade'?'tactic-evade':'tactic-anchor',.58);
  }
  used++;mode=id;left=DURATION;update();return true;
 }
