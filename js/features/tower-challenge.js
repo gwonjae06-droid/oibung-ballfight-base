@@ -388,10 +388,10 @@ function install(){
       if(!weakpoint.hidden)weakpoint.textContent='보스 약점: '+(WEAKPOINT[realmId]||'특수')+'의 위험 지대를 연속 두 번 피하면 3초 동안 받는 피해가 50% 증가합니다.';
     }
     el('tower-enemy').textContent=ancient?'☽ 고대의 존재':(f.boss?'👑 ':'')+f.name;
-    el('tower-enemy-info').textContent=ancient?'HP 3,000 · 3페이즈 · 팔·촉수 공격 가능':realms&&f.boss?'HP '+f.hp+' · 패턴 공격 · 2페이즈':'HP '+f.hp+' · 공격 '+f.damage+' · 속도 '+f.speed.toFixed(1);
+    el('tower-enemy-info').textContent=ancient?'HP 3,000 · 3페이즈 · 촉수 끝 물리 공격 · 6속성 봉인':realms&&f.boss?'HP '+f.hp+' · 패턴 공격 · 2페이즈':'HP '+f.hp+' · 공격 '+f.damage+' · 속도 '+f.speed.toFixed(1);
     el('tower-best').textContent='최고 '+best+'F';
     screen.dataset.towerTheme=f.scene;
-    el('tower-skill-count').textContent=ancient?'16종 패턴':realms&&f.boss?'보스 패턴':makeEnemy(level).skills.length+'개 스킬';
+    el('tower-skill-count').textContent=ancient?'16종 패턴 · 여섯 봉인':realms&&f.boss?'보스 패턴':makeEnemy(level).skills.length+'개 스킬';
     const skillHost=el('tower-enemy-skills');
     skillHost.replaceChildren();
     // Use the same generated enemy profile that is registered for combat:
@@ -436,6 +436,8 @@ function install(){
   }
   function cleanup(){
     encounter?.spectacle?.clear();
+    encounter?.clear?.();
+    global.ArenaAncientFinaleFX?.clear?.();
     global.ArenaTowerSpectacle?.page(null);
     environment?.clear?.();environment=null;
     global.ArenaTowerTerrain?.clear?.(typeof players!=='undefined'?players:[]);
