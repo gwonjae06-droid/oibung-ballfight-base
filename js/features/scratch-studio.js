@@ -184,7 +184,7 @@ function render(){
  $('#scratch-skill-name').value=skill.name;
  $('#scratch-cooldown').value=skill.cooldown;
  $('.scratch-old-cooldown').hidden=!legacy;
- $('#scratch-trigger').innerHTML=selectOptions(forge.TRIGGER,skill.trigger);
+ $('#scratch-trigger').innerHTML=selectOptions(legacy?forge.TRIGGER:{...forge.TRIGGER,auto:'기세가 가득 차면'},skill.trigger);
  const n=engine.preview(program).length;
  $('.scratch-counter').textContent='블록 '+engine.normalize(program).length+'개 · 예상 실행 행동 '+n+'/'+engine.LIMIT+'개 (반복 포함)';
  root.querySelector('[data-scratch-command="undo"]').disabled=!undo.length;
