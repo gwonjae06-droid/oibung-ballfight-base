@@ -277,12 +277,19 @@ function update() {
     // Existing built-in behavior updates may still aim projectiles or start
     // target-aware dashes. Ignore only their ordinary chase/spacing changes.
     const before=globalThis.ArenaPinballMotion?.begin?.(p);
-    updateCharacter(p);
+    // During the Time God's stopped-world spectacle the player appears
+    // nearly frozen, but the boss still runs its complete combat logic.
+    // Use encounter ticks, not a wall clock, to remain pause/speed safe.
+    const slow=p._towerClockSlow>0?(p._towerClockSlowScale||1):1;
+    const encounterFrame=globalThis.ArenaTower?.encounter?.tick||0;
+    if(slow>=.25||p._towerClockSlow<=0||encounterFrame%5===0)updateCharacter(p);
     globalThis.ArenaPinballMotion?.end?.(p,before);
   });
   players.forEach(p=>{
     if(p.hp>0&&(!p.jumpState||p.jumpState==='ground')){
-      const m=(p.slowTimer>0?p.slowMultiplier:1)*(globalThis.ForgeExpansion?.movement(p)??1)*(p.towerTerrainSpeed??1);
+      const m=(p.slowTimer>0?p.slowMultiplier:1)*(globalThis.ForgeExpansion?.movement(p)??1)*(p.towerTerrainSpeed??1)*
+        (p._towerClockSlow>0?(p._towerClockSlowScale||.35):1);
+      if(p._towerClockSlow>0)--p._towerClockSlow;
       const velocity=Math.hypot(p.vx,p.vy);
       if(!Number.isFinite(velocity)){p.vx=p.playerNum%2?1.4:-1.4;p.vy=0.9;}
       else if(velocity>12){p.vx=p.vx/velocity*12;p.vy=p.vy/velocity*12;}
