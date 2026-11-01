@@ -11,7 +11,7 @@
   // combat cues use this one compressed master, never an extra AudioContext.
   let volume=.55;
   const CUE_COOLDOWN=Object.freeze({
-    'bounce-perfect':.34,'bounce-combo':.62,
+    'bounce-perfect':.34,'bounce-combo':.42,'combo-step':.095,'combo-streak':.45,
     'tactic-sling':.24,'tactic-evade':.24,'tactic-anchor':.3,
     'signature-ready':.42,'signature-launch':.36
   });
@@ -155,6 +155,15 @@
     }else if(kind==='cosmos'){
       snap(.2,.06*v,430);
       tone(103*variation,43,.34,.10*v,'sine');
+    }else if(kind==='combo-step'){
+      // A tiny wood-rubber click, intentionally under the regular collisions.
+      snap(.042,.029*v,520);
+      tone(142*variation,100,.088,.075*v,'triangle');
+    }else if(kind==='combo-streak'){
+      // A low arcade flourish with two restrained pitched accents.
+      snap(.11,.068*v,690);
+      tone(146*variation,78,.165,.13*v,'triangle');
+      tone(187*variation,112,.12,.052*v,'sine',.064);
     }else if(kind==='bounce-perfect'){
       // A rubber mallet on metal, not a sharp high-pitched arcade chime.
       snap(.062,.055*v,600);
