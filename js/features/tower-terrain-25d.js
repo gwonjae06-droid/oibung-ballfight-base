@@ -200,6 +200,7 @@ function worldHeight(x,y){
 // A raised island is solid cover. Sample the swept segment, not just its end,
 // and compare terrain against the bullet's world-space altitude.
 function obstructsShot(x0,y0,z0,x1,y1,z1,clearance=9){
+ if(g.ArenaTowerFlat?.enabled)return false;
  if(!active||![x0,y0,z0,x1,y1,z1].every(Number.isFinite))return false;
  // A projectile entirely above the highest terrain cannot hit a platform.
  // Platform tops dominate the cross-section ridges (all <=22 world units).
@@ -348,6 +349,17 @@ function paint(ctx,realm,level,width=500,height=500,frame=0){
 // updates footing, while `step` owns time-dependent hazards and movement buffs.
 function sync(roster){
  if(!active)return;
+ if(g.ArenaTowerFlat?.enabled){
+   // Every arena is one level plane; only solid bumper/perimeter ricochets
+   // survive. No island-edge teleport, step collision or elevation barrier.
+   for(const p of roster||[])if(p&&p.hp>0){
+     boundaryBounce(p,active.realm,active.width,active.height);
+     p.towerGroundZ=0;
+     p._towerPreviousFloor=0;
+     p._towerOverVoid=false;
+   }
+   return;
+ }
  for(const p of roster||[])if(p&&p.hp>0){
    const oldX=p._towerSafeX,oldY=p._towerSafeY,oldZ=Number(p.towerGroundZ)||0;
    const entered=g.ArenaTowerArchitecture?.at?.(active.realm,active.level,p.x,p.y,
@@ -407,6 +419,21 @@ function sync(roster){
  }
 }
 function step(realm,level,roster,width=500,height=500,tick=0,damage){
+ if(g.ArenaTowerFlat?.enabled){
+   active={realm,level,width,height,tick};
+   for(const p of roster||[])if(p&&p.hp>0){
+     // Map-only height mechanics retired; bosses/environment hazards still
+     // tick separately in ArenaTower.tickEncounter().
+     boundaryBounce(p,realm,width,height);
+     p.towerGroundZ=0;
+     p.towerGravity=.55;
+     p.towerTerrainSpeed=1;
+     p.towerHeightLabel='평면 전투장';
+     p._towerOverVoid=false;
+     p._towerVoidFallPending=false;
+   }
+   return;
+ }
  const prev=active;
  active={realm,level,width,height,tick};
  const curr=nodes(realm,level,width,height,tick),oldNodes=prev?.realm===realm?nodes(realm,level,width,height,prev.tick):null;
