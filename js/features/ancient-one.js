@@ -34,7 +34,15 @@ function create({width:w,height:h,hero,boss,damage}){
   tick++;
   const percent=boss.hp/Math.max(1,boss.maxHp);
   if(percent<=.32)phase=3;else if(percent<=.68)phase=2;
-  if(tick>=upcoming){pattern();upcoming=tick+(phase===3?120:phase===2?160:205);}
+  if(tick>=upcoming){
+   const energy=g.BounceMomentum?.isBoss?.(boss);
+   if(!energy||g.BounceMomentum.bossCan(boss,'pattern')){
+    pattern();
+    if(energy)g.BounceMomentum.bossSpend(boss,'pattern');
+    // Preserves time to read each huge telegraph, but energy is mandatory.
+    upcoming=tick+(phase===3?90:phase===2?110:125);
+   }
+  }
   for(const z of zones)if(!z.hit&&tick>=z.fire&&tick<z.end&&hit(z,hero)){
    if(damage(hero,z.power,z)!==false)z.hit=true;
   }

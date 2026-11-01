@@ -1,12 +1,16 @@
 /* Momentum-based bouncy arena skills. Fixed 60 fps physics ticks; no timers,
  * new direct damage, or velocity manipulation. One signature cast per 100 momentum.
- * Enemy/boss scripts, legacy four-slot characters, and manual control untouched. */
+ * Legacy four-slot player characters and manual control remain untouched.
+ * All Tower bosses (including the anchored Ancient One) share one 100-point
+ * meter across authored skills and scripted pattern/spectacle attacks. */
 (function(g){
 'use strict';
 const MAX=100, PASSIVE=.17, CONTACT=16, WALL=9, BASIC_HIT=3;
 const clamp=n=>Math.max(0,Math.min(MAX,Number.isFinite(n)?n:0));
+function isBoss(p){return !!p?.forge&&p.towerEnemy&&p.towerPatternBoss&&!p.manualTower;}
 function enabled(p){
- return !!p?.forge&&p.forge.signatureVersion===1&&!p.towerEnemy&&!p.manualTower;
+ return !!p?.forge&&!p.manualTower&&
+  (isBoss(p)||(p.forge.signatureVersion===1&&!p.towerEnemy));
 }
 function meter(p){return enabled(p)?clamp(p._bounceMomentum||0):null;}
 function add(p,amount,kind){
@@ -37,9 +41,26 @@ function wall(p,speed){
  return Number.isFinite(speed)&&speed>=1.15&&add(p,WALL,'wall');
 }
 function basicHit(p){return add(p,BASIC_HIT,'basic');}
+function damageTaken(p,damage){
+ if(!isBoss(p)||!Number.isFinite(damage)||damage<=0)return false;
+ // Only confirmed positive-damage hits feed the boss. Invulnerability and
+ // repeated multi-hit hitboxes do not grant free energy.
+ return add(p,Math.min(14,Math.max(3,Math.round(Math.sqrt(damage)*1.7))),'damage');
+}
+function bossPhase(p){return isBoss(p)?p._bossMomentumPhase||'pattern':null;}
+function bossCan(p,kind){return isBoss(p)&&ready(p)&&bossPhase(p)===kind;}
+function bossSpend(p,kind){
+ if(!bossCan(p,kind)||!spend(p))return false;
+ // A single meter funds every boss move. Specials remain telegraphed and
+ // are never added on a separate timer while the gauge is below 100.
+ p._bossMomentumPhase=p._ancientEnergyOnly?'pattern':
+  kind==='pattern'?'skill':kind==='skill'?'spectacle':'pattern';
+ if(kind==='skill')p._bossEnergyCursor=(p._bossEnergyCursor||0)+1;
+ return true;
+}
 function tick(p,target){
  if(!enabled(p)||p.hp<=0||!target||target.hp<=0)return;
- add(p,PASSIVE,'passive');
+ add(p,isBoss(p)?PASSIVE*1.75:PASSIVE,'passive');
 }
 function ready(p){return enabled(p)&&meter(p)>=MAX;}
 function spend(p){
@@ -48,5 +69,5 @@ function spend(p){
  p._bounceCasts=(p._bounceCasts||0)+1;
  return true;
 }
-g.BounceMomentum=Object.freeze({MAX,PASSIVE,CONTACT,WALL,BASIC_HIT,enabled,meter,add,contact,wall,basicHit,tick,ready,spend});
+g.BounceMomentum=Object.freeze({MAX,PASSIVE,CONTACT,WALL,BASIC_HIT,isBoss,bossPhase,bossCan,bossSpend,damageTaken,enabled,meter,add,contact,wall,basicHit,tick,ready,spend});
 })(typeof window!=='undefined'?window:globalThis);

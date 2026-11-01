@@ -247,6 +247,7 @@ function hit(p,e,action,multiplier=1,attackZ) {
     (e._forgeImpactStamps||=new WeakMap()).set(action,{attacker:p,frame});
     const tint=p.forge?.effectColor||p.forge?.color||p.themeColor||'#58687a';
     e.hp=Math.max(0,e.hp-d);
+    global.BounceMomentum?.damageTaken?.(e,Math.min(hpBeforeHit,d));
     e.invincible=IMPACT_GRACE_FRAMES;
     e._forgeImpactGrace=IMPACT_GRACE_FRAMES;
     // In projectile storms, retain readable impact feedback without
@@ -548,7 +549,13 @@ function update(p,target){
       }
     }
   }else{
+    const chargedBoss=global.BounceMomentum?.isBoss?.(p);
     p.forge.skills.forEach((s,i)=>{
+      // Each boss has ONE 100-point gauge for its full authored arsenal and
+      // its large scripted attacks. Rotate skills after each filled cast.
+      if(chargedBoss&&(p._ancientEnergyOnly||
+        global.BounceMomentum.bossPhase(p)!=='skill'||
+        i!==(p._bossEnergyCursor||0)%p.forge.skills.length))return;
       if(global.ForgeExpansion?.blocked(p))return;
       if(p.forgeTicks[i]<cooldownFrames(p,s))return;
       if(global.BounceMomentum?.enabled?.(p)&&!global.BounceMomentum.ready(p))return;
@@ -560,7 +567,8 @@ function update(p,target){
         ((s.trigger==='auto'&&target)||(s.trigger==='lowhp'&&p.hp/p.maxHp*100<=s.threshold)
         ||(s.trigger==='damaged'&&loss>0)));
       if(active&&(energyOnly||global.ArenaAutoAI?.canCast?.(p,target,s)!==false)&&cast(p,s,target,i)){
-        global.BounceMomentum?.spend?.(p);
+        if(chargedBoss)global.BounceMomentum?.bossSpend?.(p,'skill');
+        else global.BounceMomentum?.spend?.(p);
         p.forgeTicks[i]=0;
         if(s.trigger==='dodge')p._forgeDodgeConsumed=p._forgeDodgeSerial||0;
         if(s.trigger==='basicHit')p._scratchBasicHitConsumed=p._scratchEvents?.basicHit?.count||0;

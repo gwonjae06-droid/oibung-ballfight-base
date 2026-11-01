@@ -218,7 +218,16 @@ function create({realm,level,width=500,height=500,hero,boss,damage,environmentMa
   if(isBoss&&phase===1&&boss.hp<=boss.maxHp*.5){phase=2;nextBoss=Math.max(tick+90,nextBoss);}
   // No extra terrain on boss floors; every pattern has safe geometry.
   if(!isBoss&&!environmentManaged&&tick>=nextTerrain){terrain();nextTerrain=tick+Math.max(205,300-level*9);}
-  if(isBoss&&!spectacle?.event&&tick>=nextBoss){pattern();nextBoss=tick+({time:phase===2?135:178,space:phase===2?230:272,fire:phase===2?150:185,storm:phase===2?118:155,ice:phase===2?245:295,forest:phase===2?158:204}[realm]||255);}
+  if(isBoss&&!spectacle?.event&&tick>=nextBoss){
+   const energy=g.BounceMomentum?.isBoss?.(boss);
+   if(!energy||g.BounceMomentum.bossCan(boss,'pattern')){
+    pattern();
+    if(energy)g.BounceMomentum.bossSpend(boss,'pattern');
+    // This is only a minimum telegraph separation, never a timer that
+    // fires another attack without a full energy bar.
+    nextBoss=tick+(energy?60:({time:phase===2?135:178,space:phase===2?230:272,fire:phase===2?150:185,storm:phase===2?118:155,ice:phase===2?245:295,forest:phase===2?158:204}[realm]||255));
+   }
+  }
   for(const z of zones){
    if(tick<z.fire||tick>=z.end)continue;
    for(const p of z.kind==='boss'?[hero]:[hero,boss]){
