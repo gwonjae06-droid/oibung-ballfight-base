@@ -140,10 +140,10 @@ function pushOwned(pool,item,max){
     owned++;if(oldest<0)oldest=i;
   }
   if(owned>=quota||pool.length>=max){
-    // Never evict a rival's live object just because this caster is spamming.
-    // An unexpected full pool with no owned entry rejects the new item safely.
-    if(oldest<0)return null;
-    pool.splice(oldest,1);
+    // Do not evict an in-flight shot or another live object without warning:
+    // reject excess NEW spawns instead. Busy bullet-hell builds still retain
+    // their active shots, impacts and consistent collision semantics.
+    return null;
   }
   pool.push(item);return item;
 }

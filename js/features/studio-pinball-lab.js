@@ -36,7 +36,7 @@ function make(profile={},focus=0,actionIndex=-1){
   forge:{speed:2.7,effectColor:color}};
  const target={x:355,y:148,vx:-2.7,vy:2.0,radius:19,hp:100,playerNum:2,energy:62};
  hero.baseRadius=hero.radius;
- const bullets=[],rings=[],sparks=[],queue=[],walls=[],portals=[];
+ const bullets=[],rings=[],sparks=[],queue=[],walls=[],portals=[],activeEffects=[];
  let cursor=0,lastContact=-100,lastWall=-100,ruleRun=null;
  const previewActor={hp:100,_forgeActionClock:0,_scratchEvents:Object.create(null)};
  function recordRuleEvent(name){
@@ -96,6 +96,11 @@ function make(profile={},focus=0,actionIndex=-1){
   spark((hero.x+target.x)/2,(hero.y+target.y)/2,'#f8f2c6',17);
   if(frame-lastContact>=34){energy=clamp(energy+17,0,100);lastContact=frame;recordRuleEvent('contact');}
  }
+ function previewEffect(a,phase,x,y,life=36){
+  if(!a)return;
+  if(activeEffects.length>=42)activeEffects.shift();
+  activeEffects.push({a,phase,x,y,start:frame,life});
+ }
  function hitTarget(x=target.x,y=target.y,large=false){
   const dx=target.x-x,dy=target.y-y,d=Math.hypot(dx,dy)||1;
   const nx=dx/d,ny=dy/d;
@@ -105,7 +110,8 @@ function make(profile={},focus=0,actionIndex=-1){
   recordRuleEvent('hit');
  }
  function projectile(a,angle){
-  if(bullets.length>=35)bullets.splice(0,bullets.length-9);
+  // Preserve live bullets: reject overload instead of deleting oldest shots.
+  if(bullets.length>=35)return;
   const speed=clamp(Number(a.speed)||5,2,12)*.8;
   bullets.push({x:hero.x,y:hero.y,vx:Math.cos(angle)*speed,vy:Math.sin(angle)*speed,
    life:220,r:5,color,status:a.status||'none',type:a.type,reflects:0,split:false,age:0,
@@ -115,6 +121,7 @@ function make(profile={},focus=0,actionIndex=-1){
  function fragment(b){
   if(b.split||bullets.length>=35)return;
   b.split=true;recordRuleEvent('split');
+  previewEffect({type:'splitshot',radius:65,status:b.status},'impact',b.x,b.y,21);
   const n=clamp(Math.round(b.fragmentCount||2),1,8),remaining=(b.fractureRemaining||1)-1;
   const origin=Math.atan2(b.vy,b.vx),speed=Math.max(2,Math.hypot(b.vx,b.vy));
   for(let j=0;j<n&&bullets.length<35;j++){
@@ -128,12 +135,17 @@ function make(profile={},focus=0,actionIndex=-1){
  function perform(action){
   const a=action||{},type=a.type||'wave';
   active=(g.SkillForge?.TYPE?.[type]||type)+' 실험 중';
+  const targeted=['bolt','meteor','starfall','beam','chain','blackhole','zone','arcshot'].includes(type);
+  previewEffect(a,'cast',targeted?target.x:hero.x,targeted?target.y:hero.y,
+   clamp(Math.round((g.ActionRegistry?.duration?.(type)||1050)/35),18,58));
   activity=frame+90;
   const dx=target.x-hero.x,dy=target.y-hero.y,angle=Math.atan2(dy,dx);
   if(RANGED.has(type)){
    if(['bolt','meteor','starfall','beam','chain'].includes(type)){
-    rings.push({x:target.x,y:target.y,r:clamp((a.radius||80)*.35,23,65),age:0,life:33,color});
-    hitTarget(hero.x,hero.y,true);
+    const falling=['bolt','meteor','starfall'].includes(type);
+    rings.push({x:target.x,y:target.y,r:clamp((a.radius||80)*.35,23,65),
+     age:0,life:falling?36:24,color,impactAt:falling?30:0,attack:a,hit:false});
+    if(!falling)hitTarget(hero.x,hero.y,true);
    }else{
     const count=clamp(Math.round(a.count||1),1,8);
     for(let j=0;j<(type==='splitshot'?1:count);j++)projectile(a,angle+(j-(count-1)/2)*.17);
@@ -296,10 +308,23 @@ function make(profile={},focus=0,actionIndex=-1){
     if(b.reflects>b.maxRebounds)b.life=0;
     if(b.type==='splitshot'&&!b.split)fragment(b);
    }
-   if(near(b,target)<target.radius+b.r){hitTarget(b.x-b.vx,b.y-b.vy);b.life=0;}
+   if(near(b,target)<target.radius+b.r){
+    previewEffect({type:b.type==='fragment'?'splitshot':b.type,
+      radius:35,status:b.status},'impact',target.x,target.y,18);
+    hitTarget(b.x-b.vx,b.y-b.vy);b.life=0;
+   }
    if(b.reflects>3||b.life<=0)bullets.splice(i,1);
   }
-  for(let i=rings.length-1;i>=0;i--){rings[i].age++;if(rings[i].age>=rings[i].life)rings.splice(i,1);}
+  for(let i=rings.length-1;i>=0;i--){
+   const ring=rings[i];ring.age++;
+   if(ring.impactAt&&!ring.hit&&ring.age>=ring.impactAt){
+    ring.hit=true;previewEffect(ring.attack,'impact',ring.x,ring.y,22);
+    if(near(ring,target)<=ring.r+target.radius)hitTarget(ring.x,ring.y,true);
+   }
+   if(ring.age>=ring.life)rings.splice(i,1);
+  }
+  for(let i=activeEffects.length-1;i>=0;i--)
+   if(frame-activeEffects[i].start>=activeEffects[i].life)activeEffects.splice(i,1);
   for(let i=sparks.length-1;i>=0;i--){sparks[i].t++;if(sparks[i].t>=sparks[i].life)sparks.splice(i,1);}
  }
  function advanceTo(time){
@@ -347,7 +372,19 @@ function make(profile={},focus=0,actionIndex=-1){
   for(const b of bullets){
    ctx.strokeStyle=b.color;ctx.globalAlpha=.55;ctx.lineWidth=2;
    ctx.beginPath();ctx.moveTo(b.x-b.vx*2,b.y-b.vy*2);ctx.lineTo(b.x,b.y);ctx.stroke();
-   ctx.globalAlpha=1;fill(ctx,b.x,b.y,b.r,b.color);
+   ctx.globalAlpha=1;
+   ctx.save();ctx.translate(b.x,b.y);ctx.rotate(Math.atan2(b.vy,b.vx));
+   ctx.fillStyle=b.color;ctx.strokeStyle='#253344';ctx.lineWidth=1.4;
+   if(b.type==='splitshot'){
+    ctx.beginPath();ctx.moveTo(0,-11);ctx.lineTo(10,0);
+    ctx.lineTo(0,11);ctx.lineTo(-10,0);ctx.closePath();
+   }else if(b.type==='arcshot'){
+    ctx.beginPath();ctx.arc(0,0,8,0,TAU);
+   }else{
+    ctx.beginPath();ctx.moveTo(11,0);ctx.lineTo(-6,-5);
+    ctx.lineTo(-3,0);ctx.lineTo(-6,5);ctx.closePath();
+   }
+   ctx.fill();ctx.stroke();ctx.restore();
   }
   for(const v of sparks){
    ctx.globalAlpha=(1-v.t/v.life)*.85;
@@ -357,12 +394,13 @@ function make(profile={},focus=0,actionIndex=-1){
   ctx.globalAlpha=1;
   disk(ctx,target,'#dd7785','적');
   disk(ctx,hero,profile.color||'#69a8f7',(profile.name||'나').slice(0,1));
-  // This is the SAME VFX family preview used in the actual game; our sandbox
-  // supplies only local coordinates and never runs real hit/damage functions.
-  if(frame<activity&&active){
-   const e=queue[0]?.action||skills[(cursor-1+skills.length)%Math.max(1,skills.length)]?.actions?.[0];
-   if(e)g.SkillVisuals?.previewFrame?.(ctx,{type:e.type,phase:'cast',progress:clamp((activity-frame)/80,0,1),
-    x:hero.x,y:hero.y,radius:clamp(e.radius||85,30,95),color,status:e.status});
+  // Reuse the REAL visual family's motif for every ACTUALLY performed
+  // action. Never pick the first stored skill or future queue[0] instead.
+  for(const fx of activeEffects){
+   g.SkillVisuals?.previewFrame?.(ctx,{type:fx.a.type,phase:fx.phase,
+    progress:clamp((frame-fx.start)/fx.life,0,1),
+    x:fx.x,y:fx.y,radius:clamp(Number(fx.a.radius)||85,30,160),
+    color,status:fx.a.status,link:fx.a.link});
   }
   ctx.fillStyle='rgba(10,22,35,.89)';ctx.fillRect(29,27,W-58,32);
   ctx.textAlign='left';ctx.font='700 12px sans-serif';ctx.fillStyle='#fff';

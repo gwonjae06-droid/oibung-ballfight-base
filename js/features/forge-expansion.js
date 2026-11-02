@@ -202,12 +202,12 @@ function execute(p,a,target,api){
     }
   }else if(a.type==='dung'){
     p.forgeExtras.push({kind:'dung',x:p.x,y:p.y,z:heightOf(p),heightVelocity:shotSlope(p,near,a.speed),
-      vx:Math.cos(angle)*a.speed,vy:Math.sin(angle)*a.speed,life:Math.ceil(a.radius/a.speed*3),age:0,hits:[],a:{...a,status:'poison'}});
+      vx:Math.cos(angle)*a.speed,vy:Math.sin(angle)*a.speed,life:flightFrames(a),age:0,hits:[],a:{...a,status:'poison'}});
   }
 
   if(['homing','pierce','boomerang'].includes(a.type)){
     for(let i=0;i<a.count;i++){const t=angle+(i-(a.count-1)/2)*.15;p.forgeExtras.push({kind:a.type,x:p.x,y:p.y,z:heightOf(p),heightVelocity:shotSlope(p,near,a.speed),
-        vx:Math.cos(t)*a.speed,vy:Math.sin(t)*a.speed,life:Math.ceil(a.radius/a.speed*3),age:0,target:near.playerNum,hits:[],a});}
+        vx:Math.cos(t)*a.speed,vy:Math.sin(t)*a.speed,life:flightFrames(a),age:0,target:near.playerNum,hits:[],a});}
   }else if(a.type==='chain'){
     let origin=p;const visited=new Set();
     for(let i=0;i<a.count;i++){
@@ -235,8 +235,19 @@ function execute(p,a,target,api){
     p.movementOnlyFrames=Math.max(p.movementOnlyFrames||0,12);
     show(p.x,p.y,30);
   }
-  if(p.forgeExtras.length>48)p.forgeExtras.splice(0,p.forgeExtras.length-48);
+  // Prefer keeping in-flight objects rather than evicting a visible orb.
+  // All eventual damage remains limited by the same resource budget.
+  if(p.forgeExtras.length>48)p.forgeExtras.splice(48);
   return true;
+}
+// A projectile's attack radius is NOT its permitted travel distance.
+ // Give slow/fast homing and piercing shots enough time to traverse the map,
+ // then let the arena boundary and confirmed hits remove them naturally.
+function flightFrames(a){
+ const speed=Math.max(2,Number(a?.speed)||5);
+ const w=typeof canvas!=='undefined'?canvas.width:500;
+ const h=typeof canvas!=='undefined'?canvas.height:500;
+ return Math.min(240,Math.max(30,Math.ceil((Math.hypot(w,h)+40)/speed)));
 }
 function update(p,api){
   if(p.forgePhase&&p.forgePhase.time<=0){

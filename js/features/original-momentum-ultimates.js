@@ -158,9 +158,16 @@ function updateSlam(p,target,roster){
      hit(p,e,90,{color:'#63e6bb',heavy:true,type:'급강하 낙하',push:6});
   }
  }
- // Remain visually over the selected target until falling.
- p.x+=(p.targetLandX-p.x)*.16;
- p.y+=(p.targetLandY-p.y)*.16;
+ // Target lock is part of the original ultimate, not normal chasing.
+ // Rush overhead during ascent, track a moving Tower opponent during hover,
+ // and COMMIT the landing to the displayed impact centre on the final tick.
+ // Avoid a sideways strike from a stale position when the opponent is fast.
+ const follow=p.jumpState==='rising'?.25:p.jumpState==='hovering'?.48:.72;
+ p.x+=(p.targetLandX-p.x)*follow;
+ p.y+=(p.targetLandY-p.y)*follow;
+ if(p.jumpState==='ground'&&p.jumpHeight===0){
+   p.x=p.targetLandX;p.y=p.targetLandY;
+ }
 }
 function exam(p){
  p.nSuCount=(p.nSuCount||1)+1;

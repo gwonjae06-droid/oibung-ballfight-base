@@ -581,7 +581,13 @@ function install(){
       }
       // Built-in fighters need their authored Forge fallback kit, while saved
       // custom fighters already carry their own authored skill loadout.
-      if(!players[0].forge)global.SkillForge.enableManual(players[0]);
+      // Tower auto-combat must preserve the original five fighters' 100-momentum
+      // ultimates. enableManual() installs obsolete four-skill Forge presets,
+      // causing Park's target-overhead slam (and the other originals) to vanish.
+      // Custom fighters already arrive with their own saved Forge loadout.
+      // Legacy manual control is no longer a Tower gameplay mode.
+      if(!players[0].forge&&!global.ArenaOriginalMomentum?.isOriginal?.(players[0]))
+        global.SkillForge.enableManual(players[0]);
       players[0].manualTower=false;players[0].towerHero=true;
       realms.apply(players[0],realmId,blessings);
       players[1].towerPatternBoss=ancient||level%5===0;

@@ -36,11 +36,19 @@ function execute(p,a,target) {
       const originZ=global.AdvancedCombat?.height?.(p)||0;
       const aimZ=global.AdvancedCombat?.height?.(near)||0;
       const frames=Math.max(1,Math.hypot(near.x-p.x,near.y-p.y)/Math.max(1,a.speed));
+      if(p.forgeShots.length>=100)break;
       p.forgeShots.push({x:p.x,y:p.y,z:originZ,heightVelocity:(aimZ-originZ)/frames,
         vx:Math.cos(t)*a.speed,vy:Math.sin(t)*a.speed,targetNum:near.playerNum,
-        life:a.ricochet>0?Math.max(150,Math.ceil(a.radius/a.speed*3)):Math.ceil(a.radius/a.speed*3),a});
+        // A small authored AoE radius is NOT a maximum flight distance.
+        // Keep shots alive long enough to cross the actual arena while
+        // retaining the existing perimeter collision/ricochet rules.
+        life:Math.min(240,Math.max(30,
+          Math.ceil((Math.hypot(canvas.width,canvas.height)+40)/Math.max(2,a.speed||5)),
+          a.ricochet>0?150:0)),a});
     }
-    if(p.forgeShots.length>100)p.forgeShots.splice(0,p.forgeShots.length-100);
+    // Do not make existing shots suddenly disappear to admit a fresh volley.
+    // Let already airborne shots complete. Bound per-owner concurrent shots.
+    if(p.forgeShots.length>100)p.forgeShots.splice(100);
   } else if(a.type==='beam'){
     if(!near)return;
     const d=Math.hypot(near.x-p.x,near.y-p.y)||1,x=p.x+(near.x-p.x)/d*a.radius*2,y=p.y+(near.y-p.y)/d*a.radius*2;
