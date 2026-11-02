@@ -1,0 +1,144 @@
+/* Dedicated Tower preparation stage, without altering battle physics or engine controls.
+   Keeps the canonical #tower-hero value and all existing Tower action IDs. */
+#screen-tower #tower-challenge.tower-challenge{
+ --prep-surface:#122336;--prep-line:#52718d;
+ display:grid;gap:13px;max-width:100%;
+ background:linear-gradient(155deg,#13283d,#0e1d2e 75%);
+ border:1px solid #415972;border-radius:18px;padding:18px;
+ box-shadow:0 12px 35px #07121b60;
+}
+#screen-tower #tower-challenge[hidden]{display:none!important}
+#screen-tower .tower-prep-intro{
+ display:flex;gap:16px;align-items:center;justify-content:space-between;
+ padding:9px 2px 0;color:#d4e6f2
+}
+#screen-tower .tower-prep-step{display:block;font-size:11px;font-weight:900;color:#efcc88;letter-spacing:.1em}
+#screen-tower .tower-prep-intro h3{margin:5px 0;font-size:clamp(19px,2.6vw,25px);color:#f6faff;line-height:1.35}
+#screen-tower .tower-prep-intro p{margin:0;color:#b5cadb;font-size:12px;line-height:1.6}
+#screen-tower .tower-prep-mode{
+ font-size:12px;font-weight:850;white-space:nowrap;padding:9px 12px;
+ border:1px solid #4c8b9a;border-radius:999px;background:#244453;color:#d4f9f5
+}
+#screen-tower .tower-fighter-pick{
+ display:grid;grid-template-columns:minmax(0,1.35fr) minmax(260px,.9fr);
+ align-items:stretch;gap:14px
+}
+#screen-tower .tower-fighter-roster,#screen-tower .tower-prep-side{
+ min-width:0;display:grid;align-content:start;gap:12px
+}
+#screen-tower .tower-fighter-roster{
+ border:1px solid #375572;border-radius:16px;padding:13px;
+ background:linear-gradient(140deg,#0c1d2d,#142d43)
+}
+#screen-tower .tower-fighter-tabs{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+#screen-tower .tower-fighter-tabs button{
+ min-height:40px;padding:9px 7px;min-width:0;border:1px solid #456583;
+ border-radius:10px;background:#172f44;color:#c3d8e9;
+ font:inherit;font-size:13px;font-weight:800;cursor:pointer
+}
+#screen-tower .tower-fighter-tabs button[aria-pressed="true"]{
+ background:#e4ba7a;color:#152335;border-color:#ffe0a1;box-shadow:0 0 16px #f3c18022
+}
+#screen-tower .tower-fighter-tabs button:focus-visible,
+#screen-tower .tower-fighter-card:focus-visible{
+ outline:3px solid #ffe19e;outline-offset:2px
+}
+#screen-tower .tower-fighter-cards{
+ display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;
+ max-height:350px;overflow-y:auto;overscroll-behavior:contain;padding:2px
+}
+#screen-tower .tower-fighter-card{
+ display:flex;min-width:0;align-items:center;gap:8px;text-align:left;
+ border:1px solid #3b5871;border-radius:12px;background:#193348;
+ min-height:73px;padding:9px 10px;color:#e6f2fb;
+ font:inherit;cursor:pointer;transition:border-color .14s,background .14s,transform .14s
+}
+#screen-tower .tower-fighter-card[aria-pressed="true"]{
+ background:#344c5c;border-color:#e6c280;box-shadow:inset 0 0 0 1px #d3b374
+}
+#screen-tower .tower-fighter-card:hover{border-color:#c6ddf3;transform:translateY(-1px)}
+#screen-tower .tower-fighter-emblem{
+ display:flex;align-items:center;justify-content:center;flex:0 0 35px;
+ width:35px;height:35px;background:#24465c;border-radius:11px;
+ font-size:22px;color:#f4d49d
+}
+#screen-tower .tower-fighter-card-body{display:grid;min-width:0;flex:1;gap:3px}
+#screen-tower .tower-fighter-card-body strong{overflow-wrap:anywhere;color:#f4f8ff;font-size:13px}
+#screen-tower .tower-fighter-card-body small{font-size:10px;color:#aac2d4;line-height:1.35}
+#screen-tower .tower-fighter-check{
+ color:#f4d49d;font-size:10px;white-space:nowrap;font-weight:850
+}
+#screen-tower .tower-fighter-empty{
+ grid-column:1/-1;color:#c0d5e5;font-size:13px;line-height:1.7;
+ margin:0;padding:20px 8px;text-align:center
+}
+#screen-tower .tower-hero-choice{
+ position:absolute!important;width:1px!important;height:1px!important;
+ overflow:hidden!important;clip-path:inset(50%)!important;
+ white-space:nowrap!important;padding:0!important;margin:-1px!important
+}
+#screen-tower .tower-prep-side{grid-template-columns:minmax(0,1fr)}
+#screen-tower .tower-hero-summary{
+ display:grid;gap:5px;padding:15px;border-radius:14px;
+ background:linear-gradient(135deg,#223e55,#1b3545);
+ border:1px solid #9e8669;color:#eaf5ff
+}
+#screen-tower .tower-hero-summary strong{font-size:16px;color:#ffdfae;overflow-wrap:anywhere}
+#screen-tower .tower-hero-summary span{font-size:12px;line-height:1.5;color:#b9d4e3}
+#screen-tower .tower-prep-side .tower-opponent{
+ margin:0;border:1px solid #405b73;border-radius:13px;
+ background:#162e41;overflow:hidden;min-width:0
+}
+#screen-tower .tower-prep-side .tower-opponent > summary{cursor:pointer}
+#screen-tower .tower-buttons{display:flex;gap:10px;flex-wrap:wrap}
+#screen-tower #tower-start{
+ flex:1 1 190px;min-height:54px;
+ background:linear-gradient(125deg,#f4cf90,#d89d4c);color:#1a2731;
+ border:1px solid #ffdf9c;border-radius:12px;font-size:16px;
+ font-weight:950;box-shadow:0 5px 22px #cc863b33
+}
+#screen-tower #tower-start:hover{filter:brightness(1.08)}
+#screen-tower #tower-start:focus-visible{outline:3px solid #fff6d1;outline-offset:3px}
+#screen-tower[data-tower-ancient="true"] .tower-prep-step{color:#ebbcff}
+#screen-tower[data-tower-ancient="true"] #tower-start{
+ background:linear-gradient(125deg,#dfbeff,#b88afb);color:#201330;border-color:#e9cbff
+}
+/* Battle focus: the preparation cards fold away automatically, but floor,
+   pause, forfeit, speed, commentary and enemy telegraphs remain available. */
+#screen-tower[data-tower-phase="fighting"] #tower-challenge.tower-challenge{
+ padding:10px 14px;gap:7px;border-radius:12px;background:#14283a
+}
+#screen-tower[data-tower-phase="fighting"] .tower-prep-intro,
+#screen-tower[data-tower-phase="fighting"] .tower-fighter-pick,
+#screen-tower[data-tower-phase="fighting"] .tower-rule,
+#screen-tower[data-tower-phase="fighting"] #tower-floor-picker{display:none!important}
+#screen-tower[data-tower-phase="fighting"] .tower-doorway{
+ min-height:0;padding:7px 10px
+}
+#screen-tower[data-tower-phase="fighting"] .tower-head{align-items:center}
+#screen-tower[data-tower-phase="fighting"] #tower-arena-slot .canvas-wrapper{max-width:920px}
+#screen-tower[data-tower-phase="between"] .tower-prep-intro,
+#screen-tower[data-tower-phase="between"] .tower-fighter-roster{
+ display:none!important
+}
+#screen-tower[data-tower-phase="between"] .tower-fighter-pick{grid-template-columns:1fr}
+#screen-tower[data-tower-phase="between"] .tower-prep-side{
+ grid-template-columns:minmax(0,1fr) minmax(0,1fr)
+}
+@media(max-width:820px){
+ #screen-tower .tower-fighter-pick{grid-template-columns:minmax(0,1fr)}
+ #screen-tower .tower-prep-side{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+}
+@media(max-width:600px){
+ #screen-tower #tower-challenge.tower-challenge{padding:12px;gap:10px}
+ #screen-tower .tower-prep-intro{display:block}
+ #screen-tower .tower-prep-mode{display:inline-block;margin-top:9px}
+ #screen-tower .tower-fighter-cards{grid-template-columns:minmax(0,1fr);max-height:300px}
+ #screen-tower .tower-prep-side,#screen-tower[data-tower-phase="between"] .tower-prep-side{grid-template-columns:1fr}
+ #screen-tower .tower-fighter-card{min-height:60px}
+ #screen-tower[data-tower-phase="fighting"] #tower-challenge.tower-challenge{padding:8px 10px}
+}
+@media(prefers-reduced-motion:reduce){
+ #screen-tower .tower-fighter-card{transition:none}
+ #screen-tower .tower-fighter-card:hover{transform:none}
+}
