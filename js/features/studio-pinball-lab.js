@@ -176,7 +176,7 @@ function make(profile={},focus=0,actionIndex=-1){
  function perform(action){
   const a=action||{},type=a.type||'wave';
   active=(g.SkillForge?.TYPE?.[type]||type)+' 실험 중';
-  const targeted=['bolt','meteor','starfall','beam','chain','blackhole','zone','arcshot'].includes(type);
+  const targeted=['bolt','meteor','starfall','chain','blackhole','zone','arcshot'].includes(type);
   previewEffect(a,'cast',targeted?target.x:hero.x,targeted?target.y:hero.y,
    clamp(Math.round((g.ActionRegistry?.duration?.(type)||1050)/35),18,58));
   activity=frame+90;
@@ -479,7 +479,10 @@ function make(profile={},focus=0,actionIndex=-1){
    g.SkillVisuals?.previewFrame?.(ctx,{type:fx.a.type,phase:fx.phase,
     progress:clamp((frame-fx.start)/fx.life,0,1),
     x:fx.x,y:fx.y,radius:clamp(Number(fx.a.radius)||85,30,160),
-    color,status:fx.a.status,link:fx.a.link});
+    color,status:fx.a.status,link:fx.a.link,
+    visual:fx.a.visual,
+    angle:Math.atan2(target.y-hero.y,target.x-hero.x),
+    length:Math.hypot(target.x-hero.x,target.y-hero.y)+55});
   }
   ctx.fillStyle='rgba(10,22,35,.89)';ctx.fillRect(29,27,W-58,32);
   ctx.textAlign='left';ctx.font='700 12px sans-serif';ctx.fillStyle='#fff';

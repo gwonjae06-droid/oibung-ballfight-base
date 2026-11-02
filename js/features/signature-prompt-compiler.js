@@ -66,9 +66,14 @@ function parse(input){
      if(ids.has(x.id))return false;
      ids.add(x.id);return true;
    });
- if(!found.length)return {ok:false,error:'아직 이해할 수 없는 동작입니다. 분열탄·가속·점프·낙하·충격파·번개 같은 게임 동작을 넣어 주세요.'};
+ if(!found.length&&!g.MetaphorVisuals?.interpret?.(raw))return {ok:false,error:'아직 이해할 수 없는 동작입니다. 분열탄·가속·점프·낙하·충격파·번개 같은 게임 동작을 넣어 주세요.'};
  const supported=g.SkillForge?.TYPE||g.ActionRegistry?.TYPE||{};
- const mentions=found.filter(t=>Object.hasOwn(supported,t.id));
+ // A concrete metaphor takes priority over incidental verbs such as
+ // "쏩니다" and "때립니다": choose physics first, then render its image.
+ const metaphor=g.MetaphorVisuals?.interpret?.(raw);
+ const mentioned=found.filter(t=>Object.hasOwn(supported,t.id));
+ const mentions=metaphor&&Object.hasOwn(supported,metaphor.type)?
+  [{id:metaphor.type}]:mentioned;
  if(!mentions.length)return {ok:false,error:'설명한 동작은 현재 게임에서 실행할 수 없습니다.'};
  const types=new Set(mentions.map(x=>x.id));
  const notes=[];
@@ -108,7 +113,8 @@ function parse(input){
    /나선|소용돌이/.test(raw)?'spiral':
    /부채꼴|퍼지.*발사/.test(raw)?'fan':'direct';
   rows.push({when,interval:pace,fracture:type==='splitshot'?cap(generationsRaw||(/다시.*분열|재분열|분열.*분열/.test(raw)?3:2),1,3):1,
-   action:{type,damage,radius:radiusRaw!==null?cap(radiusRaw,30,300):type==='splitshot'?155:150,
+   action:{type,visual:metaphor&&metaphor.type===type?metaphor.visual:undefined,
+    damage,radius:radiusRaw!==null?cap(radiusRaw,30,300):type==='splitshot'?155:150,
     count:countRaw!==null?cap(countRaw,1,8):type==='splitshot'?5:1,
     pattern,target,status,duration:type==='haste'||type==='timeburst'?1.7:1.5,...adjust}});
  }
@@ -158,6 +164,8 @@ function parse(input){
  // unsolicited periodic cast. The exact condition should drive the skill.
  if(event.length===1&&rows.length===1&&rows[0].when==='pulse')
   rows[0].when=event[0];
+ if(metaphor&&rows.some(r=>r.action.type===metaphor.type))
+  notes.unshift('비유 해석: '+metaphor.meaning+'. 공 일부 변형과 빛의 질감은 전투와 미리보기 양쪽에 표시됩니다.');
  if(!rows.length)return {ok:false,error:'전투에서 실행할 수 있는 동작을 찾지 못했습니다.'};
  if(rows.length>=maxRules)notes.push('기술당 규칙은 최대 8개까지 실행됩니다.');
  if(/절대|완전.*무적|무적.*무한|즉사|한방.*죽/.test(raw))
@@ -165,7 +173,7 @@ function parse(input){
  if(split)notes.push('분열탄의 세대와 탄환 수는 게임 엔진의 안전 상한 안에서 작동합니다.');
  if(speed)notes.push('속도는 중첩되지만 물리 충돌을 유지하도록 최고속도가 제한됩니다.');
  const recipe=R.normalize({window,rules:rows});
- const primary=types.has('splitshot')?'splitshot':speed?'haste':jump?'leap':mentions[0].id;
+ const primary=metaphor?.type|| (types.has('splitshot')?'splitshot':speed?'haste':jump?'leap':mentions[0].id);
  return {ok:true,name:safeName[primary]||'나만의 폭주 기술',recipe,notes,
   recognized:mentions.map(x=>x.id),method:'offline-rule-parser'};
 }

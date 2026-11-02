@@ -54,6 +54,7 @@ function normalize(value,{towerEnemy=false}={}){
           speed:number(a.speed,2,14,5),duration:number(a.duration,.2,8,1.5),
           status:STATUS[a.status]?a.status:'none',
           knockback:number(a.knockback,0,9,2),delay:number(a.delay,0,2,0),
+          visual:global.MetaphorVisuals?.normalize?.(a.visual),
           ricochet:a.type==='shot'?Math.round(number(a.ricochet,0,3,0)):0,
           link:['and','after','with'].includes(a.link)?a.link:'and',
           condition:signature?global.SignatureProgram?.validCondition?.(a.condition)||'always':'always'

@@ -77,6 +77,12 @@ function ruleRow(r,i,n){
   +(forge.supportedParameter?.(a.type,'speed')?'<label>비행·이동 속도<input type="number" min="2" max="14" step=".5" data-rule-index="'+i+'" data-rule-field="speed" value="'+a.speed+'"></label>':'')
   +(forge.supportedParameter?.(a.type,'knockback')?'<label>충돌 충격력<input type="number" min="0" max="9" step=".5" data-rule-index="'+i+'" data-rule-field="knockback" value="'+a.knockback+'"></label>':'')
   +(a.type==='shot'?'<label>벽 반사<select data-rule-index="'+i+'" data-rule-field="ricochet">'+choices({0:'없음',1:'1회',2:'2회',3:'3회'},a.ricochet)+'</select></label>':'')
+  +'<label>비유 속 외형<select data-rule-index="'+i+'" data-rule-field="visual.shape">'
+  +choices({none:'기본 이펙트',...(g.MetaphorVisuals?.SHAPES||{})},a.visual?.shape||'none')+'</select></label>'
+  +(a.visual?'<label>빛·재질 색상<input type="color" data-rule-index="'+i+'" data-rule-field="visual.color" value="'+E(a.visual.color)+'"></label>'
+   +'<label>형태 크기<input type="number" min=".6" max="2.8" step=".1" data-rule-index="'+i+'" data-rule-field="visual.scale" value="'+a.visual.scale+'"></label>'
+   +'<label>에너지 응축<select data-rule-index="'+i+'" data-rule-field="visual.charge">'
+   +choices({false:'즉시 사용',true:'모으고 발동'},String(a.visual.charge))+'</select></label>':'')
   +'</div></details></article>';
 }
 function render(){
@@ -188,6 +194,16 @@ panel.addEventListener('change',e=>{
  else if(field==='interval')r.interval=Number(value);
  else if(['damage','radius','count','duration','speed','knockback','ricochet'].includes(field))r.action[field]=Number(value);
  else if(['target','pattern','status'].includes(field))r.action[field]=value;
+ else if(field==='visual.shape'){
+  r.action.visual=value==='none'?undefined:g.MetaphorVisuals?.normalize?.({
+   shape:value,color:r.action.visual?.color||'#b19cff',
+   scale:r.action.visual?.scale||1.5,charge:r.action.visual?.charge||false
+  });
+ }else if(field.startsWith('visual.')&&r.action.visual){
+  const k=field.slice(7);
+  r.action.visual=g.MetaphorVisuals?.normalize?.({...r.action.visual,
+   [k]:k==='scale'?Number(value):k==='charge'?value==='true':value});
+ }
  write(base,'규칙을 반영했습니다.');
 });
 const prior=g.ScratchStudio?.onChange;

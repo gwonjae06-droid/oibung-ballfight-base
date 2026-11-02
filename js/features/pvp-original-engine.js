@@ -1,6 +1,6 @@
 /* Compact, versioned profiles fit the existing matchmaking JSON limit. */
 (function(g){
- const keys=['type','pattern','target','damage','radius','count','speed','duration','status','knockback','delay','link'];
+ const keys=['type','pattern','target','damage','radius','count','speed','duration','status','knockback','delay','link','visual'];
  const encode=a=>keys.map(k=>a?.[k]??null);
  const decode=a=>Object.fromEntries(keys.map((k,i)=>[k,a?.[i]??undefined]));
  // Compact Scratch AST rather than repeating long field names in the queue.
