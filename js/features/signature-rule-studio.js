@@ -44,6 +44,8 @@ function write(value,message,generatedName){
  }]};
  try{
   forge.setDraft(next);
+  // Never keep an obsolete proposed build visible after the draft changes.
+  proposal=null;
   g.CharacterStudioWorkspace?.refresh?.();
   render();status(message||'규칙을 저장 전 초안에 반영했습니다.');
   return true;

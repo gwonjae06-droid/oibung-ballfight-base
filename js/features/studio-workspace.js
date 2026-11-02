@@ -300,8 +300,11 @@ function refresh(reset=false){
   profile=draft;
   sequence=plan(draft,focus);
   if(global.StudioPinballLab){
-    // Practice uses one 12s energy cycle instead of obsolete cooldown clocks.
-    sequence.duration=12000;
+    // Reactive recipes can remain active for 18s: preview the entire window,
+    // while the disposable lab itself still has a bounded 20s simulation.
+    const longestRule=Math.max(0,...(draft.skills||[]).map(skill=>
+      Number(skill.ruleSet?.window)||0));
+    sequence.duration=longestRule?Math.min(19500,Math.max(12000,longestRule*1000+1500)):12000;
     const fingerprint=JSON.stringify([draft.signatureVersion,draft.skills,draft.color,draft.name,focus,focusAction,draft.allAbilities]);
     if(reset||!pinball||fingerprint!==lastPinballData){
       pinball=global.StudioPinballLab.make(draft,focus,focusAction);
@@ -323,7 +326,7 @@ function refresh(reset=false){
   elapsed=Math.min(elapsed,sequence.duration);
   const selected=sequence.skills[focus]||sequence.skills[0];
   cooldown.textContent=global.StudioPinballLab?
-    '모의 실험 · 초기 기세 86 · 충전 속도는 실제 전투와 다름 · 피해·명중률 미측정 · 조건 분기는 참 조건 예시':
+    '미니 핀볼 · 반복 및 사건 반응 예시 · 기세 충전 속도는 실제 전투와 다름 · 피해·명중률 미측정':
     focus==='all'?'전체 스킬 시연':('발동: '+(global.SkillForge.TRIGGER[selected?.trigger]||'자동'));
   draw(elapsed);
 }
