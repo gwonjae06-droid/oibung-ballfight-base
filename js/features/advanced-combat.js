@@ -140,10 +140,13 @@ function pushOwned(pool,item,max){
     owned++;if(oldest<0)oldest=i;
   }
   if(owned>=quota||pool.length>=max){
-    // Do not evict an in-flight shot or another live object without warning:
-    // reject excess NEW spawns instead. Busy bullet-hell builds still retain
-    // their active shots, impacts and consistent collision semantics.
-    return null;
+    // Projectiles should finish flying; reject new excess shots instead of
+    // silently popping in-flight bullets from the screen.
+    if(pool===projectiles)return null;
+    // Physical walls, portals and summons retain their established per-owner
+    // replacement rules. Never evict another player's construct.
+    if(oldest<0)return null;
+    pool.splice(oldest,1);
   }
   pool.push(item);return item;
 }
