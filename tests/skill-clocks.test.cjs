@@ -25,6 +25,8 @@ function harness(){
   };
   state.window=state;
   const context=vm.createContext(state);
+  for(const part of ['skill-forge-impact','skill-forge-casting'])
+    vm.runInContext(fs.readFileSync(path.join(__dirname,'../js/features/'+part+'.js'),'utf8'),context);
   vm.runInContext(script,context);
   const api=state.window.SkillForge;
   const id=api.register(profile()),hero=state.CUSTOM_DEFS[0].createInstance(1);
