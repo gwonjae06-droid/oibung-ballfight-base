@@ -73,7 +73,7 @@ test('shot spawned while airborne carries its height and hits only matching alti
     return w.players.find(e=>e!==p&&e.hp>0)||null;}};
  w.window=w;vm.createContext(w);
  vm.runInContext(read('js/features/advanced-combat.js'),w);
- vm.runInContext(read('js/features/skill-forge.js'),w);
+ for(const part of ['skill-forge-impact','skill-forge-casting','skill-forge'])vm.runInContext(read('js/features/'+part+'.js'),w);
  const profile={name:'공중 사격수',hp:240,speed:2,color:'#546677',
   skills:[{name:'높이별 총알',cooldown:3,trigger:'auto',
     actions:[{type:'shot',damage:30,radius:190,speed:8,count:1,delay:0}]}]};
