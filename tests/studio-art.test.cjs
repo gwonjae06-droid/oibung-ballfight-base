@@ -6,11 +6,12 @@ const root=path.join(__dirname,'..');
 const read=file=>fs.readFileSync(path.join(root,file),'utf8');
 test('editable body/effect colors are separate, preserve saved data and reach all renderers',()=>{
  const forge=read('js/features/skill-forge.js');
+  const editor=read('js/features/skill-forge-editor.js');
  assert.match(forge,/effectColor:color\(value\.effectColor\|\|value\.color\)/);
  assert.match(forge,/effectColor:randomColor\(rng\)/);
  assert.match(forge,/effectColor:profile\.effectColor/);
- assert.match(forge,/id="forge-effect-color"/);
- assert.match(forge,/draft\.effectColor=\$\('forge-effect-color'\)\.value/);
+ assert.match(editor,/id="forge-effect-color"/);
+ assert.match(editor,/state\.draft\.effectColor=\$\('forge-effect-color'\)\.value/);
  assert.match(read('js/features/advanced-combat.js'),/p\?\.forge\?\.effectColor/);
  assert.match(read('js/features/forge-expansion.js'),/p\.forge\.effectColor\|\|p\.forge\.color/);
  assert.match(read('js/features/ability-atlas.js'),/caster\.forge\.effectColor\|\|caster\.forge\.color/);
