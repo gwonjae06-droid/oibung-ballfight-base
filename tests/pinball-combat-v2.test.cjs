@@ -7,7 +7,7 @@ function boot(){
   createHitParticles(){},addFloatingText(){},ArenaScreenRouter:{active:'tower'}};
  g.window=g;g.globalThis=g;vm.createContext(g);
  for(const file of ['action-registry','forge-archetypes','signature-program',
-  'signature-scratch','signature-live','arena-balance',
+  'signature-scratch','signature-live','arena-balance-formula','arena-balance',
   'bounce-momentum','arena-combat-v2','arena-body-physics','skill-forge',
   'tower-tactics'])vm.runInContext(read('js/features/'+file+'.js'),g,{filename:file});
  return g;
