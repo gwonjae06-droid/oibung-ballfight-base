@@ -76,7 +76,7 @@ function clear(){
   if(announce)announce.textContent='';
 }
 function sync(p,active){
-  if(!active){clear();return;}
+  if(!active||tier(p?._combat2Combo?.chain||0)===0){clear();return;}
   const layer=g.document?.getElementById?.(ID);
   // The render loop never creates nodes; pulse() is the only mount point.
   if(layer&&!layer.hidden&&p?._combat2Combo)
