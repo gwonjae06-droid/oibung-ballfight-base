@@ -30,13 +30,13 @@ test('graded impacts reward only real collision events and never add contact dam
  assert.equal(p._combat2Combo.chain,1);
  p._forgeActionClock=29;
  assert.equal(M.wall(p,7,'wall'),true);
- assert.equal(p._combat2Combo.chain,1,'same wall category never farms combos');
+ assert.equal(p._combat2Combo.chain,2,'strong rebounds still chain after the anti-spam window');
  p._forgeActionClock=65;
  assert.equal(M.contact(p,q,-5),true);
- assert.equal(p._combat2Combo.chain,2);
+ assert.equal(p._combat2Combo.chain,3);
  p._forgeActionClock=105;
  assert.equal(M.wall(p,7,'bumper'),true);
- assert.equal(p._combat2Combo.chain,3);
+ assert.equal(p._combat2Combo.chain,4);
  assert.equal(p._combat2NextBoost,1.10);
  assert.ok(M.meter(p)>0&&M.meter(p)<=100);
  assert.equal(p.hp,300);assert.equal(q.hp,300);
