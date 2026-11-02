@@ -33,7 +33,7 @@ const templates=[
  {id:'guardian',icon:'🛡️',name:'수호자',sequence:['shield','heal','wave']},
  {id:'frost',icon:'❄️',name:'빙결 콤보',sequence:['zone','bolt']},
  {id:'evasion',icon:'💫',name:'회피 반격',sequence:['blink','wave']},
- {id:'pinball',icon:'🎱',name:'벽 반사 공격',sequence:['dash','wave']},
+ {id:'pinball',icon:'🎱',name:'벽 반사 돌격',sequence:['dash','wave']},
  {id:'chrono',icon:'🕰️',name:'시간 연계',sequence:['timeburst','pull','wave']}
 ];
 const TIMINGS={instant:'충전 즉시',contact:'다음 충돌',danger:'보스 공격 예고 시'};
@@ -52,7 +52,7 @@ panel.innerHTML='<div class="kid-top"><div><span class="kid-overline">ONE SKILL 
  +'<strong class="kid-limit-pill">최대 4단계 · 실행 6회 · 위력 170</strong></div>'
  +'<div class="kid-legacy" hidden><strong>예전 4스킬 캐릭터입니다.</strong><p>기존 스킬은 그대로 보존됩니다. 원할 때만 하나의 필살기로 전환하세요.</p><button type="button" data-kid-command="convert">고유 스킬로 전환</button></div>'
  +'<div class="kid-easy-body">'
- +'<section class="kid-section kid-start-section"><div class="kid-step-heading"><span class="kid-step-no">1</span><div><h4>① 기세가 100이 되면</h4><p>기술의 발동 시점을 선택하세요.</p></div></div><div class="kid-trigger-options"></div></section>'
+ +'<section class="kid-section kid-start-section"><div class="kid-step-heading"><span class="kid-step-no">1</span><div><h4>① 기세가 100이 되면</h4><p>기세가 가득 차면 기술이 준비됩니다. 기세 100 → 필살기 준비 · 다음 충돌·보스 예고 시점도 설정할 수 있습니다.</p></div></div><div class="kid-trigger-options"></div></section>'
  +'<section class="kid-section kid-library-section"><div class="kid-step-heading"><span class="kid-step-no">2</span><div><h4>② 행동을 최대 4개 선택</h4><p>색깔 행동을 눌러 기술에 추가하세요.</p></div></div><div class="kid-action-grid"></div></section>'
  +'<section class="kid-section kid-plan-section"><div class="kid-step-heading"><span class="kid-step-no">3</span><div><h4>③ 순서와 연계 편집</h4><p>조건·반복·대상·위력까지 행동마다 바로 설정합니다.</p></div></div>'
  +'<label class="kid-name-label">내 필살기 이름<input id="kid-skill-name" type="text" maxlength="18" placeholder="예: 번개 돌진"></label>'
