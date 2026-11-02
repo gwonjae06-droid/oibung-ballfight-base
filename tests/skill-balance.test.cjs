@@ -33,7 +33,8 @@ test('four-spell budget influences real combat damage, while transient Tower ene
  const w={Math,Number,Set,Map,console,CUSTOM_DEFS:[],CHARACTER_PHOTOS:{},BEHAVIORS:{},
   players:[],createHitParticles(){},addFloatingText(){},getClosestAliveEnemy(){return null;}};
  w.window=w;vm.createContext(w);vm.runInContext(formulaSrc,w);vm.runInContext(balanceSrc,w);
- vm.runInContext(fs.readFileSync('js/features/skill-forge.js','utf8'),w);
+ for(const part of ['skill-forge-impact','skill-forge-casting','skill-forge'])
+   vm.runInContext(fs.readFileSync('js/features/'+part+'.js','utf8'),w);
  const profile=w.SkillForge.normalize({name:'사기 빌드',skills:build().skills});
  const attacker={playerNum:1,x:100,y:100,hp:300,forge:profile};
  const target={playerNum:2,x:130,y:100,invincible:0,radius:20,hp:500,maxHp:500,vx:0,vy:0};
