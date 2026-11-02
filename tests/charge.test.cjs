@@ -8,7 +8,7 @@ function fixture(){
   canvas:{width:500,height:500},createHitParticles(){},addFloatingText(){},
   getClosestAliveEnemy(p){return w.players.find(e=>e!==p&&e.hp>0)||null;}};
  w.window=w;vm.createContext(w);
- for(const file of ['action-registry','arena-charge','arena-balance-formula','arena-balance','skill-forge','block-forge'])
+ for(const file of ['action-registry','arena-charge','arena-balance-formula','arena-balance','skill-forge-impact','skill-forge-casting','skill-forge','block-forge'])
   vm.runInContext(read(file),w,{filename:file+'.js'});
  return w;
 }
