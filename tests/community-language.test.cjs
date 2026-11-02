@@ -13,7 +13,7 @@ function harness(){
     getClosestAliveEnemy(){return null;}};
   ctx.window=ctx;
   const context=vm.createContext(ctx);
-  for(const file of ['ability-atlas.js','skill-forge.js','natural-forge.js','community-forge.js'])vm.runInContext(load(file),context);
+  for(const file of ['ability-atlas.js','skill-forge-impact.js','skill-forge-casting.js','skill-forge.js','natural-forge.js','community-forge.js'])vm.runInContext(load(file),context);
   return ctx;
 }
 function profile(){
