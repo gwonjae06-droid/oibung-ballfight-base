@@ -39,7 +39,7 @@ function setup(){
  SkillForge:{register(profile){
    const id='enemy-temp-'+(g.seq=(g.seq||0)+1);
    const d={id,name:profile.name,createInstance(n){return {id,playerNum:n,
-     name:profile.name,hp:profile.hp,maxHp:profile.hp,forge:profile,x:343,y:250};}};
+     name:profile.name,hp:profile.hp,maxHp:profile.hp,forge:profile,towerEnemy:true,x:343,y:250};}};
    customs.push(d);g.BEHAVIORS[id]={};return id;
   },enableManual(p){p.forge={skills:[{actions:[{type:'wave',damage:30}]}]};return true;}},
  ArenaAncientOne:{create(){return {step(){},clear(){},spectacle:null};}},
