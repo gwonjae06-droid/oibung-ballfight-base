@@ -118,20 +118,25 @@ function parse(input){
   add('splitshot','pulse',Math.max(.35,interval));
   if(event.includes('split')||/다시.*분열|재분열|분열.*추가/.test(raw))
    add('shot','split',Math.max(.5,interval*1.35),{damage:Math.min(15,damageRaw??9),count:3});
-  if(event.includes('hit'))add('wave','hit',Math.max(.6,interval));
+  if(event.includes('hit')&&types.has('wave'))add('wave','hit',Math.max(.6,interval));
  }
  if(speed){
   // "시간 가속" still uses the temporal mechanic, while ordinary speed
   // works through the live stacking haste mechanic.
   // "벽에 튕길 때마다 가속" must not smuggle in a periodic haste.
   // Continuous speed requests without a specified event keep a pulse.
-  const eventDriven=wall||contact||event.includes('land')||event.includes('hit');
-  if(!eventDriven)add(types.has('timeburst')?'timeburst':'haste','pulse',Math.max(.35,interval));
-  if(wall)add(types.has('timeburst')?'timeburst':'haste','wall',Math.max(.35,interval*.75));
-  if(contact)add('wave','contact',Math.max(.5,interval),{damage:damageRaw??23});
+  const speedType=types.has('timeburst')?'timeburst':'haste';
+  const eventDriven=wall||contact||event.length>0;
+  if(!eventDriven)add(speedType,'pulse',Math.max(.35,interval));
+  if(wall)add(speedType,'wall',Math.max(.35,interval*.75));
+  if(contact){
+    if(types.has('wave'))add('wave','contact',Math.max(.5,interval),{damage:damageRaw??23});
+    else add(speedType,'contact',Math.max(.35,interval));
+  }
+  if(!wall&&!contact&&event.length)add(speedType,event[0],Math.max(.35,interval));
  }
  if(jump||dive){
-  if(jump)add('leap','pulse',Math.max(1.8,interval*2.5));
+  if(jump)add('leap',event.length===1&&!dive?event[0]:'pulse',Math.max(1.8,interval*2.5));
   if(dive)add('dive',jump||event.includes('land')?'land':'pulse',Math.max(.45,interval),{
    damage:damageRaw??38,radius:radiusRaw??175});
   // A landing loop can be literal: no unbounded recursion, only event cooldown.
@@ -149,6 +154,10 @@ function parse(input){
    add(item.id,best,interval);
   }
  }
+ // If the user explicitly named one trigger and one action, never add an
+ // unsolicited periodic cast. The exact condition should drive the skill.
+ if(event.length===1&&rows.length===1&&rows[0].when==='pulse')
+  rows[0].when=event[0];
  if(!rows.length)return {ok:false,error:'전투에서 실행할 수 있는 동작을 찾지 못했습니다.'};
  if(rows.length>=maxRules)notes.push('기술당 규칙은 최대 8개까지 실행됩니다.');
  if(/절대|완전.*무적|무적.*무한|즉사|한방.*죽/.test(raw))

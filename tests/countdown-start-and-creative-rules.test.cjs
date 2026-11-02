@@ -76,6 +76,21 @@ test('free prompt compiler recognizes newly registered actions and status/target
  assert.equal(b.ok,true);
  assert.ok(b.recipe.rules.some(r=>r.when==='hpLow'));
 });
+test('freeform skill respects defensive and contact triggers without inventing an automatic pulse',()=>{
+ const w={Math,Date,console,SkillForge:{TYPE:{haste:'가속',wave:'충격파',shield:'방어막'}}};
+ w.window=w;w.globalThis=w;vm.createContext(w);
+ for(const p of ['js/features/signature-program.js','js/features/signature-scratch.js',
+ 'js/features/signature-rule-skill.js','js/features/signature-prompt-compiler.js'])load(w,p);
+ const guard=w.SignaturePromptCompiler.parse('공격을 방어하면 가속');
+ assert.equal(guard.ok,true);
+ assert.ok(guard.recipe.rules.some(x=>x.action.type==='haste'&&x.when==='guard'));
+ assert.ok(!guard.recipe.rules.some(x=>x.action.type==='haste'&&x.when==='pulse'));
+ const impact=w.SignaturePromptCompiler.parse('상대와 부딪히면 가속');
+ assert.equal(impact.ok,true);
+ assert.ok(impact.recipe.rules.some(x=>x.action.type==='haste'&&x.when==='contact'));
+ assert.ok(!impact.recipe.rules.some(x=>x.action.type==='wave'),
+  'unspecified shockwave should not be invented');
+});
 test('main animation loop reschedules even if an arena update throws',()=>{
  const script=fs.readFileSync(path.join(__dirname,'../js/features/battle-effects.js'),'utf8');
  assert.match(script,/gameLoop=function\(time\)\{\s*try\{/);
