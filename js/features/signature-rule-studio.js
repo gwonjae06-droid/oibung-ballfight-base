@@ -6,7 +6,7 @@ const R=g.SignatureRuleSkill;
 if(!panel||!forge||!R)return;
 const E=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const choices=(items,chosen)=>Object.entries(items).map(([key,label])=>'<option value="'+E(key)+'"'+(String(key)===String(chosen)?' selected':'')+'>'+E(label)+'</option>').join('');
-const types=Object.fromEntries(R.TYPES.filter(id=>forge.TYPE[id]).map(id=>[id,forge.TYPE[id]]));
+const types=Object.fromEntries([...R.TYPES,...Object.keys(forge.TYPE)].filter((id,i,all)=>all.indexOf(id)===i&&forge.TYPE[id]).map(id=>[id,forge.TYPE[id]]));
 const templates=[
  {id:'split',name:'💎 끝없이 증식하는 탄막',desc:'분열탄이 다시 분열하고, 분열 소리가 새로운 발사를 부릅니다',
   window:12,rules:[{when:'pulse',interval:.65,fracture:3,action:{type:'splitshot',damage:16,count:5,radius:145}},
@@ -51,10 +51,10 @@ function write(value,message){
 function status(message){const node=panel.querySelector('#rule-feedback');if(node)node.textContent=message;}
 function ruleRow(r,i,n){
  const a=r.action;
- const special=a.type==='splitshot';
+ const special=a.type==='splitshot',last=n.length;
  return '<article class="rule-row" data-rule-index="'+i+'"><div class="rule-row-heading"><strong>규칙 '+(i+1)+'</strong>'
   +'<span class="rule-row-controls"><button type="button" data-rule-command="up" data-index="'+i+'" '+(i===0?'disabled':'')+' aria-label="규칙 위로">↑</button>'
-  +'<button type="button" data-rule-command="down" data-index="'+i+'" '+(i===n-1?'disabled':'')+' aria-label="규칙 아래로">↓</button>'
+  +'<button type="button" data-rule-command="down" data-index="'+i+'" '+(i===last-1?'disabled':'')+' aria-label="규칙 아래로">↓</button>'
   +'<button type="button" data-rule-command="duplicate" data-index="'+i+'" aria-label="복제">복제</button>'
   +'<button type="button" data-rule-command="remove" data-index="'+i+'" aria-label="삭제">×</button></span></div>'
   +'<div class="rule-sentence"><label><span>언제</span><select data-rule-index="'+i+'" data-rule-field="when">'+choices(R.WHEN,r.when)+'</select></label>'

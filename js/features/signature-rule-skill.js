@@ -11,7 +11,7 @@ const fallback=()=>({when:'pulse',interval:1,action:{type:'splitshot',damage:16,
 function rule(value){
  const v=value&&typeof value==='object'?value:{};
  const allowed=g.SkillForge?.TYPE||g.ActionRegistry?.TYPE||{};
- const type=TYPES.includes(v.action?.type)&&allowed[v.action.type]?v.action.type:'wave';
+ const type=Object.prototype.hasOwnProperty.call(allowed,v.action?.type)?v.action.type:'wave';
  const action=g.SignatureScratch?.safeAction?.({...v.action,type})||{type,damage:12,radius:120,count:1};
  // A splitshot contains ONE source orb that shatters into count fragments.
  return {when:Object.hasOwn(WHEN,v.when)?v.when:'pulse',
