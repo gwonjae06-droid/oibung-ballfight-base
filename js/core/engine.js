@@ -331,7 +331,7 @@ function update() {
           (p.x<=p.radius?'wall-left':'wall-right'):
           (p.y<=p.radius?'wall-top':'wall-bottom');
         if(globalThis.BounceMomentum?.enabled?.(p))
-          globalThis.BounceMomentum.wall(p,Math.hypot(p.vx||0,p.vy||0),wallSource);
+          globalThis.BounceMomentum.wall(p,normalSpeed,wallSource);
         else globalThis.ArenaCombatV2?.signal?.(p,wallSource,normalSpeed);
         if(globalThis.BounceMomentum?.enabled?.(p))
           p._pinballReboundHold=Math.max(p._pinballReboundHold||0,17);
