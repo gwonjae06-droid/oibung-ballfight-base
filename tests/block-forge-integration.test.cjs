@@ -3,6 +3,7 @@ const test=require('node:test'),assert=require('node:assert/strict');
 const fs=require('node:fs'),vm=require('node:vm'),path=require('node:path');
 const read=p=>fs.readFileSync(path.join(__dirname,'..',p),'utf8');
 const forgeSource=read('js/features/skill-forge.js');
+const editorSource=read('js/features/skill-forge-editor.js');
 const blocksSource=read('js/features/block-forge.js');
 function harness(){
   const casts=[];
@@ -62,7 +63,7 @@ test('with connector runs skills together; after schedules them in order',()=>{
   assert.ok(ordered.player.forgeQueue.some(a=>a.remaining>0));
 });
 test('imported JSON also refreshes the visual block workspace',()=>{
-  assert.match(forgeSource,/forge-json-text'\)\.value\)\);refreshBasics\(\);render\(\);global\.BlockForge\?\.refresh\?\.\(\)/);
+  assert.match(editorSource,/forge-json-text'\)\.value\)\);refreshBasics\(\);render\(\);global\.BlockForge\?\.refresh\?\.\(\)/);
   assert.match(forgeSource,/draft=normalize\(value\);refreshForm\(\);global\.BlockForge\?\.refresh\?\.\(\)/);
   assert.match(read('index.html'),/js\/features\/block-forge\.js/);
 });
