@@ -18,7 +18,8 @@ test('existing SkillForge profile editing API stays intact after view extraction
   canvas:{width:500,height:500},createHitParticles(){},addFloatingText(){},getClosestAliveEnemy(){return null;}};
  h.window=h;h.globalThis=h;vm.createContext(h);
  vm.runInContext(read('js/features/skill-forge-editor.js'),h);
- vm.runInContext(read('js/features/skill-forge.js'),h);
+ for(const part of ['skill-forge-impact','skill-forge-casting','skill-forge'])
+  vm.runInContext(read('js/features/'+part+'.js'),h);
  const initial=h.SkillForge.getDraft();
  assert.equal(initial.signatureVersion,1);
  const changed=h.SkillForge.setDraft({name:'분리 테스트',signatureVersion:1,skills:[
