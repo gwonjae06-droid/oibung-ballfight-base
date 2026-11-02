@@ -42,7 +42,14 @@ const events=[
  {when:'land',pattern:/착지.*(?:하면|할 때|때마다|후|뒤)|내려오.*(?:하면|때마다)|땅에.*닿/},
  {when:'wall',pattern:/벽.*(?:튕|부딪|충돌|닿)|벽에.*(?:맞|박)/},
  {when:'contact',pattern:/상대.*(?:부딪|충돌|접촉)|몸통.*충돌|적과.*부딪/},
- {when:'hit',pattern:/적중.*(?:하면|때마다|할 때)|명중.*(?:하면|때마다|할 때)|맞히.*(?:면|때마다|고)|맞출 때/}
+ {when:'hit',pattern:/적중.*(?:하면|때마다|할 때)|명중.*(?:하면|때마다|할 때)|맞히.*(?:면|때마다|고)|맞출 때/},
+ {when:'guard',pattern:/공격.*(?:막|방어|막았|막을)|방어.*(?:성공|하면|할 때)/},
+ {when:'dodge',pattern:/회피.*(?:성공|하면|할 때)|피했을 때|피하면|피할 때/},
+ {when:'status',pattern:/상태이상.*(?:걸|성공)|중독.*(?:걸|시키)|얼리면/},
+ {when:'move',pattern:/이동.*(?:하면|할 때)|돌진.*(?:후|하면)/},
+ {when:'hpLow',pattern:/체력.*(?:낮|적|부족|40%|위험)|피.*(?:적|없|부족)/},
+ {when:'near',pattern:/상대.*(?:가까|근접|붙)|적이.*가까/},
+ {when:'far',pattern:/상대.*(?:멀|거리)|적이.*멀/}
 ];
 function readNumber(text,pattern){const m=text.match(pattern);return m?Number(m[1]):null;}
 function parse(input){
@@ -50,7 +57,15 @@ function parse(input){
  if(!raw)return {ok:false,error:'어떤 능력을 만들고 싶은지 한 문장 이상 적어 주세요.'};
  if(raw.length>300)return {ok:false,error:'설명은 300자 이내로 입력해 주세요.'};
  // A restricted vocabulary prevents invented effects that the game cannot cast.
- const found=patterns.filter(t=>t.match.test(raw));
+ // Extend natural-language recognition to EVERY registered Forge action,
+ // rather than only the small starter vocabulary listed above.
+ const recognized=g.NaturalForge?.recognize?.(raw)||[];
+ const ids=new Set();
+ const found=[...patterns.filter(t=>t.match.test(raw)),
+   ...recognized.map(x=>({id:x.type}))].filter(x=>{
+     if(ids.has(x.id))return false;
+     ids.add(x.id);return true;
+   });
  if(!found.length)return {ok:false,error:'아직 이해할 수 없는 동작입니다. 분열탄·가속·점프·낙하·충격파·번개 같은 게임 동작을 넣어 주세요.'};
  const supported=g.SkillForge?.TYPE||g.ActionRegistry?.TYPE||{};
  const mentions=found.filter(t=>Object.hasOwn(supported,t.id));
@@ -83,10 +98,19 @@ function parse(input){
   if(rows.length>=maxRules||!Object.hasOwn(supported,type))return;
   if(rows.some(r=>r.action.type===type&&r.when===when))return;
   const damage=noDamage.has(type)?0:damageRaw!==null?cap(damageRaw,0,120):(defaults[type]??18);
+  const status=/빙결|얼음|얼려|냉기|서리/.test(raw)?'ice':
+   /화염|화상|불꽃|불태/.test(raw)?'fire':
+   /중독|맹독|독가스|독.*피해/.test(raw)?'poison':'none';
+  const target=/체력.*낮은.*적|약한.*적/.test(raw)?'lowest':
+   /먼.*적|멀리.*적/.test(raw)?'farthest':
+   /무작위.*적|랜덤.*대상/.test(raw)?'random':'nearest';
+  const pattern=/사방|360도|방사형/.test(raw)?'radial':
+   /나선|소용돌이/.test(raw)?'spiral':
+   /부채꼴|퍼지.*발사/.test(raw)?'fan':'direct';
   rows.push({when,interval:pace,fracture:type==='splitshot'?cap(generationsRaw||(/다시.*분열|재분열|분열.*분열/.test(raw)?3:2),1,3):1,
    action:{type,damage,radius:radiusRaw!==null?cap(radiusRaw,30,300):type==='splitshot'?155:150,
     count:countRaw!==null?cap(countRaw,1,8):type==='splitshot'?5:1,
-    duration:type==='haste'||type==='timeburst'?1.7:1.5,...adjust}});
+    pattern,target,status,duration:type==='haste'||type==='timeburst'?1.7:1.5,...adjust}});
  }
  // Some compound patterns are composed first so "점프-착지-재점프"
  // and "벽-가속-충돌" have meaningful reactive rather than generic scripts.
@@ -120,7 +144,8 @@ function parse(input){
  for(const item of mentions){
   if(picked.includes(item.id))continue;picked.push(item.id);
   if(!rows.some(r=>r.action.type===item.id)){
-   const best=event.find(e=>e!=='split'&&e!=='land')||'pulse';
+   const best=event.find(e=>e!=='split'&&e!=='land')||
+    (event.includes('land')?'land':event.includes('split')?'split':'pulse');
    add(item.id,best,interval);
   }
  }

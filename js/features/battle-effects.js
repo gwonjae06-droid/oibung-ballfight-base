@@ -138,8 +138,10 @@
     get multiplier(){return selectedSpeed();},
     get deferUI(){return deferUI;}
   };
+  let loopErrors=0;
   gameLoop=function(time){
-    if(!Number.isFinite(time)){requestAnimationFrame(gameLoop);return;}
+   try{
+    if(!Number.isFinite(time))return;
     if(last===null)last=time;
     const delta=Math.min(100,Math.max(0,time-last));last=time;
     const step=1000/60;
@@ -180,7 +182,33 @@
     window.ArenaFXDepth?.setReduced?.(gentle.checked);
     window.ArenaResolution?.sync?.();
     if(!globalThis.ArenaScreenRouter?.enabled||['tower','pve'].includes(globalThis.ArenaScreenRouter.active))draw();
+   loopErrors=0;
+   }catch(error){
+    loopErrors++;
+    // Never leave a frozen 3-2-1 overlay after a simulation exception.
+    window.ArenaCountdown?.cancel?.();
+    acc=0;deferUI=false;last=null;
+    console.error('[OIBUNG] Battle frame error',error);
+    if(loopErrors>=2){
+     isPlaying=false;
+     const wrapper=document.querySelector('.canvas-wrapper');
+     if(wrapper){
+      let notice=document.getElementById('arena-runtime-error');
+      if(!notice){
+       notice=document.createElement('div');notice.id='arena-runtime-error';
+       notice.setAttribute('role','alert');notice.style.cssText=
+        'position:absolute;z-index:32;top:8px;left:8px;right:8px;background:#321923;color:#ffe4e6;padding:12px;border:1px solid #ef9cae;border-radius:9px;font:600 13px system-ui;';
+       wrapper.appendChild(notice);
+      }
+      notice.textContent='전투 실행 오류가 감지되었습니다. 새로고침 후 다시 시작해 주세요. ('+
+       String(error?.message||'알 수 없는 오류').slice(0,125)+')';
+     }
+    }
+   }finally{
+    // Even when the render/update throws, keep the host RAF alive to show
+    // the error and to permit a future clean restart rather than freezing.
     requestAnimationFrame(gameLoop);
+   }
   };
   speed.onchange=()=>{acc=0;last=null;};
   document.addEventListener('visibilitychange',()=>{

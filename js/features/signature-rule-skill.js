@@ -2,7 +2,9 @@
  * A 100-momentum activation runs bounded reactions for a fixed time window. */
 (function(g){'use strict';
 const WHEN=Object.freeze({pulse:'일정 시간마다',wall:'벽에 튕기면',contact:'상대와 충돌하면',
- land:'착지하면',hit:'공격이 맞으면',split:'탄환이 분열하면'});
+ land:'착지하면',hit:'공격이 맞으면',split:'탄환이 분열하면',
+ guard:'공격을 방어하면',dodge:'위험을 회피하면',status:'상태이상을 걸면',
+ move:'이동 스킬을 사용하면',hpLow:'내 체력이 낮으면',near:'적이 가까우면',far:'적이 멀리 있으면'});
 const TYPES=['splitshot','shot','wave','dash','haste','timeburst','leap','dive',
  'shield','heal','zone','bolt','homing','pull','slash','blink','retreat'];
 const cap=(v,a,b,f=a)=>Number.isFinite(Number(v))?Math.min(b,Math.max(a,Number(v))):f;

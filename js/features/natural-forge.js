@@ -534,6 +534,9 @@ function install(){
   body.classList.add('forge-studio');
 }
 
-global.NaturalForge={parse,analyze,suggestions,isAllIntent,semanticSentences,groupConnection};
+// Reuse the complete 55+ action vocabulary in the sentence-first studio.
+ // This returns recognized action IDs, not executable source or invented skills.
+global.NaturalForge={parse,analyze,suggestions,isAllIntent,semanticSentences,
+ groupConnection,recognize:matchActions};
 if(typeof document!=='undefined'&&document.getElementById('forge-skills'))install();
 })(window);

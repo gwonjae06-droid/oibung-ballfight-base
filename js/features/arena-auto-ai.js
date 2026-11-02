@@ -124,7 +124,7 @@ function hazards(p,foe){
    }
  }
  // Don't use future, hidden casts. Only visible skill wind-up cues count.
- const cues=g.ArenaTelegraph?.preview?.(foe)||[];
+ const cues=foe?g.ArenaTelegraph?.preview?.(foe)||[]:[];
  for(const cue of cues.slice(0,2)){
    if(cue.remaining<0||cue.remaining>cue.lead||cue.kind==='support')continue;
    if(cue.targetNum!=null&&cue.targetNum!==p.playerNum)continue;
@@ -304,7 +304,10 @@ function plan(p,foe,speed,evadeOnly=false){
 function dodgePinball(p,vx,vy){
  if(!p?.towerHero||!g.ArenaTower?.active||
     p._pinballReboundHold>0||p.jumpState&&p.jumpState!=='ground')return null;
- const fields=hazards(p,null).filter(z=>Number.isFinite(z.x)&&Number.isFinite(z.y));
+ // Previously passed null as the opponent: ArenaTelegraph.preview(null)
+ // dereferenced a missing fighter and crashed the FIRST post-countdown tick.
+ const foe=roster.find(e=>e&&e!==p&&e.hp>0)||null;
+ const fields=hazards(p,foe).filter(z=>Number.isFinite(z.x)&&Number.isFinite(z.y));
  if(!fields.length)return null;
  const speed=Math.hypot(vx,vy);
  if(speed<.45)return null;

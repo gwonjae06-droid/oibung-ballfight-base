@@ -36,6 +36,7 @@ function data(q){
    target:q.a.target||'nearest',pattern:q.a.pattern||'direct'};
 }
 function select(p){
+ if(!p||typeof p!=='object')return [];
  const source=Array.isArray(p.telegraphPreviews)?
    p.telegraphPreviews:(Array.isArray(p.forgeQueue)?p.forgeQueue:[]);
  const list=[];
