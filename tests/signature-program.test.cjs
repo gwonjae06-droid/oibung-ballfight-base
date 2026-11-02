@@ -70,9 +70,9 @@ test('condition engine checks real proximity, HP, warning and dodge events',()=>
  assert.equal(S.condition(p,foe,'danger'),false);
 });
 test('real runtime filters skipped condition blocks before the combat queue',()=>{
- const srcForge=src('js/features/skill-forge.js');
- assert.match(srcForge,/s\.actions\.filter\(a=>global\.SignatureProgram\?\.condition/);
- assert.match(srcForge,/if\(!actions\.length\)return false/);
+ const srcForge=src('js/features/skill-forge.js'),srcCasting=src('js/features/skill-forge-casting.js');
+ assert.match(srcCasting,/s\.actions\.filter\(a=>global\.SignatureProgram\?\.condition/);
+ assert.match(srcCasting,/if\(!actions\.length\)return false/);
  assert.match(srcForge,/if\(active&&\(energyOnly\|\|global\.ArenaAutoAI\?\.canCast/);
  const arena=src('js/features/tower-encounters.js');
  assert.match(arena,/_forgeDodgeSerial=/);
