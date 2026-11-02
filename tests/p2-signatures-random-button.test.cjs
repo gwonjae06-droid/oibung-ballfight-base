@@ -102,7 +102,7 @@ test('primary random button only prepares unsaved skill combinations',()=>{
   assert.ok(natural.includes("randomEntry.className='forge-random-entry'"));
   assert.ok(natural.includes("forge-theme"));
   assert.ok(natural.includes("generated.id='forge-generated-skills'"));
-  assert.ok(forge.includes('function randomProfile('));
+  assert.ok(read('js/features/skill-forge-profiles.js').includes('function randomProfile('));
   assert.ok(css.includes('.forge-studio .forge-primary-actions #forge-random-create'));
   const scripts=[...html.matchAll(/<script src="([^"]+)"/g)].map(x=>x[1].split('?')[0]);
   assert.ok(scripts.indexOf('js/features/skill-forge.js')<

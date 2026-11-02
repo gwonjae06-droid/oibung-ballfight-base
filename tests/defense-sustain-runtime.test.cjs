@@ -56,5 +56,5 @@ test('PvP and local modes load identical budget revisions and the forge UI expla
  }
  assert.match(editor,/회복·보호 밸런스/);
  assert.match(editor,/defenseSummary/);
- assert.match(read('skill-forge'),/defenseFactorOf/);
+ assert.match(read('skill-forge-executor'),/defenseFactorOf/);
 });

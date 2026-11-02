@@ -126,7 +126,7 @@ test('engine wraps every ordinary behavior update, and both runtime pages load p
   assert.ok(src.includes('arena-pinball-motion.js'),name);
   assert.ok(src.indexOf('arena-pinball-motion.js')<src.indexOf('arena-auto-ai.js'));
  }
- const skill=read('js/features/skill-forge.js');
+ const skill=read('js/features/skill-forge-executor.js');
  assert.match(skill,/const angle=Math\.atan2\(near\.y-p\.y,near\.x-p\.x\)/);
  assert.match(skill,/p\.forgeDash=Math\.round/);
 });

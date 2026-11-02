@@ -86,12 +86,13 @@ test('custom fighter count is unrestricted while profile text is sanitized',()=>
   assert.ok(!s.name.includes('<'));
 });
 test('saved roster restores every profile instead of cutting off after 6',()=>{
-  const start=source.indexOf('function saved(){'),end=source.indexOf('function persist(){',start);
-  assert.ok(start>=0&&end>start);
+  const storeModule=fs.readFileSync(path.join(__dirname,'../js/features/skill-forge-storage.js'),'utf8');
+  assert.match(storeModule,/function saved\(\)/);
   const profiles=Array.from({length:35},(_,i)=>profile({name:'캐릭터 '+i}));
   const store={getItem(){return JSON.stringify(profiles);}};
-  const context=vm.createContext({localStorage:store,JSON,Array,STORE:'oibung-forge-v3'});
-  const loaded=vm.runInContext(source.slice(start,end)+'saved()',context);
+  const context=vm.createContext({localStorage:store,JSON,Array});context.window=context;
+  vm.runInContext(storeModule,context);
+  const loaded=context.SkillForgeStoreFactory({STORE:'oibung-forge-v3',getDefs:()=>[]}).saved();
   assert.equal(loaded.length,35);
   assert.equal(loaded[34].name,'캐릭터 34');
 });

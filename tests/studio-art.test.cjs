@@ -7,8 +7,8 @@ const read=file=>fs.readFileSync(path.join(root,file),'utf8');
 test('editable body/effect colors are separate, preserve saved data and reach all renderers',()=>{
  const forge=read('js/features/skill-forge.js');
   const editor=read('js/features/skill-forge-editor.js');
- assert.match(forge,/effectColor:color\(value\.effectColor\|\|value\.color\)/);
- assert.match(forge,/effectColor:randomColor\(rng\)/);
+ assert.match(read('js/features/skill-forge-profiles.js'),/effectColor:color\(value\.effectColor\|\|value\.color\)/);
+ assert.match(read('js/features/skill-forge-profiles.js'),/effectColor:randomColor\(rng\)/);
  assert.match(forge,/effectColor:profile\.effectColor/);
  assert.match(editor,/id="forge-effect-color"/);
  assert.match(editor,/state\.draft\.effectColor=\$\('forge-effect-color'\)\.value/);

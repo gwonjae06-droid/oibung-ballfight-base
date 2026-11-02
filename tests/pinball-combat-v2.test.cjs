@@ -135,7 +135,7 @@ test('new scripts load before engine, UI remains responsive and original movemen
  assert.ok(html.indexOf('arena-combat-v2.js')<html.indexOf('js/core/engine.js'));
  assert.match(read('js/features/tower-flat-arena.js'),/undefined,'bumper-'\+i/);
  assert.match(read('js/features/studio-easy-designer.js'),/data-easy-key="timing"/);
- assert.match(read('js/features/skill-forge.js'),/signatureTiming/);
+ assert.match(read('js/features/skill-forge-profiles.js'),/signatureTiming/);
  assert.match(css,/arena-combo-status/);
  assert.match(src,/Ordinary movement never reads enemy position/);
 });
