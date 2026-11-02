@@ -80,7 +80,7 @@ test('confirmed shield, dodge and movement events publish to live scripts',()=>{
  assert.equal(tick(g,moveRun,owner,{x:70,y:0}).type,'shot');
 });
 test('real game routes only queued actions into delayed live interpreter',()=>{
- const src=read('js/features/skill-forge.js');
+ const src=read('js/features/skill-forge-casting.js');
  assert.match(src,/const run=global.SignatureLive\?\.begin/);
  assert.match(src,/const a=global.SignatureLive\?\.step/);
  assert.match(src,/global.SignatureLive\?\.performed/);
