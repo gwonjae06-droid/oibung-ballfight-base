@@ -70,7 +70,7 @@ test('condition engine checks real proximity, HP, warning and dodge events',()=>
  assert.equal(S.condition(p,foe,'danger'),false);
 });
 test('real runtime filters skipped condition blocks before the combat queue',()=>{
- const srcForge=src('js/features/skill-forge-impact.js','js/features/skill-forge-casting.js','js/features/skill-forge.js');
+ const srcForge=src('js/features/skill-forge.js');
  assert.match(srcForge,/s\.actions\.filter\(a=>global\.SignatureProgram\?\.condition/);
  assert.match(srcForge,/if\(!actions\.length\)return false/);
  assert.match(srcForge,/if\(active&&\(energyOnly\|\|global\.ArenaAutoAI\?\.canCast/);
@@ -82,7 +82,7 @@ test('five roles coexist with the signature program and page loads the runtime f
  const g=harness(),p=g.SkillForge.normalize(profile());
  assert.equal(p.signatureVersion,1);assert.equal(p.skills.length,1);
  const html=src('index.html');
- assert.ok(html.indexOf('signature-program.js')<html.indexOf('skill-forge-impact.js','skill-forge-casting.js','skill-forge.js'));
+ assert.ok(html.indexOf('signature-program.js')<html.indexOf('skill-forge.js'));
  assert.match(html,/signature-program\.css/);
  const designer=src('js/features/studio-modes.js');
  assert.match(designer,/signatureVersion:1/);
