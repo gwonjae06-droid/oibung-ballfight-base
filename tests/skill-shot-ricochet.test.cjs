@@ -6,7 +6,7 @@ function world(){
  canvas:{width:500,height:500},addFloatingText(){},createHitParticles(){}};
  g.window=g;g.globalThis=g;vm.createContext(g);
  for(const file of ['js/features/action-registry.js','js/features/signature-program.js',
-  'js/features/signature-scratch.js','js/features/signature-live.js','js/features/skill-forge-impact.js','js/features/skill-forge-casting.js','js/features/skill-forge-world.js','js/features/skill-forge.js']){
+  'js/features/signature-scratch.js','js/features/signature-live.js','js/features/skill-forge-impact.js','js/features/skill-forge-casting.js','js/features/skill-forge-world.js','js/features/skill-forge-profiles.js','js/features/skill-forge-storage.js','js/features/skill-forge-executor.js','js/features/skill-forge.js']){
    vm.runInContext(read(file),g,{filename:file});
  }
  return g;

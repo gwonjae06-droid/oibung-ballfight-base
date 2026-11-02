@@ -6,7 +6,7 @@ const src=p=>fs.readFileSync(path.join(__dirname,'..',p),'utf8');
 function harness(){
  const g={console,Math,Date,Set,Map,WeakMap,CUSTOM_DEFS:[],BEHAVIORS:{}};
  g.window=g;g.globalThis=g;vm.createContext(g);
- for(const f of ['signature-program','skill-forge-impact','skill-forge-casting','skill-forge-world','skill-forge','block-forge']){
+ for(const f of ['signature-program','skill-forge-impact','skill-forge-casting','skill-forge-world','skill-forge-profiles','skill-forge-storage','skill-forge-executor','skill-forge','block-forge']){
   const p='js/features/'+f+'.js';vm.runInContext(src(p),g,{filename:p});
  }
  return g;

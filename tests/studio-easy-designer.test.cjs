@@ -7,7 +7,7 @@ function world(){
    createHitParticles(){},addFloatingText(){},getClosestAliveEnemy(){return null;}};
  h.window=h;vm.createContext(h);
  for(const path of ['js/features/action-registry.js','js/features/forge-expansion.js',
-   'js/features/advanced-combat.js','js/features/signature-program.js','js/features/skill-forge-impact.js','js/features/skill-forge-casting.js','js/features/skill-forge-world.js','js/features/skill-forge.js',
+   'js/features/advanced-combat.js','js/features/signature-program.js','js/features/skill-forge-impact.js','js/features/skill-forge-casting.js','js/features/skill-forge-world.js','js/features/skill-forge-profiles.js','js/features/skill-forge-storage.js','js/features/skill-forge-executor.js','js/features/skill-forge.js',
    'js/features/block-forge.js','js/features/studio-easy-designer.js'])vm.runInContext(read(path),h,{filename:path});
  return h;
 }

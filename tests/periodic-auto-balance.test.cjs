@@ -101,7 +101,7 @@ test('a real rapid periodic fighter emits 10 ornamental pulses per simulated sec
  Object.assign(w,{CUSTOM_DEFS:[],BEHAVIORS:{},CHARACTER_PHOTOS:{},
   canvas:{width:500,height:500},getClosestAliveEnemy(p){return w.players.find(e=>e!==p&&e.hp>0)||null;},
   document:{querySelector(){return null;}}});
- for(const part of ['skill-forge-impact','skill-forge-casting','skill-forge-world','skill-forge'])vm.runInContext(code(part),w);
+ for(const part of ['skill-forge-impact','skill-forge-casting','skill-forge-world','skill-forge-profiles','skill-forge-storage','skill-forge-executor','skill-forge'])vm.runInContext(code(part),w);
  const id=w.SkillForge.register(profile(skill(spell('wave',{damage:0,radius:30}),.2)));
  const hero=w.CUSTOM_DEFS[0].createInstance(1),target={playerNum:2,hp:400,maxHp:400,x:450,y:450,radius:24};
  hero.x=100;hero.y=100;w.players=[hero,target];

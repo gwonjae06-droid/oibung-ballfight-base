@@ -7,7 +7,7 @@ function editor(){
   const h={window:null,console,Math,CUSTOM_DEFS:[],CHARACTER_PHOTOS:{},BEHAVIORS:{},players:[]};
   h.window=h;vm.createContext(h);
   vm.runInContext(read('js/features/action-registry.js'),h);
-  for(const part of ['skill-forge-impact','skill-forge-casting','skill-forge-world','skill-forge'])vm.runInContext(read('js/features/'+part+'.js'),h);
+  for(const part of ['skill-forge-impact','skill-forge-casting','skill-forge-world','skill-forge-profiles','skill-forge-storage','skill-forge-executor','skill-forge'])vm.runInContext(read('js/features/'+part+'.js'),h);
   const exposed=block.replace('global.BlockForge={modify,action,josa,phrase,',
     'global.BlockForge={modify,action,josa,phrase,inspector,actionRow,');
   assert.notEqual(exposed,block,'test adapter exposes the same production view helpers');

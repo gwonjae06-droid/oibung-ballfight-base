@@ -6,7 +6,7 @@ function combat(){
    canvas:{width:600,height:450},Math,Set,Map,WeakMap,
    addFloatingText(){},createHitParticles(){},getClosestAliveEnemy(p){return g.players.find(e=>e!==p&&e.hp>0);}};
  g.window=g;g.globalThis=g;vm.createContext(g);
- for(const f of ['arena-balance-formula','arena-balance','advanced-combat','forge-expansion' ,'skill-forge-impact','skill-forge-casting','skill-forge-world','skill-forge'])vm.runInContext(read(f),g,{filename:f});
+ for(const f of ['arena-balance-formula','arena-balance','advanced-combat','forge-expansion' ,'skill-forge-impact','skill-forge-casting','skill-forge-world','skill-forge-profiles','skill-forge-storage','skill-forge-executor','skill-forge'])vm.runInContext(read(f),g,{filename:f});
  const p={name:'caster',id:'caster',playerNum:1,x:110,y:180,z:0,radius:25,hp:300,maxHp:300,invincible:0,
    forge:{skills:[],color:'#3d9cdd',effectColor:'#3d9cdd'},forgeEffects:{},_forgeBalanceFrame:10};
  const e={name:'target',id:'target',playerNum:2,x:155,y:180,z:0,radius:25,hp:500,maxHp:500,invincible:0,forgeEffects:{}};

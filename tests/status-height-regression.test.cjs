@@ -7,7 +7,7 @@ function sim(){
   canvas:{width:500,height:500},Math,Number,Map,Set,
   createHitParticles(){},addFloatingText(){},getClosestAliveEnemy(p){return w.players.find(e=>e!==p&&e.hp>0);}};
  w.window=w;vm.createContext(w);
- for(const module of ['advanced-combat','forge-expansion','ability-atlas' ,'skill-forge-impact','skill-forge-casting','skill-forge-world','skill-forge'])
+ for(const module of ['advanced-combat','forge-expansion','ability-atlas' ,'skill-forge-impact','skill-forge-casting','skill-forge-world','skill-forge-profiles','skill-forge-storage','skill-forge-executor','skill-forge'])
   vm.runInContext(source('js/features/'+module+'.js'),w,{filename:module+'.js'});
  const p={id:'attacker',playerNum:1,x:140,y:220,z:0,towerGroundZ:0,radius:24,hp:300,maxHp:300,
    forge:{skills:[],color:'#bb5500',effectColor:'#ff3300'},forgeQueue:[],forgeShots:[],
