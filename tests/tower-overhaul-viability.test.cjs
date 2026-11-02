@@ -4,7 +4,7 @@ const read=n=>fs.readFileSync(path.join(__dirname,'..',n),'utf8');
 const realms=['time','space','fire','storm','ice','forest'];
 function load(){
  const g={Math,Date,Set,Map,WeakMap,console};g.globalThis=g;g.window=g;vm.createContext(g);
- for(const f of ['tower-world-mechanics','tower-realms','arena-balance'])
+ for(const f of ['tower-world-mechanics','tower-realms','arena-balance-formula','arena-balance'])
   vm.runInContext(read('js/features/'+f+'.js'),g,{filename:f});
  g.SkillForge={normalize:p=>p};g.BlockForge={};
  vm.runInContext(read('js/features/studio-easy-designer.js'),g);
