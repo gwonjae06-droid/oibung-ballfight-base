@@ -8,7 +8,7 @@ function env(){
     document:{querySelector(){return null;},getElementById(){return null;}},
     getClosestAliveEnemy(p){return h.players.find(e=>e!==p&&e.hp>0)||null;}};
   h.window=h;vm.createContext(h);
-  for(const p of ['ability-atlas','forge-expansion','advanced-combat' ,'skill-forge-impact','skill-forge-casting','skill-forge','natural-forge'])
+  for(const p of ['ability-atlas','forge-expansion','advanced-combat' ,'skill-forge-impact','skill-forge-casting','skill-forge-world','skill-forge','natural-forge'])
     vm.runInContext(read('js/features/'+p+'.js'),h,{filename:p+'.js'});
   const p={playerNum:1,x:90,y:100,vx:0,vy:0,z:0,radius:26,
     hp:300,maxHp:300,invincible:0,forge:{color:'#496782'}};
