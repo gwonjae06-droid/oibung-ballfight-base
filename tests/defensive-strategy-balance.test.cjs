@@ -5,7 +5,7 @@ function arena(){
  const w={Math,Number,Map,Set,console,players:[],CUSTOM_DEFS:[],CHARACTER_PHOTOS:{},BEHAVIORS:{},
    createHitParticles(){},addFloatingText(){},getClosestAliveEnemy(){return null;}};
  w.window=w;w.globalThis=w;vm.createContext(w);
- for(const file of ['arena-balance-formula','arena-balance','arena-stalemate','skill-forge-impact','skill-forge-casting','skill-forge'])vm.runInContext(read('js/features/'+file+'.js'),w);
+ for(const file of ['arena-balance-formula','arena-balance','arena-stalemate','skill-forge-impact','skill-forge-casting','skill-forge-world','skill-forge'])vm.runInContext(read('js/features/'+file+'.js'),w);
  return w;
 }
 function profile(shield=false){return {name:shield?'보호막 빌드':'공격 빌드',hp:300,
