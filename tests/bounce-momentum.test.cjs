@@ -7,7 +7,7 @@ function world(){
  g.window=g;g.globalThis=g;vm.createContext(g);
  for(const file of ['js/features/action-registry.js','js/features/forge-archetypes.js','js/features/basic-attacks.js',
   'js/features/signature-program.js','js/features/signature-scratch.js','js/features/signature-live.js',
-  'js/features/bounce-momentum.js','js/features/arena-balance-formula.js','js/features/arena-balance.js','js/features/skill-forge.js']){
+  'js/features/bounce-momentum.js','js/features/arena-balance-formula.js','js/features/arena-balance.js','js/features/skill-forge-impact.js','js/features/skill-forge-casting.js','js/features/skill-forge.js']){
   vm.runInContext(read(file),g,{filename:file});
  }
  return g;
