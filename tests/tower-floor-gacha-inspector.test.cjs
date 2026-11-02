@@ -4,7 +4,7 @@ const fs=require('node:fs'),vm=require('node:vm'),path=require('node:path');
 const read=p=>fs.readFileSync(path.join(__dirname,'..',p),'utf8');
 function world(){
   const h={window:null,console,Math,Date};h.window=h;vm.createContext(h);
-  for(const script of ['js/features/action-registry.js','js/features/skill-forge-impact.js','js/features/skill-forge-casting.js','js/features/skill-forge.js',
+  for(const script of ['js/features/action-registry.js','js/features/skill-forge-impact.js','js/features/skill-forge-casting.js','js/features/skill-forge-world.js','js/features/skill-forge.js',
     'js/features/tower-scenes.js','js/features/tower-challenge.js'])
     vm.runInContext(read(script),h,{filename:script});
   return h;
