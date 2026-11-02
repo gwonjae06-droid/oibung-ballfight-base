@@ -82,7 +82,7 @@ test('Scratch editor replaces old two-mode UI and supports nested drag/drop, key
 
 test('damage and defensive budgets count the strongest if-branch and repeated actions',()=>{
  const g=harness();
- vm.runInContext(read('js/features/arena-balance.js'),g);
+ vm.runInContext(read('js/features/arena-balance-formula.js','js/features/arena-balance.js'),g);
  const program=[{kind:'if',condition:'near',
   then:[{kind:'repeat',times:3,body:[action('shot')]}],
   else:[action('wave')]}];
