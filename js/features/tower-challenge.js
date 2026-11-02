@@ -165,7 +165,7 @@ function install(){
   if(!screen)return null;
   const mount=doc.getElementById('tower-mode-slot')||screen;
   const panel=doc.createElement('section');panel.id='tower-challenge';panel.className='tower-challenge';
-  // A compact single flow: floor → fighter/opponent → action. Details stay optional.
+  // Three-step tower preflight: pick floor, filter/select hero, explicitly start.
   panel.innerHTML='<div class="tower-head">'
    +'<div class="tower-head-current"><span class="tower-kicker">현재 층</span>'
    +'<h2><span id="tower-floor">1 / 10F</span></h2>'
@@ -174,14 +174,20 @@ function install(){
    +'<strong id="tower-best">최고 0F</strong></div>'
    +'<p class="tower-rule" id="tower-rule"></p>'
    +'<p class="tower-weakpoint-hint" id="tower-weakpoint-hint" hidden></p>'
+   +'<div class="tower-prep-intro"><div><span class="tower-prep-step">전투 준비 · STEP 02 / 03</span><h3>출전 캐릭터를 선택하세요</h3><p>기본 캐릭터와 직접 만든 캐릭터를 나누어 볼 수 있습니다. 선택한 캐릭터로만 전투가 시작됩니다.</p></div><span class="tower-prep-mode">자동 전투</span></div>'
    +'<div class="tower-fighter-pick">'
-   +'<label class="tower-hero-choice" for="tower-hero"><span>출전 캐릭터</span><select id="tower-hero"></select></label>'
+   +'<section class="tower-fighter-roster" aria-label="출전 캐릭터 선택">'
+   +'<div class="tower-fighter-tabs" role="group" aria-label="캐릭터 종류"><button type="button" data-fighter-group="basic" aria-pressed="true">기본 캐릭터</button><button type="button" data-fighter-group="custom" aria-pressed="false">커스텀 캐릭터</button></div>'
+   +'<div id="tower-fighter-cards" class="tower-fighter-cards" aria-label="선택 가능한 출전 캐릭터"></div>'
+   +'</section><div class="tower-prep-side">'
+   +'<label class="tower-hero-choice" for="tower-hero"><span>선택된 캐릭터</span><select id="tower-hero" aria-label="출전 캐릭터 목록"></select></label>'
+   +'<div class="tower-hero-summary" id="tower-hero-summary" role="status" aria-live="polite"></div>'
    +'<details class="tower-opponent" id="tower-enemy-details">'
    +'<summary class="tower-enemy"><span class="tower-opponent-name"><small>상대</small><strong id="tower-enemy">훈련의 문</strong></span>'
    +'<span class="tower-opponent-skills"><span id="tower-skill-count">스킬 2개</span><span class="tower-chevron" aria-hidden="true">⌄</span></span></summary>'
    +'<div class="tower-opponent-detail"><p id="tower-enemy-info"></p>'
    +'<div class="tower-enemy-skills" id="tower-enemy-skills" aria-label="상대 스킬 상세"></div></div></details>'
-   +'</div>'
+   +'</div></div>'
    +'<div class="tower-buttons"><button id="tower-start" type="button">1층 시작</button>'
    +'<button id="tower-pause" type="button" hidden>⏸ 일시정지</button>'
    +'<button id="tower-abandon" type="button" hidden>도전 포기</button></div>'
@@ -259,6 +265,9 @@ function install(){
   });
   const WEAKPOINT={time:'시계 패턴',space:'중력 패턴',fire:'화염 패턴',storm:'낙뢰 패턴',ice:'빙결 패턴',forest:'덩굴 패턴'};
   const pool=()=>[...CHARACTER_DEFS,...CUSTOM_DEFS];
+  let fighterGroup='basic';
+  const fighterCards=el('tower-fighter-cards'),fighterSummary=el('tower-hero-summary');
+  const fighterTabs=panel.querySelector?.('.tower-fighter-tabs');
   function selectedDef(){return pool().find(d=>d.id===hero.value)||pool()[0]||null;}
   function current(){return {ancient,active,stage,level,cleared,boss:floor(level).boss,selected:key(selected),mode,realm:realmId,blessings:[...blessings],offers:offers.map(x=>({...x})),routePending,routeSelected};}
   function selectRealm(id){
@@ -279,7 +288,13 @@ function install(){
   }
   el('tower-floor-options')?.addEventListener('click',e=>{const b=e.target.closest?.('[data-floor]');if(b)moveToFloor(b.dataset.floor);});
   function allRealmsCleared(){const records=read(global.localStorage).records;return !!realms&&realms.REALMS.every(r=>Object.entries(records).some(([id,v])=>id.startsWith(r.id+'_')&&Number(v.best)>=FINISH));}
-  function beginAncient(){if(active||!allRealmsCleared()||!selectRealm('space'))return false;ancient=true;level=10;show();return begin();}
+  function beginAncient(){
+    // The Ancient portal is a PREPARATION entry, not a fight trigger.
+    if(active||!allRealmsCleared()||!selectRealm('space'))return false;
+    ancient=true;level=10;stage='ready';selected=null;view='interior';
+    message.textContent='고대의 존재 도전 준비 · 캐릭터를 선택한 뒤 시작하세요.';
+    show();return true;
+  }
   function openSelection(){
     if(active)return false;
     view='selection';show();return true;
@@ -326,13 +341,72 @@ function install(){
     }
     if(pool().some(d=>d.id===previous))hero.value=previous;
     else if(selected&&pool().includes(selected))hero.value=selected.id;
+    else if(pool().length)hero.value=pool()[0].id;
   }
+  function renderFighterCards(){
+    if(!fighterCards||!fighterSummary)return;
+    const fighters=fighterGroup==='custom'?CUSTOM_DEFS:CHARACTER_DEFS;
+    const who=selectedDef();
+    fighterCards.replaceChildren();
+    if(!fighters.length){
+      const empty=doc.createElement('p');empty.className='tower-fighter-empty';
+      empty.textContent='아직 만든 캐릭터가 없습니다. 캐릭터 제작 메뉴에서 만든 뒤 돌아오세요.';
+      fighterCards.append(empty);
+    }
+    for(const d of fighters){
+      const button=doc.createElement('button');button.type='button';
+      button.className='tower-fighter-card';
+      button.dataset.fighterId=d.id;
+      button.setAttribute('aria-pressed',String(who===d));
+      button.setAttribute('aria-label',d.name+' 출전 선택');
+      const emblem=doc.createElement('span');emblem.className='tower-fighter-emblem';
+      emblem.textContent=fighterGroup==='basic'?
+        ({bae:'🩸',oh:'◈',lee:'⚡',park:'✦',choi:'🔥'}[d.id]||'✦'):'✧';
+      const body=doc.createElement('span');body.className='tower-fighter-card-body';
+      const label=doc.createElement('strong');label.textContent=d.name;
+      const meta=doc.createElement('small');
+      meta.textContent=fighterGroup==='basic'?'기본 파이터 · 기세 100':'직접 제작 · 보유 스킬';
+      body.append(label,meta);
+      const tick=doc.createElement('span');tick.className='tower-fighter-check';
+      tick.textContent=who===d?'✓ 선택됨':'선택';
+      button.append(emblem,body,tick);fighterCards.append(button);
+    }
+    for(const button of fighterTabs?.querySelectorAll?.('[data-fighter-group]')||[])
+      button.setAttribute('aria-pressed',String(button.dataset.fighterGroup===fighterGroup));
+    fighterSummary.replaceChildren();
+    if(who){
+      const title=doc.createElement('strong');title.textContent='출전 확정 · '+who.name;
+      const detail=doc.createElement('span');
+      const isCustom=CUSTOM_DEFS.includes(who);
+      detail.textContent=(isCustom?'커스텀 캐릭터':'기본 캐릭터')+
+        ' · '+(isCustom?'설계한 기세 기술을 사용합니다.':'기세 100에서 고유 기술이 발동합니다.');
+      fighterSummary.append(title,detail);
+    }
+  }
+  function chooseFighter(id){
+    if(active||stage==='fighting'||(roundStarted&&!isGameOver))return false;
+    const d=pool().find(item=>item.id===id);if(!d)return false;
+    hero.value=d.id;level=ancient?10:1;cleared=0;
+    message.textContent='';show();return true;
+  }
+  fighterTabs?.addEventListener?.('click',event=>{
+    const group=event.target.closest?.('[data-fighter-group]')?.dataset.fighterGroup;
+    if(group!=='basic'&&group!=='custom')return;
+    if(active)return;
+    fighterGroup=group;show();
+  });
+  fighterCards?.addEventListener?.('click',event=>{
+    const id=event.target.closest?.('[data-fighter-id]')?.dataset.fighterId;
+    if(id)chooseFighter(id);
+  });
   function show(){
     refreshHero();
+    renderFighterCards();
     screen.dataset.manualFocus='false'; // Automatic battles keep their regular HUD.
     screen.dataset.towerPhase=stage;
     screen.dataset.towerView=active?'interior':view;
     screen.dataset.towerRealm=realmId;
+    screen.dataset.towerAncient=ancient?'true':'false';
     panel.hidden=screen.dataset.towerView==='selection';
     const arenaSlot=el('tower-arena-slot');if(arenaSlot)arenaSlot.hidden=panel.hidden||stage==='ready';
 
@@ -435,6 +509,7 @@ function install(){
     pause.textContent=isPlaying?'⏸ 일시정지':'▶ 전투 계속';
     abandon.hidden=!active;
     hero.disabled=active;
+    if(fighterCards)fighterCards.setAttribute?.('aria-disabled',String(active));
     // Automatic combat has no movement or turn-selection controls.
     global.ArenaTowerTactics?.update?.();
   }
@@ -616,7 +691,7 @@ function install(){
     if(stage==='fighting'&&roundStarted&&!isGameOver){togglePlay();show();}
   });
   abandon.addEventListener('click',forfeit);
-  hero.addEventListener('change',()=>{level=1;cleared=0;show();});
+  hero.addEventListener('change',()=>{if(active)return;level=ancient?10:1;cleared=0;show();});
    show();
   function paintBackground(ctx,canvas){
     if(!['ready','fighting','between','lost','won'].includes(stage)||
@@ -638,7 +713,7 @@ function install(){
     });
   }}
   function drawEncounter(ctx){if(!active||stage!=='fighting')global.ArenaTowerSpectacle?.page(null);if(active&&stage==='fighting'){global.ArenaTowerAtmosphere?.particles?.(ctx,canvas.width,canvas.height,realmId,encounter?.tick||0);environment?.draw?.(ctx);encounter?.draw(ctx,realm()?.color);}}
-  const api={beginAncient,allRealmsCleared,selectRealm,openSelection,chooseBlessing,chooseRoute,tickEncounter,drawEncounter,get encounter(){return encounter;},get environment(){return environment;},get hero(){return typeof players!=='undefined'?players[0]||null:null;},floor,makeEnemy,read,updateRecord,records,begin,forfeit,paintBackground,
+  const api={beginAncient,allRealmsCleared,selectRealm,openSelection,chooseBlessing,chooseRoute,chooseFighter,tickEncounter,drawEncounter,get encounter(){return encounter;},get environment(){return environment;},get hero(){return typeof players!=='undefined'?players[0]||null:null;},floor,makeEnemy,read,updateRecord,records,begin,forfeit,paintBackground,
     onBattleEnd,isTransientDef,pauseAway,refresh:show,setMode,get mode(){return mode;},get active(){return active;},
     get stage(){return stage;},get view(){return active?'interior':view;},get state(){return current();}};
   global.ArenaTower=api;return api;
