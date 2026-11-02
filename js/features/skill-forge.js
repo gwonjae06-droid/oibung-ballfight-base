@@ -58,155 +58,13 @@ const ACTION_PARAMETERS=global.ActionRegistry?.ACTION_PARAMETERS||Object.freeze(
 // Motion is not an attack. These actions may reposition a fighter but
 // never produce damage, statuses or knockback, even from old saved JSON.
 const MOVEMENT_ONLY=global.ActionRegistry?.MOVEMENT_ONLY||new Set(['dash','blink','leap','hover','glide','swap','retreat','portal']);
-const supportedParameter=(type,key)=>key==='delay'||(' '+(ACTION_PARAMETERS[type]||'')+' ').includes(' '+key+' ');
-const number=(x,a,b,d=a)=>Number.isFinite(Number(x))?Math.max(a,Math.min(b,Number(x))):d;
-const clean=(v,n)=>String(v==null?'':v).replace(/[<>]/g,'').slice(0,n).trim();
-const color=(c)=>/^#[0-9a-f]{6}$/i.test(c)?c:'#a78bfa';
-const stage=()=>({type:'shot',pattern:'fan',target:'nearest',damage:18,radius:120,count:5,speed:5,duration:1.5,status:'none',knockback:2,delay:0});
-const skill=()=>({name:'새 스킬',trigger:'auto',cooldown:3,threshold:40,actions:[stage()]});
-function normalize(value,{towerEnemy=false}={}){
-  if(!value||typeof value!=='object'||Array.isArray(value))throw Error('올바른 설정을 입력하세요.');
-  if(!Array.isArray(value.skills)||value.skills.length<1)throw Error('스킬을 한 개 이상 추가하세요.');
-  // Only opted-in new profiles gain class stats. Legacy saved fighters and
-  // transient tower opponents keep their original authored HP/speed intact.
-  const archetype=!towerEnemy&&global.ForgeArchetypes?.get?.(value.archetype)?value.archetype:'legacy';
-  const base=global.ForgeArchetypes?.get?.(archetype);
-  const signature=!towerEnemy&&Number(value.signatureVersion)===1;
-  return {
-    signatureVersion:signature?1:0,
-    signatureTiming:signature&&['instant','contact','danger'].includes(value.signatureTiming)?
-      value.signatureTiming:'instant',
-    legacySkills:signature&&Array.isArray(value.legacySkills)?value.legacySkills.slice(0,4).map(s=>({
-      ...s,actions:(s.actions||[]).slice(0,3).map(a=>({...a}))
-    })):undefined,
-    legacyAllAbilities:signature&&value.legacyAllAbilities===true,
-    name:clean(value.name,14)||'커스텀 파이터',blurb:clean(value.blurb,90),
-    artKey:clean(value.artKey||'',52).replace(/[^a-zA-Z0-9_-]/g,''),
-    archetype,
-    // Legacy basicAttack data is intentionally ignored. All damage comes from
-    // authored skills and their actual hit/collision effects, never passive attacks.
-    color:color(value.color),effectColor:color(value.effectColor||value.color),
-    hp:base?base.hp:Math.round(number(value.hp,140,towerEnemy?8000:500,250)),
-    speed:base?base.speed:number(value.speed,.6,5,1.8),
-    allAbilities:signature?false:value.allAbilities===true,
-    // Signature fighters have one skill/program with up to twelve action blocks.
-    // Legacy profiles and transient tower enemies retain their original slots.
-    skills:value.skills.slice(0,towerEnemy?6:signature?1:4).map((s,i)=>{
-      if(!Array.isArray(s.actions)||!s.actions.length)throw Error((i+1)+'번 스킬에 동작이 없습니다.');
-      return {name:clean(s.name,18)||'스킬 '+(i+1),
-        // Block program is an inert, validated AST; saved and exported with the fighter.
-        program:signature&&Array.isArray(s.program)?global.SignatureScratch?.normalize?.(s.program):undefined,
-        trigger:signature?'auto':TRIGGER[s.trigger]?s.trigger:'auto',
-        cooldown:number(s.cooldown,.2,30,3),threshold:number(s.threshold,5,95,40),
-        actions:s.actions.slice(0,signature?global.SignatureProgram?.MAX_ACTIONS||12:3).map(a=>({
-          type:TYPE[a.type]?a.type:'wave',
-          pattern:global.AbilityAtlas?.PATTERNS[a.pattern]?a.pattern:'direct',
-          target:global.AbilityAtlas?.TARGETS[a.target]?a.target:'nearest',
-          damage:Math.round(number(a.damage,0,120,18)),
-          radius:number(a.radius,30,300,120),count:Math.round(number(a.count,1,8,1)),
-          speed:number(a.speed,2,14,5),duration:number(a.duration,.2,8,1.5),
-          status:STATUS[a.status]?a.status:'none',
-          knockback:number(a.knockback,0,9,2),delay:number(a.delay,0,2,0),
-          ricochet:a.type==='shot'?Math.round(number(a.ricochet,0,3,0)):0,
-          link:['and','after','with'].includes(a.link)?a.link:'and',
-          condition:signature?global.SignatureProgram?.validCondition?.(a.condition)||'always':'always'
-        })).map(a=>MOVEMENT_ONLY.has(a.type)?{...a,damage:0,status:'none',knockback:0}:a)};
-    })
-  };
-}
-const THEMES={
-  sky:{name:'공중',color:'#0369a1',types:['flight','homing','retreat'],status:'shock'},
-  earth:{name:'지하',color:'#92400e',types:['burrow','mine','fortify'],status:'root'},
-  cosmos:{name:'우주',color:'#6d28d9',types:['blackhole','starfall','shield'],status:'vulnerable'},
-  dung:{name:'똥',color:'#854d0e',types:['dung','zone','retreat'],status:'poison'},
-  life:{name:'생명',color:'#047857',types:['lifebloom','drain','regen'],status:'weak'},
-  phoenix:{name:'부활',color:'#be123c',types:['resurrect','nova','homing'],status:'fire'},
-  time:{name:'시간',color:'#4338ca',types:['timestop','rewind','timeburst'],status:'ice'}
-};
-const allTypes=()=>Object.keys(TYPE);
-const randInt=(rng,min,max)=>min+Math.floor(Math.max(0,Math.min(.999999999,rng()))*(max-min+1));
-const pickRandom=(rng,values)=>values[randInt(rng,0,values.length-1)];
-const randomColor=rng=>'#'+[0,1,2].map(()=>randInt(rng,48,218).toString(16).padStart(2,'0')).join('');
-const offense=global.ActionRegistry?.OFFENSE||new Set(['wave','shot','beam','bolt','pull','zone','homing','pierce','boomerang','chain','nova','meteor','mine','drain','blackhole','starfall','dung','uppercut','slash','spinslash','thrust','aircombo','arcshot','splitshot','dive','erupt','burrowdash','trap','turret','summon']);
-const settings=(type,i=0)=>({
-  type,pattern:'direct',target:'nearest',
-  damage:18+i%5*3,radius:115+(i%4)*22,
-  count:type==='starfall'?6:type==='splitshot'?4:type==='orbit'?3:1,
-  speed:5+(i%3),duration:type==='starfall'?2.5:1.8+(i%3)*.3,
-  status:'none',knockback:2,delay:0
-});
-// Full-catalog mode is not limited to four UI skill slots. Every supported
-// move has an actual independent cast/cooldown, not a random subset.
-function allSkillset(){
-  return Object.entries(TYPE).map(([type,name],i)=>({
-    name,trigger:'auto',cooldown:4+(i%8)*.85,threshold:40,
-    actions:[settings(type,i)]
-  }));
-}
-function allProfile(name='만능 파이터',description='모든 능력을 사용한다'){
-  return normalize({name,blurb:description.slice(0,90),color:'#6f77a1',
-    hp:360,speed:2.1,allAbilities:true,
-    skills:[{name:'전체 스킬 사용',trigger:'auto',cooldown:4,actions:[settings('wave')]}]});
-}
-// A multi-theme roll draws every action from the UNION of selected families.
-// At least one action from each family is guaranteed, even for seven choices.
-function randomProfile(theme='any',rng=Math.random,exactCount=null){
-  const selectedKeys=(Array.isArray(theme)?theme:theme==='any'?[]:[theme])
-    .filter((key,index,items)=>!!THEMES[key]&&items.indexOf(key)===index);
-  const selectedThemes=selectedKeys.map(key=>THEMES[key]);
-  const selected=selectedThemes.length?selectedThemes[0]:pickRandom(rng,Object.values(THEMES));
-  const pool=selectedThemes.length?
-    [...new Set(selectedThemes.flatMap(t=>t.types).filter(type=>TYPE[type]))]:allTypes();
-  const amount=exactCount===4?4:(Array.isArray(theme)?Math.max(2,Math.min(4,selectedKeys.length)):
-    theme==='any'?randInt(rng,1,4):randInt(rng,3,4));
-  const required=selectedKeys.slice();
-  // Shuffle required families so their actions get mixed among skill slots.
-  for(let i=required.length-1;i>0;i--){
-    const j=randInt(rng,0,i);[required[i],required[j]]=[required[j],required[i]];
-  }
-  const used=new Set(),skills=[];
-  const patterns=Object.keys(global.AbilityAtlas?.PATTERNS||{direct:1,fan:1,radial:1,line:1,cross:1,spiral:1,scatter:1});
-  const targets=Object.keys(global.AbilityAtlas?.TARGETS||{nearest:1,farthest:1,lowest:1,highest:1,random:1,cluster:1});
-  const statuses=Object.keys(STATUS),triggers=Object.keys(TRIGGER);
-  for(let i=0;i<amount;i++){
-    const actions=[];
-    const needed=Math.ceil(required.length/Math.max(1,amount-i));
-    const steps=selectedThemes.length?Math.min(3,Math.max(needed,randInt(rng,1,3))):randInt(rng,1,3);
-    for(let j=0;j<steps;j++){
-      const forced=required.shift();
-      const candidates=forced?THEMES[forced].types.filter(type=>TYPE[type]):pool;
-      let type=pickRandom(rng,candidates.length?candidates:pool);
-      for(let tries=0;tries<12&&used.has(type);tries++)type=pickRandom(rng,candidates.length?candidates:pool);
-      used.add(type);
-      actions.push({type,pattern:pickRandom(rng,patterns),target:pickRandom(rng,targets),
-        damage:randInt(rng,9,95),radius:randInt(rng,60,290),count:randInt(rng,1,8),
-        speed:randInt(rng,2,14),duration:randInt(rng,3,70)/10,
-        status:pickRandom(rng,statuses),knockback:randInt(rng,0,9),
-        delay:j===0?0:randInt(rng,0,20)/10});
-    }
-    if(i===amount-1&&!skills.some(v=>v.actions.some(x=>offense.has(x.type)))&&!actions.some(x=>offense.has(x.type))){
-      // Do not overwrite a mandatory theme's single representative action.
-      const attack=pickRandom(rng,pool.filter(type=>offense.has(type)).length?
-        pool.filter(type=>offense.has(type)):[...offense]);
-      const add={...actions[0],type:attack,delay:.4};
-      if(actions.length<3)actions.push(add);
-      else{
-        const extra=skills.find(skill=>skill.actions.length<3);
-        if(extra)extra.actions.push(add);
-        else actions[actions.length-1].type=attack;
-      }
-    }
-    skills.push({name:TYPE[actions[0].type]+' '+pickRandom(rng,['연계','각성','변주','비기','파동']),
-      trigger:pickRandom(rng,triggers),cooldown:randInt(rng,5,200)/10,
-      threshold:randInt(rng,12,90),actions});
-  }
-  const subject=selectedThemes.length?selectedThemes.map(t=>t.name).join('·'):selected.name;
-  const name=pickRandom(rng,['방랑하는','고요한','폭주하는','날렵한','사나운','빛나는','수상한','정교한'])+
-    ' '+subject+' '+pickRandom(rng,['검사','마도사','소환사','모험가','수호자','괴짜','정령']);
-  return normalize({name,blurb:selectedThemes.length?'선택한 '+subject+' 계열의 무작위 혼합':'전체 동작 풀 무작위 조합',
-    color:randomColor(rng),effectColor:randomColor(rng),hp:randInt(rng,140,500),
-    speed:randInt(rng,6,50)/10,skills});
-}
+// The profile schema owns normalization, random generation and default recipes.
+if(!global.SkillForgeProfilesFactory||!global.SkillForgeStoreFactory)
+  throw Error('Forge dependencies missing: load skill-forge-profiles.js and skill-forge-storage.js before skill-forge.js');
+const {supportedParameter,number,clean,color,stage,skill,normalize,THEMES,
+ allSkillset,allProfile,randomProfile}=
+ global.SkillForgeProfilesFactory({TYPE,TRIGGER,STATUS,ACTION_PARAMETERS,MOVEMENT_ONLY});
+const {saved,persist}=global.SkillForgeStoreFactory({STORE,getDefs:()=>CUSTOM_DEFS});
 
 let sequence=0;
 const enemies=p=>players.filter(q=>q!==p&&q.hp>0)
@@ -222,92 +80,9 @@ if(!global.SkillForgeWorldFactory)
 const world=global.SkillForgeWorldFactory({hit,hitGround,enemies});
 const {cast,tickQueue,tickSkills,cooldownFrames}=
   global.SkillForgeCastingFactory({MOVEMENT_ONLY,execute});
-function execute(p,a,target) {
-  a=global.ArenaCharge?.consume?.(p,a)||a;
-  // Keep target-selector semantics consistent across all three engines.
-  const selected=global.AbilityAtlas?.choose?.(p,enemies(p),a.target)||target;
-  target=selected;
-  // Pure movement is a positioning state, never a contact attack. Keep a
-  // small grace for instantaneous teleports, and full duration for dash.
-  if(MOVEMENT_ONLY.has(a.type)){
-    const grace=a.type==='dash'?Math.max(2,Math.round((a.duration||.15)*60)):
-      a.type==='blink'||a.type==='swap'||a.type==='portal'?4:10;
-    p.movementOnlyFrames=Math.max(p.movementOnlyFrames||0,Math.min(240,grace));
-  }
-  global.SkillVisuals?.cast(p,a,target); // Actual action execution, not cooldown booking.
-  // In-world actions must dispatch through the same combat implementation
-  // used by physics and visuals; they are not merely text menu entries.
-  // Action Registry code-authored skills receive the same hit/enemy API as
-  // built-in engine adapters. Preview and sound metadata are automatic.
-  if(global.ActionRegistry?.run(p,a,target,{hit,enemies}))return;
-  if(global.AdvancedCombat?.execute(p,a,target,{hit,enemies}))return;
-  if(global.ForgeExpansion?.execute(p,a,target,{hit,enemies}))return;
-  if(global.AbilityAtlas && AbilityAtlas.execute(p,a,target,{hit,enemies}))return;
-  const c=(p.forge.effectColor||p.forge.color),near=target&&target.hp>0?target:getClosestAliveEnemy(p);
-  const within=(x,y,r)=>enemies(p).filter(e=>Math.hypot(e.x-x,e.y-y)<r+e.radius);
-  const visual=(kind,opts={})=>{if(global.BattleFX)BattleFX.cast(p,kind,Object.assign({color:c},opts));};
-  if(a.type==='wave'){visual('wave',{radius:a.radius});within(p.x,p.y,a.radius).forEach(e=>hit(p,e,a));}
-  else if(a.type==='shot'){
-    if(!near)return;
-    visual('shot');const angle=Math.atan2(near.y-p.y,near.x-p.x);
-    for(let i=0;i<a.count;i++){const t=angle+(i-(a.count-1)/2)*.19;
-      const originZ=global.AdvancedCombat?.height?.(p)||0;
-      const aimZ=global.AdvancedCombat?.height?.(near)||0;
-      const frames=Math.max(1,Math.hypot(near.x-p.x,near.y-p.y)/Math.max(1,a.speed));
-      p.forgeShots.push({x:p.x,y:p.y,z:originZ,heightVelocity:(aimZ-originZ)/frames,
-        vx:Math.cos(t)*a.speed,vy:Math.sin(t)*a.speed,targetNum:near.playerNum,
-        life:a.ricochet>0?Math.max(150,Math.ceil(a.radius/a.speed*3)):Math.ceil(a.radius/a.speed*3),a});
-    }
-    if(p.forgeShots.length>100)p.forgeShots.splice(0,p.forgeShots.length-100);
-  } else if(a.type==='beam'){
-    if(!near)return;
-    const d=Math.hypot(near.x-p.x,near.y-p.y)||1,x=p.x+(near.x-p.x)/d*a.radius*2,y=p.y+(near.y-p.y)/d*a.radius*2;
-    if(global.BattleFX)BattleFX.beam(p.x,p.y,x,y,c);
-    visual('energy');
-    enemies(p).forEach(e=>{const vx=x-p.x,vy=y-p.y,t=Math.max(0,Math.min(1,((e.x-p.x)*vx+(e.y-p.y)*vy)/(vx*vx+vy*vy||1)));
-      const startZ=(global.AdvancedCombat?.height?.(p)||0)+12,endZ=(global.AdvancedCombat?.height?.(e)||0)+12;
-      const occluded=global.ArenaTowerTerrain?.obstructsShot?.(p.x,p.y,startZ,e.x,e.y,endZ,7);
-      if(!occluded&&Math.hypot(e.x-p.x-t*vx,e.y-p.y-t*vy)<e.radius+12)hit(p,e,a);
-    });
-  } else if(a.type==='bolt'){
-    if(!near)return;
-    visual('meteor',{x:near.x,y:near.y,radius:a.radius});
-    for(let i=0;i<a.count;i++){const theta=i*2*Math.PI/a.count;p.forgeZones.push({type:'bolt',x:near.x+Math.cos(theta)*a.radius*.4,y:near.y+Math.sin(theta)*a.radius*.4,timer:30+i*5,a,ticks:0});}
-  } else if(a.type==='dash'){
-    if(!near)return;
-    const dx=near.x-p.x,dy=near.y-p.y,d=Math.hypot(dx,dy)||1;
-    p.vx=dx/d*a.speed;p.vy=dy/d*a.speed;p.forgeDash=Math.round(a.duration*60);p.forgeDashAction=a;visual('dash');
-  } else if(a.type==='blink'){
-    if(!near)return;
-    visual('blink');const dx=near.x-p.x,dy=near.y-p.y,d=Math.hypot(dx,dy)||1;
-    p.x=Math.max(p.radius,Math.min(canvas.width-p.radius,near.x-dx/d*68));
-    p.y=Math.max(p.radius,Math.min(canvas.height-p.radius,near.y-dy/d*68));
-    visual('blink'); // Reposition only: a separate attack block owns damage.
-  } else if(a.type==='heal'){
-    const oldHp=p.hp;
-    if(global.ForgeExpansion)global.ForgeExpansion.heal(p,a.damage);
-    else p.hp=Math.min(p.maxHp,p.hp+a.damage*(global.ArenaBalance?.defenseFactorOf?.(p)??1));
-    visual('heal');addFloatingText('+'+Math.round(Math.max(0,p.hp-oldHp)),p.x,p.y-26,'#8bf2af',17);
-  } else if(a.type==='shield'){
-    const durationFrames=Math.max(1,Math.round(a.duration*60*(global.ArenaBalance?.defenseFactorOf?.(p)??1)));
-   p.invincible=global.ArenaBalance?.shieldWindow?.(p,durationFrames)??Math.max(p.invincible,durationFrames);
-   p._forgeImpactGrace=0; // Shields are defense, never impact grace.
-   visual('shield');
-  } else if(a.type==='pull'){
-    visual('wave',{radius:a.radius});
-    within(p.x,p.y,a.radius).forEach(e=>{
-      const dx=p.x-e.x,dy=p.y-e.y,d=Math.hypot(dx,dy)||1;
-      e.vx+=dx/d*(a.knockback+2);e.vy+=dy/d*(a.knockback+2);
-      hit(p,e,Object.assign({},a,{knockback:0}));
-    });
-  } else if(a.type==='orbit'){
-    p.forgeOrbs.push({life:Math.round(a.duration*60),phase:0,ticks:0,a});
-    if(p.forgeOrbs.length>3)p.forgeOrbs.shift();visual('shield');
-  } else if(a.type==='zone'){
-    if(!near)return;visual('meteor',{x:near.x,y:near.y,radius:a.radius});
-    p.forgeZones.push({type:'zone',x:near.x,y:near.y,timer:Math.round(a.duration*60),a,ticks:0});
-  }
-}
+if(!global.SkillForgeExecutorFactory)
+  throw Error('Forge dependency missing: load skill-forge-executor.js before skill-forge.js');
+const {execute}=global.SkillForgeExecutorFactory({MOVEMENT_ONLY,hit,enemies});
 function update(p,target){
   p._forgeActionClock=(p._forgeActionClock||0)+1;
   global.SignatureLive?.tickMove?.(p);
@@ -579,12 +354,6 @@ function list(){
 }
 function setDraft(value){
   draft=normalize(value);refreshForm();global.BlockForge?.refresh?.();global.NaturalForge?.refreshGenerated?.(draft);return draft;
-}
-function saved(){
-  try{const v=JSON.parse(localStorage.getItem(STORE)||'[]');return Array.isArray(v)?v:[];}catch(_){return [];}
-}
-function persist(){
-  try{localStorage.setItem(STORE,JSON.stringify(CUSTOM_DEFS.filter(d=>d.forgeData).map(d=>d.forgeData)));}catch(_){}
 }
 // Editor state stays canonical on this runtime; view code receives explicit accessors.
 let draft={name:'',blurb:'',color:'#a78bfa',effectColor:'#a78bfa',
