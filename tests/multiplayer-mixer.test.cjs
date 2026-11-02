@@ -80,7 +80,7 @@ test('random and themed creators retain the editable fighter fields and normal s
 test('every chosen random family contributes an action to the mixed character',()=>{
   const global={window:null,players:[],CUSTOM_DEFS:[],CHARACTER_PHOTOS:{},BEHAVIORS:{}};
   global.window=global;vm.createContext(global);
-  for(const file of ['forge-expansion','advanced-combat','skill-forge'])
+  for(const file of ['forge-expansion','advanced-combat','skill-forge-impact','skill-forge-casting','skill-forge'])
     vm.runInContext(read('js/features/'+file+'.js'),global);
   const keys=Object.keys(global.SkillForge.THEMES);
   for(const chosen of [keys.slice(0,2),keys.slice(0,4),keys]){
