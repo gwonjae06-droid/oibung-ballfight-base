@@ -6,7 +6,7 @@ const ctx={window:null,document:{querySelector:()=>null,getElementById:()=>null}
   CHARACTER_PHOTOS:{},players:[],canvas:{width:500,height:500}};
 ctx.window=ctx;
 const c=vm.createContext(ctx);
-for(const file of ['advanced-combat.js','ability-atlas.js','skill-forge.js','natural-forge.js']){
+for(const file of ['advanced-combat.js','ability-atlas.js','skill-forge-impact.js','skill-forge-casting.js','skill-forge.js','natural-forge.js']){
   vm.runInContext(fs.readFileSync(path.join(base,file),'utf8'),c,{filename:file});
 }
 const types=(desc)=>{
