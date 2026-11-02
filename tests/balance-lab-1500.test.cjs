@@ -23,7 +23,7 @@ function boot(){
  const files=['action-registry','forge-archetypes','signature-program','signature-scratch',
   'signature-live','arena-balance-formula','arena-balance','forge-expansion','bounce-momentum',
   'arena-pinball-motion','arena-body-physics','tower-flat-arena','tower-realms',
-  'tower-world-mechanics','tower-encounters','tower-environment','skill-forge'];
+  'tower-world-mechanics','tower-encounters','tower-environment','skill-forge-impact','skill-forge-casting','skill-forge'];
  for(const f of files)vm.runInContext(read('js/features/'+f+'.js'),g,{filename:f+'.js'});
  g.BlockForge={};vm.runInContext(read('js/features/studio-easy-designer.js'),g);
  return g;
