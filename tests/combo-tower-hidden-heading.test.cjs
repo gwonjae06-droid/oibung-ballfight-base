@@ -52,16 +52,15 @@ function run(route){
  return {g,...dom};
 }
 for(const route of ['tower','pve']){
- test('combo HUD renders as live battle-screen sibling, NOT the intentionally hidden arena heading: '+route,()=>{
+ test('combo HUD floats inside the arena canvas wrapper, NOT the hidden arena heading: '+route,()=>{
    const {g,screen,heading,commentary,canvas,byId}=run(route);
    assert.equal(heading.cssHiddenForTower,true,'tower CSS hides the duplicate heading');
    g.ArenaCombatV2.reset();
    const el=byId.get('arena-combo-status');
    assert.ok(el,'HUD must exist as soon as a match resets');
-   assert.equal(el.parentElement,screen,'HUD must be a sibling of the hidden heading');
+   assert.equal(el.parentElement,canvas,'HUD must overlay the arena wrapper');
    assert.equal(heading.children.includes(el),false,'never put combo inside hidden heading');
-   assert.ok(screen.children.indexOf(el)<screen.children.indexOf(commentary),'counter above live commentary');
-   assert.ok(screen.children.indexOf(el)<screen.children.indexOf(canvas),'counter above arena canvas');
+   assert.ok(canvas.children.includes(el),'counter must be in the playfield');
    assert.equal(el.hidden,false,'show COMBO 0 even before any physical collision');
    assert.equal(el.dataset.combo,'0');
    const ball={playerNum:1,hp:200,maxHp:200,_combat2Tick:1,manualTower:false};
@@ -77,7 +76,7 @@ test('regression: CSS intentionally hides only the duplicate tower title, not th
  const css=read('css/app-shell.css'),js=read('js/features/arena-combat-v2.js'),html=read('index.html');
  assert.match(css,/#screen-tower #tower-arena-slot \.arena-heading,/);
  assert.match(css,/display:none!important/);
- assert.match(js,/screen\.insertBefore\(el,anchor\)/);
+ assert.match(js,/field\.append\(el\)/);
  assert.match(js,/doc\.querySelector\?\.\('\.battle-screen'\)/);
  assert.match(html,/arena-combat-v2\.js\?v=[^"']+/);
  assert.match(html,/combo-celebration\.css/);
