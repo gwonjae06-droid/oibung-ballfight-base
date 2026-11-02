@@ -59,21 +59,28 @@ function parse(input){
  // A restricted vocabulary prevents invented effects that the game cannot cast.
  // Extend natural-language recognition to EVERY registered Forge action,
  // rather than only the small starter vocabulary listed above.
+ const supported=g.SkillForge?.TYPE||g.ActionRegistry?.TYPE||{};
+ const grammar=g.KoreanSkillGrammar?.analyze?.(raw,supported);
+ const excluded=new Set((grammar?.clauses||[]).filter(c=>c.negated&&c.suppressed)
+  .map(c=>c.suppressed.type));
+ const understood=(grammar?.clauses||[]).filter(c=>c.chosen)
+  .map(c=>({id:c.chosen.type}));
  const recognized=g.NaturalForge?.recognize?.(raw)||[];
  const ids=new Set();
  const found=[...patterns.filter(t=>t.match.test(raw)),
-   ...recognized.map(x=>({id:x.type}))].filter(x=>{
+   ...recognized.map(x=>({id:x.type})),...understood].filter(x=>{
+     if(excluded.has(x.id))return false;
      if(ids.has(x.id))return false;
      ids.add(x.id);return true;
    });
  if(!found.length&&!g.MetaphorVisuals?.interpret?.(raw))return {ok:false,error:'아직 이해할 수 없는 동작입니다. 분열탄·가속·점프·낙하·충격파·번개 같은 게임 동작을 넣어 주세요.'};
- const supported=g.SkillForge?.TYPE||g.ActionRegistry?.TYPE||{};
  // A concrete metaphor takes priority over incidental verbs such as
  // "쏩니다" and "때립니다": choose physics first, then render its image.
  const metaphor=g.MetaphorVisuals?.interpret?.(raw);
  const mentioned=found.filter(t=>Object.hasOwn(supported,t.id));
- const mentions=metaphor&&Object.hasOwn(supported,metaphor.type)?
-  [{id:metaphor.type}]:mentioned;
+ const activeMetaphor=metaphor&&!excluded.has(metaphor.type)?metaphor:null;
+ const mentions=activeMetaphor&&Object.hasOwn(supported,activeMetaphor.type)?
+  [{id:activeMetaphor.type}]:mentioned;
  if(!mentions.length)return {ok:false,error:'설명한 동작은 현재 게임에서 실행할 수 없습니다.'};
  const types=new Set(mentions.map(x=>x.id));
  const notes=[];
@@ -113,7 +120,7 @@ function parse(input){
    /나선|소용돌이/.test(raw)?'spiral':
    /부채꼴|퍼지.*발사/.test(raw)?'fan':'direct';
   rows.push({when,interval:pace,fracture:type==='splitshot'?cap(generationsRaw||(/다시.*분열|재분열|분열.*분열/.test(raw)?3:2),1,3):1,
-   action:{type,visual:metaphor&&metaphor.type===type?metaphor.visual:undefined,
+   action:{type,visual:activeMetaphor&&activeMetaphor.type===type?activeMetaphor.visual:undefined,
     damage,radius:radiusRaw!==null?cap(radiusRaw,30,300):type==='splitshot'?155:150,
     count:countRaw!==null?cap(countRaw,1,8):type==='splitshot'?5:1,
     pattern,target,status,duration:type==='haste'||type==='timeburst'?1.7:1.5,...adjust}});
@@ -164,14 +171,48 @@ function parse(input){
  // unsolicited periodic cast. The exact condition should drive the skill.
  if(event.length===1&&rows.length===1&&rows[0].when==='pulse')
   rows[0].when=event[0];
- if(metaphor&&rows.some(r=>r.action.type===metaphor.type))
-  notes.unshift('비유 해석: '+metaphor.meaning+'. 공 일부 변형과 빛의 질감은 전투와 미리보기 양쪽에 표시됩니다.');
+ if(activeMetaphor&&rows.some(r=>r.action.type===activeMetaphor.type))
+  notes.unshift('비유 해석: '+activeMetaphor.meaning+'. 공 일부 변형과 빛의 질감은 전투와 미리보기 양쪽에 표시됩니다.');
  if(!rows.length)return {ok:false,error:'전투에서 실행할 수 있는 동작을 찾지 못했습니다.'};
  if(rows.length>=maxRules)notes.push('기술당 규칙은 최대 8개까지 실행됩니다.');
  if(/절대|완전.*무적|무적.*무한|즉사|한방.*죽/.test(raw))
   notes.push('즉사·영구 무적 효과는 지원하지 않아 실제 게임 동작으로만 구성했습니다.');
  if(split)notes.push('분열탄의 세대와 탄환 수는 게임 엔진의 안전 상한 안에서 작동합니다.');
  if(speed)notes.push('속도는 중첩되지만 물리 충돌을 유지하도록 최고속도가 제한됩니다.');
+ // Attach each clause's conditional ending to its OWN action, not a random
+ // whole-sentence keyword. Do not treat a negated action as a requested cast.
+ if(grammar){
+  const candidates=grammar.clauses.filter(c=>c.chosen);
+  if(grammar.clauses.length>1&&candidates.length){
+   for(const clause of candidates){
+    const type=clause.chosen.type;
+    if(clause.when!=='pulse'){
+     const rule=rows.find(r=>r.action.type===type);
+     if(rule)rule.when=clause.when;
+     else add(type,clause.when,interval);
+    }
+    const rule=rows.find(r=>r.action.type===type&&r.when===clause.when);
+    if(rule&&clause.chosen.visual)rule.action.visual=clause.chosen.visual;
+   }
+  }
+  for(const clause of grammar.clauses){
+   if(clause.negated&&clause.suppressed)
+    notes.push('부정문: '+clause.suppressed.type+' 동작은 명시된 지시에서 제외했습니다.');
+  }
+  const intensity=grammar.adverbs;
+  if(intensity.includes('intensity')){
+   for(const r of rows)if(!noDamage.has(r.action.type))
+    r.action.damage=Math.min(120,Math.round(r.action.damage*1.16));
+   notes.push('강한 타격 표현은 공격 위력에 반영했습니다.');
+  }
+  if(intensity.includes('scale')){
+   for(const r of rows)r.action.radius=Math.min(300,Math.round(r.action.radius*1.25));
+   notes.push('크기 표현은 기술 범위에 반영했습니다.');
+  }
+  if(intensity.includes('speed')){
+   for(const r of rows)if(r.action.speed)r.action.speed=Math.min(14,r.action.speed*1.2);
+  }
+ }
  // A literal sequence becomes one bounded graph, rather than independent
  // simultaneous casts. The existing ruleSet still owns wall/hit triggers.
  const sequence=g.FantasySkillGraph?.fromText?.(raw,{
@@ -190,7 +231,7 @@ function parse(input){
   }
  }
  const recipe=R.normalize({window,rules:rows});
- const primary=metaphor?.type|| (types.has('splitshot')?'splitshot':speed?'haste':jump?'leap':mentions[0].id);
+ const primary=activeMetaphor?.type|| (types.has('splitshot')?'splitshot':speed?'haste':jump?'leap':mentions[0].id);
  return {ok:true,name:safeName[primary]||'나만의 폭주 기술',recipe,notes,
   recognized:mentions.map(x=>x.id),method:'offline-rule-parser'};
 }

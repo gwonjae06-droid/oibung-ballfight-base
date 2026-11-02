@@ -16,7 +16,13 @@ function execute(p,a,target) {
       a.type==='blink'||a.type==='swap'||a.type==='portal'?4:10;
     p.movementOnlyFrames=Math.max(p.movementOnlyFrames||0,Math.min(240,grace));
   }
-  global.SkillVisuals?.cast(p,a,target); // Actual action execution, not cooldown booking.
+  const visualReady=global.SkillVisuals?.cast(p,a,target);
+  // A future user-authored action may have a valid executor but no VFX motif
+  // yet. Never let it execute completely invisibly; render a safe generic cue.
+  if(visualReady===false)global.BattleFX?.cast?.(p,'energy',{
+    color:p.forge?.effectColor||p.forge?.color||'#8a9acb',
+    radius:Math.max(35,Math.min(230,Number(a.radius)||90))
+  });
   // In-world actions must dispatch through the same combat implementation
   // used by physics and visuals; they are not merely text menu entries.
   // Action Registry code-authored skills receive the same hit/enemy API as

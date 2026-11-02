@@ -70,6 +70,21 @@ function resultHTML(result){
  if(!result?.ok)return '';
  const rows=result.summary?.length?result.summary:summaryOf(result.recipe);
  const limitations=[...new Set(result.limitations||[])];
+ const verification=result.verification;
+ const parts=(result.grammar?.tokens||[]).filter(t=>
+   ['verb','noun','adverb'].includes(t.pos)&&t.semantic).slice(0,14);
+ const grammarPreview=parts.length?'<details class="sentence-more"><summary>한국어 문장 분석 보기</summary>'
+  +'<p>행동 단어·대상 명사·부사와 조사·어미를 이용한 오프라인 분석입니다.</p>'
+  +'<ul>'+parts.map(t=>'<li>'+E(t.surface)+' · '+E(t.pos==='noun'?'명사':t.pos==='verb'?'동사':'부사')
+   +(t.particle?' · 조사 '+E(t.particle):'')
+   +(t.ending?' · 어미 '+E(t.ending):'')
+   +(t.prefix?' · 접두사 '+E(t.prefix):'')
+   +(t.suffix?' · 접미사 '+E(t.suffix):'')+'</li>').join('')+'</ul></details>':'';
+ const auditView=verification?.checks?.length?
+  '<p class="sentence-local-note">전투 실행 확인: '
+   +verification.checks.map(c=>E(c.label)+' · '+(c.vfx?'이펙트 등록됨':'이펙트 점검 필요')
+    +' · '+(c.expectedDamage?'피해 가능 동작':'이동·방어·기타 동작')).join(' / ')
+   +'<br>실제 피해는 명중·거리·방어·무적 판정에 따라 달라집니다.</p>':'';
  return '<section class="sentence-interpretation" aria-label="문장 해석 결과">'
  +'<h4>이 문장을 이렇게 구현합니다</h4>'
  +'<div class="sentence-understood">'+rows.map((r,i)=>
@@ -79,6 +94,7 @@ function resultHTML(result){
   ).join('')+'</div>'
  +(limitations.length?'<div class="sentence-limitations"><strong>현재 구현 범위 안내</strong><ul>'
   +limitations.map(n=>'<li>'+E(n)+'</li>').join('')+'</ul></div>':'')
+ +grammarPreview+auditView
  +((result.notes||[]).length?'<details class="sentence-more"><summary>해석과 안전 제한 자세히</summary><ul>'
  +(result.notes||[]).map(x=>'<li>'+E(x)+'</li>').join('')+'</ul></details>':'')
  +'<p class="sentence-local-note">이 결과는 오프라인 동작 사전과 실행 규칙으로 구성됩니다. 새로운 물리 능력이나 연출을 무조건 생성하는 AI는 아닙니다.</p>'

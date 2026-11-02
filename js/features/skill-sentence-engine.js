@@ -38,20 +38,53 @@ function describe(parsed){
   return {when,action:names.join(' → '),interval:r.interval,visual:r.action?.visual?.shape||null};
  });
 }
+// Compile-time combat readiness check: presentation and damage authorization
+// are separate. Does not promise that a distant or defended enemy will be hit.
+function audit(recipe){
+ const checks=[],warnings=[];
+ const inspect=(action,when)=>{
+  if(!action?.type)return;
+  const id=action.type,registration=g.ActionRegistry?.get?.(id);
+  const label=g.SkillForge?.TYPE?.[id]||id;
+  const vfx=!!(g.SkillVisuals?.catalog?.[id]||g.ActionRegistry?.visualCatalog?.[id]);
+  const damage=Number(action.damage)||0,offense=registration?.offense;
+  checks.push({type:id,label,trigger:when,vfx:!!vfx,
+   expectedDamage:offense===true&&damage>0,delivery:registration?.physics||'unknown'});
+  if(registration&&!vfx)warnings.push(label+'의 이펙트 등록을 확인할 수 없습니다.');
+  if(offense===true&&damage<=0)
+   warnings.push(label+'은(는) 공격 동작인데 피해량이 0으로 설정됐습니다.');
+ };
+ const walk=(steps,when)=>{
+  for(const item of steps||[]){
+   if(item.kind==='cast')inspect(item.action,when);
+   walk(item.body,when);walk(item.then,when);walk(item.else,when);
+  }
+ };
+ for(const rule of recipe?.rules||[]){
+  if(rule.steps?.length)walk(rule.steps,rule.when);
+  else inspect(rule.action,rule.when);
+ }
+ return {checks,warnings:[...new Set(warnings)],
+  // An offensive delivery is only POTENTIAL damage: collision is simulated.
+  hasPotentialDamage:checks.some(c=>c.expectedDamage)};
+}
 function parse(input){
  const raw=String(input??'').trim();
  const engine=g.SignaturePromptCompiler;
+ const grammar=g.KoreanSkillGrammar?.analyze?.(raw,g.SkillForge?.TYPE||g.ActionRegistry?.TYPE||{});
  const result=engine?.parse?.(raw)||{ok:false,error:'문장 해석기를 불러오지 못했습니다.'};
  const unavailable=capabilities.filter(c=>c.re.test(raw)).map(c=>c.label);
  const limitations=unavailable.map(x=>x+'은(는) 아직 완전하게 구현되지 않았습니다.');
  if(result.ok){
   for(const n of result.notes||[])if(/제한|지원하지|맞췄|상한/.test(n))
    limitations.push(n);
-  return {...result,summary:describe(result),
+  const proof=audit(result.recipe);
+  limitations.push(...proof.warnings);
+  return {...result,summary:describe(result),grammar,verification:proof,
    limitations:[...new Set(limitations)],sourceText:raw,mode:'offline'};
  }
- return {...result,summary:[],limitations:[...new Set(limitations)],
-  sourceText:raw,mode:'offline'};
+ return {...result,summary:[],grammar,verification:audit(null),
+  limitations:[...new Set(limitations)],sourceText:raw,mode:'offline'};
 }
-g.SkillSentenceEngine=Object.freeze({parse,describe,labels});
+g.SkillSentenceEngine=Object.freeze({parse,describe,audit,labels});
 })(typeof window!=='undefined'?window:globalThis);
