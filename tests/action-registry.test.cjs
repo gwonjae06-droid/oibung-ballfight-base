@@ -125,7 +125,7 @@ test('main HTML loads registry before all metadata consumers while old combat ad
   const registry=html.indexOf('js/features/action-registry.js');
   assert.ok(registry>=0);
   for(const file of ['ability-atlas','advanced-combat','forge-expansion',
-    'skill-forge','skill-visuals','block-forge','studio-motion-model','studio-workspace']){
+    'skill-forge-impact','skill-forge-casting','skill-forge','skill-visuals','block-forge','studio-motion-model','studio-workspace']){
     assert.ok(html.indexOf('js/features/'+file+'.js')>registry,file+' loads after registry');
   }
   const skill=read('js/features/skill-forge.js');
