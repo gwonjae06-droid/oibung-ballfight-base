@@ -6,7 +6,7 @@ function boot(extra=[]){
  const types={beam:'레이저',slash:'베기',spinslash:'회전 베기',
   shot:'투사체',splitshot:'분열탄',wave:'충격파',shield:'보호막'};
  const g={Math,Number,Date,console,SkillForge:{TYPE:types,STATUS:{none:'없음'}},
-  ActionRegistry:{TYPE:types},ArenaDepth:null};
+  ActionRegistry:{TYPE:types,ids:()=>Object.keys(types),get:()=>null},ArenaDepth:null};
  g.window=g;g.globalThis=g;vm.createContext(g);
  for(const name of ['metaphor-visuals','signature-program','signature-scratch',
   'signature-rule-skill','signature-prompt-compiler',...extra])
