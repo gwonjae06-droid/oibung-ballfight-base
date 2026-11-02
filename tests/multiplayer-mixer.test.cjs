@@ -66,15 +66,16 @@ test('participant selector and roster selectors apply without an extra button',(
   assert.ok(read('js/features/skill-forge.js').includes('globalThis.applyFighterPicks?.()'));
 });
 test('random and themed creators retain the editable fighter fields and normal save flow',()=>{
-  const natural=read('js/features/natural-forge.js'),forge=read('js/features/skill-forge.js');
+  const natural=read('js/features/natural-forge.js'),forge=read('js/features/skill-forge.js'),editor=read('js/features/skill-forge-editor.js');
   assert.ok(natural.includes('SkillForge.setDraft(draft)'));
   assert.ok(natural.includes('skills:rolled.skills'));
   assert.ok(!natural.includes('saveBtn.click()'));
   assert.ok(natural.includes('showGenerated(draft)'));
   assert.ok(forge.includes('getDraft:()=>normalize(draft)'));
   for(const id of ['bf-name','forge-color','forge-effect-color','forge-hp','forge-speed','bf-text'])
-    assert.ok(forge.includes('id="'+id+'"'),id+' should remain editable');
-  assert.ok(forge.includes('global.CharacterStudioArt?.commit?.(id)'));
+    assert.ok(editor.includes('id="'+id+'"'),id+' should remain editable');
+  assert.ok(editor.includes('global.CharacterStudioArt?.commit?.(id)'));
+  assert.ok(forge.includes('SkillForgeEditorFactory'));
 });
 test('every chosen random family contributes an action to the mixed character',()=>{
   const global={window:null,players:[],CUSTOM_DEFS:[],CHARACTER_PHOTOS:{},BEHAVIORS:{}};
