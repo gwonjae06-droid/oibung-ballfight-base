@@ -27,8 +27,8 @@ test('custom fighter studio is the only location for name, picture, color, effec
   assert.match(art,/pointerdown/);
   assert.match(art,/pointermove/);
   assert.match(art,/localStorage\.setItem\(key\(artKey\),src\)/);
-  assert.match(read('js/features/skill-forge.js'),/forge-effect-color/);
-  assert.match(read('js/features/skill-forge.js'),/CharacterStudioArt\?\.commit/);
+  assert.match(read('js/features/skill-forge-editor.js'),/forge-effect-color/);
+  assert.match(read('js/features/skill-forge-editor.js'),/CharacterStudioArt\?\.commit/);
   assert.match(css,/\.character-studio-dialog::backdrop/);
   assert.match(css,/@media\(max-width:700px\)/);
 });
