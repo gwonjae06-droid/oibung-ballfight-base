@@ -1,5 +1,5 @@
 /* Pinball Combat 2.0.
- * Physical collision-only grades and alternating ricochet combos.
+ * Impact-threshold grades and player-owned ricochet combos.
  * Adds bounded energy and a ONE-COMBO, ONE-SIGNATURE damage bonus. No
  * automatic hit damage; never modifies collision impulse or saved profiles.
  * Fixed simulation-clock inputs => equal outcomes at 1x and 100x.
@@ -64,6 +64,7 @@ function signal(p,kind,speed){
        chain>=6?.62:chain>=3?.54:.35);
  else if(quality==='perfect')g.BattleFX?.sound?.('bounce-perfect',.38);
  ui(p,true);
+ g.ComboScreenFX?.pulse?.(p,chain);
  return true;
 }
 // Count only confirmed positive damage, never status ticks or movement.
@@ -102,6 +103,7 @@ function damageFactor(p){
 }
 function reset(){
  best=0;
+ g.ComboScreenFX?.clear?.();
  const el=ensure();if(!el)return;
  el.classList?.remove?.('combo-burst');
  displayZero(el);
@@ -146,6 +148,7 @@ function ensure(){
  return el;
 }
 function displayZero(el){
+ g.ComboScreenFX?.clear?.();
  el.hidden=false;el.dataset.combo='0';el.dataset.best=String(best);el.dataset.tier='base';
  const number=el.querySelector?.('.combo-number');if(number)number.textContent='0';
  const message=el.querySelector?.('.combo-message');if(message)message.textContent=best>0?'최고 '+best+'콤보':'강한 충돌을 기다리는 중';
@@ -163,6 +166,7 @@ function ui(p,burst=false){
    if(el.hidden||el.dataset.combo!=='0')displayZero(el);
    return;
  }
+ g.ComboScreenFX?.sync?.(actor,true);
  if(!burst&&now%8!==0)return;
  el.hidden=false;
  const tier=combo.chain>=12?'legend':combo.chain>=8?'epic':combo.chain>=5?'hot':combo.chain>=3?'rise':'base';
