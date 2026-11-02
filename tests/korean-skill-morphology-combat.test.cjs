@@ -60,7 +60,7 @@ test('live wave and shadow beam lose real enemy HP, with cast and impact effects
   SkillVisuals:{cast(){casts++;return false},impact(){impacts++}},
   BattleFX:{cast(){fallbacks++},beam(){}},
   AdvancedCombat:{canHit(){return true},height(){return 0},execute(){return false}},
-  ForgeExpansion:{execute(){return false},damageScale(){return 1}},
+  ForgeExpansion:{execute(){return false},damageScale(){return 1},applyStatus(){}},
   AbilityAtlas:{choose:(p,enemies)=>enemies[0],execute(){return false}},
   createHitParticles(){particles++},addFloatingText(){},getClosestAliveEnemy(){return null},
   canvas:{width:480,height:300}
