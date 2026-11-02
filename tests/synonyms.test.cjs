@@ -16,7 +16,7 @@ function app(){
   };
   state.window=state;
   const context=vm.createContext(state);
-  for(const script of ['ability-atlas.js','skill-forge-impact.js','skill-forge-casting.js','skill-forge.js','natural-forge.js'])
+  for(const script of ['ability-atlas.js','skill-forge-impact.js','skill-forge-casting.js','skill-forge-world.js','skill-forge.js','natural-forge.js'])
     vm.runInContext(code(script),context,{filename:script});
   return state;
 }
