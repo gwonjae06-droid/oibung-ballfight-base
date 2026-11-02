@@ -39,7 +39,7 @@ test('projectiles are dramatically weaker, produce minimal shove and never recoi
   }
 });
 test('projectile and contact source routes correctly tag actual damaging attacks',()=>{
-  const skill=read('js/features/skill-forge.js');
+  const skill=read('js/features/skill-forge-impact.js');
   const engine=read('js/core/engine.js');
   assert.match(skill,/ImpactPhysics\?\.hit\?\.\(p,e,d,\{[^\n]+type:action\.type/);
   assert.match(engine,/ImpactPhysics\?\.hit\?\.\(attacker,defender,value,\{[^\n]+type:action\.type/);
