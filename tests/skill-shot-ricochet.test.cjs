@@ -61,5 +61,5 @@ test('pinball lab previews exactly the same reflected-shot setting',()=>{
  const src=read('js/features/studio-pinball-lab.js');
  assert.match(src,/maxRebounds:a\.type==='shot'\?/);
  assert.match(src,/b\.reflects>b\.maxRebounds/);
- assert.match(read('js/features/skill-forge.js'),/const maxRebounds=b\.a\?\.type==='shot'/);
+ assert.match(read('js/features/skill-forge-world.js'),/const maxRebounds=b\.a\?\.type==='shot'/);
 });
