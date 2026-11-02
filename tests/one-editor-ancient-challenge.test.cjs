@@ -43,7 +43,7 @@ function buildProfile(g,archetype,style){
  let steps;
  switch(style){
   case 'safe-echo':steps=[shield(),heal(40),wave(65,2)];break;
-  case 'assault-echo':steps=[shield(),wave(65,2),wave(40)];break;
+  case 'assault-echo':steps=[shield(),wave(65,2),wave(40,1)];break;
   case 'healing-echo':steps=[heal(40),wave(65,2)];break;
   case 'time-echo':steps=[boost(),shield(),wave(65,2),heal(40)];break;
   case 'beam-echo':steps=[shield(),heal(40),step('beam',65,2,{radius:240})];break;
