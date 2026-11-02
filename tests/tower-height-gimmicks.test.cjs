@@ -67,7 +67,7 @@ test('a storm updraft launches a grounded fighter only at the scheduled gust',()
 test('forge and advanced shots all consult the same physical terrain cover',()=>{
  const engine=read('js/core/engine.js'),skill=read('js/features/skill-forge.js'),extras=read('js/features/forge-expansion.js'),advanced=read('js/features/advanced-combat.js');
  assert.match(engine,/ArenaTowerTerrain\?\.sync\?\.\(players\)/);
- assert.match(skill,/ArenaTowerTerrain\?\.obstructsShot/);
+ assert.match(read('js/features/skill-forge-world.js'),/ArenaTowerTerrain\?\.obstructsShot/);
  assert.match(extras,/ArenaTowerTerrain\?\.obstructsShot/);
  assert.match(advanced,/ArenaTowerTerrain\?\.obstructsShot/);
  assert.match(advanced,/startZ:absoluteHeight\(p\)\+12/);
