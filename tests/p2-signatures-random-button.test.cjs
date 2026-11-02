@@ -10,7 +10,7 @@ function world(){
     document:{querySelector(){return null;}},
     getClosestAliveEnemy(p){return h.players.find(e=>e!==p&&e.hp>0)||null;}};
   h.window=h;vm.createContext(h);
-  for(const name of ['ability-atlas','forge-expansion','advanced-combat','skill-forge','skill-visuals'])
+  for(const name of ['ability-atlas','forge-expansion','advanced-combat' ,'skill-forge-impact','skill-forge-casting','skill-forge','skill-visuals'])
     vm.runInContext(read('js/features/'+name+'.js'),h,{filename:name+'.js'});
   const calls=[];
   const ctx=new Proxy({},{
