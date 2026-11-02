@@ -71,6 +71,20 @@ function choices(id,owned=[],random=Math.random){
  for(let i=all.length-1;i>0;i--){const j=Math.floor(random()*(i+1));[all[i],all[j]]=[all[j],all[i]];}
  return all.slice(0,3);
 }
+// All three authoring formats are combat authorities. Apply Tower bonuses
+// to the actions the runner actually executes, not just an obsolete preview.
+function eachAction(skill,callback){
+ for(const action of skill.actions||[])callback(action);
+ for(const rule of skill.ruleSet?.rules||[])if(rule.action)callback(rule.action);
+ const walk=(nodes,depth=0)=>{
+  if(depth>4||!Array.isArray(nodes))return;
+  for(const node of nodes.slice(0,32)){
+   if(node.kind==='action'&&node.action)callback(node.action);
+   walk(node.body,depth+1);walk(node.then,depth+1);walk(node.else,depth+1);
+  }
+ };
+ walk(skill.program);
+}
 function apply(p,id,blessings){
  // Forge instances can share their saved definition: detach before any edit.
  if(p.forge)p.forge=JSON.parse(JSON.stringify(p.forge));
@@ -84,19 +98,20 @@ function apply(p,id,blessings){
    p._towerMomentumBoost=Math.min(1.3225,(p._towerMomentumBoost||1)*1.15);
   for(const s of p.forge?.skills||[]){
    if(b==='haste'&&!g.BounceMomentum?.enabled?.(p))s.cooldown=Math.max(.35,s.cooldown*.85);
-   for(const a of s.actions||[]){
-    if(!(a.damage>0))continue;
+   eachAction(s,a=>{
+    if(!(a.damage>0))return;
     if(b==='echo')a.damage=Math.round(a.damage*1.18);
     if(b==='reach')a.radius=Math.min(200,(a.radius||60)*1.15);
     if(b==='element'){
      if(['time','ice'].includes(id))a.status='ice';
-     if(id==='fire')a.status='fire';if(id==='forest')a.status='poison';
+     if(id==='fire')a.status='fire';
+     if(id==='forest')a.status='poison';
      if(id==='space')a.radius=Math.min(200,(a.radius||60)*1.25);
      if(id==='storm')a.speed=Math.min(12,(a.speed||5)*1.35);
     }
-   }
+   });
   }
  }
 }
-g.ArenaTowerRealms={REALMS:Object.freeze(REALMS),get,floor,enemyLoadout,choices,apply};
+g.ArenaTowerRealms={REALMS:Object.freeze(REALMS),get,floor,enemyLoadout,choices,apply,eachAction};
 })(globalThis);

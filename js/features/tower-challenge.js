@@ -313,9 +313,9 @@ function install(){
     if(!f?.forge?.skills)return;
     // Prepared runtime only: never mutate the underlying saved custom profile.
     f.forge=JSON.parse(JSON.stringify(f.forge));
-    for(const skill of f.forge.skills)for(const a of skill.actions||[]){
+    for(const skill of f.forge.skills)global.ArenaTowerRealms?.eachAction?.(skill,a=>{
       if(Number(a.damage)>0)a.damage=Math.max(1,Math.round(a.damage*scale));
-    }
+    });
   }
   function chooseRoute(id){
     if(!active||stage!=='between'||!routePending||routeSelected||!ROUTES[id])return false;

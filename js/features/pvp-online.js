@@ -16,7 +16,7 @@ host.innerHTML='<section class="pvp-lobby" id="pvp-lobby">'
   +'<div class="pvp-lobby-actions"><button id="pvp-search" type="button">랜덤 매칭 시작</button>'
   +'<button id="pvp-cancel" type="button" hidden>매칭 취소</button></div>'
   +'<p class="pvp-status" id="pvp-status" role="status" aria-live="polite">출전 파이터를 선택하고 자동전투 매칭을 시작하세요.</p>'
-  +'<p class="pvp-balance-note">PvP 베타: 자동전투 전용 매칭, 실제 제작한 1~4개 스킬 및 최대 3개 연계 동작을 사용합니다. 원래 전투 엔진의 스킬과 연계를 사용합니다. 전투 계산은 한 플레이어 기기에서 수행하므로 랭킹전용 치트 방지는 지원하지 않습니다.</p></section>'
+  +'<p class="pvp-balance-note">PvP 베타: 자동전투 전용 매칭, 규칙형 지속 기술과 기존 연계 스킬을 동일한 전투 엔진에서 사용합니다. 원래 전투 엔진의 스킬과 연계를 사용합니다. 전투 계산은 한 플레이어 기기에서 수행하므로 랭킹전용 치트 방지는 지원하지 않습니다.</p></section>'
   +'<section class="pvp-match" id="pvp-match" hidden aria-label="실시간 온라인 PvP 전투">'
   +'<div class="pvp-match-header"><div><small id="pvp-match-type">자동 전투</small><strong id="pvp-round-state">온라인 경기</strong></div>'
   +'<span id="pvp-clock">2:00</span><button type="button" id="pvp-forfeit">경기 포기</button></div>'
@@ -172,7 +172,9 @@ function onMessage(event){
 function startSearch(){
   if(searching||matched)return;
   roster();
-  if(!profile())return status('출전할 캐릭터가 없습니다.');
+  try{
+   if(!profile())return status('출전할 캐릭터가 없습니다.');
+  }catch(error){return status(error?.message||'이 캐릭터는 온라인 전송 한도를 초과했습니다.');}
   if(typeof global.SupabasePvpTransport!=='function')
     return status('Supabase PvP 연결 모듈을 불러오지 못했습니다.');
   mode='auto';

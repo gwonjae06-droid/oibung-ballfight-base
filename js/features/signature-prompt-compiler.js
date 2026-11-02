@@ -99,8 +99,11 @@ function parse(input){
  if(speed){
   // "시간 가속" still uses the temporal mechanic, while ordinary speed
   // works through the live stacking haste mechanic.
-  add(types.has('timeburst')?'timeburst':'haste','pulse',Math.max(.35,interval));
-  if(wall)add('haste','wall',Math.max(.35,interval*.75));
+  // "벽에 튕길 때마다 가속" must not smuggle in a periodic haste.
+  // Continuous speed requests without a specified event keep a pulse.
+  const eventDriven=wall||contact||event.includes('land')||event.includes('hit');
+  if(!eventDriven)add(types.has('timeburst')?'timeburst':'haste','pulse',Math.max(.35,interval));
+  if(wall)add(types.has('timeburst')?'timeburst':'haste','wall',Math.max(.35,interval*.75));
   if(contact)add('wave','contact',Math.max(.5,interval),{damage:damageRaw??23});
  }
  if(jump||dive){

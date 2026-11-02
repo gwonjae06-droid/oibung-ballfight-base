@@ -34,11 +34,19 @@ function pressure(value,weight){
  const set=normalize(value),fn=typeof weight==='function'?weight:()=>0;
  // Every pulse has a bounded maximum per activation; events use a lower
  // prior, and all rules share a single-action-per-tick execution queue.
- return set.rules.reduce((sum,r)=>{
-  const count=r.when==='pulse'?Math.min(18,set.window/r.interval):
-   Math.min(12,set.window/r.interval)*.5;
+ const MAX_ACTIONS=g.SignatureRuleLive?.MAX_ACTIONS||80;
+ const estimates=set.rules.map(r=>{
+   // A single ruleset may emit 50+ actions in an 18-second burst. Use
+   // the same per-rule cooldown floor and shared 80-action cap as RuleLive.
+   const interval=Math.max(.35,r.interval);
+   const ceiling=Math.ceil(set.window/interval);
+   return r.when==='pulse'?ceiling:ceiling*.5;
+ });
+ const total=estimates.reduce((a,b)=>a+b,0);
+ const scale=total>MAX_ACTIONS?MAX_ACTIONS/total:1;
+ return set.rules.reduce((sum,r,i)=>{
   const factor=r.action.type==='splitshot'?1+(r.fracture-1)*.38:1;
-  return sum+Math.max(0,Number(fn(r.action))||0)*count*factor/Math.max(1,set.window/5);
+  return sum+Math.max(0,Number(fn(r.action))||0)*estimates[i]*scale*factor/Math.max(1,set.window/5);
  },0);
 }
 g.SignatureRuleSkill=Object.freeze({WHEN,TYPES,normalize,preview,pressure,fallback});

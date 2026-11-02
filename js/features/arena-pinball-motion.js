@@ -77,8 +77,16 @@ function end(p,before){
   const next=clamp(magnitude+(cruise-magnitude)*weight,.65,11.4);
   x=x/magnitude*next;y=y/magnitude*next;
  }
+ // Gently steer away from imminent visible Tower hazards; never chase
+ // an opponent or erase a physical bounce. The normal heading stays dominant.
+ const dodge=g.ArenaAutoAI?.dodgePinball?.(p,x,y);
+ if(dodge){
+  const mix=.19;
+  x=x*(1-mix)+dodge.vx*mix;
+  y=y*(1-mix)+dodge.vy*mix;
+  p.aiManeuver='hazard-dodge';p.aiDanger=1;
+ }else{p.aiManeuver='pinball';p.aiDanger=0;}
  p.vx=x;p.vy=y;
- p.aiManeuver='pinball';p.aiDanger=0;
  return true;
 }
 g.ArenaPinballMotion=Object.freeze({enabled,scripted,begin,end,baseSpeed,initialDirection});

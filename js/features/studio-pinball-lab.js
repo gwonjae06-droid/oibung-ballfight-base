@@ -141,8 +141,8 @@ function make(profile={},focus=0,actionIndex=-1){
   activity=frame+90;
   const dx=target.x-hero.x,dy=target.y-hero.y,angle=Math.atan2(dy,dx);
   if(RANGED.has(type)){
-   if(['bolt','meteor','starfall','beam','chain'].includes(type)){
-    const falling=['bolt','meteor','starfall'].includes(type);
+   if(['bolt','meteor','starfall','arcshot','beam','chain'].includes(type)){
+    const falling=['bolt','meteor','starfall','arcshot'].includes(type);
     rings.push({x:target.x,y:target.y,r:clamp((a.radius||80)*.35,23,65),
      age:0,life:falling?36:24,color,impactAt:falling?30:0,attack:a,hit:false});
     if(!falling)hitTarget(hero.x,hero.y,true);
@@ -151,7 +151,15 @@ function make(profile={},focus=0,actionIndex=-1){
     for(let j=0;j<(type==='splitshot'?1:count);j++)projectile(a,angle+(j-(count-1)/2)*.17);
    }
   }else if(MOVE.has(type)){
-   if(type==='leap'||type==='dive')hero.landAt=frame+(type==='leap'?50:38);
+   if(type==='leap'||type==='dive'){
+    hero.landAt=frame+(type==='leap'?50:38);
+    if(type==='dive'){
+     hero.diveImpact={x:target.x,y:target.y,r:clamp(Number(a.radius)||160,45,220),action:a};
+     // A descending dive locks onto the opponent overhead, not the
+     // forward ground velocity of a normal dash.
+     hero.x=clamp(target.x,45,W-45);hero.y=clamp(target.y,45,H-45);
+    }
+   }
    if(type==='portal'){
     const aPos={x:clamp(hero.x+Math.cos(angle)*65,37,W-37),
       y:clamp(hero.y+Math.sin(angle)*65,37,H-37)};
@@ -238,7 +246,14 @@ function make(profile={},focus=0,actionIndex=-1){
   energy=Math.min(100,energy+.29*boost);
   previewActor._forgeActionClock=frame;
   if(hero.landAt&&frame>=hero.landAt){
-    hero.landAt=0;recordRuleEvent('land');
+    hero.landAt=0;
+    if(hero.diveImpact){
+     const impact=hero.diveImpact;hero.diveImpact=null;
+     previewEffect(impact.action,'impact',hero.x,hero.y,32);
+     rings.push({x:hero.x,y:hero.y,r:clamp(impact.r*.4,25,95),age:0,life:27,color});
+     if(near(hero,target)<=impact.r+target.radius)hitTarget(hero.x,hero.y,true);
+    }
+    recordRuleEvent('land');
     rings.push({x:hero.x,y:hero.y,r:48,age:0,life:27,color});
   }
   if(energy>=100&&queue.length===0&&(!ruleRun||ruleRun.finished))launch();

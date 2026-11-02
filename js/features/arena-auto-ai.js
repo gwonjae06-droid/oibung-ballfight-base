@@ -299,6 +299,31 @@ function plan(p,foe,speed,evadeOnly=false){
  }
  return best;
 }
+// Only visible Tower hazards are eligible for slight avoidance steering.
+// Do not re-enable chasing or undo natural wall/body rebounds.
+function dodgePinball(p,vx,vy){
+ if(!p?.towerHero||!g.ArenaTower?.active||
+    p._pinballReboundHold>0||p.jumpState&&p.jumpState!=='ground')return null;
+ const fields=hazards(p,null).filter(z=>Number.isFinite(z.x)&&Number.isFinite(z.y));
+ if(!fields.length)return null;
+ const speed=Math.hypot(vx,vy);
+ if(speed<.45)return null;
+ const u={x:vx/speed,y:vy/speed},pad=Math.max(12,Number(p.radius)||20);
+ const score=(dir)=>fields.reduce((sum,z)=>sum+fieldRisk(z,p.x+dir.x*speed*11,
+   p.y+dir.y*speed*11,pad,11),0);
+ const current=score(u);
+ if(current<.32)return null;
+ const sides=[{x:-u.y,y:u.x},{x:u.y,y:-u.x}];
+ let best=null,bestScore=current;
+ for(const side of sides){
+  const candidate={x:u.x*.75+side.x*.65,y:u.y*.75+side.y*.65};
+  const m=Math.hypot(candidate.x,candidate.y)||1;
+  candidate.x/=m;candidate.y/=m;
+  const risk=score(candidate);
+  if(risk+.26<bestScore){bestScore=risk;best=candidate;}
+ }
+ return best?{vx:best.x*speed,vy:best.y*speed}:null;
+}
 function steer(p,foe,speed){
  // Passive ball movement is owned by ArenaPinballMotion after abilities tick.
  // This suppresses chasing, fleeing, strafing and hazard steering but does
@@ -375,5 +400,5 @@ function canCast(p,target,skill){
    return false;
  return true;
 }
-g.ArenaAutoAI=Object.freeze({range,steer,react,canCast,plan,risk,signed,loadout,stance,targetFor,setRoster,getRoster});
+g.ArenaAutoAI=Object.freeze({range,steer,react,canCast,plan,risk,signed,loadout,stance,targetFor,setRoster,getRoster,dodgePinball});
 })(typeof window!=='undefined'?window:globalThis);

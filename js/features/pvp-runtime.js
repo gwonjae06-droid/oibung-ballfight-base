@@ -259,17 +259,17 @@ function snapshot(room,full=true){
      // Only animated objects are needed remotely. Sending all player
      // internals (queues, caches, links) created huge packets and frame stalls.
      visualPlayers:players.map(p=>({
-       forgeShots:encode(take(p.forgeShots,20)),
-       forgeZones:encode(take(p.forgeZones,20)),
-       forgeOrbs:encode(take(p.forgeOrbs,12)),
+       forgeShots:encode(take(p.forgeShots,48)),
+       forgeZones:encode(take(p.forgeZones,32)),
+       forgeOrbs:encode(take(p.forgeOrbs,20)),
        waves:encode(take(p.waves,12)),
-       projectiles:encode(take(p.projectiles,20)),
+       projectiles:encode(take(p.projectiles,48)),
        poisonTears:encode(take(p.poisonTears,12)),
        forgeDash:Number(p.forgeDash)||0,
        jumpState:p.jumpState||'ground'
      })),
      objects:encode(take(AdvancedCombat.objects,24)),
-     projectiles:encode(take(AdvancedCombat.projectiles,36)),
+     projectiles:encode(take(AdvancedCombat.projectiles,72)),
      effects:encode(take(AdvancedCombat.effects,24)),
      floatingTexts:encode(take(floatingTexts,16)),
      shockwaves:encode(take(shockwaves,16))

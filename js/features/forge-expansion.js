@@ -188,7 +188,7 @@ function execute(p,a,target,api){
     show(p.x,p.y,a.radius);return true;
   }
   if(a.type==='blackhole'||a.type==='lifebloom'){
-    p.forgeExtras.push({kind:a.type,x:a.type==='lifebloom'?p.x:near.x,y:a.type==='lifebloom'?p.y:near.y,life:Math.round(a.duration*60),age:0,a});
+    enqueueExtra(p,{kind:a.type,x:a.type==='lifebloom'?p.x:near.x,y:a.type==='lifebloom'?p.y:near.y,life:Math.round(a.duration*60),age:0,a});
   }else if(a.type==='starfall'){
     // Staggered descending bodies, not instant area markers.
     const amount=Math.max(1,Math.min(8,Math.round(a.count||5)));
@@ -197,16 +197,16 @@ function execute(p,a,target,api){
       const x=Math.max(20,Math.min(canvas.width-20,near.x+Math.cos(angle)*ring));
       const y=Math.max(20,Math.min(canvas.height-20,near.y+Math.sin(angle)*ring));
       const delay=i*7,flight=Math.max(18,Math.min(65,Math.round(150/Math.max(2,a.speed||6))))+(i%3)*3;
-      p.forgeExtras.push({kind:'starfall',x,y,age:0,life:delay+flight,
+      enqueueExtra(p,{kind:'starfall',x,y,age:0,life:delay+flight,
         delay,flight,total:delay+flight,hit:false,a});
     }
   }else if(a.type==='dung'){
-    p.forgeExtras.push({kind:'dung',x:p.x,y:p.y,z:heightOf(p),heightVelocity:shotSlope(p,near,a.speed),
+    enqueueExtra(p,{kind:'dung',x:p.x,y:p.y,z:heightOf(p),heightVelocity:shotSlope(p,near,a.speed),
       vx:Math.cos(angle)*a.speed,vy:Math.sin(angle)*a.speed,life:flightFrames(a),age:0,hits:[],a:{...a,status:'poison'}});
   }
 
   if(['homing','pierce','boomerang'].includes(a.type)){
-    for(let i=0;i<a.count;i++){const t=angle+(i-(a.count-1)/2)*.15;p.forgeExtras.push({kind:a.type,x:p.x,y:p.y,z:heightOf(p),heightVelocity:shotSlope(p,near,a.speed),
+    for(let i=0;i<a.count;i++){const t=angle+(i-(a.count-1)/2)*.15;enqueueExtra(p,{kind:a.type,x:p.x,y:p.y,z:heightOf(p),heightVelocity:shotSlope(p,near,a.speed),
         vx:Math.cos(t)*a.speed,vy:Math.sin(t)*a.speed,life:flightFrames(a),age:0,target:near.playerNum,hits:[],a});}
   }else if(a.type==='chain'){
     let origin=p;const visited=new Set();
@@ -217,7 +217,7 @@ function execute(p,a,target,api){
     }
   }else if(a.type==='meteor'||a.type==='mine'){
     const travel=Math.max(20,Math.min(75,Math.round(270/Math.max(2,a.speed||6))));
-    p.forgeExtras.push({kind:a.type,
+    enqueueExtra(p,{kind:a.type,
       x:a.type==='mine'?p.x:near.x,y:a.type==='mine'?p.y:near.y,
       life:a.type==='mine'?Math.round(a.duration*60):travel,
       age:0,flight:a.type==='meteor'?travel:0,a});
@@ -237,12 +237,19 @@ function execute(p,a,target,api){
   }
   // Prefer keeping in-flight objects rather than evicting a visible orb.
   // All eventual damage remains limited by the same resource budget.
-  if(p.forgeExtras.length>48)p.forgeExtras.splice(48);
+  // New launches are bounded by enqueueExtra; existing objects finish.
   return true;
 }
 // A projectile's attack radius is NOT its permitted travel distance.
  // Give slow/fast homing and piercing shots enough time to traverse the map,
  // then let the arena boundary and confirmed hits remove them naturally.
+// Never remove already-flying objects when a new burst exceeds capacity.
+function enqueueExtra(p,object){
+ p.forgeExtras||=[];
+ if(p.forgeExtras.length>=48)return false;
+ p.forgeExtras.push(object);
+ return true;
+}
 function flightFrames(a){
  const speed=Math.max(2,Number(a?.speed)||5);
  const w=typeof canvas!=='undefined'?canvas.width:500;
