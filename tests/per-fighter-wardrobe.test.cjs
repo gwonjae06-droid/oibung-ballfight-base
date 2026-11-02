@@ -122,9 +122,9 @@ test('unowned and fake fighters cannot equip; active battle defers visual replac
   assert.equal(players[0].cosmetic.border,'border-steel');
 });
 test('removal hook cleans wardrobe, studio is explicit, and gacha no longer attaches all',()=>{
-  const forge=read('js/features/skill-forge.js'),html=read('index.html');
+  const forge=read('js/features/skill-forge.js'),editor=read('js/features/skill-forge-editor.js'),html=read('index.html');
   assert.ok(forge.includes('CosmeticArcade?.forgetFighter?.('));
-  assert.ok(forge.includes('CosmeticArcade?.refreshStudio?.()'));
+  assert.ok(editor.includes('CosmeticArcade?.refreshStudio?.()'));
   assert.ok(html.includes('모든 캐릭터에 자동 적용되지 않습니다'));
   assert.ok(!source.includes("state.equipped.border||null"));
   assert.ok(!source.includes("장착 완료 · 다음 경기부터 적용"));
