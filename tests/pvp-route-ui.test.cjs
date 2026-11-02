@@ -46,7 +46,7 @@ test('Supabase PvP has authentic anonymous sessions and secured realtime channel
 });
 test('automatic PvP retains authored combos and the original visual simulation',()=>{
  const pvp=read('js/features/pvp-online.js'),rt=read('js/features/pvp-runtime.js');
- assert.match(read('js/features/pvp-original-engine.js'),/s\.actions\.slice\(0,3\)/);
+ assert.match(read('js/features/pvp-original-engine.js'),/s\.actions.*slice\(0,data\.signatureVersion/);
  assert.match(pvp,/ArenaTowerScenes\?\.paint/);
  assert.match(pvp,/visualEffects\.push\(\{type:'cast'/);
  assert.match(rt,/baseUpdate\(p\)/);
