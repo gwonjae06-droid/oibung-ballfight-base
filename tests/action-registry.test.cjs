@@ -12,6 +12,8 @@ function sandbox(){
   vm.createContext(w);
   const load=p=>vm.runInContext(read(p),w,{filename:p});
   load('js/features/action-registry.js');
+  load('js/features/skill-forge-impact.js');
+  load('js/features/skill-forge-casting.js');
   load('js/features/skill-forge.js');
   load('js/features/skill-visuals.js');
   load('js/features/studio-motion-model.js');
