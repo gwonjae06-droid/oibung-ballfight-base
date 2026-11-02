@@ -4,7 +4,7 @@ const path = require('node:path');
 const vm = require('node:vm');
 const root = path.join(__dirname, '..');
 const context = vm.createContext({window: {}, CUSTOM_DEFS: [], BEHAVIORS: {}});
-for (const file of ['ability-atlas.js', 'forge-expansion.js', 'skill-forge.js']) {
+for (const file of ['ability-atlas.js', 'forge-expansion.js', 'skill-forge-impact.js', 'skill-forge-casting.js', 'skill-forge.js']) {
   vm.runInContext(fs.readFileSync(path.join(root, 'js/features', file), 'utf8'), context);
 }
 const forge = context.window.SkillForge;
