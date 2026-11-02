@@ -17,7 +17,7 @@ function boot(){
     addFloatingText(){},document:{querySelector(){return null;},getElementById(){return null;}},
     getClosestAliveEnemy(p){return h.players.find(e=>e!==p&&e.hp>0)||null;}};
   h.window=h;vm.createContext(h);
-  for(const name of ['ability-atlas','forge-expansion','advanced-combat' ,'skill-forge-impact','skill-forge-casting','skill-forge','natural-forge'])
+  for(const name of ['ability-atlas','forge-expansion','advanced-combat' ,'skill-forge-impact','skill-forge-casting','skill-forge-world','skill-forge','natural-forge'])
     vm.runInContext(script(name),h,{filename:name+'.js'});
   const api={enemies:p=>h.players.filter(e=>e!==p&&e.hp>0),
     hit(p,e,a,m=1,z=0){
