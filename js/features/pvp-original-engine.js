@@ -12,6 +12,30 @@
   if(n.kind==='waitUntil')return ['W',n.condition,n.timeout];
   return [n.kind==='set'?'s':'c',n.value];
  };
+ // Compact v1 FantasySkillGraph steps for the existing 2,500-char RPC.
+ const compactGraph=s=>{
+  if(s.kind==='cast')return ['c',encode(s.action)];
+  if(s.kind==='wait')return ['w',s.seconds];
+  if(s.kind==='morph')return ['m',s.visual];
+  if(s.kind==='tune')return ['t',s.field,s.operator,s.value];
+  if(s.kind==='repeat')return ['r',s.times,(s.body||[]).map(compactGraph)];
+  if(s.kind==='if')return ['i',s.condition,
+    (s.then||[]).map(compactGraph),(s.else||[]).map(compactGraph)];
+  return ['w',.1];
+ };
+ const expandGraph=s=>{
+  if(!Array.isArray(s))return null;
+  if(s[0]==='c')return {kind:'cast',action:decode(s[1])};
+  if(s[0]==='w')return {kind:'wait',seconds:s[1]};
+  if(s[0]==='m')return {kind:'morph',visual:s[1]};
+  if(s[0]==='t')return {kind:'tune',field:s[1],operator:s[2],value:s[3]};
+  if(s[0]==='r')return {kind:'repeat',times:s[1],
+   body:(s[2]||[]).map(expandGraph).filter(Boolean)};
+  if(s[0]==='i')return {kind:'if',condition:s[1],
+   then:(s[2]||[]).map(expandGraph).filter(Boolean),
+   else:(s[3]||[]).map(expandGraph).filter(Boolean)};
+  return null;
+ };
  const expandNode=a=>{
   if(!Array.isArray(a))return null;
   if(a[0]==='a')return {kind:'action',action:decode(a[1])};
@@ -33,7 +57,8 @@
    const base=[s.name,s.trigger,s.cooldown,s.threshold,(s.actions||[]).slice(0,data.signatureVersion===1&&(s.ruleSet||s.program)?1:3).map(encode)];
    if(s.program)base[5]=s.program.slice(0,32).map(compactNode);
    if(s.ruleSet)base[6]=[s.ruleSet.window,(s.ruleSet.rules||[]).slice(0,8).map(r=>
-     [r.when,r.interval,r.fracture,encode(r.action)])];
+     [r.when,r.interval,r.fracture,encode(r.action),
+      r.steps?.length?r.steps.slice(0,36).map(compactGraph):null])];
    return base;
   });
   const packet={v:3,bp:3,id:d.id,name:d.name,
@@ -56,7 +81,8 @@
     ...(signature===1&&Array.isArray(program)?{program:program.map(expandNode).filter(Boolean)}:{}),
     ...(signature===1&&Array.isArray(recipe)?{ruleSet:{
      version:1,window:recipe[0],rules:(recipe[1]||[]).slice(0,8).map(r=>({
-      when:r[0],interval:r[1],fracture:r[2],action:decode(r[3])
+      when:r[0],interval:r[1],fracture:r[2],action:decode(r[3]),
+      ...(Array.isArray(r[4])?{steps:r[4].map(expandGraph).filter(Boolean)}:{})
      }))
     }}:{})
    }))};

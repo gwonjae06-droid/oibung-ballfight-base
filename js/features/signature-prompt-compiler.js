@@ -172,6 +172,23 @@ function parse(input){
   notes.push('즉사·영구 무적 효과는 지원하지 않아 실제 게임 동작으로만 구성했습니다.');
  if(split)notes.push('분열탄의 세대와 탄환 수는 게임 엔진의 안전 상한 안에서 작동합니다.');
  if(speed)notes.push('속도는 중첩되지만 물리 충돌을 유지하도록 최고속도가 제한됩니다.');
+ // A literal sequence becomes one bounded graph, rather than independent
+ // simultaneous casts. The existing ruleSet still owns wall/hit triggers.
+ const sequence=g.FantasySkillGraph?.fromText?.(raw,{
+  types:supported,action:rows[0]?.action});
+ if(sequence?.length>=2){
+  const leader=rows.find(r=>r.when==='pulse')||rows[0];
+  if(leader){
+   leader.steps=sequence;
+   // A sequential cast is not also independently cast by a sibling pulse.
+   const sequentialTypes=new Set(sequence.filter(v=>v.kind==='cast').map(v=>v.action.type));
+   for(let i=rows.length-1;i>=0;i--){
+    if(rows[i]!==leader&&rows[i].when==='pulse'&&sequentialTypes.has(rows[i].action.type))
+      rows.splice(i,1);
+   }
+   notes.push('복합 기술은 순서 그래프로 실행됩니다. 반복 횟수·시간·생성 개수에는 안전 제한이 있습니다.');
+  }
+ }
  const recipe=R.normalize({window,rules:rows});
  const primary=metaphor?.type|| (types.has('splitshot')?'splitshot':speed?'haste':jump?'leap':mentions[0].id);
  return {ok:true,name:safeName[primary]||'나만의 폭주 기술',recipe,notes,

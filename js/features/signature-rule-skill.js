@@ -20,7 +20,9 @@ function rule(value){
   interval:cap(v.interval,.35,4,1),
   fracture:type==='splitshot'?Math.round(cap(v.fracture,1,3,1)):1,
   action:{...action,damage:Math.round(cap(action.damage,0,120,18)),
-   count:Math.round(cap(action.count,1,8,1))}};
+   count:Math.round(cap(action.count,1,8,1))},
+  ...(Array.isArray(v.steps)&&g.FantasySkillGraph?
+   {steps:g.FantasySkillGraph.normalize(v.steps)}:{})};
 }
 function normalize(value){
  const obj=value&&typeof value==='object'&&!Array.isArray(value)?value:{};
@@ -47,7 +49,10 @@ function pressure(value,weight){
  const total=estimates.reduce((a,b)=>a+b,0);
  const scale=total>MAX_ACTIONS?MAX_ACTIONS/total:1;
  return set.rules.reduce((sum,r,i)=>{
-  const factor=r.action.type==='splitshot'?1+(r.fracture-1)*.38:1;
+  // Multi-stage authored graphs emit several actions per triggered event.
+  // Account for those additional casts in automatic balance estimates.
+  const multiplier=r.steps?.length?Math.max(1,g.FantasySkillGraph?.count?.(r.steps)||1):1;
+  const factor=(r.action.type==='splitshot'?1+(r.fracture-1)*.38:1)*multiplier;
   return sum+Math.max(0,Number(fn(r.action))||0)*estimates[i]*scale*factor/Math.max(1,set.window/5);
  },0);
 }

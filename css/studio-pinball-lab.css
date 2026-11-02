@@ -60,3 +60,16 @@
 @media(prefers-reduced-motion:reduce){
  .character-studio-dialog #studio-motion-canvas{transition:none!important}
 }
+
+/* Bounded fantasy graph editor: horizontal scrolling is limited to fields,
+ * never the whole dialog; sequence stages remain editable on small phones. */
+.rule-graph{margin:8px 0 3px;padding:9px 12px;border:1px solid #69799070;border-radius:12px;background:#0a1b2b4d}
+.rule-graph>summary{cursor:pointer;font-weight:750;font-size:13px}
+.rule-graph>p{font-size:12px;color:#b6c8da;line-height:1.45;margin:8px 0}
+.rule-graph-steps{display:grid;gap:6px}
+.rule-graph-step{display:flex;align-items:center;flex-wrap:wrap;gap:7px;padding:7px 8px;border:1px solid #64768b5b;border-radius:8px}
+.rule-graph-step>span{min-width:88px;font-size:12px}
+.rule-graph-step select,.rule-graph-step input{max-width:190px;min-width:82px;flex:1 1 100px;min-height:34px}
+.rule-graph-step button{margin-left:auto;min-height:34px;min-width:34px}
+.rule-graph-toolbar{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.rule-graph-toolbar button{flex:1 1 105px;min-height:36px;font-size:12px}

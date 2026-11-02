@@ -83,7 +83,28 @@ function ruleRow(r,i,n){
    +'<label>형태 크기<input type="number" min=".6" max="2.8" step=".1" data-rule-index="'+i+'" data-rule-field="visual.scale" value="'+a.visual.scale+'"></label>'
    +'<label>에너지 응축<select data-rule-index="'+i+'" data-rule-field="visual.charge">'
    +choices({false:'즉시 사용',true:'모으고 발동'},String(a.visual.charge))+'</select></label>':'')
-  +'</div></details></article>';
+  +'</div></details>'
+  +'<details class="rule-graph"><summary>단계별 기술 실행 · '+(r.steps?.length||0)+'단계</summary>'
+  +'<p>동작·형태 변형·대기·수치 변화·조건 분기·반복을 순서대로 실행합니다. 최대 36개 노드·깊이 3단계.</p>'
+  +'<div class="rule-graph-steps">'+(r.steps||[]).map((step,j)=>
+   '<div class="rule-graph-step"><span>'+(j+1)+'. '+E(g.FantasySkillGraph?.KINDS?.[step.kind]||step.kind)+'</span>'
+   +(step.kind==='cast'?'<select data-rule-index="'+i+'" data-step-index="'+j+'" data-step-field="type">'+choices(types,step.action?.type)+'</select>':
+     step.kind==='wait'?'<input type="number" min=".05" max="2" step=".05" data-rule-index="'+i+'" data-step-index="'+j+'" data-step-field="seconds" value="'+step.seconds+'"> 초':
+     step.kind==='morph'?'<select data-rule-index="'+i+'" data-step-index="'+j+'" data-step-field="shape">'+choices(g.MetaphorVisuals?.SHAPES||{},step.visual?.shape)+'</select>':
+     step.kind==='tune'?'<select data-rule-index="'+i+'" data-step-index="'+j+'" data-step-field="field">'+choices({damage:'피해',radius:'범위',count:'개수',speed:'속도',duration:'지속',knockback:'넉백'},step.field)+'</select>'
+       +'<select data-rule-index="'+i+'" data-step-index="'+j+'" data-step-field="operator">'+choices({multiply:'곱하기',add:'더하기',set:'정하기'},step.operator)+'</select>'
+       +'<input type="number" min="-120" max="120" step=".1" data-rule-index="'+i+'" data-step-index="'+j+'" data-step-field="value" value="'+step.value+'">':
+     step.kind==='repeat'?'<input type="number" min="1" max="4" step="1" data-rule-index="'+i+'" data-step-index="'+j+'" data-step-field="times" value="'+step.times+'"> 회':
+     step.kind==='if'?'<select data-rule-index="'+i+'" data-step-index="'+j+'" data-step-field="condition">'+choices(g.SignatureProgram?.CONDITIONS||{always:'항상',near:'가까울 때',hpLow:'체력 낮음'},step.condition)+'</select>':'')
+   +'<button type="button" data-rule-command="graph-remove" data-index="'+i+'" data-step-index="'+j+'" aria-label="단계 제거">×</button></div>'
+  ).join('')+'</div>'
+  +'<div class="rule-graph-toolbar"><button type="button" data-rule-command="graph-add" data-index="'+i+'">+ 행동</button>'
+  +'<button type="button" data-rule-command="graph-wait" data-index="'+i+'">+ 대기</button>'
+  +'<button type="button" data-rule-command="graph-morph" data-index="'+i+'">+ 변형</button>'
+  +'<button type="button" data-rule-command="graph-tune" data-index="'+i+'">+ 수치 조정</button>'
+  +'<button type="button" data-rule-command="graph-if" data-index="'+i+'">+ 조건</button>'
+  +'<button type="button" data-rule-command="graph-repeat" data-index="'+i+'">+ 반복</button>'
+  +'<button type="button" data-rule-command="graph-clear" data-index="'+i+'">단계형 해제</button></div></details></article>';
 }
 function render(){
  const p=fighter(),s=p.skills[0],original=read(),recipe=R.normalize(original||{
@@ -159,6 +180,29 @@ panel.addEventListener('click',e=>{
   current.rules.push(R.fallback());write(current,'규칙을 추가했습니다.');
  }
  const i=Number(button.dataset.index);
+ if(cmd.startsWith('graph-')&&i>=0&&i<current.rules.length){
+  const r=current.rules[i],steps=Array.isArray(r.steps)?r.steps.slice():[];
+  if(cmd==='graph-clear')delete r.steps;
+  else if(cmd==='graph-remove'){
+   const n=Number(button.dataset.stepIndex);
+   if(Number.isInteger(n)&&n>=0&&n<steps.length)steps.splice(n,1);
+   r.steps=steps;
+  }else{
+   if(!steps.length)steps.push({kind:'cast',action:{...r.action}});
+   if(cmd==='graph-add')steps.push({kind:'cast',action:{...r.action}});
+   if(cmd==='graph-wait')steps.push({kind:'wait',seconds:.3});
+   if(cmd==='graph-morph')steps.push({kind:'morph',visual:
+    r.action.visual||{shape:'jaw',color:'#b19cff',scale:1.6,charge:false}});
+   if(cmd==='graph-tune')steps.push({kind:'tune',field:'damage',operator:'multiply',value:1.2});
+   if(cmd==='graph-if')steps.push({kind:'if',condition:'near',
+    then:[{kind:'cast',action:{...r.action}}],else:[]});
+   if(cmd==='graph-repeat')steps.push({kind:'repeat',times:2,
+    body:[{kind:'cast',action:{...r.action}}]});
+   r.steps=g.FantasySkillGraph?.normalize?.(steps)||steps;
+  }
+  write(current,'실행 그래프를 변경했습니다. 같은 그래프를 실제 전투와 실험장이 사용합니다.');
+  return;
+ }
  if(['up','down','duplicate','remove'].includes(cmd)&&i>=0&&i<current.rules.length){
   if(cmd==='remove'&&current.rules.length===1){status('최소 한 개의 규칙이 필요합니다.');return;}
   if(cmd==='remove')current.rules.splice(i,1);
@@ -187,6 +231,20 @@ panel.addEventListener('change',e=>{
  const base=R.normalize(read()||{window:10,rules:[{when:'pulse',interval:1,action:fighter().skills[0].actions[0]}]});
  if(input.id==='rule-window'){base.window=Number(input.value);write(base,'폭주 유지 시간을 변경했습니다.');return;}
  const i=Number(input.dataset.ruleIndex),field=input.dataset.ruleField;
+ if(Number.isInteger(i)&&i>=0&&i<base.rules.length&&input.dataset.stepField){
+  const idx=Number(input.dataset.stepIndex),step=base.rules[i].steps?.[idx];
+  if(step){
+   const f=input.dataset.stepField,value=input.value;
+   if(f==='type'&&step.kind==='cast')step.action.type=value;
+   else if(f==='seconds'&&step.kind==='wait')step.seconds=Number(value);
+   else if(f==='shape'&&step.kind==='morph')step.visual={...step.visual,shape:value};
+   else if(f==='condition'&&step.kind==='if')step.condition=value;
+   else if(f==='times'&&step.kind==='repeat')step.times=Number(value);
+   else if(step.kind==='tune'&&['field','operator','value'].includes(f))
+    step[f]=f==='value'?Number(value):value;
+   write(base,'실행 단계를 수정했습니다.');return;
+  }
+ }
  if(!field||!Number.isInteger(i)||i<0||i>=base.rules.length)return;
  const r=base.rules[i],value=input.value;
  if(field==='when'||field==='type')field==='when'?r.when=value:r.action.type=value;

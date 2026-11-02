@@ -75,7 +75,17 @@ function choices(id,owned=[],random=Math.random){
 // to the actions the runner actually executes, not just an obsolete preview.
 function eachAction(skill,callback){
  for(const action of skill.actions||[])callback(action);
- for(const rule of skill.ruleSet?.rules||[])if(rule.action)callback(rule.action);
+ for(const rule of skill.ruleSet?.rules||[]){
+  if(rule.action)callback(rule.action);
+  const visit=(items,depth=0)=>{
+   if(depth>3||!Array.isArray(items))return;
+   for(const step of items.slice(0,36)){
+    if(step.kind==='cast'&&step.action)callback(step.action);
+    visit(step.body,depth+1);visit(step.then,depth+1);visit(step.else,depth+1);
+   }
+  };
+  visit(rule.steps);
+ }
  const walk=(nodes,depth=0)=>{
   if(depth>4||!Array.isArray(nodes))return;
   for(const node of nodes.slice(0,32)){
