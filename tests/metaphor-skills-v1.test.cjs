@@ -84,7 +84,9 @@ test('actual SkillVisuals cast and miniature preview use the same metaphor paint
  assert.equal(fx.visual.shape,'beam');
  assert.ok(fx.beamLength>200);
  const {ctx,calls}=context();
- g.SkillVisuals.tick();
+ // Charged beams begin as a gathering cloud; the dark core appears
+ // only after the windup fraction in BOTH actual combat and preview.
+ for(let i=0;i<12;i++)g.SkillVisuals.tick();
  assert.doesNotThrow(()=>g.SkillVisuals.draw(ctx));
  const realDark=calls.filter(c=>c.name==='set:strokeStyle'&&c.value==='#130a20').length;
  assert.ok(realDark>0,'live game must paint black laser core');
