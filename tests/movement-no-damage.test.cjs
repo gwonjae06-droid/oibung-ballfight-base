@@ -76,6 +76,7 @@ test('scratch movement palette contains no offensive attacks; impact variants ar
     assert.match(src,new RegExp("'"+type+"'"));
   }
   const forge=read('js/features/skill-forge.js');
-  assert.ok(forge.includes('이동 전용 · 피해·상태이상·넉백 없음'));
+   const editor=read('js/features/skill-forge-editor.js');
+  assert.ok(editor.includes('이동 전용 · 피해·상태이상·넉백 없음'));
   assert.ok(!forge.includes('if(e&&e.invincible===0)hit(p,e,{damage:7'));
 });
