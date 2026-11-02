@@ -30,7 +30,7 @@ test('endurance and defense increase floor duration without changing player PvP 
   assert.ok(floor(9).hp>floor(6).hp);
  }
  const forge=read('js/features/skill-forge.js');
- assert.match(forge,/e\.towerEnemy&&Number\.isFinite\(e\.towerDefense\)/);
+ assert.match(read('js/features/skill-forge-impact.js'),/e\.towerEnemy&&Number\.isFinite\(e\.towerDefense\)/);
  assert.match(forge,/towerEnemy\?8000:500/);
 });
 test('commentary has 500+ usable variants and delays next-floor intro until actual countdown',()=>{
