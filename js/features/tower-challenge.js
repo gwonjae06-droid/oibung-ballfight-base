@@ -180,7 +180,7 @@ function install(){
    +'<div class="tower-fighter-tabs" role="group" aria-label="캐릭터 종류"><button type="button" data-fighter-group="basic" aria-pressed="true">기본 캐릭터</button><button type="button" data-fighter-group="custom" aria-pressed="false">커스텀 캐릭터</button></div>'
    +'<div id="tower-fighter-cards" class="tower-fighter-cards" aria-label="선택 가능한 출전 캐릭터"></div>'
    +'</section><div class="tower-prep-side">'
-   +'<label class="tower-hero-choice" for="tower-hero"><span>선택된 캐릭터</span><select id="tower-hero" aria-label="출전 캐릭터 목록"></select></label>'
+   +'<label class="tower-hero-choice" for="tower-hero"><span>선택된 캐릭터</span><select id="tower-hero" tabindex="-1" aria-hidden="true"></select></label>'
    +'<div class="tower-hero-summary" id="tower-hero-summary" role="status" aria-live="polite"></div>'
    +'<details class="tower-opponent" id="tower-enemy-details">'
    +'<summary class="tower-enemy"><span class="tower-opponent-name"><small>상대</small><strong id="tower-enemy">훈련의 문</strong></span>'
@@ -386,6 +386,7 @@ function install(){
   function chooseFighter(id){
     if(active||stage==='fighting'||(roundStarted&&!isGameOver))return false;
     const d=pool().find(item=>item.id===id);if(!d)return false;
+    fighterGroup=CUSTOM_DEFS.includes(d)?'custom':'basic';
     hero.value=d.id;level=ancient?10:1;cleared=0;
     message.textContent='';show();return true;
   }
@@ -393,7 +394,10 @@ function install(){
     const group=event.target.closest?.('[data-fighter-group]')?.dataset.fighterGroup;
     if(group!=='basic'&&group!=='custom')return;
     if(active)return;
-    fighterGroup=group;show();
+    fighterGroup=group;
+    const first=(group==='custom'?CUSTOM_DEFS:CHARACTER_DEFS)[0];
+    hero.value=first?.id||'';
+    show();
   });
   fighterCards?.addEventListener?.('click',event=>{
     const id=event.target.closest?.('[data-fighter-id]')?.dataset.fighterId;
@@ -497,6 +501,9 @@ function install(){
     start.textContent=ancient&&stage==='ready'?'▶ 고대의 존재 도전':stage==='between'?'▶ '+level+'층 시작':
       stage==='fighting'?'전투 진행 중':stage==='ready'?'▶ '+level+'층 시작':'▶ 다시 도전';
     start.hidden=stage==='fighting'||stage==='between';
+    const category=fighterGroup==='custom'?CUSTOM_DEFS:CHARACTER_DEFS;
+    start.disabled=!active&&!category.some(d=>d.id===hero.value);
+    start.title=start.disabled?'이 목록에서 출전 캐릭터를 선택해 주세요.':'선택한 캐릭터로 자동 전투를 시작합니다.';
     clearOverlay.hidden=stage!=='between';
     // Feedback is shown only for actionable results and errors.
     message.hidden=stage==='fighting'||stage==='between'||!message.textContent;
@@ -619,7 +626,11 @@ function install(){
     }
     if(active||stage==='fighting')return false;
     const who=selectedDef();
-    if(!who){message.textContent='캐릭터가 없습니다. 캐릭터 설계에서 먼저 만들어 주세요.';return false;}
+    const category=fighterGroup==='custom'?CUSTOM_DEFS:CHARACTER_DEFS;
+    if(!who||!category.includes(who)){
+      message.textContent='출전 캐릭터를 선택해 주세요. 다른 종류 탭에서도 고를 수 있습니다.';
+      show();return false;
+    }
     if(roundStarted&&!isGameOver){message.textContent='진행 중인 자유 대전을 먼저 종료해 주세요.';return false;}
     blessings=[];offers=[];routePending=false;routeSelected='';encounter=null;
     clearReport();message.textContent='';selected=who;active=true;view='interior';stage='ready';
