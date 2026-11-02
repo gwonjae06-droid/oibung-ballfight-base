@@ -16,7 +16,7 @@ function create(){
     getClosestAliveEnemy(p){return state.players.find(e=>e!==p&&e.hp>0)||null;}
   };
   const context=vm.createContext(state);
-  for(const part of ['skill-forge-impact','skill-forge-casting','skill-forge-world'])
+  for(const part of ['skill-forge-impact','skill-forge-casting','skill-forge-world','skill-forge-profiles','skill-forge-storage','skill-forge-executor'])
     vm.runInContext(fs.readFileSync(path.join(__dirname,'../js/features/'+part+'.js'),'utf8'),context,{filename:part+'.js'});
   vm.runInContext(source,context,{filename:'skill-forge.js'});
   return {state,api:state.window.SkillForge};

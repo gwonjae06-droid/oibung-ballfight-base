@@ -17,7 +17,7 @@ function boot(){
     document:{querySelector(){return null;}},
     getClosestAliveEnemy(p){return h.players.find(e=>e!==p&&e.hp>0)||null;}};
   h.window=h;vm.createContext(h);
-  for(const file of ['ability-atlas','forge-expansion','advanced-combat' ,'skill-forge-impact','skill-forge-casting','skill-forge-world','skill-forge'])
+  for(const file of ['ability-atlas','forge-expansion','advanced-combat' ,'skill-forge-impact','skill-forge-casting','skill-forge-world','skill-forge-profiles','skill-forge-storage','skill-forge-executor','skill-forge'])
     vm.runInContext(read('js/features/'+file+'.js'),h,{filename:file+'.js'});
   function player(n,x=100,y=100){
     h.SkillForge.register({name:'물리 전투',color:'#4e8ca0',skills:[
