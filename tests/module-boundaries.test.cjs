@@ -54,5 +54,6 @@ test('ArenaBalance stable public API and authored profiles stay compatible acros
  const player={maxHp:300,hp:300,forge:profile,playerNum:1};
  const other={maxHp:300,hp:300,forge:profile,playerNum:2};
  a.shieldWindow(player,150);a.tickShield(other);
- assert.equal(other._forgeShieldEnergy,undefined,'resources remain scoped to fighter, not the model');
+ assert.ok(other._forgeShieldEnergy>player._forgeShieldEnergy,
+  'shield energy is independently stored per fighter, not shared on the model');
 });
