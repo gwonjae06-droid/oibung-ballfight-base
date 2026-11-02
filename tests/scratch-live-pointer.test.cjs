@@ -7,7 +7,7 @@ function world(){
  createHitParticles(){},addFloatingText(){},CHARACTER_PHOTOS:{}};
  g.window=g;g.globalThis=g;vm.createContext(g);
  for(const file of ['js/features/action-registry.js','js/features/signature-program.js',
- 'js/features/signature-scratch.js','js/features/signature-live.js','js/features/skill-forge.js'])
+ 'js/features/signature-scratch.js','js/features/signature-live.js','js/features/skill-forge-impact.js','js/features/skill-forge-casting.js','js/features/skill-forge.js'])
  vm.runInContext(read(file),g,{filename:file});
  return g;
 }
@@ -80,7 +80,7 @@ test('confirmed shield, dodge and movement events publish to live scripts',()=>{
  assert.equal(tick(g,moveRun,owner,{x:70,y:0}).type,'shot');
 });
 test('real game routes only queued actions into delayed live interpreter',()=>{
- const src=read('js/features/skill-forge.js');
+ const src=read('js/features/skill-forge-impact.js','js/features/skill-forge-casting.js','js/features/skill-forge.js');
  assert.match(src,/const run=global.SignatureLive\?\.begin/);
  assert.match(src,/const a=global.SignatureLive\?\.step/);
  assert.match(src,/global.SignatureLive\?\.performed/);
