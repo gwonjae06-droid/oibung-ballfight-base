@@ -23,7 +23,7 @@ test('creative prose reaches model intact and becomes an executable skill',async
   assert.equal(out.adaptations.length,1);
   const ctx={window:null,CUSTOM_DEFS:[],BEHAVIORS:{},players:[],canvas:{width:500,height:500},createHitParticles(){},addFloatingText(){}};
   ctx.window=ctx;vm.createContext(ctx);
-  for(const f of ['ability-atlas.js','skill-forge-impact.js','skill-forge-casting.js','skill-forge.js'])vm.runInContext(fs.readFileSync(path.join(__dirname,'../js/features',f),'utf8'),ctx);
+  for(const f of ['ability-atlas.js','skill-forge-impact.js','skill-forge-casting.js','skill-forge-world.js','skill-forge.js'])vm.runInContext(fs.readFileSync(path.join(__dirname,'../js/features',f),'utf8'),ctx);
   const id=ctx.SkillForge.register(out.profile),p=ctx.CUSTOM_DEFS[0].createInstance(1);
   const enemy={playerNum:2,x:200,y:200,hp:200,radius:34,invincible:0};
   ctx.players.push(p,enemy);p.forgeTicks[0]=180;
