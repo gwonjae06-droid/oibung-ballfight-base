@@ -4,7 +4,7 @@ const text=f=>fs.readFileSync('js/features/'+f+'.js','utf8');
 function boot(){
  const g={Math,Number,console,Map,Set,WeakMap,addFloatingText(){}};
  g.window=g;g.globalThis=g;vm.createContext(g);
- for(const f of ['tower-realms','bounce-momentum','arena-balance','forge-expansion'])
+ for(const f of ['tower-realms','bounce-momentum','arena-balance-formula','arena-balance','forge-expansion'])
   vm.runInContext(text(f),g);
  return g;
 }
