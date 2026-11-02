@@ -26,9 +26,9 @@ test('custom fighter deletion remains in an always-visible manager after the Sav
 });
 
 test('roster renders name, accessible deletion control, saved count and empty state',()=>{
-  const source=read('js/features/skill-forge.js');
+  const source=read('js/features/skill-forge-editor.js');
   const begin=source.indexOf('  function roster(){');
-  const end=source.indexOf('  refreshList=roster;',begin);
+  const end=source.indexOf('  state.refreshList=roster;',begin);
   assert.ok(begin>=0&&end>begin,'roster function must remain available');
   const snippet=source.slice(begin,end);
   const elements={};
@@ -64,21 +64,22 @@ test('roster renders name, accessible deletion control, saved count and empty st
 });
 
 test('delete still uses confirmation and never deletes mid-battle',()=>{
-  const forge=read('js/features/skill-forge.js');
+  const forge=read('js/features/skill-forge-editor.js');
   assert.ok(forge.includes('if(roundStarted&&!isGameOver){report('));
   assert.ok(forge.includes("if(!confirm(selected.name+' 캐릭터를 삭제하시겠습니까?'))return;"));
-  assert.ok(forge.includes('if(remove(id)){if(editingId===id)cancelEdit();reRollMatch();roster();report('));
-  assert.ok(forge.includes('persist();refreshList();return true;'));
+  assert.ok(forge.includes('if(remove(id)){if(state.editingId===id)cancelEdit();reRollMatch();roster();report('));
+  assert.ok(read('js/features/skill-forge.js').includes('persist();refreshList();return true;'));
+  assert.ok(forge.includes('if(remove(id))'));
 });
 
 test('unlimited fighter roster is searchable and the edit button opens the composer',()=>{
-  const forge=read('js/features/skill-forge.js'),ui=read('js/features/studio-workspace.js');
+  const forge=read('js/features/skill-forge-editor.js'),ui=read('js/features/studio-workspace.js');
   assert.ok(!forge.includes("CUSTOM_DEFS.length>=6"));
   assert.ok(!forge.includes("v.slice(0,6)"));
   assert.ok(forge.includes("global.CharacterStudioModes?.select?.('compose')"));
   assert.ok(forge.includes("$('forge-roster-filter')?.addEventListener('input',roster)"));
   assert.ok(ui.includes('forge-roster-filter-status'));
-  const begin=forge.indexOf('  function roster(){'),end=forge.indexOf('  refreshList=roster;',begin);
+  const begin=forge.indexOf('  function roster(){'),end=forge.indexOf('  state.refreshList=roster;',begin);
   assert.ok(begin>0&&end>begin);
   const elements={},target={children:[],replaceChildren(){this.children=[];},appendChild(x){this.children.push(x);}};
   elements['bf-custom-list']=target;
