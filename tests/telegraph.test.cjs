@@ -67,7 +67,8 @@ test('online clients consume host preview without requiring a duplicated damage 
 });
 test('skill effects never fire during visible windup; normal hit logic runs afterward',()=>{
  const w=init();
- vm.runInContext(fs.readFileSync('js/features/skill-forge.js','utf8'),w,{filename:'skill-forge.js'});
+ for(const part of ['skill-forge-impact','skill-forge-casting','skill-forge'])
+  vm.runInContext(fs.readFileSync('js/features/'+part+'.js','utf8'),w,{filename:part+'.js'});
  const id=w.SkillForge.register({name:'윈드업 확인',hp:250,speed:2,color:'#6684aa',
   skills:[{name:'전방 충격파',trigger:'auto',cooldown:5,actions:[
     {type:'wave',damage:30,radius:180,count:1}]}]});
