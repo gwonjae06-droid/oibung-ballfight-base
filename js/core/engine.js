@@ -133,6 +133,7 @@ function stopMatch(){
   roundStopped=true;
   globalThis.ArenaCountdown?.cancel?.();
   globalThis.ArenaStalemate?.finish?.();
+  globalThis.ComboScreenFX?.clear?.();
   globalThis.BackgroundMusic?.setBattle(false);
   screenShake=0;
   globalThis.ArenaBattleDirector?.finish?.(players,null,'stopped');
@@ -408,6 +409,7 @@ function update() {
     isGameOver=true;isPlaying=false;
     if(expired&&finalAlive.length>1)roundStopped=true;
     globalThis.ArenaStalemate?.finish?.();
+    globalThis.ComboScreenFX?.clear?.();
     globalThis.BackgroundMusic?.setBattle(false);
     const winner=finalAlive.length===1?finalAlive[0]:null;
     globalThis.ArenaBattleDirector?.finish?.(players,winner,expired?'timeout':undefined);
