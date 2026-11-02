@@ -4,7 +4,7 @@ const code=(f)=>fs.readFileSync('js/features/'+f+'.js','utf8');
 function sim(){
  const world={Math,Number,Set,Map,players:[],console,addFloatingText(){},createHitParticles(){}};
  world.window=world;world.globalThis=world;
- vm.createContext(world);for(const file of ['arena-balance','forge-expansion','forge-combo-vfx'])vm.runInContext(code(file),world);
+ vm.createContext(world);for(const file of ['arena-balance-formula','arena-balance','forge-expansion','forge-combo-vfx'])vm.runInContext(code(file),world);
  return world;
 }
 const spell=(type='wave',extra={})=>({type,damage:60,duration:1,radius:120,count:1,status:'none',...extra});
@@ -88,7 +88,7 @@ test('pure 0.1s visual pulses have no combat state and respect reduced effects',
 test('local and PvP scripts use the exact same latest auto balance, and the periodic visuals are loaded after skill visuals',()=>{
  for(const file of ['index.html','pvp-runtime.html']){
   const html=fs.readFileSync(file,'utf8');
-  for(const name of ['skill-forge','arena-balance','forge-expansion','forge-combo-vfx'])
+  for(const name of ['skill-forge','arena-balance-formula','arena-balance','forge-expansion','forge-combo-vfx'])
    assert.ok(html.includes(name+'.js?v='),`${file} ${name} versioned module must load`);
   assert.ok(html.indexOf('skill-visuals.js')<html.indexOf('forge-combo-vfx.js'));
  }
