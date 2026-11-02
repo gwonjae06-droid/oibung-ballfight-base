@@ -3,7 +3,7 @@ const test=require('node:test'),assert=require('node:assert/strict'),vm=require(
 function app(){
   const h={window:null,players:[],CUSTOM_DEFS:[],BEHAVIORS:{},CHARACTER_PHOTOS:{},canvas:{width:500,height:500},createHitParticles(){},addFloatingText(){},getClosestAliveEnemy(p){return h.players.find(e=>e!==p&&e.hp>0);}};
   h.window=h;vm.createContext(h);
-  for(const file of ['ability-atlas','forge-expansion' ,'skill-forge-impact','skill-forge-casting','skill-forge','natural-forge'])vm.runInContext(fs.readFileSync(path.join(__dirname,'../js/features/'+file+'.js'),'utf8'),h);
+  for(const file of ['ability-atlas','forge-expansion' ,'skill-forge-impact','skill-forge-casting','skill-forge-world','skill-forge','natural-forge'])vm.runInContext(fs.readFileSync(path.join(__dirname,'../js/features/'+file+'.js'),'utf8'),h);
   return h;
 }
 function battle(type,status='none'){
