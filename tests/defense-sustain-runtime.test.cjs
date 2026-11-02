@@ -6,7 +6,7 @@ function makeWorld(){
   addFloatingText(){},createHitParticles(){},CUSTOM_DEFS:[],CHARACTER_PHOTOS:{},BEHAVIORS:{},
   getClosestAliveEnemy(){return null;}};
  w.window=w;w.globalThis=w;vm.createContext(w);
- for(const path of ['arena-balance','forge-expansion','skill-forge'])vm.runInContext(read(path),w);
+ for(const path of ['arena-balance-formula','arena-balance','forge-expansion','skill-forge'])vm.runInContext(read(path),w);
  return w;
 }
 const spell=(type,damage=0,duration=1.5,cooldown=3)=>({
