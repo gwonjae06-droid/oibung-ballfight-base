@@ -103,7 +103,7 @@ test('tower bosses do not open scripted warning patterns on timers without energ
 test('normal boss skill casts also consume momentum and rotate among the authored slots',()=>{
  const files=['js/features/action-registry.js','js/features/forge-archetypes.js','js/features/basic-attacks.js',
   'js/features/signature-program.js','js/features/signature-scratch.js','js/features/signature-live.js',
-  ...bossFiles,'js/features/arena-balance.js','js/features/skill-forge.js'];
+  ...bossFiles,'js/features/arena-balance-formula.js','js/features/arena-balance.js','js/features/skill-forge.js'];
  const g=world(files),M=g.BounceMomentum;
  g.SkillForge.register({name:'시계 수호자',hp:600,speed:2,skills:[
   {name:'시간 검',trigger:'auto',cooldown:.3,actions:[{type:'wave',damage:15}]},
