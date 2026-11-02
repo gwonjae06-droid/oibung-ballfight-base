@@ -29,24 +29,26 @@ const action=(type,damage=0,duration=1.2)=>({type,damage,
  condition:'always',knockback:0,delay:0});
 
 function buildProfile(g,archetype,style){
+ // Match EXACTLY the fields exposed by the one-screen editor.
+ // No secret duration, count, projectile speed, or 300-radius overrides.
  const step=(type,damage=0,repeat=1,opts={})=>({
-  action:{...action(type,damage,opts.duration??1.5),radius:opts.radius??(type==='wave'?300:130),
-   count:opts.count??1,status:opts.status||'none',link:'after'},
+  action:g.SignatureScratch.safeAction({type,damage,radius:opts.radius??(type==='wave'?130:120),
+   speed:5,duration:type==='shield'?1.4:1.5,status:opts.status||'none',link:'after'}),
   condition:'always',repeat
  });
- const shield=()=>step('shield',0,1,{duration:7.4});
+ const shield=()=>step('shield',0);
  const heal=(x=40)=>step('heal',x);
- const wave=(x=65,repeat=2)=>step('wave',x,repeat,{radius:300});
- const boost=()=>step('timeburst',0,1,{duration:8});
+ const wave=(x=65,repeat=2)=>step('wave',x,repeat,{radius:240});
+ const boost=()=>step('timeburst',0);
  let steps;
  switch(style){
   case 'safe-echo':steps=[shield(),heal(40),wave(65,2)];break;
   case 'assault-echo':steps=[shield(),wave(65,2),wave(40)];break;
   case 'healing-echo':steps=[heal(40),wave(65,2)];break;
   case 'time-echo':steps=[boost(),shield(),wave(65,2),heal(40)];break;
-  case 'beam-echo':steps=[shield(),heal(40),step('beam',65,2,{radius:300})];break;
-  case 'bolt-echo':steps=[shield(),heal(40),step('bolt',65,2,{count:8,radius:130})];break;
-  case 'poison-echo':steps=[shield(),heal(30),step('wave',60,2,{radius:300,status:'poison'}),step('wave',20,1,{radius:300})];break;
+  case 'beam-echo':steps=[shield(),heal(40),step('beam',65,2,{radius:240})];break;
+  case 'bolt-echo':steps=[shield(),heal(40),step('bolt',65,2,{radius:240})];break;
+  case 'poison-echo':steps=[shield(),heal(30),step('wave',60,2,{radius:240,status:'poison'}),step('wave',20,1,{radius:240})];break;
   case 'mobile-echo':steps=[shield(),heal(40),wave(65,2),step('retreat',0)];break;
   default:throw Error('Unknown style '+style);
  }
