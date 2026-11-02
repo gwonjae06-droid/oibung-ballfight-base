@@ -9,7 +9,7 @@ function world(){
     getClosestAliveEnemy(){return null;}};
   h.window=h;
   vm.createContext(h);
-  for(const name of ['action-registry','skill-forge','tower-challenge'])
+  for(const name of ['action-registry' ,'skill-forge-impact','skill-forge-casting','skill-forge','tower-challenge'])
     vm.runInContext(read('js/features/'+name+'.js'),h,{filename:name+'.js'});
   return h;
 }
