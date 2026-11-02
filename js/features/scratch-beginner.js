@@ -101,7 +101,7 @@ function stepCard(step,index,total){
  const field=(label,key,html)=>'<label>'+label+html.replace(' data-key=',' data-kid-edit="'+index+'" data-kid-key="'+key+'" ')+'</label>';
  const select=(label,key,vals,current)=>field(label,key,'<select data-key=>'+selectOptions(vals,current)+'</select>');
  const number=(label,key,value,max,min=0,step=1)=>field(label,key,
-  '<input type="number" inputmode="numeric" min="'+min+'" max="'+max+'" step="'+step+'" data-key= value="'+Math.min(max,Math.max(min,Number(value)||0))+'">');
+  '<input type="number" inputmode="numeric" min="'+min+'" max="'+max+'" step="'+step+'" data-key= value="'+(Number.isFinite(Number(value))?Number(value):min)+'">');
  return '<article class="kid-step-card" aria-label="'+(index+1)+'번 행동">'
   +'<header class="kid-step-card-head"><strong><span class="kid-step-index">'+(index+1)+'</span> '+(kind?.icon||'✨')+' '+escape(kind?.name||forge.TYPE[a.type]||a.type)+'</strong>'
   +'<span class="kid-item-controls"><button type="button" data-kid-move="'+index+'" data-kid-dir="-1" '+(index===0?'disabled':'')+' aria-label="위로 이동">↑</button>'
@@ -136,7 +136,7 @@ function refresh(){
   $('.kid-plan').innerHTML=steps.length?steps.map((s,i)=>stepCard(s,i,steps)).join(''):
    '<div class="kid-empty">색깔 행동을 눌러 기술에 추가하세요.</div>';
   const state=builder.inspect(steps);
-  $('.kid-count').textContent=steps.length+'/4단계 · 실행 '+state.count+'/6회 · 위력 '+state.power+'/170'+(state.ok?'':' · 기존 초안은 한도 밖입니다');
+  $('.kid-count').textContent=steps.length+'/4단계 · 실행 '+state.count+'/6회 · 위력 '+state.power+'/170'+(state.ok?'':' · 이전 설계가 한도 밖입니다. 아래에서 조정하거나 새 예시를 고르세요.');
  }
 }
 $('.kid-template-grid').innerHTML=templates.filter(t=>t.sequence.every(id=>forge.TYPE[id])).map(t=>

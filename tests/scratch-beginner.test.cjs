@@ -77,10 +77,9 @@ test('appearance stays reachable while one visual editor owns skill input',()=>{
  assert.match(easy,/g\.CharacterStudioWorkspace\?\.selectPreviewSkill/);
 });
 
-test('intermediate workbench edits validated action attributes and preserves advanced Scratch workflow',()=>{
+test('one editor handles action details directly, without a second workbench',()=>{
  const ui=src('js/features/scratch-beginner.js'),css=src('css/scratch-beginner.css');
- for(const word of ['data-kid-edit','data-kid-move','data-kid-dir','data-kid-key="link"',
-  'data-kid-key="target"','data-kid-key="damage"','data-kid-key="radius"',
+ for(const word of ['data-kid-edit','data-kid-move','data-kid-dir',"select('연계','link'", "select('대상','target'", "number('위력 (0~65)','damage'", "number('범위 (30~240)','radius'",
   'compiler.safeAction','S.applyProgram','builder.MAX_STEPS']){
   assert.ok(ui.includes(word),word);
  }

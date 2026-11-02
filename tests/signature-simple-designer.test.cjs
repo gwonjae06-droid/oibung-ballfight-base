@@ -41,9 +41,9 @@ test('single editor has no expert switches, modal settings or hidden Scratch wor
  const js=read('js/features/scratch-beginner.js'),css=read('css/scratch-beginner.css');
  assert.doesNotMatch(js,/data-kid-view|function chooseMode/);
  assert.doesNotMatch(js,/<details class="kid-action-settings"/);
- assert.match(js,/data-kid-key="condition"/);
- assert.match(js,/data-kid-key="repeat"/);
- assert.match(js,/data-kid-key="link"/);
+ assert.ok(js.includes("select('실행 조건','condition'"));
+ assert.ok(js.includes("select('반복','repeat'"));
+ assert.ok(js.includes("select('연계','link'"));
  assert.match(js,/SignatureSimpleDesigner/);
  assert.match(css,/#scratch-workbench\s*\{display:none!important\}/);
  assert.match(css,/#studio-easy-panel/);
