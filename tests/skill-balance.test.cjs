@@ -1,12 +1,13 @@
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
+const formulaSrc=fs.readFileSync('js/features/arena-balance-formula.js','utf8');
 const balanceSrc=fs.readFileSync('js/features/arena-balance.js','utf8');
 const build=(n=4,dmg=80,cooldown=1)=>({skills:Array.from({length:n},(_,i)=>({
  name:'제작 스킬 '+i,trigger:'auto',cooldown,actions:[{
   type:'wave',damage:dmg,radius:120,count:1,duration:1.5,status:'none'}]}))});
 function balance(){
  const ctx={Math,Number,Set,console};ctx.window=ctx;vm.createContext(ctx);
- vm.runInContext(balanceSrc,ctx);return ctx.ArenaBalance;
+ vm.runInContext(formulaSrc,ctx);vm.runInContext(balanceSrc,ctx);return ctx.ArenaBalance;
 }
 test('four 80-damage one-second skills are substantially weakened without rewriting their settings',()=>{
  const a=balance(),profile=build(),copy=JSON.stringify(profile),detail=a.summary(profile);
@@ -31,7 +32,7 @@ test('area, count, repeated effects and statuses count toward the same budget',(
 test('four-spell budget influences real combat damage, while transient Tower enemies retain boss tuning',()=>{
  const w={Math,Number,Set,Map,console,CUSTOM_DEFS:[],CHARACTER_PHOTOS:{},BEHAVIORS:{},
   players:[],createHitParticles(){},addFloatingText(){},getClosestAliveEnemy(){return null;}};
- w.window=w;vm.createContext(w);vm.runInContext(balanceSrc,w);
+ w.window=w;vm.createContext(w);vm.runInContext(formulaSrc,w);vm.runInContext(balanceSrc,w);
  vm.runInContext(fs.readFileSync('js/features/skill-forge.js','utf8'),w);
  const profile=w.SkillForge.normalize({name:'사기 빌드',skills:build().skills});
  const attacker={playerNum:1,x:100,y:100,hp:300,forge:profile};
