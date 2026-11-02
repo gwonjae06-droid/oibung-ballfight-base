@@ -79,5 +79,5 @@ test('the mini lab shares actual performed action family FX and preserves visibl
  lab.render(c);
  assert.ok(events.includes('wave'),'wave must render actual shared visual family');
  assert.ok(events.includes('splitshot'),'projectile cast must render actual shared visual family');
- assert.ok(lab.projectiles<=35,'mini bullet budget stays bounded');
+ assert.ok(lab.projectiles<=45,'mini bullet budget stays bounded');
 });

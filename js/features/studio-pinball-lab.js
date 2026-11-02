@@ -13,6 +13,8 @@ const MOVE=new Set(['dash','blink','retreat','swap','leap','hover','glide','flig
 const AREA=new Set(['wave','nova','slash','spinslash','thrust','uppercut','aircombo','erupt','zone','blackhole','mine','trap','pull']);
 const SUPPORT=new Set(['shield','fortify','regen','heal','lifebloom','haste','timestop','timeburst','rewind','grow','shrink','resurrect','cleanse']);
 const BUMPERS=[[60,60],[420,60],[60,240],[420,240]];
+// AdvancedCombat reserves 90 shots in a two-player fight: 45 per owner.
+const SPLIT_OWNER_BUDGET=45;
 function actionsFor(profile,index,actionIndex=-1){
  const list=profile?.allAbilities?g.SkillForge?.allSkillset?.()||[]:profile?.skills||[];
  if(!list.length)return [];
@@ -38,9 +40,12 @@ function make(profile={},focus=0,actionIndex=-1){
  hero.baseRadius=hero.radius;
  const bullets=[],rings=[],sparks=[],queue=[],walls=[],portals=[],activeEffects=[];
  let cursor=0,lastContact=-100,lastWall=-100,ruleRun=null;
+ const splitHistory=[];
  const previewActor={hp:100,_forgeActionClock:0,_scratchEvents:Object.create(null)};
  function recordRuleEvent(name){
-  const old=previewActor._scratchEvents[name]||{count:0};
+  const old=previewActor._scratchEvents[name]||{count:0,frame:-100};
+  // Real SignatureLive.record counts a confirmed event at most once per tick.
+  if(old.frame===frame)return;
   previewActor._scratchEvents[name]={count:old.count+1,frame};
  }
  const history=[];
@@ -111,26 +116,62 @@ function make(profile={},focus=0,actionIndex=-1){
  }
  function projectile(a,angle){
   // Preserve live bullets: reject overload instead of deleting oldest shots.
-  if(bullets.length>=35)return;
+  if(bullets.length>=SPLIT_OWNER_BUDGET)return;
   const speed=clamp(Number(a.speed)||5,2,12)*.8;
   bullets.push({x:hero.x,y:hero.y,vx:Math.cos(angle)*speed,vy:Math.sin(angle)*speed,
    life:220,r:5,color,status:a.status||'none',type:a.type,reflects:0,split:false,age:0,
    fractureRemaining:clamp(Math.round(a.fractureDepth||1),1,3),fragmentCount:clamp(Math.round(a.count||1),1,8),
    maxRebounds:a.type==='shot'?clamp(Math.round(Number(a.ricochet)||0),0,3):0});
  }
+ // Splitshots share the REAL combat trajectory: one target-aimed crystal
+ // that bursts after 56% of its own flight, not an arbitrary 17-frame timer.
+ function splitshot(a){
+  if(bullets.length>=SPLIT_OWNER_BUDGET)return;
+  const tx=clamp(target.x,18,W-18),ty=clamp(target.y,18,H-18);
+  const speed=Math.max(2,Number(a.speed)||6),distance=Math.hypot(tx-hero.x,ty-hero.y);
+  const travel=g.ArenaSplitshotGeometry?.rootTravel?.(hero.x,hero.y,tx,ty,speed) ??
+   clamp(Math.ceil(distance/(speed*.5)),24,72);
+  bullets.push({kind:'splitshot',type:'splitshot',x:hero.x,y:hero.y,
+   startX:hero.x,startY:hero.y,tx,ty,
+   vx:(tx-hero.x)/travel,vy:(ty-hero.y)/travel,age:0,travel,life:travel+8,
+   color,status:a.status||'none',r:5,a:{...a},fractureRemaining:clamp(
+    Math.round(a.fractureDepth||1),1,3),fragmentCount:clamp(Math.round(a.count||1),1,8),
+   split:false});
+ }
  function fragment(b){
-  if(b.split||bullets.length>=35)return;
+  if(b.split)return;
   b.split=true;recordRuleEvent('split');
   previewEffect({type:'splitshot',radius:65,status:b.status},'impact',b.x,b.y,21);
-  const n=clamp(Math.round(b.fragmentCount||2),1,8),remaining=(b.fractureRemaining||1)-1;
-  const origin=Math.atan2(b.vy,b.vx),speed=Math.max(2,Math.hypot(b.vx,b.vy));
-  for(let j=0;j<n&&bullets.length<35;j++){
-   const angle=origin+(j-(n-1)/2)*.35;
-   bullets.push({x:b.x,y:b.y,vx:Math.cos(angle)*speed*.86,vy:Math.sin(angle)*speed*.86,
-    life:75,r:3.8,color:b.color,status:b.status,type:'fragment',reflects:0,split:false,
-    age:0,fractureRemaining:remaining,fragmentCount:n,maxRebounds:0});
+  const n=clamp(Math.round(b.fragmentCount||1),1,8);
+  const generations=clamp(Number(b.fractureRemaining??b.a?.fractureDepth??1),1,3);
+  const remaining=generations-1;
+  const tips=g.ArenaSplitshotGeometry?.childEndpoints?.(b.x,b.y,b.a?.radius,n,W,H) ??
+   Array.from({length:n},(_,j)=>{
+    const t=j/n*TAU,len=Math.min(95,b.a?.radius||95);
+    return {x:clamp(b.x+Math.cos(t)*len,15,W-15),
+      y:clamp(b.y+Math.sin(t)*len,15,H-15),theta:t};
+   });
+  const speed=Math.max(2,Number(b.a?.speed)||6);
+  const travel=g.ArenaSplitshotGeometry?.childTravel?.(speed) ??
+   clamp(Math.ceil(95/speed),10,40);
+  splitHistory.push({frame,kind:b.type,generations,x:b.x,y:b.y,
+    positions:tips.map(t=>({x:t.x,y:t.y}))});
+  for(let j=0;j<n&&bullets.length<SPLIT_OWNER_BUDGET;j++){
+   const tip=tips[j],a=generations>1?
+    {...b.a,damage:Math.max(1,Math.round((b.a?.damage||1)*.55))}:b.a;
+   bullets.push({kind:'fragment',type:'fragment',x:b.x,y:b.y,
+    startX:b.x,startY:b.y,tx:tip.x,ty:tip.y,
+    vx:(tip.x-b.x)/travel,vy:(tip.y-b.y)/travel,life:50,travel,age:0,
+    color:b.color,status:b.status,r:3.8,a,split:false,
+    fractureRemaining:remaining,fragmentCount:n});
   }
   spark(b.x,b.y,b.color,18);b.life=0;
+ }
+ // Swept collision, just like AdvancedCombat's real shard hit detection.
+ function segmentRadius(ax,ay,bx,by,px,py){
+  const dx=bx-ax,dy=by-ay,den=dx*dx+dy*dy;
+  const t=den?clamp(((px-ax)*dx+(py-ay)*dy)/den,0,1):0;
+  return Math.hypot(px-(ax+dx*t),py-(ay+dy*t));
  }
  function perform(action){
   const a=action||{},type=a.type||'wave';
@@ -146,9 +187,10 @@ function make(profile={},focus=0,actionIndex=-1){
     rings.push({x:target.x,y:target.y,r:clamp((a.radius||80)*.35,23,65),
      age:0,life:falling?36:24,color,impactAt:falling?30:0,attack:a,hit:false});
     if(!falling)hitTarget(hero.x,hero.y,true);
-   }else{
+   }else if(type==='splitshot')splitshot(a);
+   else{
     const count=clamp(Math.round(a.count||1),1,8);
-    for(let j=0;j<(type==='splitshot'?1:count);j++)projectile(a,angle+(j-(count-1)/2)*.17);
+    for(let j=0;j<count;j++)projectile(a,angle+(j-(count-1)/2)*.17);
    }
   }else if(MOVE.has(type)){
    if(type==='leap'||type==='dive'){
@@ -291,6 +333,28 @@ function make(profile={},focus=0,actionIndex=-1){
   for(let i=portals.length-1;i>=0;i--)if(--portals[i].life<=0)portals.splice(i,1);
   for(let i=bullets.length-1;i>=0;i--){
    const b=bullets[i];
+   if(b.type==='splitshot'||b.type==='fragment'){
+    const oldX=b.x,oldY=b.y;
+    b.age++;b.life--;
+    const t=clamp(b.age/Math.max(1,b.travel),0,1);
+    b.x=b.startX+(b.tx-b.startX)*t;
+    b.y=b.startY+(b.ty-b.startY)*t;
+    const shouldSplit=g.ArenaSplitshotGeometry?.shouldSplit?.(
+      b.type,b.age,b.travel,b.fractureRemaining) ??
+      ((b.type==='splitshot'||b.type==='fragment'&&b.fractureRemaining>1)&&t>=.56);
+    if(shouldSplit&&!b.split)fragment(b);
+    // The original projectile does not damage on its way to the split point;
+    // only moving fragments have contact damage in AdvancedCombat.
+    if(b.type==='fragment'&&b.life>0&&
+      segmentRadius(oldX,oldY,b.x,b.y,target.x,target.y)<=target.radius+8){
+      previewEffect({type:'splitshot',radius:35,status:b.status},
+        'impact',target.x,target.y,18);
+      hitTarget(oldX,oldY);b.life=0;
+    }
+    if(t>=1)b.life=0;
+    if(b.life<=0)bullets.splice(i,1);
+    continue;
+   }
    if(b.type==='homing'){
     const a=Math.atan2(target.y-b.y,target.x-b.x);
     b.vx=b.vx*.93+Math.cos(a)*.42;b.vy=b.vy*.93+Math.sin(a)*.42;
@@ -433,6 +497,10 @@ function make(profile={},focus=0,actionIndex=-1){
   get projectiles(){return bullets.length;},get walls(){return walls.length;},get portals(){return portals.length;},get balls(){return [hero,target];},
   get ruleActions(){return ruleRun?.actions||0;},
   get splitEvents(){return previewActor._scratchEvents.split?.count||0;},
+  get splitHistory(){return splitHistory.map(x=>({...x,positions:x.positions.map(p=>({...p}))}));},
+  get splitProjectiles(){return bullets.filter(b=>b.type==='splitshot'||b.type==='fragment')
+   .map(b=>({type:b.type,x:b.x,y:b.y,age:b.age,travel:b.travel,
+    remaining:b.fractureRemaining}));},
   get landEvents(){return previewActor._scratchEvents.land?.count||0;},
   get wallEvents(){return previewActor._scratchEvents.wall?.count||0;}};
 }

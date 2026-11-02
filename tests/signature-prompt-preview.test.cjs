@@ -31,7 +31,7 @@ test('mini pinball lab emits real-looking cascading shards and split reaction ev
  lab.advanceTo(7000);
  assert.ok(lab.ruleActions>=6);
  assert.ok(lab.splitEvents>0,'a traveling splitshot must actually split on the preview canvas');
- assert.ok(lab.projectiles<=35,'preview projectile budget must stay bounded');
+ assert.ok(lab.projectiles<=45,'preview projectile budget must stay bounded');
 });
 test('mini pinball lab landing events can trigger an authored downward combo',()=>{
  const g=boot(),lab=g.StudioPinballLab.make(profile(g,[{

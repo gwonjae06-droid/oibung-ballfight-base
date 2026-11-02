@@ -88,7 +88,7 @@ test('preview contains targeted falling arc shots, landing dive impacts and pres
  assert.match(s,/\['bolt','meteor','starfall','arcshot'\]/);
  assert.match(s,/hero\.diveImpact/);
  assert.match(s,/previewEffect\(impact\.action,'impact'/);
- assert.match(s,/if\(bullets\.length>=35\)return/);
+ assert.match(s,/if\(bullets\.length>=SPLIT_OWNER_BUDGET\)return/);
 });
 test('PvP snapshot sends denser bullet scenes without modifying authoritative hit simulation',()=>{
  const s=file('js/features/pvp-runtime.js');
