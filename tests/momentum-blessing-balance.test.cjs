@@ -31,12 +31,18 @@ test('Tower haste actually improves modern 100-energy passive and wall rates, 2 
  assert.ok(M.meter(once)>M.meter(plain));
  assert.equal(modern()._towerMomentumBoost,undefined,'saving a new profile never persists the temporary blessing');
 });
-test('legacy 4-skill fighters still get ordinary cooldown reduction without signature energy',()=>{
- const g=boot(),p={hp:250,maxHp:250,forge:{signatureVersion:0,
+test('legacy saved 4-skill fighters gain real 100-energy recharge, not ineffective cooldown edits',()=>{
+ const g=boot(),M=g.BounceMomentum;
+ const basic={hp:250,maxHp:250,playerNum:1,towerHero:true,forge:{signatureVersion:0,
    skills:[{name:'파동',cooldown:5,actions:[{type:'wave',damage:25}]}]}};
+ const p={...basic,forge:JSON.parse(JSON.stringify(basic.forge))};
  g.ArenaTowerRealms.apply(p,'ice',['haste','haste']);
- assert.ok(Math.abs(p.forge.skills[0].cooldown-5*.85*.85)<.001);
- assert.equal(p._towerMomentumBoost,undefined);
+ assert.ok(Math.abs(p._towerMomentumBoost-1.3225)<.001);
+ assert.equal(p.forge.skills[0].cooldown,5,'saved authored timers stay unchanged');
+ assert.equal(M.enabled(p),true);
+ for(let i=0;i<60;i++){basic._forgeActionClock=i+1;p._forgeActionClock=i+1;
+   M.tick(basic,{hp:200});M.tick(p,{hp:200});}
+ assert.ok(M.meter(p)>M.meter(basic),'blessing changes actual skill readiness');
 });
 test('only player Tower energy is boosted, never PvP, minion, boss or scripted time refunds',()=>{
  const g=boot(),M=g.BounceMomentum;
