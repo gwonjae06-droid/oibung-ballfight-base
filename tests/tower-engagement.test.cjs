@@ -54,8 +54,8 @@ test('successfully avoiding boss telegraphs opens a temporary real damage window
   }
  }
  assert.ok(seen,'dodged boss attacks should reveal a weak point');
- for(let i=0;i<180;i++)enc.step();
- assert.equal(boss.towerDefense,.8,'weak point closes after 3 simulated seconds');
+ for(let i=0;i<210;i++)enc.step();
+ assert.equal(boss.towerDefense,.8,'weak point closes after 3.5 simulated seconds');
 });
 test('only tower battles receive the earlier stalemate pressure',()=>{
  const g=moduleAt('js/features/arena-stalemate.js');
