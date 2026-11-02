@@ -41,7 +41,10 @@ function make(profile={},focus=0,actionIndex=-1){
  const bullets=[],rings=[],sparks=[],queue=[],walls=[],portals=[],activeEffects=[];
  let cursor=0,lastContact=-100,lastWall=-100,ruleRun=null;
  const splitHistory=[];
- const previewActor={hp:100,_forgeActionClock:0,_scratchEvents:Object.create(null)};
+ // The shared graph tests proximity and HP against simulated actors,
+ // never empty placeholder coordinates, so mini-lab conditions match combat.
+ const previewActor={hp:100,maxHp:100,x:hero.x,y:hero.y,_forgeActionClock:0,
+  _scratchEvents:Object.create(null)};
  function recordRuleEvent(name){
   const old=previewActor._scratchEvents[name]||{count:0,frame:-100};
   // Real SignatureLive.record counts a confirmed event at most once per tick.
@@ -287,6 +290,7 @@ function make(profile={},focus=0,actionIndex=-1){
   if(hero.sizeTime>0&&--hero.sizeTime===0)hero.radius=hero.baseRadius;
   energy=Math.min(100,energy+.29*boost);
   previewActor._forgeActionClock=frame;
+  previewActor.x=hero.x;previewActor.y=hero.y;previewActor.hp=hero.hp;
   if(hero.landAt&&frame>=hero.landAt){
     hero.landAt=0;
     if(hero.diveImpact){
@@ -300,7 +304,7 @@ function make(profile={},focus=0,actionIndex=-1){
   }
   if(energy>=100&&queue.length===0&&(!ruleRun||ruleRun.finished))launch();
   if(ruleRun&&!ruleRun.finished){
-    const ruleAction=g.SignatureRuleLive?.step?.(ruleRun,previewActor);
+    const ruleAction=g.SignatureRuleLive?.step?.(ruleRun,previewActor,target);
     if(ruleAction&&queue.length<36)queue.push({when:frame+2,action:ruleAction});
   }
   for(let i=queue.length-1;i>=0;i--)if(queue[i].when<=frame){

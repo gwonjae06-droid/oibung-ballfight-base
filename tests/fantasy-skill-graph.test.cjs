@@ -74,7 +74,7 @@ test('metaphor sentence generates a sequential multi-stage graph, not two simult
  assert.ok(result.recipe.rules[0].steps?.length>=4,
   'the sentence should compile to a graph of morphed actions');
  const steps=result.recipe.rules[0].steps;
- assert.deepEqual(steps.filter(s=>s.kind==='cast').map(s=>s.action.type),['slash','beam']);
+ assert.deepEqual(Array.from(steps.filter(s=>s.kind==='cast'),s=>s.action.type),['slash','beam']);
  assert.equal(steps[0].kind,'morph');
  assert.equal(steps[2].kind,'morph');
  const p={hp:200,maxHp:200,x:0,y:0,_scratchEvents:{}},t={hp:200,x:50,y:0};
@@ -139,4 +139,18 @@ test('graph editor and client load order carry entire authored graph into the ba
  assert.match(lab,/SignatureRuleLive\?\.step/);
  const casting=read('skill-forge-casting');
  assert.match(casting,/SignatureRuleLive\?\.step/);
+});
+
+test('the miniature uses real hero and opponent coordinates for graph near conditions',()=>{
+ const g=boot();vm.runInContext(read('studio-pinball-lab'),g,{filename:'studio-pinball-lab'});
+ const nearRule={when:'pulse',interval:3,action:action('wave'),
+  steps:[{kind:'if',condition:'near',then:[{kind:'cast',action:action('wave')}],else:[]}]};
+ const character={signatureVersion:1,name:'근거리 환상',color:'#b19cff',
+  skills:[{name:'근접 조건',trigger:'auto',cooldown:3,
+   actions:[action('wave')],ruleSet:{window:5,rules:[nearRule]}}]};
+ const lab=g.StudioPinballLab.make(character);
+ const [hero,target]=lab.balls;
+ target.x=hero.x+30;target.y=hero.y;
+ lab.fire();lab.advanceTo(180);
+ assert.ok(lab.ruleActions>=1,'near condition should fire in the same graph runtime as real combat');
 });
