@@ -78,11 +78,11 @@ const {hit,hitGround,groundImpactZ}=global.SkillForgeImpactFactory({MOVEMENT_ONL
 if(!global.SkillForgeWorldFactory)
   throw Error('Forge dependency missing: load skill-forge-world.js before skill-forge.js');
 const world=global.SkillForgeWorldFactory({hit,hitGround,enemies});
-const {cast,tickQueue,tickSkills,cooldownFrames}=
-  global.SkillForgeCastingFactory({MOVEMENT_ONLY,execute});
 if(!global.SkillForgeExecutorFactory)
   throw Error('Forge dependency missing: load skill-forge-executor.js before skill-forge.js');
 const {execute}=global.SkillForgeExecutorFactory({MOVEMENT_ONLY,hit,enemies});
+const {cast,tickQueue,tickSkills,cooldownFrames}=
+  global.SkillForgeCastingFactory({MOVEMENT_ONLY,execute});
 function update(p,target){
   p._forgeActionClock=(p._forgeActionClock||0)+1;
   global.SignatureLive?.tickMove?.(p);
