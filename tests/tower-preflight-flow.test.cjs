@@ -33,9 +33,9 @@ function setup(){
   getItem:id=>store.get(id)||null,setItem:(id,value)=>store.set(id,value)
  },CHARACTER_DEFS:originals,CUSTOM_DEFS:customs,BEHAVIORS:{},players:[],
  isPlaying:false,isGameOver:false,roundStarted:false,canvas:{width:500,height:500},
- setMatchCount(n){return n===2;},reRollMatch(defs){this.players=defs.map((d,i)=>d.createInstance(i+1));
-   this.isPlaying=false;this.roundStarted=false;return true;},
- togglePlay(){this.isPlaying=true;this.roundStarted=true;return true;},
+ setMatchCount(n){return n===2;},reRollMatch(defs){g.players=defs.map((d,i)=>d.createInstance(i+1));
+   g.isPlaying=false;g.roundStarted=false;return true;},
+ togglePlay(){g.isPlaying=true;g.roundStarted=true;return true;},
  SkillForge:{register(profile){
    const id='enemy-temp-'+(g.seq=(g.seq||0)+1);
    const d={id,name:profile.name,createInstance(n){return {id,playerNum:n,
