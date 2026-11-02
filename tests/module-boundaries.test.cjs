@@ -24,6 +24,23 @@ test('pure budget formulas precede mutable resource budgets and SkillForge in ev
   assert.ok(formula>=0&&runtime>formula&&forge>runtime,page+' missing/out-of-order balance modules');
  }
 });
+test('Forge impact and casting authorities are ordered before the runtime in both entries',()=>{
+ for(const page of pages){
+  const paths=entries(page).map(file);
+  const hit=paths.indexOf('js/features/skill-forge-impact.js');
+  const queue=paths.indexOf('js/features/skill-forge-casting.js');
+  const core=paths.indexOf('js/features/skill-forge.js');
+  assert.ok(hit>=0&&queue>=0&&core>hit&&core>queue,page+' needs both Forge engines before runtime');
+ }
+ const core=read('js/features/skill-forge.js');
+ const hit=read('js/features/skill-forge-impact.js');
+ const queue=read('js/features/skill-forge-casting.js');
+ assert.ok(!core.includes('function hit(p,e,action,multiplier=1,attackZ)'));
+ assert.ok(!core.includes('function tickQueue(p,target)'));
+ assert.ok(hit.includes('function hit(p,e,action,multiplier=1,attackZ)'));
+ assert.ok(queue.includes('function tickQueue(p,target)'));
+ assert.ok(core.includes("const {hit,hitGround,groundImpactZ}=global.SkillForgeImpactFactory({MOVEMENT_ONLY});"));
+});
 test('the same JavaScript modules use identical versions across PvE and PvP',()=>{
  const local=new Map(entries('index.html').map(url=>[file(url),url]));
  for(const url of entries('pvp-runtime.html')){
