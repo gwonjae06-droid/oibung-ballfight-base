@@ -10,7 +10,7 @@ function harness(){
     getClosestAliveEnemy(p){return s.players.find(e=>e!==p&&e.hp>0)||null;}};
   s.window=s;vm.createContext(s);
   for(const file of ['js/features/forge-expansion.js','js/features/advanced-combat.js',
-    'js/features/skill-forge-impact.js','js/features/skill-forge-casting.js','js/features/skill-forge.js','js/features/block-forge.js'])
+    'js/features/skill-forge-impact.js','js/features/skill-forge-casting.js','js/features/skill-forge-world.js','js/features/skill-forge.js','js/features/block-forge.js'])
     vm.runInContext(read(file),s,{filename:file});
   const def=s.SkillForge.register({name:'이동 전용 캐릭터',hp:250,speed:2,
     skills:[{name:'이동',trigger:'lowhp',threshold:5,cooldown:30,
