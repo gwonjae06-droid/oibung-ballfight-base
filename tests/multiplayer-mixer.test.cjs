@@ -63,7 +63,7 @@ test('participant selector and roster selectors apply without an extra button',(
   assert.ok(main.includes('window.applyFighterPicks=applyPicks'));
   assert.ok(main.includes('originalRoll(defs)'));
   assert.ok(main.includes('length:matchCount'));
-  assert.ok(read('js/features/skill-forge.js').includes('globalThis.applyFighterPicks?.()'));
+  assert.ok(read('js/features/skill-forge-editor.js').includes('globalThis.applyFighterPicks?.()'));
 });
 test('random and themed creators retain the editable fighter fields and normal save flow',()=>{
   const natural=read('js/features/natural-forge.js'),forge=read('js/features/skill-forge.js'),editor=read('js/features/skill-forge-editor.js');
