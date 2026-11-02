@@ -6,15 +6,15 @@ const forge=global.SkillForge,blocks=global.BlockForge;
 if(!forge||!blocks)return;
 const PLANS=Object.freeze({
   balanced:{name:'균형형',icon:'⚖️',hint:'공격·보호·원거리·회복을 골고루 사용',skills:[
-    ['파동 타격','wave',30,2.5],['긴급 보호','shield',0,5],['원거리 견제','shot',24,3],['응급 회복','heal',30,5]]},
+    ['파동 타격','wave',34,2.5],['긴급 보호','shield',0,5],['원거리 견제','shot',29,3],['응급 회복','heal',30,5]]},
   assault:{name:'공격형',icon:'⚔️',hint:'여러 공격을 연결해 빠르게 승부',skills:[
     ['속사','shot',26,2],['강타','wave',39,3.5],['낙뢰','bolt',31,4],['돌진','dash',0,4]]},
   guardian:{name:'수호형',icon:'🛡️',hint:'보호막·회복을 중심으로 버티기',skills:[
-    ['방어막','shield',0,3.5],['자가 회복','heal',35,4],['흡혈 반격','drain',32,4.5],['반격 파동','wave',34,4]]},
+    ['방어막','shield',0,3.5],['자가 회복','heal',35,4],['흡혈 반격','drain',38,4.5],['반격 파동','wave',43,4]]},
   control:{name:'제어형',icon:'❄️',hint:'장판과 상태이상으로 상대 움직임 제한',skills:[
-    ['빙결 파동','wave',17,3],['독 장판','zone',15,4],['속박 지뢰','mine',16,5],['집중 낙뢰','bolt',24,4]]},
+    ['빙결 파동','wave',16,3],['독 장판','zone',14,4],['속박 지뢰','mine',15,5],['집중 낙뢰','bolt',24,4]]},
   agile:{name:'기동형',icon:'💨',hint:'이동과 회피를 활용한 전술',skills:[
-    ['순간 이동','blink',0,4],['원거리 공격','shot',28,2.5],['관통 속공','pierce',26,4],['회전 구슬','orbit',22,5]]}
+    ['순간 이동','blink',0,4],['원거리 공격','shot',34,2.5],['관통 속공','pierce',34,4],['회전 구슬','orbit',28,5]]}
 });
 const QUICK={
   '공격':['wave','shot','bolt','beam','slash','chain','nova','arcshot'],
