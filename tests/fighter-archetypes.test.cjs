@@ -10,7 +10,7 @@ function context(){
   createHitParticles(){},addFloatingText(){}};
  g.window=g;g.globalThis=g;
  vm.createContext(g);
- for(const file of ['js/features/forge-archetypes.js','js/features/skill-forge-impact.js','js/features/skill-forge-casting.js','js/features/skill-forge.js','js/features/arena-auto-ai.js'])
+ for(const file of ['js/features/forge-archetypes.js','js/features/skill-forge-impact.js','js/features/skill-forge-casting.js','js/features/skill-forge-world.js','js/features/skill-forge.js','js/features/arena-auto-ai.js'])
   vm.runInContext(source(file),g,{filename:file});
  return g;
 }
