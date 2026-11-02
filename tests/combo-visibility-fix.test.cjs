@@ -42,7 +42,7 @@ test('HUD is visible at COMBO 0 before combat, even with no signature profile',(
  assert.equal(el.querySelector('.combo-number').textContent,'0');
  assert.match(el.querySelector('.combo-message').textContent,/강한 충돌/);
 });
-test('actual engine body collision counts only the user's built-in fighter',()=>{
+test('actual engine body collision counts only the player-controlled built-in fighter',()=>{
  const {g,nodes}=boot();g.ArenaCombatV2.reset();
  const a=fighter(),b=fighter(2);
  g.handleCombat(a,b);
