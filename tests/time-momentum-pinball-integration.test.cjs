@@ -9,7 +9,7 @@ function world(){
  for(const file of ['js/features/action-registry.js','js/features/forge-archetypes.js',
   'js/features/signature-program.js','js/features/signature-scratch.js',
   'js/features/signature-live.js','js/features/bounce-momentum.js',
-  'js/features/arena-balance-formula.js','js/features/arena-balance.js','js/features/forge-expansion.js','js/features/skill-forge-impact.js','js/features/skill-forge-casting.js','js/features/skill-forge-world.js','js/features/skill-forge.js',
+  'js/features/arena-balance-formula.js','js/features/arena-balance.js','js/features/forge-expansion.js','js/features/skill-forge-impact.js','js/features/skill-forge-casting.js','js/features/skill-forge-world.js','js/features/skill-forge-profiles.js','js/features/skill-forge-storage.js','js/features/skill-forge-executor.js','js/features/skill-forge.js',
   'js/features/arena-body-physics.js','js/features/ball-impact-squash.js',
   'js/features/studio-pinball-lab.js'])
    vm.runInContext(read(file),g,{filename:file});

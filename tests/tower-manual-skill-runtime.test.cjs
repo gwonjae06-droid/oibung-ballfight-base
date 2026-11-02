@@ -12,7 +12,7 @@ function harness(){
   w.window=w;vm.createContext(w);
   vm.runInContext(read('js/features/action-registry.js'),w);
   vm.runInContext(read('js/features/ability-atlas.js'),w);
-  for(const part of ['skill-forge-impact','skill-forge-casting','skill-forge-world','skill-forge'])vm.runInContext(read('js/features/'+part+'.js'),w);
+  for(const part of ['skill-forge-impact','skill-forge-casting','skill-forge-world','skill-forge-profiles','skill-forge-storage','skill-forge-executor','skill-forge'])vm.runInContext(read('js/features/'+part+'.js'),w);
   return w;
 }
 function fighter(n=1){return {id:n===1?'park':'enemy',playerNum:n,name:'파이터',
