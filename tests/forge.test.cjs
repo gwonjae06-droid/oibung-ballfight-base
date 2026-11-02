@@ -5,6 +5,7 @@ const fs=require('node:fs');
 const vm=require('node:vm');
 const path=require('node:path');
 const source=fs.readFileSync(path.join(__dirname,'../js/features/skill-forge.js'),'utf8');
+const editorSource=fs.readFileSync(path.join(__dirname,'../js/features/skill-forge-editor.js'),'utf8');
 
 function create(){
   const state={
@@ -110,14 +111,14 @@ test('re-editing a fighter during an ongoing Tower battle changes NEXT instances
  assert.equal(def.name,'새 설계');
 });
 test('studio editing and saving do not demand match termination',()=>{
- const begin=source.indexOf("$('bf-custom-list').addEventListener('click'");
- const end=source.indexOf("  $('forge-skills').addEventListener('input'",begin);
+ const begin=editorSource.indexOf("$('bf-custom-list').addEventListener('click'");
+ const end=editorSource.indexOf("  $('forge-skills').addEventListener('input'",begin);
  assert.ok(begin>=0&&end>begin);
- const edit=source.slice(begin,end);
+ const edit=editorSource.slice(begin,end);
  assert.doesNotMatch(edit,/전투 종료 후 수정할 수 있습니다/);
  assert.match(edit,/dataset\.editForgeId/);
- const submit=source.slice(source.indexOf("  $('bf-create').addEventListener('click'"),
-    source.indexOf("  $('forge-export').addEventListener('click'"));
+ const submit=editorSource.slice(editorSource.indexOf("  $('bf-create').addEventListener('click'"),
+    editorSource.indexOf("  $('forge-export').addEventListener('click'"));
  assert.doesNotMatch(submit,/경기 종료 후 생성할 수 있습니다/);
  assert.match(submit,/if\(!fighting\)\{/);
  assert.match(submit,/다음 경기부터 적용됩니다/);
