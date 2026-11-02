@@ -19,7 +19,7 @@ function boot(){
  const files=['action-registry','forge-archetypes','signature-program','signature-scratch',
  'signature-live','arena-balance-formula','arena-balance','forge-expansion','bounce-momentum','arena-combat-v2',
  'arena-pinball-motion','arena-body-physics','tower-flat-arena',
- 'ancient-six-seals','ancient-one','skill-forge-impact','skill-forge-casting','skill-forge-world','skill-forge'];
+ 'ancient-six-seals','ancient-one','skill-forge-impact','skill-forge-casting','skill-forge-world','skill-forge-profiles','skill-forge-storage','skill-forge-executor','skill-forge'];
  for(const file of files)vm.runInContext(read(file),g,{filename:file+'.js'});
  return g;
 }

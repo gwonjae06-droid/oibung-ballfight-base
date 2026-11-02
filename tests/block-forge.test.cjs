@@ -6,7 +6,7 @@ function setup(){
  h.window=h;vm.createContext(h);
  vm.runInContext(read('js/features/forge-expansion.js'),h);
  vm.runInContext(read('js/features/advanced-combat.js'),h);
- for(const part of ['skill-forge-impact','skill-forge-casting','skill-forge-world','skill-forge'])vm.runInContext(read('js/features/'+part+'.js'),h);
+ for(const part of ['skill-forge-impact','skill-forge-casting','skill-forge-world','skill-forge-profiles','skill-forge-storage','skill-forge-executor','skill-forge'])vm.runInContext(read('js/features/'+part+'.js'),h);
  vm.runInContext(read('js/features/block-forge.js'),h);
  return h;
 }

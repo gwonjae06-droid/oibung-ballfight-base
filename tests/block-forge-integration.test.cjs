@@ -16,7 +16,7 @@ function harness(){
       heal(p,amount){casts.push(amount);p.hp=Math.min(p.maxHp,p.hp+amount);}
     }
   };
-  h.window=h;vm.createContext(h);for(const part of ['skill-forge-impact','skill-forge-casting','skill-forge-world'])vm.runInContext(read('js/features/'+part+'.js'),h);vm.runInContext(forgeSource,h);vm.runInContext(blocksSource,h);
+  h.window=h;vm.createContext(h);for(const part of ['skill-forge-impact','skill-forge-casting','skill-forge-world','skill-forge-profiles','skill-forge-storage','skill-forge-executor'])vm.runInContext(read('js/features/'+part+'.js'),h);vm.runInContext(forgeSource,h);vm.runInContext(blocksSource,h);
   return {h,forge:h.SkillForge,blocks:h.BlockForge,casts};
 }
 const initial=()=>({name:'블록 파이터',skills:[{

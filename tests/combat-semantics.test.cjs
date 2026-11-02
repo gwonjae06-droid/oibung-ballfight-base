@@ -12,7 +12,7 @@ function boot(withForge=false){
     getClosestAliveEnemy(p){return sim.players.find(e=>e!==p&&e.hp>0)||null;}};
   sim.window=sim;
   vm.runInNewContext(read('js/features/advanced-combat.js'),sim);
-  if(withForge)for(const part of ['skill-forge-impact','skill-forge-casting','skill-forge-world','skill-forge'])vm.runInNewContext(read('js/features/'+part+'.js'),sim);
+  if(withForge)for(const part of ['skill-forge-impact','skill-forge-casting','skill-forge-world','skill-forge-profiles','skill-forge-storage','skill-forge-executor','skill-forge'])vm.runInNewContext(read('js/features/'+part+'.js'),sim);
   const api={hit(p,e,a,factor=1,z=sim.AdvancedCombat.height(p)){
     if(e.invincible>0||!sim.AdvancedCombat.canHit(p,e,z))return false;
     const damage=Math.round((a.damage||0)*factor);
