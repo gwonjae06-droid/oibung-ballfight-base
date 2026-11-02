@@ -239,3 +239,42 @@
  .scratch-friendly-mode .rule-template-grid{grid-template-columns:1fr}
  .scratch-friendly-mode .rule-hero{padding:15px}
 }
+
+/* Natural language -> proposal -> rule editing -> mini pinball preview. */
+.scratch-friendly-mode .rule-prompt-box{
+ display:grid;gap:12px;padding:18px;border:1px solid #6683b1;border-radius:16px;
+ background:linear-gradient(135deg,#213753,#212e48)
+}
+.scratch-friendly-mode .rule-prompt-title{display:flex;flex-wrap:wrap;align-items:start;justify-content:space-between;gap:10px}
+.scratch-friendly-mode .rule-prompt-step{font-size:11px;font-weight:850;letter-spacing:.1em;color:#9ce4d5}
+.scratch-friendly-mode .rule-prompt-box h4{margin:4px 0 5px;color:#fff;font-size:clamp(17px,2.2vw,22px)}
+.scratch-friendly-mode .rule-prompt-box p{color:#c6d9ed;font-size:12px;line-height:1.55;margin:0}
+.scratch-friendly-mode .rule-offline-mark{border-radius:999px;background:#203f48;border:1px solid #50857e;color:#c7f5e8;padding:7px 10px;font-size:11px;font-weight:800}
+.scratch-friendly-mode .rule-prompt-label{font-size:12px;font-weight:850;color:#e9f4ff}
+.scratch-friendly-mode .rule-prompt-box textarea{
+ width:100%;min-height:114px;resize:vertical;line-height:1.6;border:1px solid #93b4cf;
+ border-radius:11px;background:#0c2035;color:#fff;padding:12px;font:inherit;font-size:15px
+}
+.scratch-friendly-mode .rule-prompt-box textarea::placeholder{color:#93b0c5}
+.scratch-friendly-mode .rule-prompt-box textarea:focus-visible{outline:3px solid #f9d77f}
+.scratch-friendly-mode .rule-prompt-bottom{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:12px}
+.scratch-friendly-mode .rule-prompt-bottom p{max-width:490px;flex:1;min-width:210px}
+.scratch-friendly-mode .rule-prompt-bottom button,
+.scratch-friendly-mode .rule-proposal-buttons button{
+ min-height:47px;border:1px solid #c5ddff;border-radius:10px;padding:11px 17px;
+ background:#b8e2ff;color:#123553;font-weight:900;cursor:pointer
+}
+.scratch-friendly-mode .rule-proposal{padding:14px;border:1px solid #63b5a5;border-radius:12px;background:#163b3d;display:grid;gap:10px}
+.scratch-friendly-mode .rule-proposal strong{color:#d4fff2}
+.scratch-friendly-mode .rule-proposal p{color:#effaf7;line-height:1.7}
+.scratch-friendly-mode .rule-proposal ul{margin:0;padding-left:19px;font-size:12px;color:#ffdfa4;line-height:1.7}
+.scratch-friendly-mode .rule-proposal-buttons{display:flex;flex-wrap:wrap;gap:8px}
+.scratch-friendly-mode .rule-proposal-buttons button:last-child{background:#25465a;color:#d7ecff}
+.scratch-friendly-mode .rule-prompt-error{padding:12px;background:#55343d;border:1px solid #c78b99;border-radius:10px;color:#ffe2e4!important}
+.scratch-friendly-mode .rule-flow-arrow{text-align:center;color:#bed6ee;font-size:19px}
+.scratch-friendly-mode .rule-flow-arrow span{font-size:12px;font-weight:900;color:#e5efff;vertical-align:middle}
+@media(max-width:520px){
+ .scratch-friendly-mode .rule-prompt-box{padding:12px}
+ .scratch-friendly-mode .rule-prompt-bottom button{width:100%}
+ .scratch-friendly-mode .rule-offline-mark{font-size:10px}
+}

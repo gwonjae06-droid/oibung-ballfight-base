@@ -1,0 +1,136 @@
+/* Korean natural-language -> safe signature rule recipes.
+ * Offline, deterministic interpretation for static GitHub Pages. No API key,
+ * server request, eval, unsafe source execution or false LLM claims.
+ */
+(function(g){'use strict';
+const R=g.SignatureRuleSkill;
+if(!R)return;
+const cap=(n,l,h)=>Math.min(h,Math.max(l,n));
+const patterns=[
+ {id:'splitshot',match:/분열탄|분열.*탄|탄.*분열|파편탄|산탄|탄막|탄환이.*갈라|탄알이.*갈라/},
+ {id:'haste',match:/가속|속도|빨라|빨리|초고속|광속|질주|질풍|스피드|극속/},
+ {id:'leap',match:/점프|도약|뛰어올|공중으로|하늘로|높이 뛰|날아올/},
+ {id:'dive',match:/낙하|내려찍|찍어내|급강하|내리꽂|착지 공격|착지할 때.*공격/},
+ {id:'wave',match:/충격파|파동|주변.*폭발|광역.*폭발|펑펑|사방.*폭발/},
+ {id:'bolt',match:/번개|낙뢰|벼락|뇌격/},
+ {id:'blackhole',match:/블랙홀|중력장|특이점/},
+ {id:'homing',match:/유도탄|추적탄|따라가는 탄|따라붙는 탄/},
+ {id:'shot',match:/발사|사격|투사체|총알|화살|에너지탄|탄환|탄알/},
+ {id:'dash',match:/돌진|들이받|대시|대쉬/},
+ {id:'shield',match:/보호막|방어막|실드|쉴드/},
+ {id:'heal',match:/회복|치유|힐링/},
+ {id:'timeburst',match:/시간.*가속|시간.*빨라|시간.*배속/},
+ {id:'zone',match:/장판|독구름|빙결 구역|얼음 구역/},
+ {id:'meteor',match:/운석|메테오/},
+ {id:'summon',match:/소환|분신|복제체/},
+ {id:'rewind',match:/시간.*되돌|시간.*역행|되감기/},
+ {id:'timestop',match:/시간.*멈|시간.*정지/},
+ {id:'blink',match:/순간이동|텔레포트/},
+ {id:'drain',match:/흡혈|생명.*흡수/},
+ {id:'regen',match:/지속.*재생|재생/}
+];
+const noDamage=new Set(['haste','timeburst','leap','dash','shield','blink','rewind','timestop']);
+const defaults={splitshot:16,haste:0,timeburst:0,leap:0,dive:37,wave:26,bolt:24,
+ shot:19,homing:19,blackhole:17,dash:0,shield:0,heal:24,zone:14,
+ meteor:35,summon:12,rewind:0,timestop:0,blink:0,drain:21,regen:15};
+const safeName={splitshot:'증식의 탄막',haste:'광속 폭주',leap:'천공 연타',
+ dive:'낙하 분쇄',wave:'폭발 연쇄',bolt:'천둥 폭주',blackhole:'중력 폭풍',
+ homing:'추적의 군단',shot:'탄환 폭풍',dash:'광란의 돌진',
+ shield:'불멸의 방벽',heal:'재생 폭주',meteor:'운석 소나기'};
+const events=[
+ {when:'split',pattern:/분열.*(?:하면|할 때|때마다|후|뒤)|(?:분열한|갈라진).*다시|분열.*추가|파편.*다시/},
+ {when:'land',pattern:/착지.*(?:하면|할 때|때마다|후|뒤)|내려오.*(?:하면|때마다)|땅에.*닿/},
+ {when:'wall',pattern:/벽.*(?:튕|부딪|충돌|닿)|벽에.*(?:맞|박)/},
+ {when:'contact',pattern:/상대.*(?:부딪|충돌|접촉)|몸통.*충돌|적과.*부딪/},
+ {when:'hit',pattern:/적중.*(?:하면|때마다|할 때)|명중.*(?:하면|때마다|할 때)|맞히.*(?:면|때마다|고)|맞출 때/}
+];
+function readNumber(text,pattern){const m=text.match(pattern);return m?Number(m[1]):null;}
+function parse(input){
+ const raw=String(input??'').trim();
+ if(!raw)return {ok:false,error:'어떤 능력을 만들고 싶은지 한 문장 이상 적어 주세요.'};
+ if(raw.length>300)return {ok:false,error:'설명은 300자 이내로 입력해 주세요.'};
+ // A restricted vocabulary prevents invented effects that the game cannot cast.
+ const found=patterns.filter(t=>t.match.test(raw));
+ if(!found.length)return {ok:false,error:'아직 이해할 수 없는 동작입니다. 분열탄·가속·점프·낙하·충격파·번개 같은 게임 동작을 넣어 주세요.'};
+ const supported=g.SkillForge?.TYPE||g.ActionRegistry?.TYPE||{};
+ const mentions=found.filter(t=>Object.hasOwn(supported,t.id));
+ if(!mentions.length)return {ok:false,error:'설명한 동작은 현재 게임에서 실행할 수 없습니다.'};
+ const types=new Set(mentions.map(x=>x.id));
+ const notes=[];
+ const repeat=/무한|계속|연속|반복|끝없이|끊임없이|미친|엄청|마구|초당|난사|폭주/.test(raw);
+ const speed=/가속|속도|광속|스피드|초고속|빨라/.test(raw);
+ const wall=/벽.*(?:튕|부딪|충돌|닿)/.test(raw);
+ const contact=/상대.*(?:부딪|충돌|접촉)|적과.*부딪/.test(raw);
+ const split=types.has('splitshot');
+ const jump=types.has('leap'),dive=types.has('dive');
+ const event=events.filter(x=>x.pattern.test(raw)).map(x=>x.when);
+ const intervalRaw=readNumber(raw,/(\d+(?:\.\d+)?)\s*초\s*(?:마다|간격|에\s*(?:한\s*번|1번))/);
+ const durationRaw=readNumber(raw,/(\d+(?:\.\d+)?)\s*초\s*(?:동안|간|지속)/);
+ const countRaw=readNumber(raw,/(\d+)\s*(?:발|개|갈래|줄기|덩이|번씩)/);
+ const damageRaw=readNumber(raw,/(?:위력|피해|데미지|대미지|공격력)\s*(?:은|를|가|:|=)?\s*(\d+)/);
+ const radiusRaw=readNumber(raw,/(?:범위|반경)\s*(?:은|를|가|:|=)?\s*(\d+)/);
+ const generationsRaw=readNumber(raw,/(\d+)\s*(?:번|회|세대)\s*(?:재분열|분열|반복)/)||
+   readNumber(raw,/(?:재분열|분열)\s*(\d+)\s*(?:회|번|세대)/);
+ const window=durationRaw!==null?cap(durationRaw,4,18):repeat?15:10;
+ const interval=intervalRaw!==null?cap(intervalRaw,.35,4):repeat?.65:1.25;
+ if(durationRaw!==null&&durationRaw!==window)notes.push('폭주 유지 시간은 4~18초 범위로 맞췄습니다.');
+ if(intervalRaw!==null&&intervalRaw!==interval)notes.push('반복 간격은 0.35~4초 범위로 맞췄습니다.');
+ if(countRaw!==null&&(countRaw<1||countRaw>8))notes.push('한 번에 생성하는 개수는 최대 8개로 제한했습니다.');
+ if(damageRaw!==null&&(damageRaw<0||damageRaw>120))notes.push('동작 위력은 최대 120으로 제한했습니다.');
+ if(radiusRaw!==null&&(radiusRaw<30||radiusRaw>300))notes.push('범위는 30~300으로 제한했습니다.');
+ const rows=[],maxRules=8;
+ function add(type,when='pulse',pace=interval,adjust={}){
+  if(rows.length>=maxRules||!Object.hasOwn(supported,type))return;
+  if(rows.some(r=>r.action.type===type&&r.when===when))return;
+  const damage=noDamage.has(type)?0:damageRaw!==null?cap(damageRaw,0,120):(defaults[type]??18);
+  rows.push({when,interval:pace,fracture:type==='splitshot'?cap(generationsRaw||(/다시.*분열|재분열|분열.*분열/.test(raw)?3:2),1,3):1,
+   action:{type,damage,radius:radiusRaw!==null?cap(radiusRaw,30,300):type==='splitshot'?155:150,
+    count:countRaw!==null?cap(countRaw,1,8):type==='splitshot'?5:1,
+    duration:type==='haste'||type==='timeburst'?1.7:1.5,...adjust}});
+ }
+ // Some compound patterns are composed first so "점프-착지-재점프"
+ // and "벽-가속-충돌" have meaningful reactive rather than generic scripts.
+ if(split){
+  add('splitshot','pulse',Math.max(.35,interval));
+  if(event.includes('split')||/다시.*분열|재분열|분열.*추가/.test(raw))
+   add('shot','split',Math.max(.5,interval*1.35),{damage:Math.min(15,damageRaw??9),count:3});
+  if(event.includes('hit'))add('wave','hit',Math.max(.6,interval));
+ }
+ if(speed){
+  // "시간 가속" still uses the temporal mechanic, while ordinary speed
+  // works through the live stacking haste mechanic.
+  add(types.has('timeburst')?'timeburst':'haste','pulse',Math.max(.35,interval));
+  if(wall)add('haste','wall',Math.max(.35,interval*.75));
+  if(contact)add('wave','contact',Math.max(.5,interval),{damage:damageRaw??23});
+ }
+ if(jump||dive){
+  if(jump)add('leap','pulse',Math.max(1.8,interval*2.5));
+  if(dive)add('dive',jump||event.includes('land')?'land':'pulse',Math.max(.45,interval),{
+   damage:damageRaw??38,radius:radiusRaw??175});
+  // A landing loop can be literal: no unbounded recursion, only event cooldown.
+  if(event.includes('land')&&jump&&!dive)add('leap','land',Math.max(.6,interval));
+ }
+ if(wall&&types.has('bolt'))add('bolt','wall',Math.max(.45,interval));
+ if(event.includes('hit')&&types.has('wave'))add('wave','hit',Math.max(.5,interval));
+ // Preserve user-mentioned distinct actions and avoid duplicate trigger pairs.
+ const picked=[];
+ for(const item of mentions){
+  if(picked.includes(item.id))continue;picked.push(item.id);
+  if(!rows.some(r=>r.action.type===item.id)){
+   const best=event.find(e=>e!=='split'&&e!=='land')||'pulse';
+   add(item.id,best,interval);
+  }
+ }
+ if(!rows.length)return {ok:false,error:'전투에서 실행할 수 있는 동작을 찾지 못했습니다.'};
+ if(rows.length>=maxRules)notes.push('기술당 규칙은 최대 8개까지 실행됩니다.');
+ if(/절대|완전.*무적|무적.*무한|즉사|한방.*죽/.test(raw))
+  notes.push('즉사·영구 무적 효과는 지원하지 않아 실제 게임 동작으로만 구성했습니다.');
+ if(split)notes.push('분열탄의 세대와 탄환 수는 게임 엔진의 안전 상한 안에서 작동합니다.');
+ if(speed)notes.push('속도는 중첩되지만 물리 충돌을 유지하도록 최고속도가 제한됩니다.');
+ const recipe=R.normalize({window,rules:rows});
+ const primary=types.has('splitshot')?'splitshot':speed?'haste':jump?'leap':mentions[0].id;
+ return {ok:true,name:safeName[primary]||'나만의 폭주 기술',recipe,notes,
+  recognized:mentions.map(x=>x.id),method:'offline-rule-parser'};
+}
+g.SignaturePromptCompiler=Object.freeze({parse,patterns:patterns.map(p=>p.id)});
+})(typeof window!=='undefined'?window:globalThis);

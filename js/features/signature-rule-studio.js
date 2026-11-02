@@ -2,7 +2,8 @@
  * Rules are authored as ordinary Korean sentences and share the Forge save. */
 (function(g){'use strict';
 const d=g.document,panel=d?.querySelector('#scratch-beginner'),forge=g.SkillForge;
-const R=g.SignatureRuleSkill;
+const R=g.SignatureRuleSkill,parser=g.SignaturePromptCompiler;
+let promptDraft='',proposal=null;
 if(!panel||!forge||!R)return;
 const E=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const choices=(items,chosen)=>Object.entries(items).map(([key,label])=>'<option value="'+E(key)+'"'+(String(key)===String(chosen)?' selected':'')+'>'+E(label)+'</option>').join('');
@@ -33,13 +34,13 @@ function confirmReplace(){
   return g.confirm?.('현재 설계한 고유 스킬을 규칙형으로 바꿀까요? 저장된 원본 캐릭터는 다시 저장하기 전까지 그대로입니다.')!==false;
  return true;
 }
-function write(value,message){
+function write(value,message,generatedName){
  const current=fighter(),recipe=R.normalize(value);
  if(!recipe.rules.length){status('동작 규칙을 하나 이상 추가해야 합니다.');return false;}
  if(!read()&&!confirmReplace())return false;
  const p=current.signatureVersion===1?current:g.SignatureProgram.migrate(current);
  const s=p.skills[0],next={...p,signatureVersion:1,skills:[{
-  ...s,program:undefined,ruleSet:recipe,actions:R.preview(recipe),trigger:'auto'
+  ...s,name:generatedName||s.name,program:undefined,ruleSet:recipe,actions:R.preview(recipe),trigger:'auto'
  }]};
  try{
   forge.setDraft(next);
@@ -72,14 +73,31 @@ function render(){
    window:10,rules:[{when:'pulse',interval:1,action:s.actions[0]}]
  });
  panel.classList.add('rule-studio');
+ const summary=proposal?.ok?'<section class="rule-proposal" aria-label="문장 해석 미리보기">'
+  +'<strong>이렇게 이해했어요: '+E(proposal.name)+'</strong>'
+  +'<p>'+proposal.recipe.rules.map(r=>E(R.WHEN[r.when]+' → '+(forge.TYPE[r.action.type]||r.action.type)
+   +' ('+r.interval+'초 간격)')).join(' · ')+'</p>'
+  +(proposal.notes.length?'<ul>'+proposal.notes.map(x=>'<li>'+E(x)+'</li>').join('')+'</ul>':'')
+  +'<div class="rule-proposal-buttons"><button type="button" data-rule-command="apply">✓ 규칙에 적용하고 실험하기</button>'
+  +'<button type="button" data-rule-command="dismiss">취소</button></div></section>':
+  proposal?.error?'<p class="rule-prompt-error" role="alert">'+E(proposal.error)+'</p>':'';
  panel.innerHTML='<div class="rule-hero"><span>OIBUNG / RULE MAKER</span><h3>상상한 기술을 규칙으로 만들기</h3>'
   +'<p>블록을 조립하지 않아도 됩니다. “언제 · 무엇을 · 얼마나 자주”를 문장으로 설정하면 전투에서 계속 작동합니다.</p></div>'
-  +'<div class="rule-main">'
+  +'<div class="rule-main"><section class="rule-prompt-box"><div class="rule-prompt-title"><div>'
+  +'<span class="rule-prompt-step">01 · 상상하기</span><h4>어떤 미친 스킬을 만들고 싶나요?</h4>'
+  +'<p>예: “분열탄을 3개씩 계속 쏘고 분열할 때마다 추가로 발사해”</p></div>'
+  +'<span class="rule-offline-mark">무료 · 오프라인 문장 해석</span></div>'
+  +'<label for="rule-prompt" class="rule-prompt-label">자유로운 스킬 설명</label>'
+  +'<textarea id="rule-prompt" maxlength="300" rows="3" spellcheck="false" placeholder="예: 벽에 튕길 때마다 가속해서 엄청 빨라지고 상대와 부딪히면 충격파 발사">'
+  +E(promptDraft)+'</textarea><div class="rule-prompt-bottom"><p>로그인이나 API 키 없이 작동합니다. 현재는 AI 서버가 아닌 게임 동작 사전 기반 문장 해석기로 지원 가능한 규칙만 생성합니다.</p>'
+  +'<button type="button" data-rule-command="generate">⚡ 문장에서 기술 생성</button></div>'+summary+'</section>'
+  +'<div class="rule-flow-arrow">↓ <span>02 · 자동 생성된 규칙 수정</span></div>'
   +'<div class="rule-meta"><label>기술 이름<input type="text" id="rule-name" maxlength="18" value="'+E(s.name)+'"></label>'
   +'<label>폭주 유지 시간 <span class="rule-number"><input id="rule-window" type="number" min="4" max="18" step=".5" value="'+recipe.window+'"> 초</span></label></div>'
   +(!original?'<div class="rule-intro"><strong>새로운 규칙 설계가 준비됐습니다.</strong><p>예전 캐릭터는 그대로 보존됩니다. 아래 예시를 고르거나 ‘현재 기술을 규칙으로 시작’으로 전환하세요.</p>'
     +'<button type="button" data-rule-command="start">현재 기술을 규칙으로 시작</button></div>':'')
   +'<div class="rule-row-list">'+recipe.rules.map(ruleRow).join('')+'</div>'
+  +'<div class="rule-flow-arrow">↓ <span>03 · 핀볼 실험장에서 확인</span></div>'
   +'<div class="rule-toolbar"><button type="button" data-rule-command="add" '+(recipe.rules.length>=8?'disabled':'')+'>+ 새로운 규칙 추가</button>'
   +'<button type="button" data-rule-command="preview">▶ 미니 핀볼 실험장에서 보기</button></div>'
   +'<div class="rule-templates"><h4>한 번에 시작하는 미친 기술들</h4><p>선택한 뒤 모든 규칙을 마음대로 바꿀 수 있습니다.</p><div class="rule-template-grid">'+templates.map(t=>
@@ -97,7 +115,26 @@ panel.addEventListener('click',e=>{
  }
  if(!button)return;
  const cmd=button.dataset.ruleCommand;
- if(cmd==='preview'){g.CharacterStudioWorkspace?.selectPreviewSkill?.('all');status('왼쪽 미니 핀볼 실험장을 확인하세요.');return;}
+ if(cmd==='generate'){
+  promptDraft=panel.querySelector('#rule-prompt')?.value||'';
+  proposal=parser?.parse(promptDraft)||{ok:false,error:'문장 해석기를 사용할 수 없습니다.'};
+  render();
+  if(proposal.ok)status('규칙을 만들었습니다. 아래 제안 내용을 확인한 뒤 적용하세요.');
+  else status(proposal.error);
+  return;
+ }
+ if(cmd==='dismiss'){proposal=null;render();return;}
+ if(cmd==='apply'){
+  if(!proposal?.ok)return;
+  const candidate=proposal;
+  if(write(candidate.recipe,'문장에서 생성한 규칙을 초안에 적용했습니다. 왼쪽 핀볼 실험장을 확인하세요.',candidate.name)){
+   proposal=null;
+   g.CharacterStudioWorkspace?.selectPreviewSkill?.('all');
+   d.getElementById('studio-motion-fire')?.click?.();
+  }
+  return;
+ }
+ if(cmd==='preview'){g.CharacterStudioWorkspace?.selectPreviewSkill?.('all');d.getElementById('studio-motion-fire')?.click?.();status('왼쪽 미니 핀볼 실험장에서 규칙이 반복되는 모습을 확인하세요.');return;}
  const current=R.normalize(read()||{window:10,rules:[{when:'pulse',interval:1,action:fighter().skills[0].actions[0]}]});
  if(cmd==='start')write(current,'이제 언제·무엇을·반복할지를 자유롭게 수정할 수 있습니다.');
  if(cmd==='add'){
@@ -114,6 +151,7 @@ panel.addEventListener('click',e=>{
   write(current,'규칙 구성을 변경했습니다.');
  }
 });
+panel.addEventListener('input',e=>{if(e.target.id==='rule-prompt')promptDraft=e.target.value;});
 panel.addEventListener('change',e=>{
  const input=e.target;
  if(input.id==='rule-name'){

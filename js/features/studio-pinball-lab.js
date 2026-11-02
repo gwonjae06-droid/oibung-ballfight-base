@@ -25,7 +25,7 @@ function actionsFor(profile,index,actionIndex=-1){
    g.SignatureScratch?.preview?.(s.program)||[]:(s.actions||[]);
   const limited=actions.slice(0,12);
   const chosen=Number.isInteger(actionIndex)&&actionIndex>=0?limited.slice(actionIndex,actionIndex+1):limited;
-  return {name:s.name||'내 필살기',actions:chosen};
+  return {name:s.name||'내 필살기',actions:chosen,ruleSet:s.ruleSet||null};
  });
 }
 function make(profile={},focus=0,actionIndex=-1){
@@ -37,7 +37,12 @@ function make(profile={},focus=0,actionIndex=-1){
  const target={x:355,y:148,vx:-2.7,vy:2.0,radius:19,hp:100,playerNum:2,energy:62};
  hero.baseRadius=hero.radius;
  const bullets=[],rings=[],sparks=[],queue=[],walls=[],portals=[];
- let cursor=0,lastContact=-100,lastWall=-100;
+ let cursor=0,lastContact=-100,lastWall=-100,ruleRun=null;
+ const previewActor={hp:100,_forgeActionClock:0,_scratchEvents:Object.create(null)};
+ function recordRuleEvent(name){
+  const old=previewActor._scratchEvents[name]||{count:0};
+  previewActor._scratchEvents[name]={count:old.count+1,frame};
+ }
  const history=[];
  function spark(x,y,color='#f1ddac',strength=10){
   if(sparks.length>44)sparks.splice(0,sparks.length-28);
@@ -50,7 +55,7 @@ function make(profile={},focus=0,actionIndex=-1){
   p.vx-=1.91*d*nx;p.vy-=1.91*d*ny;
   p.vx*=.985;p.vy*=.985;
   squash(p,-d,nx,ny);spark(p.x,p.y,isHero?color:'#f5a8a8',11);
-  if(isHero&&frame-lastWall>=26){energy=clamp(energy+9,0,100);lastWall=frame;}
+  if(isHero&&frame-lastWall>=26){energy=clamp(energy+9,0,100);lastWall=frame;recordRuleEvent('wall');}
  }
  function bounds(p,isHero){
   const r=p.radius;
@@ -89,7 +94,7 @@ function make(profile={},focus=0,actionIndex=-1){
   }
   g.ArenaBallSquash?.pair?.(hero,target,closing,nx,ny);
   spark((hero.x+target.x)/2,(hero.y+target.y)/2,'#f8f2c6',17);
-  if(frame-lastContact>=34){energy=clamp(energy+17,0,100);lastContact=frame;}
+  if(frame-lastContact>=34){energy=clamp(energy+17,0,100);lastContact=frame;recordRuleEvent('contact');}
  }
  function hitTarget(x=target.x,y=target.y,large=false){
   const dx=target.x-x,dy=target.y-y,d=Math.hypot(dx,dy)||1;
@@ -97,13 +102,28 @@ function make(profile={},focus=0,actionIndex=-1){
   target.vx=clamp(target.vx+nx*(large?2.4:1.1),-9,9);
   target.vy=clamp(target.vy+ny*(large?2.4:1.1),-9,9);
   squash(target,large?5:2,nx,ny);spark(target.x,target.y,'#ffb5a4',18);
+  recordRuleEvent('hit');
  }
  function projectile(a,angle){
   if(bullets.length>=35)bullets.splice(0,bullets.length-9);
   const speed=clamp(Number(a.speed)||5,2,12)*.8;
   bullets.push({x:hero.x,y:hero.y,vx:Math.cos(angle)*speed,vy:Math.sin(angle)*speed,
-   life:220,r:5,color,status:a.status||'none',type:a.type,reflects:0,split:false,
+   life:220,r:5,color,status:a.status||'none',type:a.type,reflects:0,split:false,age:0,
+   fractureRemaining:clamp(Math.round(a.fractureDepth||1),1,3),fragmentCount:clamp(Math.round(a.count||1),1,8),
    maxRebounds:a.type==='shot'?clamp(Math.round(Number(a.ricochet)||0),0,3):0});
+ }
+ function fragment(b){
+  if(b.split||bullets.length>=35)return;
+  b.split=true;recordRuleEvent('split');
+  const n=clamp(Math.round(b.fragmentCount||2),1,8),remaining=(b.fractureRemaining||1)-1;
+  const origin=Math.atan2(b.vy,b.vx),speed=Math.max(2,Math.hypot(b.vx,b.vy));
+  for(let j=0;j<n&&bullets.length<35;j++){
+   const angle=origin+(j-(n-1)/2)*.35;
+   bullets.push({x:b.x,y:b.y,vx:Math.cos(angle)*speed*.86,vy:Math.sin(angle)*speed*.86,
+    life:75,r:3.8,color:b.color,status:b.status,type:'fragment',reflects:0,split:false,
+    age:0,fractureRemaining:remaining,fragmentCount:n,maxRebounds:0});
+  }
+  spark(b.x,b.y,b.color,18);b.life=0;
  }
  function perform(action){
   const a=action||{},type=a.type||'wave';
@@ -116,9 +136,10 @@ function make(profile={},focus=0,actionIndex=-1){
     hitTarget(hero.x,hero.y,true);
    }else{
     const count=clamp(Math.round(a.count||1),1,8);
-    for(let j=0;j<count;j++)projectile(a,angle+(j-(count-1)/2)*.17);
+    for(let j=0;j<(type==='splitshot'?1:count);j++)projectile(a,angle+(j-(count-1)/2)*.17);
    }
   }else if(MOVE.has(type)){
+   if(type==='leap'||type==='dive')hero.landAt=frame+(type==='leap'?50:38);
    if(type==='portal'){
     const aPos={x:clamp(hero.x+Math.cos(angle)*65,37,W-37),
       y:clamp(hero.y+Math.sin(angle)*65,37,H-37)};
@@ -158,6 +179,7 @@ function make(profile={},focus=0,actionIndex=-1){
      life:clamp(Math.round((Number(a.duration)||1.5)*60),30,300)});
    if(type==='timeburst')hero.fastTime=clamp(Math.round((Number(a.duration)||1.5)*60),12,480);
    if(type==='haste')hero.hasteTime=clamp(Math.round((Number(a.duration)||1.5)*60),12,480);
+   if((type==='haste'||type==='timeburst')&&ruleRun)g.SignatureRuleLive?.performed?.(previewActor,a);
    if(type==='grow'||type==='shrink'){
      hero.radius=type==='grow'?clamp(hero.baseRadius*(1.25+(Number(a.count)||1)*.08),22,44):
        clamp(hero.baseRadius*(.6-(Number(a.count)||1)*.015),9,18);
@@ -179,6 +201,8 @@ function make(profile={},focus=0,actionIndex=-1){
   const list=skill.actions;
   if(!list.length)return;
   energy=0;casts++;active=skill.name;activity=frame+80;
+  ruleRun=skill.ruleSet&&g.SignatureRuleLive?.begin?.(skill.ruleSet,previewActor)||null;
+  if(ruleRun)return;
   let next=frame+3;
   for(let i=0;i<list.length;i++){
    const a=list[i],link=a.link||'and',delay=clamp(Math.round((a.delay||0)*60),0,120);
@@ -200,7 +224,16 @@ function make(profile={},focus=0,actionIndex=-1){
   if(hero.hasteTime>0)hero.hasteTime--;
   if(hero.sizeTime>0&&--hero.sizeTime===0)hero.radius=hero.baseRadius;
   energy=Math.min(100,energy+.29*boost);
-  if(energy>=100&&queue.length===0)launch();
+  previewActor._forgeActionClock=frame;
+  if(hero.landAt&&frame>=hero.landAt){
+    hero.landAt=0;recordRuleEvent('land');
+    rings.push({x:hero.x,y:hero.y,r:48,age:0,life:27,color});
+  }
+  if(energy>=100&&queue.length===0&&(!ruleRun||ruleRun.finished))launch();
+  if(ruleRun&&!ruleRun.finished){
+    const ruleAction=g.SignatureRuleLive?.step?.(ruleRun,previewActor);
+    if(ruleAction&&queue.length<36)queue.push({when:frame+2,action:ruleAction});
+  }
   for(let i=queue.length-1;i>=0;i--)if(queue[i].when<=frame){
    perform(queue[i].action);queue.splice(i,1);
   }
@@ -210,7 +243,8 @@ function make(profile={},focus=0,actionIndex=-1){
    const speed=Math.hypot(p.vx,p.vy)||1;
    if(speed<2){const ratio=2.25/speed;p.vx*=ratio;p.vy*=ratio;}
    if(speed>10){p.vx*=10/speed;p.vy*=10/speed;}
-   const speedEffect=p===hero&&hero.hasteTime>0?1.6:1;
+   const stacks=previewActor._ruleSpeed?.until>frame?previewActor._ruleSpeed.stacks:0;
+   const speedEffect=p===hero?(hero.hasteTime>0?1.6:1)*(1+stacks*.15):1;
    p.x+=p.vx*speedEffect;p.y+=p.vy*speedEffect;
    bounds(p,p===hero);
    if(!p.portalCooldown)for(const pair of portals){
@@ -238,7 +272,12 @@ function make(profile={},focus=0,actionIndex=-1){
     const d=Math.hypot(ring.x-b.x,ring.y-b.y)||1;
     if(d<ring.r*2){b.vx+=(ring.x-b.x)/d*.13;b.vy+=(ring.y-b.y)/d*.13;}
    }
-   b.x+=b.vx;b.y+=b.vy;b.life--;
+   b.x+=b.vx;b.y+=b.vy;b.life--;b.age++;
+   if((b.type==='splitshot'||b.type==='fragment'&&b.fractureRemaining>0)&&
+       !b.split&&b.age>=17){
+     fragment(b);
+     if(b.life<=0){bullets.splice(i,1);continue;}
+   }
    let reflected=false;
    if(b.x<25||b.x>W-25){b.vx=-b.vx;b.x=clamp(b.x,25,W-25);reflected=true;}
    if(b.y<25||b.y>H-25){b.vy=-b.vy;b.y=clamp(b.y,25,H-25);reflected=true;}
@@ -255,13 +294,7 @@ function make(profile={},focus=0,actionIndex=-1){
     // The practice lab follows the same actual skill-only reflection option:
     // a plain shot expires at the wall; an authored rebound shot can reflect.
     if(b.reflects>b.maxRebounds)b.life=0;
-    if(b.type==='splitshot'&&!b.split&&bullets.length<30){
-     b.split=true;
-     for(const sign of [-1,1]){
-      const t=Math.atan2(b.vy,b.vx)+sign*.32,v=Math.hypot(b.vx,b.vy);
-      bullets.push({...b,vx:Math.cos(t)*v,vy:Math.sin(t)*v,split:true,r:4,life:90});
-     }
-    }
+    if(b.type==='splitshot'&&!b.split)fragment(b);
    }
    if(near(b,target)<target.radius+b.r){hitTarget(b.x-b.vx,b.y-b.vy);b.life=0;}
    if(b.reflects>3||b.life<=0)bullets.splice(i,1);
@@ -270,7 +303,7 @@ function make(profile={},focus=0,actionIndex=-1){
   for(let i=sparks.length-1;i>=0;i--){sparks[i].t++;if(sparks[i].t>=sparks[i].life)sparks.splice(i,1);}
  }
  function advanceTo(time){
-  const goal=clamp(Math.floor(Math.max(0,time)/FRAME),0,720);
+  const goal=clamp(Math.floor(Math.max(0,time)/FRAME),0,1200);
   while(frame<goal)step();
  }
  function fill(ctx,x,y,r,c){ctx.beginPath();ctx.arc(x,y,r,0,TAU);ctx.fillStyle=c;ctx.fill();}
@@ -344,7 +377,11 @@ function make(profile={},focus=0,actionIndex=-1){
  }
  return {advanceTo,render,fire:()=>{energy=100;},get frame(){return frame;},
   get energy(){return energy;},get casts(){return casts;},get title(){return frame<activity?active:'벽·공 충돌로 기세 충전 중';},
-  get projectiles(){return bullets.length;},get walls(){return walls.length;},get portals(){return portals.length;},get balls(){return [hero,target];}};
+  get projectiles(){return bullets.length;},get walls(){return walls.length;},get portals(){return portals.length;},get balls(){return [hero,target];},
+  get ruleActions(){return ruleRun?.actions||0;},
+  get splitEvents(){return previewActor._scratchEvents.split?.count||0;},
+  get landEvents(){return previewActor._scratchEvents.land?.count||0;},
+  get wallEvents(){return previewActor._scratchEvents.wall?.count||0;}};
 }
 g.StudioPinballLab=Object.freeze({make,actionsFor,WIDTH:W,HEIGHT:H});
 })(typeof window!=='undefined'?window:globalThis);
