@@ -7,7 +7,7 @@ function harness(){
    createHitParticles(){},addFloatingText(){},CHARACTER_PHOTOS:{}};
  g.window=g;g.globalThis=g;vm.createContext(g);
  for(const file of ['js/features/action-registry.js','js/features/signature-program.js',
- 'js/features/signature-scratch.js','js/features/skill-forge.js']){
+ 'js/features/signature-scratch.js','js/features/skill-forge-impact.js','js/features/skill-forge-casting.js','js/features/skill-forge.js']){
   vm.runInContext(read(file),g,{filename:file});
  }
  return g;
