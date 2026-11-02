@@ -21,7 +21,7 @@ function boot(){
  g.window=g;g.globalThis=g;
  vm.createContext(g);
  const files=['action-registry','forge-archetypes','signature-program','signature-scratch',
-  'signature-live','arena-balance','forge-expansion','bounce-momentum',
+  'signature-live','arena-balance-formula','arena-balance','forge-expansion','bounce-momentum',
   'arena-pinball-motion','arena-body-physics','tower-flat-arena','tower-realms',
   'tower-world-mechanics','tower-encounters','tower-environment','skill-forge'];
  for(const f of files)vm.runInContext(read('js/features/'+f+'.js'),g,{filename:f+'.js'});
