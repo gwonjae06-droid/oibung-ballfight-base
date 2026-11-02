@@ -5,7 +5,7 @@ function world(){
  const g={console,Math,Date,Set,Map,WeakMap,CUSTOM_DEFS:[],BEHAVIORS:{}};
  g.window=g;g.globalThis=g;vm.createContext(g);
  for(const path of ['js/features/action-registry.js','js/features/signature-program.js',
-   'js/features/signature-scratch.js','js/features/signature-live.js','js/features/skill-forge-impact.js','js/features/skill-forge-casting.js','js/features/skill-forge.js'])
+   'js/features/signature-scratch.js','js/features/signature-live.js','js/features/skill-forge-impact.js','js/features/skill-forge-casting.js','js/features/skill-forge-world.js','js/features/skill-forge.js'])
   vm.runInContext(src(path),g,{filename:path});
  return g;
 }
