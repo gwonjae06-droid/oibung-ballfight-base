@@ -2,7 +2,7 @@
  * quiet hierarchy, and a single shared program with the expert workbench. */
 .scratch-friendly-mode #scratch-workbench{display:none!important}
 .scratch-friendly-mode.scratch-friendly-advanced #scratch-workbench{display:block!important}
-.scratch-friendly-mode.scratch-friendly-advanced .kid-easy-body{display:none!important}
+/* Basic steps remain visible while precise controls expand below. */
 .scratch-friendly-mode .kid-easy-body[hidden],.scratch-friendly-mode .kid-legacy[hidden]{display:none!important}
 .scratch-friendly-mode .scratch-beginner{min-width:0;background:#182438;color:#f2f7ff;border:1px solid #455d78;border-radius:17px;overflow:hidden;box-shadow:0 10px 30px #0003}
 .scratch-friendly-mode .kid-top{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px;padding:19px 20px;background:linear-gradient(105deg,#254a70,#273551);border-bottom:1px solid #526b85}
@@ -61,9 +61,9 @@
 .scratch-friendly-mode .kid-legacy strong{font-size:17px}
 .scratch-friendly-mode .kid-legacy p{font-size:13px;color:#d3e3f2}
 .scratch-friendly-mode .kid-legacy button{min-height:49px;background:#367db5;color:#fff;border-radius:10px;border:1px solid #93ccef;padding:11px 17px;cursor:pointer}
-.scratch-friendly-mode.scratch-friendly-advanced .kid-top{border-bottom:0}
+.scratch-friendly-mode.scratch-friendly-advanced .kid-top{border-bottom:1px solid #526b85}
 .scratch-friendly-mode.scratch-friendly-advanced .kid-legacy{display:none!important}
-.scratch-friendly-mode.scratch-friendly-advanced .kid-feedback{display:none}
+/* The shared live feedback remains visible in either detail state. */
 .scratch-friendly-mode button:hover{filter:brightness(1.1)}
 .scratch-friendly-mode button:focus-visible{outline:3px solid #ffe699;outline-offset:3px}
 .scratch-friendly-mode button:disabled{opacity:.5;cursor:not-allowed}
@@ -111,3 +111,8 @@
 .scratch-friendly-mode .kid-action-fields input,.scratch-friendly-mode .kid-action-fields select{width:100%;min-width:0;min-height:42px;padding:8px;background:#0c1e30;color:#f9fcff;border:1px solid #7098bd;border-radius:7px}
 .scratch-friendly-mode .kid-plan-item{flex-wrap:wrap;gap:9px}
 @media(max-width:480px){.scratch-friendly-mode .kid-action-fields{grid-template-columns:1fr}.scratch-friendly-mode .kid-plan-item{gap:5px}.scratch-friendly-mode .kid-item-controls{margin-left:0}}
+
+/* Single visual skill editor: legacy nested difficulty surfaces stay hidden. */
+.scratch-friendly-mode .studio-easy-tabs,.scratch-friendly-mode #studio-easy-panel,.scratch-friendly-mode #studio-expert-panel{display:none!important}
+.scratch-friendly-mode.scratch-friendly-advanced #scratch-workbench{display:block!important;margin:10px 14px 20px;border:1px solid #567b9e;border-radius:14px;overflow:hidden}
+.scratch-friendly-mode .kid-display button[aria-expanded=true]{background:#d8efff;color:#193855}

@@ -27,10 +27,10 @@ function floor(base,id){
  const balance={
   time:{hp:1,damage:.85,speed:1.1,cooldown:.62},
   space:{hp:1.12,damage:1.05,speed:.95,cooldown:.85},
-  fire:{hp:.9,damage:1.75,speed:1.06,cooldown:.82},
-  storm:{hp:.83,damage:1.02,speed:2.25,cooldown:.58},
-  ice:{hp:1.3,damage:.84,speed:.75,cooldown:.88},
-  forest:{hp:1.18,damage:.9,speed:.93,cooldown:.65}
+  fire:{hp:.9,damage:1.55,speed:1.06,cooldown:.82},
+  storm:{hp:.88,damage:1.08,speed:2.25,cooldown:.58},
+  ice:{hp:1.2,damage:.84,speed:.75,cooldown:.88},
+  forest:{hp:1.13,damage:.9,speed:.93,cooldown:.65}
  }[r.id];
  // Escalating endurance yields progressively longer boss fights without
  // changing any saved player stats or requiring a specific power build.

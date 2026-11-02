@@ -111,7 +111,7 @@ function action(type,damage,extra={}){
 }
 function makeEnemy(n){
   const f=floor(n);
-  const themedSkills=f.boss?[[realm()?.pattern||'방호','shield']]:realms?.enemyLoadout?.(realmId,f.number)||[
+  const themedSkills=realms?.enemyLoadout?.(realmId,f.number)||[
     [(realm()?.name||'탑')+' 탄환',({time:'shot',space:'homing',fire:'arcshot',storm:'bolt',ice:'pierce',forest:'dung'})[realmId]],
     ['속성 방호','shield'],
     ...(f.number>=3?[['전술 이동',realmId==='fire'||realmId==='forest'?'dash':'retreat']]:[]),
@@ -189,6 +189,8 @@ function install(){
    +'<div class="tower-enemy-skills" id="tower-enemy-skills" aria-label="상대 스킬 상세"></div></div></details>'
    +'</div></div>'
    +'<div class="tower-buttons"><button id="tower-start" type="button">1층 시작</button>'
+   +'<button id="tower-practice-5" type="button" title="클리어 기록을 변경하지 않습니다">5층 보스 연습</button>'
+   +'<button id="tower-practice-10" type="button" title="클리어 기록을 변경하지 않습니다">10층 보스 연습</button>'
    +'<button id="tower-pause" type="button" hidden>⏸ 일시정지</button>'
    +'<button id="tower-abandon" type="button" hidden>도전 포기</button></div>'
    +'<p class="tower-feedback" id="tower-feedback" role="status" aria-live="polite" hidden></p>'
@@ -257,7 +259,7 @@ function install(){
 
   const nextStart=el('tower-next-start');
   let active=false,stage='ready',level=1,cleared=0,selected=null,temporary=null,mode='auto';
-  let blessings=[],offers=[],encounter=null,environment=null,view='selection',ancient=false;
+  let blessings=[],offers=[],encounter=null,environment=null,view='selection',ancient=false,practice=false;
   let routePending=false,routeSelected='';
   const ROUTES=Object.freeze({
     rush:{name:'⚡ 위험한 속공',description:'다음 층 적 HP -20% · 적 공격 +25% · 내 공격 +12%'},
@@ -269,10 +271,10 @@ function install(){
   const fighterCards=el('tower-fighter-cards'),fighterSummary=el('tower-hero-summary');
   const fighterTabs=panel.querySelector?.('.tower-fighter-tabs');
   function selectedDef(){return pool().find(d=>d.id===hero.value)||pool()[0]||null;}
-  function current(){return {ancient,active,stage,level,cleared,boss:floor(level).boss,selected:key(selected),mode,realm:realmId,blessings:[...blessings],offers:offers.map(x=>({...x})),routePending,routeSelected};}
+  function current(){return {ancient,practice,active,stage,level,cleared,boss:floor(level).boss,selected:key(selected),mode,realm:realmId,blessings:[...blessings],offers:offers.map(x=>({...x})),routePending,routeSelected};}
   function selectRealm(id){
     if(active||!realms?.REALMS.some(r=>r.id===id))return false;
-    ancient=false;realmId=id;view='interior';stage='ready';level=1;cleared=0;blessings=[];offers=[];routePending=false;routeSelected='';encounter=null;environment?.clear?.();environment=null;
+    ancient=false;practice=false;realmId=id;view='interior';stage='ready';level=1;cleared=0;blessings=[];offers=[];routePending=false;routeSelected='';encounter=null;environment?.clear?.();environment=null;
     message.textContent='';clearReport();show();return true;
   }
   function moveToFloor(target){
@@ -282,7 +284,7 @@ function install(){
     const best=Number(read(global.localStorage).records[recordKey(selectedDef())]?.best)||0;
     if(!(dest>=1&&dest<=Math.min(FINISH,best+1)))return false;
     if(active){cleanup();active=false;selected=null;encounter=null;environment=null;}
-    level=dest;cleared=Math.min(best,dest-1);stage='ready';blessings=[];offers=[];routePending=false;routeSelected='';
+    practice=false;level=dest;cleared=Math.min(best,dest-1);stage='ready';blessings=[];offers=[];routePending=false;routeSelected='';
     clearReport();message.textContent=dest+'층 도전을 선택했습니다.';
     show();return true;
   }
@@ -291,12 +293,13 @@ function install(){
   function beginAncient(){
     // The Ancient portal is a PREPARATION entry, not a fight trigger.
     if(active||!allRealmsCleared()||!selectRealm('space'))return false;
-    ancient=true;level=10;stage='ready';selected=null;view='interior';
+    ancient=true;practice=false;level=10;stage='ready';selected=null;view='interior';
     message.textContent='고대의 존재 도전 준비 · 캐릭터를 선택한 뒤 시작하세요.';
     show();return true;
   }
   function openSelection(){
     if(active)return false;
+    practice=false;
     view='selection';show();return true;
   }
   el('tower-back-selection')?.addEventListener('click',openSelection);
@@ -383,11 +386,23 @@ function install(){
       fighterSummary.append(title,detail);
     }
   }
+  function beginPractice(n){
+    // Practice allows studying a boss without bypassing the 60-floor unlock.
+    // It must never write records, blessings or Ancient clear progress.
+    if(active||ancient||roundStarted&&!isGameOver)return false;
+    if(n!==5&&n!==10)return false;
+    practice=true;level=n;cleared=0;stage='ready';selected=null;
+    blessings=[];offers=[];routePending=false;routeSelected='';
+    message.textContent=n+'층 보스 연습 · 기록과 해금에는 반영되지 않습니다.';
+    show();return true;
+  }
+  el('tower-practice-5')?.addEventListener('click',()=>beginPractice(5));
+  el('tower-practice-10')?.addEventListener('click',()=>beginPractice(10));
   function chooseFighter(id){
     if(active||stage==='fighting'||(roundStarted&&!isGameOver))return false;
     const d=pool().find(item=>item.id===id);if(!d)return false;
     fighterGroup=CUSTOM_DEFS.includes(d)?'custom':'basic';
-    hero.value=d.id;level=ancient?10:1;cleared=0;
+    hero.value=d.id;level=ancient?10:practice?level:1;cleared=0;
     message.textContent='';show();return true;
   }
   fighterTabs?.addEventListener?.('click',event=>{
@@ -411,6 +426,8 @@ function install(){
     screen.dataset.towerView=active?'interior':view;
     screen.dataset.towerRealm=realmId;
     screen.dataset.towerAncient=ancient?'true':'false';
+    screen.dataset.towerPractice=practice?'true':'false';
+    for(const n of [5,10]){const button=el('tower-practice-'+n);if(button)button.hidden=active||ancient||stage==='fighting';}
     panel.hidden=screen.dataset.towerView==='selection';
     const arenaSlot=el('tower-arena-slot');if(arenaSlot)arenaSlot.hidden=panel.hidden||stage==='ready';
 
@@ -434,8 +451,12 @@ function install(){
         button.setAttribute('aria-label',button.title+' · '+(best===FINISH?'정복 완료':'최고 '+best+'층'));
       }
       el('tower-realm-hint').textContent=realm().name+' · '+realm().hint;
-      const done=realms.REALMS.filter(r=>Object.entries(read(global.localStorage).records).some(([id,v])=>id.startsWith(r.id+'_')&&Number(v.best)>=FINISH)).length;
-      el('ancient-progress').textContent=done+' / 6개 탑 정복'+(done===6?' · 봉인이 해제됐습니다!':' · 모든 탑 10층을 클리어하세요.');
+      const records=read(global.localStorage).records;
+       const remaining=realms.REALMS.map(r=>({
+         name:r.name,best:Math.max(0,...Object.entries(records).filter(([id])=>id.startsWith(r.id+'_')).map(([,v])=>Math.min(FINISH,Number(v.best)||0)))
+       })).filter(r=>r.best<FINISH);
+       const done=realms.REALMS.length-remaining.length;
+      el('ancient-progress').textContent=done+' / 6개 탑 정복'+(done===6?' · 봉인이 해제됐습니다!':' · 남은 탑: '+remaining.map(r=>r.name+' '+r.best+'/10F').join(', '));
       el('ancient-start').hidden=done!==6;
       el('ancient-lock-note').hidden=done===6;
       const ancientCard=selector.querySelector('.ancient-unlock');
@@ -455,7 +476,7 @@ function install(){
     nextStart.setAttribute('aria-label',nextStart.disabled?
       '다음 층 시작 불가 · '+nextStart.title:'다음 층 전투 시작');
     const f=floor(level),best=read(global.localStorage).records[recordKey(selectedDef())]?.best||0;
-    el('tower-floor').textContent=ancient?'최종 보스':level+' / '+FINISH+'F';
+    el('tower-floor').textContent=ancient?'최종 보스':level+' / '+FINISH+'F'+(practice?' · 연습':'');
     const picker=el('tower-floor-picker'),options=el('tower-floor-options');
     if(picker&&options){picker.hidden=!!ancient||stage==='fighting'||(!!active&&stage!=='between');
       if(!picker.hidden){options.replaceChildren();for(let f=1;f<=Math.min(FINISH,best+1);f++){
@@ -463,11 +484,11 @@ function install(){
         b.textContent=f+'층'+(f<=best?' ✓':' · 다음');b.disabled=f===level;
         options.append(b);
       }}}
-    el('tower-rule').textContent=ancient?'보스 HP 3,000 · 팔과 촉수를 공격':realm()?.terrain+(blessings.length?' · 기연 '+blessings.length+'개':'')+(routeSelected?' · '+ROUTES[routeSelected].name:'');
+    el('tower-rule').textContent=ancient?'보스 HP 3,000 · 팔과 촉수를 공격':(practice?'연습 경기 · 승리해도 정복 기록이나 봉인 해금에 반영되지 않습니다. · ':'')+realm()?.terrain+(blessings.length?' · 기연 '+blessings.length+'개':'')+(routeSelected?' · '+ROUTES[routeSelected].name:'');
     const weakpoint=el('tower-weakpoint-hint');
     if(weakpoint){
       weakpoint.hidden=ancient||!f.boss;
-      if(!weakpoint.hidden)weakpoint.textContent='보스 약점: '+(WEAKPOINT[realmId]||'특수')+'의 위험 지대를 연속 두 번 피하면 3초 동안 받는 피해가 50% 증가합니다.';
+      if(!weakpoint.hidden)weakpoint.textContent='보스 약점: '+(WEAKPOINT[realmId]||'특수')+'의 위험 지대를 연속 두 번 피하면 3.5초 동안 받는 피해가 50% 증가합니다.';
     }
     el('tower-enemy').textContent=ancient?'☽ 고대의 존재':(f.boss?'👑 ':'')+f.name;
     el('tower-enemy-info').textContent=ancient?'HP 3,000 · 3페이즈 · 촉수 끝 물리 공격 · 6속성 봉인':realms&&f.boss?'HP '+f.hp+' · 패턴 공격 · 2페이즈':'HP '+f.hp+' · 공격 '+f.damage+' · 속도 '+f.speed.toFixed(1);
@@ -634,7 +655,7 @@ function install(){
     if(roundStarted&&!isGameOver){message.textContent='진행 중인 자유 대전을 먼저 종료해 주세요.';return false;}
     blessings=[];offers=[];routePending=false;routeSelected='';encounter=null;
     clearReport();message.textContent='';selected=who;active=true;view='interior';stage='ready';
-    if(ancient){level=10;cleared=0;}else{const best=read(global.localStorage).records[recordKey(who)]?.best||0;
+    if(ancient){level=10;cleared=0;}else if(practice){cleared=0;}else{const best=read(global.localStorage).records[recordKey(who)]?.best||0;
       level=Math.max(1,Math.min(level,Math.min(FINISH,Number(best)+1)));cleared=Math.min(best,level-1);}
     try{startFight();return true;}
     catch(e){
@@ -645,6 +666,12 @@ function install(){
   }
   function onBattleEnd(winner,reason){
     if(!active||stage!=='fighting')return false;
+    if(practice){
+      const won=reason!=='stopped'&&winner&&winner.playerNum===1;
+      active=false;practice=false;stage=won?'won':'lost';
+      cleanup();message.textContent=won?'보스 연습 성공! (정복 기록에는 반영되지 않습니다.)':'보스 연습 종료 · 기록이 변경되지 않았습니다.';
+      show();global.ArenaScreenRouter?.refresh?.();return true;
+    }
     if(reason==='stopped'||!winner||winner.playerNum!==1){
       if(ancient){active=false;stage='lost';cleanup();message.textContent='고대의 존재에게 패배했습니다. 다시 도전할 수 있습니다.'+(global.ArenaBattleDirector?.explanations?.(players,null)?.[0]?' · '+global.ArenaBattleDirector.explanations(players,null)[0]:'');show();return true;}
       const old=selected;active=false;stage='lost';
@@ -702,7 +729,7 @@ function install(){
     if(stage==='fighting'&&roundStarted&&!isGameOver){togglePlay();show();}
   });
   abandon.addEventListener('click',forfeit);
-  hero.addEventListener('change',()=>{if(active)return;level=ancient?10:1;cleared=0;show();});
+  hero.addEventListener('change',()=>{if(active)return;level=ancient?10:practice?level:1;cleared=0;show();});
    show();
   function paintBackground(ctx,canvas){
     if(!['ready','fighting','between','lost','won'].includes(stage)||
@@ -724,7 +751,7 @@ function install(){
     });
   }}
   function drawEncounter(ctx){if(!active||stage!=='fighting')global.ArenaTowerSpectacle?.page(null);if(active&&stage==='fighting'){global.ArenaTowerAtmosphere?.particles?.(ctx,canvas.width,canvas.height,realmId,encounter?.tick||0);environment?.draw?.(ctx);encounter?.draw(ctx,realm()?.color);}}
-  const api={beginAncient,allRealmsCleared,selectRealm,openSelection,chooseBlessing,chooseRoute,chooseFighter,tickEncounter,drawEncounter,get encounter(){return encounter;},get environment(){return environment;},get hero(){return typeof players!=='undefined'?players[0]||null:null;},floor,makeEnemy,read,updateRecord,records,begin,forfeit,paintBackground,
+  const api={beginAncient,beginPractice,allRealmsCleared,selectRealm,openSelection,chooseBlessing,chooseRoute,chooseFighter,tickEncounter,drawEncounter,get encounter(){return encounter;},get environment(){return environment;},get hero(){return typeof players!=='undefined'?players[0]||null:null;},floor,makeEnemy,read,updateRecord,records,begin,forfeit,paintBackground,
     onBattleEnd,isTransientDef,pauseAway,refresh:show,setMode,get mode(){return mode;},get active(){return active;},
     get stage(){return stage;},get view(){return active?'interior':view;},get state(){return current();}};
   global.ArenaTower=api;return api;

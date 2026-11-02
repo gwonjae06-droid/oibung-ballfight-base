@@ -66,6 +66,9 @@ function create({realm,level,width=500,height=500,hero,boss,damage,environmentMa
   add(shape,'terrain',label[turn],turn===0?96:90,turn===0?120:96);
  }
  function pattern(){
+  // Each realm earns a distinct warning timbre without altering hitboxes.
+  const cue={time:'clock',space:'cosmos',fire:'fire-boom',storm:'storm-arc',ice:'ice-crack',forest:'forest-growth'};
+  g.BattleFX?.sound?.(cue[realm]||'energy',.78);
   const turn=bossTurn++%(level===10?5:4),strong=level===10,rapid=phase===2;
   const cadence={time:[82,94],space:[87,104],fire:[72,82],storm:[80,92],ice:[112,126],forest:[76,90]}[realm]||[78,96];
   const delay=rapid?cadence[0]:cadence[1];
@@ -285,7 +288,7 @@ function create({realm,level,width=500,height=500,hero,boss,damage,environmentMa
     }
     avoided=z.hits.has(hero)?0:avoided+1;
     if(avoided>=2&&tick>=nextExpose){
-     avoided=0;exposure=180;nextExpose=tick+540;
+     avoided=0;exposure=210;nextExpose=tick+480;
      boss.towerDefense=baseDefense*1.5;
      g.addFloatingText?.('약점 노출!',boss.x,boss.y-65,'#ffe28e',22);
     }

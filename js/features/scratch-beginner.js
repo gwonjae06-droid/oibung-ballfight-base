@@ -50,7 +50,7 @@ const nodeOf=(id)=>{const item=actions.find(a=>a.id===id);
 };
 const panel=doc.createElement('section');panel.id='scratch-beginner';panel.className='scratch-beginner';
 panel.setAttribute('aria-label','중급 고유 스킬 설계 작업실');
-panel.innerHTML='<div class="kid-top"><div><span class="kid-overline">MY SPECIAL MOVE</span><h3>나만의 전투 기술 설계</h3><p>전투 유형을 고르고 행동 4개를 조립하세요. 순서·대상·연계·위력을 직접 수정할 수 있습니다.</p></div><div class="kid-display" role="group" aria-label="코딩 화면 보기 선택"><button type="button" data-kid-view="easy" aria-pressed="true">✏️ 기본 설계</button><button type="button" data-kid-view="advanced" aria-pressed="false">⚙ 고급 코딩</button></div></div>'
+panel.innerHTML='<div class="kid-top"><div><span class="kid-overline">MY SPECIAL MOVE</span><h3>나만의 전투 기술 설계</h3><p>전투 유형을 고르고 행동 4개를 조립하세요. 순서·대상·연계·위력을 직접 수정할 수 있습니다.</p></div><div class="kid-display"><button type="button" data-kid-view="toggle" aria-expanded="false" aria-controls="scratch-workbench">⚙ 조건·반복·정밀 블록 펼치기</button></div></div>'
  +'<div class="kid-legacy" hidden><strong>이 캐릭터는 예전 스킬을 사용하고 있어요.</strong><p>기존 기술은 그대로 보관돼요. 새 필살기 방식으로 바꾸고 싶을 때만 선택하세요.</p><button type="button" data-kid-command="convert">한 가지 필살기로 바꾸기</button></div>'
  +'<div class="kid-easy-body">'
  +'<section class="kid-section" aria-labelledby="kid-step-one"><div class="kid-step-heading"><span class="kid-step-no">1</span><div><h4 id="kid-step-one">① 기세가 100이 되면</h4><p>⚡ 기세가 100이 되면 준비됩니다. 실제 발동 시점은 쉬운 설계 화면에서 바꿀 수 있어요.</p></div></div><div class="kid-trigger-options"></div></section>'
@@ -142,7 +142,7 @@ function refresh(){
  const openCards=[...$('.kid-plan').querySelectorAll('[data-kid-settings][open]')].map(n=>n.dataset.kidSettings);
  const code=program();$('.kid-plan').innerHTML=code.length?displayPlan(code):'<div class="kid-empty">아직 블록이 없어요. 왼쪽(또는 위)의 색깔 블록을 눌러 주세요!</div>';
  for(const n of $('.kid-plan').querySelectorAll('[data-kid-settings]'))if(openCards.includes(n.dataset.kidSettings))n.open=true;
- $('.kid-count').textContent='기본 설계 '+code.length+'/4개 행동 · 고급 코딩은 별도';
+ $('.kid-count').textContent='연결된 행동 '+code.length+'개 · 블록을 눌러 세부 조정할 수 있습니다';
  // Signature fighters now earn their casts through contact and rebounds.
  // Legacy cooldown values remain in their saved JSON for compatibility.
 }
@@ -165,15 +165,21 @@ function replaceWithTemplate(t,random=false){
 }
 function chooseMode(next){
  mode=next==='advanced'?'advanced':'easy';
+ // One authoring surface: the visual steps stay open while precise Scratch
+ // blocks expand inline. Both edit the same program and Undo history.
  studio.classList.toggle('scratch-friendly-advanced',mode==='advanced');
- for(const b of panel.querySelectorAll('[data-kid-view]'))b.setAttribute('aria-pressed',String(b.dataset.kidView===mode));
+ const button=panel.querySelector('[data-kid-view="toggle"]');
+ if(button){
+  button.setAttribute('aria-expanded',String(mode==='advanced'));
+  button.textContent=mode==='advanced'?'⚙ 조건·반복·정밀 블록 접기':'⚙ 조건·반복·정밀 블록 펼치기';
+ }
  if(mode==='advanced')S.render();
- tell(mode==='advanced'?'블록을 옮기고, 만약·반복 같은 코딩도 해보세요.':'행동 4개를 고르고 카드에서 연계·대상·위력을 조정하세요!');
+ tell(mode==='advanced'?'기본 행동 카드 아래에서 조건·반복·세부 블록을 편집할 수 있습니다.':'행동 블록을 고르고 필요할 때 세부 설정을 펼치세요.');
 }
 panel.addEventListener('click',e=>{
  const button=e.target.closest('button');if(!button)return;
  const trigger=button.dataset.kidTrigger,addId=button.dataset.kidAdd,templateId=button.dataset.kidTemplate;
- if(button.dataset.kidView){chooseMode(button.dataset.kidView);return;}
+ if(button.dataset.kidView){chooseMode(mode==='advanced'?'easy':'advanced');return;}
  if(trigger){return;}
  if(addId){add(addId);return;}
  if(templateId){replaceWithTemplate(templates.find(t=>t.id===templateId));return;}

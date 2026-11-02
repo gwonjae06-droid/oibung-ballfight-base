@@ -13,7 +13,8 @@
   const CUE_COOLDOWN=Object.freeze({
     'bounce-perfect':.34,'bounce-combo':.42,'combo-step':.095,'combo-streak':.45,
     'tactic-sling':.24,'tactic-evade':.24,'tactic-anchor':.3,
-    'signature-ready':.42,'signature-launch':.36
+    'signature-ready':.42,'signature-launch':.36,
+    'fire-boom':.65,'storm-arc':.65,'ice-crack':.65,'forest-growth':.65
   });
   const lastCue=new Map();
   const EFFECTS_KEY='oibung-sfx-settings-v2';
@@ -155,6 +156,14 @@
     }else if(kind==='cosmos'){
       snap(.2,.06*v,430);
       tone(103*variation,43,.34,.10*v,'sine');
+    }else if(kind==='fire-boom'){
+      snap(.24,.14*v,370);tone(115*variation,32,.31,.21*v,'triangle');tone(59,28,.26,.08*v,'sine',.03);
+    }else if(kind==='storm-arc'){
+      snap(.19,.09*v,1600);tone(210*variation,55,.13,.11*v,'sawtooth');tone(125,48,.17,.08*v,'triangle',.06);
+    }else if(kind==='ice-crack'){
+      snap(.08,.08*v,2350);tone(680*variation,235,.095,.06*v,'sine');tone(247,135,.18,.05*v,'triangle',.04);
+    }else if(kind==='forest-growth'){
+      snap(.15,.065*v,530);tone(102*variation,145,.29,.07*v,'sine');tone(166,96,.24,.06*v,'triangle',.08);
     }else if(kind==='combo-step'){
       // A tiny wood-rubber click, intentionally under the regular collisions.
       snap(.042,.029*v,520);

@@ -93,7 +93,7 @@ function install(){
   arenaSlot.append(arena);tower.append(arenaSlot);
   const pveArena=node('div','pve-arena-slot');pveArena.id='pve-arena-slot';
   const free=node('div','pve-free-slot');free.id='pve-free-slot';
-  free.append(tools);if(wager)free.append(wager);
+  free.append(tools);if(wager){wager.hidden=true;legacy.append(wager);}
   pve.append(pveArena,free);
   const designTabs=node('nav','screen-tabs character-route-tabs');
   designTabs.setAttribute('aria-label','캐릭터 설계 메뉴');

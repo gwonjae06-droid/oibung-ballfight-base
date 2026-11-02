@@ -299,3 +299,20 @@ for(const realm of ['time','space','fire','storm','ice','forest'])test(realm+' t
  assert.equal(x.tower.begin(),true);assert.equal(x.tower.state.blessings.length,0);
  assert.equal(x.world.players[0].maxHp,220);assert.equal(x.world.players[0].forge.skills[0].actions[0].damage,20);
 });
+
+test('5F/10F boss practice never advances records or unlocks the Ancient One',()=>{
+ const x=harness(true);
+ assert.equal(x.tower.selectRealm('fire'),true);
+ assert.equal(x.tower.beginPractice(10),true);
+ assert.equal(x.tower.state.practice,true);
+ assert.equal(x.tower.state.level,10);
+ const saved=x.saved.get('oibung-tower-v1');
+ assert.equal(x.tower.begin(),true);
+ assert.equal(x.world.players[1].forge.skills.length,6,'actual realm boss has six authored skills');
+ conclude(x,x.world.players[0]);
+ assert.equal(x.tower.active,false);
+ assert.equal(x.tower.state.practice,false);
+ assert.equal(x.saved.get('oibung-tower-v1'),saved,'practice cannot record completion');
+ assert.equal(x.tower.allRealmsCleared(),false);
+ assert.match(x.el('tower-feedback').textContent,/연습 성공/);
+});
