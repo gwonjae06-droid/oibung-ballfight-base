@@ -29,7 +29,10 @@ function hit(p,e,damage,{color=p.borderColor||'#8bd5ff',heavy=false,type='필살
  if(g.AdvancedCombat?.canHit&&!g.AdvancedCombat.canHit(p,e,0))return false;
  const d=Math.max(0,Math.round(damage));
  if(!d)return false;
+ const actual=Math.min(e.hp,d);
  e.hp=Math.max(0,e.hp-d);e.invincible=18;
+ // Original ultimates use the same one-player, confirmed-impact combo system.
+ g.ArenaCombatV2?.strongHit?.(p,actual,push);
  if(push){
   const dx=e.x-p.x,dy=e.y-p.y,dist=Math.hypot(dx,dy)||1;
   e.vx=(e.vx||0)+dx/dist*push;e.vy=(e.vy||0)+dy/dist*push;
@@ -57,7 +60,7 @@ function wave(p,roster){
  // Each wave travels the arena outward. Hit registry prevents multiple hits
  // from a single ring, and standard invincibility prevents stacked spam.
  p.waves.push({x:p.x,y:p.y,currentRadius:10,maxRadius:195,
-  speed:5,alpha:.96,hitTargets:new Set(),damage:order===0?32:36});
+  speed:5,alpha:.96,hitTargets:new Set(),damage:order===0?42:46});
  g.BattleFX?.cast?.(p,'wave',{radius:175,color:'#ef5264'});
 }
 function updateWaves(p,roster){
@@ -80,12 +83,22 @@ function updateWaves(p,roster){
   if(w.currentRadius>=w.maxRadius||w.alpha<=0)p.waves.splice(i,1);
  }
 }
-function morph(p){
+function morph(p,roster){
  p.mode=p.mode==='boin'?'menhera':'boin';
  p.modeTimer=0;
  p._originalMassBoost=p.mode==='boin'?1:1.48;
  p._originalFormUntil=(p._combat2Tick||0)+330;
  p.invincible=Math.max(p.invincible||0,12);
+ // Transformation itself unleashes a single charged impact, so this fighter
+ // can finish a duel while all former independent attack timers remain retired.
+ const switchingToHeavy=p.mode==='menhera';
+ for(const e of targets(p,roster)){
+  if(Math.hypot(e.x-p.x,e.y-p.y)<=(e.radius||28)+(switchingToHeavy?145:112))
+   hit(p,e,switchingToHeavy?72:55,{
+     color:switchingToHeavy?'#d79aff':'#ff9bb7',
+     heavy:switchingToHeavy,type:'모드 변환 충격파',push:switchingToHeavy?5:8
+   });
+ }
  if(p.mode==='boin'){
   const m=Math.hypot(p.vx,p.vy)||1;
   p.vx=p.vx/m*Math.min(10,m*1.33+1.3);
@@ -135,14 +148,14 @@ function updateSlam(p,target,roster){
   p.jumpHeight=Math.max(0,p.jumpHeight-15);
   if(p.jumpHeight<=0){
    p.jumpState='ground';p.jumpHeight=0;
-   p.invincible=Math.max(p.invincible||0,13);
+   p.invincible=Math.max(p.invincible||0,10);
    g.BattleFX?.sound?.('heavy',.85);
    g.BattleFX?.cast?.(p,'wave',{radius:124});
    g.ArenaOriginalMomentum?.shockwave?.(p);
    const r=128;
    for(const e of targets(p,roster))
     if(Math.hypot(e.x-p.targetLandX,e.y-p.targetLandY)<=r+(e.radius||28))
-     hit(p,e,98,{color:'#63e6bb',heavy:true,type:'급강하 낙하',push:6});
+     hit(p,e,90,{color:'#63e6bb',heavy:true,type:'급강하 낙하',push:6});
   }
  }
  // Remain visually over the selected target until falling.
@@ -152,13 +165,18 @@ function updateSlam(p,target,roster){
 function exam(p){
  p.nSuCount=(p.nSuCount||1)+1;
  const r=Math.random();
+ // A very unlucky sequence cannot lock Choi out of dealing damage forever.
+ // After three non-jackpot exams the next one is guaranteed a bull rush.
+ const misses=p._originalExamMisses||0;
  p._originalExamUntil=(p._combat2Tick||0)+230;
- if(r<.3){
+ if(misses<3&&r<.3){
+  p._originalExamMisses=misses+1;
   p.suneungState='fail';p._originalBullUntil=0;
   p.slowTimer=Math.max(p.slowTimer||0,125);
   p.slowMultiplier=.62;
   report(p,'수능 실패 · 잠깐 감속','danger');
- }else if(r<.75){
+ }else if(misses<3&&r<.75){
+  p._originalExamMisses=misses+1;
   p.suneungState='normal';p._originalBullUntil=0;
   const gain=Math.min(36,p.maxHp-p.hp);
   p.hp+=gain;
@@ -166,6 +184,7 @@ function exam(p){
   g.BattleFX?.cast?.(p,'heal');
   if(gain)g.addFloatingText?.('+'+gain+' HP',p.x,p.y-35,'#8ff3b3',16);
  }else{
+  p._originalExamMisses=0;
   p.suneungState='success';
   p._originalBullUntil=(p._combat2Tick||0)+245;
   report(p,'수능 대박! 미친황소','critical');
@@ -216,7 +235,7 @@ function update(p,target,roster=[]){
  if(!g.BounceMomentum.spend(p))return true;
  const label=nextSkill(p);
  if(p.id==='bae')wave(p,roster);
- else if(p.id==='oh')morph(p);
+ else if(p.id==='oh')morph(p,roster);
  else if(p.id==='lee')jaw(p,roster);
  else if(p.id==='park')beginSlam(p,target);
  else if(p.id==='choi')exam(p);
