@@ -8,6 +8,7 @@ const read = file => fs.readFileSync(path.join(root, file), 'utf8');
 const html = read('index.html');
 const main = read('js/main.js');
 const forge = read('js/features/skill-forge.js');
+const forgeEditor = read('js/features/skill-forge-editor.js');
 const engine = read('js/core/engine.js');
 const economy = read('js/features/economy.js');
 const style = read('css/style.css');
@@ -21,7 +22,7 @@ function panelHtml() {
 const ids = text => [...text.matchAll(/\bid="([^"]+)"/g)].map(match => match[1]);
 
 test('all required game and optional feature controls still exist', () => {
-  const all = [...ids(html), ...ids(panelHtml()), ...ids(forge)];
+  const all = [...ids(html), ...ids(panelHtml()), ...ids(forgeEditor)];
   const required = [
     'arena', 'container', 'title-text', 'ui-container', 'sec-p1', 'sec-p2', 'sec-p3',
     'btn-start', 'btn-reset', 'arena-player-count', 'btn-stop', 'coin-balance', 'economy-message',
