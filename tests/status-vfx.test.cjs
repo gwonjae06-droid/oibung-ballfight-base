@@ -60,7 +60,7 @@ test('renderer mounts status FX on final fighter plane and game binds effects pr
  assert.ok(sfx.includes('ArenaStatusVFX?.setReduced?.(gentle.checked)'));
 });
 test('effect-specific DoT kind tracks fire and poison and clears on expiry or cleanse',()=>{
- const forge=fs.readFileSync('js/features/skill-forge.js','utf8');
+ const forge=fs.readFileSync('js/features/skill-forge-impact.js','utf8');
  assert.ok(forge.includes('e._forgeDotKind=action.status;'));
  const exp=fs.readFileSync('js/features/forge-expansion.js','utf8');
  assert.ok(exp.includes('p._forgeDotKind=null;'));
