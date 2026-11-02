@@ -55,7 +55,7 @@ test('reduced-motion preference suppresses camera shake but keeps gameplay physi
 });
 test('custom fighter hits use the physics pipeline only on actual attacks, never on movement',()=>{
   const {world,fx}=harness(),a=actor(1,100,100),b=actor(2,154,100);
-  vm.runInContext(read('js/features/skill-forge.js'),world);
+  for(const part of ['skill-forge-impact','skill-forge-casting','skill-forge'])vm.runInContext(read('js/features/'+part+'.js'),world);
   assert.equal(world.SkillForge.hit(a,b,{type:'dash',damage:100,status:'fire',knockback:9}),false);
   assert.equal(b.hp,300);assert.equal(fx.pulseCount,0);
   assert.equal(world.SkillForge.hit(a,b,{type:'wave',damage:26,status:'none',knockback:5}),true);
