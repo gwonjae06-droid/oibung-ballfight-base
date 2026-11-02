@@ -261,6 +261,7 @@ function hit(p,e,action,multiplier=1,attackZ) {
     createHitParticles(e.x,e.y,tint,density===2?4:density===1?8:d>=25?22:14);
     addFloatingText('-'+d,e.x,e.y-30,tint,17);
     global.ImpactPhysics?.hit?.(p,e,d,{knockback:action.knockback||0,color:tint,type:action.type});
+     global.ArenaCombatV2?.strongHit?.(p,Math.min(hpBeforeHit,d),action.knockback||0);
   }
   const priorStatus={slow:e.slowTimer||0,dot:e.bfDot||0,effect:e.forgeEffects?.[action.status]?.time||0};
   const controlPower=global.ForgeArchetypes?.control?.(p)??1;
