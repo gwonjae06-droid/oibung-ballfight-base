@@ -278,3 +278,8 @@
  .scratch-friendly-mode .rule-prompt-bottom button{width:100%}
  .scratch-friendly-mode .rule-offline-mark{font-size:10px}
 }
+
+/* Extended imagination: edit real target, element, speed, rebound and shot patterns. */
+.scratch-friendly-mode .rule-advanced-tuning{padding:10px;border:1px solid #6e87a6;border-radius:10px;background:#182d46}
+.scratch-friendly-mode .rule-advanced-tuning summary{cursor:pointer;color:#bce1fb;font-size:13px;font-weight:850;padding:4px}
+.scratch-friendly-mode .rule-advanced-tuning[open] .rule-tuners{margin-top:12px}

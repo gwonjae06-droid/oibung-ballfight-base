@@ -4,6 +4,7 @@
 const d=g.document,panel=d?.querySelector('#scratch-beginner'),forge=g.SkillForge;
 const R=g.SignatureRuleSkill,parser=g.SignaturePromptCompiler;
 let promptDraft='',proposal=null;
+const expandedAdvanced=new Set();
 if(!panel||!forge||!R)return;
 const E=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const choices=(items,chosen)=>Object.entries(items).map(([key,label])=>'<option value="'+E(key)+'"'+(String(key)===String(chosen)?' selected':'')+'>'+E(label)+'</option>').join('');
@@ -68,7 +69,15 @@ function ruleRow(r,i,n){
   +'<label>개수<input type="number" min="1" max="8" step="1" data-rule-index="'+i+'" data-rule-field="count" value="'+a.count+'"></label>'
   +'<label>지속시간<input type="number" min=".2" max="8" step=".1" data-rule-index="'+i+'" data-rule-field="duration" value="'+a.duration+'"></label>'
   +(special?'<label>연쇄 분열<select data-rule-index="'+i+'" data-rule-field="fracture">'+choices({1:'1세대',2:'2세대',3:'3세대'},r.fracture)+'</select></label>':'')
-  +'</div></article>';
+  +'</div><details class="rule-advanced-tuning" data-rule-advanced="'+i+'"'+(expandedAdvanced.has(i)?' open':'')+'><summary>고급 설계 · 대상 · 탄도 · 속성 · 넉백</summary>'
+  +'<div class="rule-tuners">'
+  +(forge.supportedParameter?.(a.type,'target')?'<label>대상 선택<select data-rule-index="'+i+'" data-rule-field="target">'+choices(g.AbilityAtlas?.TARGETS||{nearest:'가까운 적',farthest:'먼 적',lowest:'체력 낮은 적',random:'무작위'},a.target)+'</select></label>':'')
+  +(forge.supportedParameter?.(a.type,'pattern')?'<label>공격 패턴<select data-rule-index="'+i+'" data-rule-field="pattern">'+choices(g.AbilityAtlas?.PATTERNS||{direct:'직선',fan:'부채꼴',radial:'방사형',spiral:'나선'},a.pattern)+'</select></label>':'')
+  +(forge.supportedParameter?.(a.type,'status')?'<label>부여 상태<select data-rule-index="'+i+'" data-rule-field="status">'+choices(forge.STATUS||{none:'없음',ice:'빙결',fire:'화상',poison:'독'},a.status)+'</select></label>':'')
+  +(forge.supportedParameter?.(a.type,'speed')?'<label>비행·이동 속도<input type="number" min="2" max="14" step=".5" data-rule-index="'+i+'" data-rule-field="speed" value="'+a.speed+'"></label>':'')
+  +(forge.supportedParameter?.(a.type,'knockback')?'<label>충돌 충격력<input type="number" min="0" max="9" step=".5" data-rule-index="'+i+'" data-rule-field="knockback" value="'+a.knockback+'"></label>':'')
+  +(a.type==='shot'?'<label>벽 반사<select data-rule-index="'+i+'" data-rule-field="ricochet">'+choices({0:'없음',1:'1회',2:'2회',3:'3회'},a.ricochet)+'</select></label>':'')
+  +'</div></details></article>';
 }
 function render(){
  const p=fighter(),s=p.skills[0],original=read(),recipe=R.normalize(original||{
@@ -153,6 +162,14 @@ panel.addEventListener('click',e=>{
   write(current,'규칙 구성을 변경했습니다.');
  }
 });
+panel.addEventListener('toggle',e=>{
+ const item=e.target;
+ if(!item?.matches?.('.rule-advanced-tuning'))return;
+ const i=Number(item.dataset.ruleAdvanced);
+ if(!Number.isInteger(i))return;
+ if(item.open)expandedAdvanced.add(i);
+ else expandedAdvanced.delete(i);
+},true);
 panel.addEventListener('input',e=>{if(e.target.id==='rule-prompt')promptDraft=e.target.value;});
 panel.addEventListener('change',e=>{
  const input=e.target;
@@ -169,7 +186,8 @@ panel.addEventListener('change',e=>{
  if(field==='when'||field==='type')field==='when'?r.when=value:r.action.type=value;
  else if(field==='fracture')r.fracture=Number(value);
  else if(field==='interval')r.interval=Number(value);
- else if(['damage','radius','count','duration'].includes(field))r.action[field]=Number(value);
+ else if(['damage','radius','count','duration','speed','knockback','ricochet'].includes(field))r.action[field]=Number(value);
+ else if(['target','pattern','status'].includes(field))r.action[field]=value;
  write(base,'규칙을 반영했습니다.');
 });
 const prior=g.ScratchStudio?.onChange;
