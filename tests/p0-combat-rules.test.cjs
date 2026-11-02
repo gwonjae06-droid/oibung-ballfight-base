@@ -16,7 +16,7 @@ function harness(){
     isPlaying:true,isGameOver:false,screenShake:0,shockwaves:[],particles:[],floatingTexts:[]};
   h.window=h;vm.createContext(h);
   for(const file of ['js/features/ability-atlas.js','js/features/forge-expansion.js',
-    'js/features/advanced-combat.js','js/features/skill-forge.js','js/core/engine.js'])
+    'js/features/advanced-combat.js','js/features/skill-forge-impact.js','js/features/skill-forge-casting.js','js/features/skill-forge.js','js/core/engine.js'])
     vm.runInContext(read(file),h,{filename:file});
   h.updateUI=()=>{};
   function player(x=100,y=100){
