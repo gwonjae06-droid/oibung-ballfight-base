@@ -24,7 +24,8 @@ test('swept circle checks the entire trajectory rather than only its endpoint',(
 test('standard shot connects when bullet crosses fighter between two simulation frames',()=>{
   const w=base();
   w.AdvancedCombat={canHit(p,e,z){return Math.abs(z-(e.z||0))<=30;},blockSegment(){return null;}};
-  vm.runInContext(read('js/features/skill-forge.js'),w);
+  for(const part of ['skill-forge-impact','skill-forge-casting','skill-forge'])
+   vm.runInContext(read('js/features/'+part+'.js'),w);
   const id=w.SkillForge.register({name:'발사자',hp:250,speed:1.8,
     skills:[{name:'테스트',trigger:'auto',cooldown:30,actions:[action('shot')]}]});
   const p=w.CUSTOM_DEFS.find(x=>x.id===id).createInstance(1);
@@ -61,7 +62,8 @@ test('expansion projectiles use swept ground-level contact too',()=>{
 });
 test('a protected enemy retains invulnerability instead of receiving false damage',()=>{
   const w=base();
-  vm.runInContext(read('js/features/skill-forge.js'),w);
+  for(const part of ['skill-forge-impact','skill-forge-casting','skill-forge'])
+   vm.runInContext(read('js/features/'+part+'.js'),w);
   const p={playerNum:1,hp:200,x:100,y:100,forge:{color:'#4288aa'}};
   const e={playerNum:2,hp:200,x:125,y:100,invincible:8};
   assert.equal(w.SkillForge.hit(p,e,action('shot'),1,0),false);
