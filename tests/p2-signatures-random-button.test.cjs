@@ -142,5 +142,5 @@ test('custom creator has no natural-language generation UI or save-blocking prom
  assert.doesNotMatch(install,/document\.getElementById\('forge-random'\)/,
    'the theme button is initially detached; querying document would abort studio installation');
  assert.match(install,/status\.id='forge-generate-status'/);
- assert.match(read('js/features/skill-forge.js'),/랜덤으로 생성하거나 원하는 계열/);
+ assert.match(read('js/features/skill-forge-editor.js'),/랜덤으로 생성하거나 원하는 계열/);
 });
