@@ -71,7 +71,8 @@ const escape=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>'
 const actionName=a=>forge.TYPE[a.type]||a.type||'동작';
 
 function showMode(next,{keepTab=false}={}){
-  mode=['random','compose','appearance'].includes(next)?next:'choose';
+  mode=['random','compose','appearance'].includes(next)?next:'compose';
+  // Open the only editor directly; the old mode picker remains dormant for compatibility.
   const appearance=mode==='appearance';
   if(!keepTab)baseSelect(appearance?'appearance':'skills');
   shell.dataset.studioMode=mode;
@@ -153,7 +154,7 @@ picker.addEventListener('click',e=>{
 });
 for(const view of [randomView,composeView]){
   view.addEventListener('click',e=>{
-    if(e.target.closest('[data-studio-back]'))showMode('choose');
+    if(e.target.closest('[data-studio-back]'))showMode('compose');
     const target=e.target.closest('[data-studio-open]');
     if(target)showMode(target.dataset.studioOpen);
   });
@@ -169,14 +170,14 @@ preview.querySelector('#studio-motion-select')?.addEventListener('change',e=>{
 // The global router and existing block inspector still speak the old workspace API.
 workspace.selectTab=(tab,focus=false)=>{
   baseSelect(tab,focus);
-  showMode(tab==='appearance'?'appearance':'choose',{keepTab:true});
+  showMode(tab==='appearance'?'appearance':'compose',{keepTab:true});
 };
 workspace.previewSkill=(si,index)=>{
   if(mode!=='compose')showMode('compose');
   return basePreview(si,index);
 };
 tabs?.addEventListener('click',()=>{
-  showMode(looks.hidden?'choose':'appearance',{keepTab:true});
+  showMode(looks.hidden?'compose':'appearance',{keepTab:true});
 });
 tabs?.addEventListener('keydown',e=>{
   if(['ArrowLeft','ArrowRight','Home','End'].includes(e.key))
@@ -185,10 +186,10 @@ tabs?.addEventListener('keydown',e=>{
 global.addEventListener?.('studio:open',()=>{
   // The screen router selects the appropriate tab before dispatching this event.
   if(!looks.hidden)showMode('appearance',{keepTab:true});
-  else showMode('choose',{keepTab:true});
+  else showMode('compose',{keepTab:true});
 });
-global.addEventListener?.('studio:close',()=>showMode('choose'));
-showMode('choose',{keepTab:true});
+global.addEventListener?.('studio:close',()=>showMode('compose'));
+showMode('compose',{keepTab:true});
 global.CharacterStudioModes={
   select:showMode,rollFour,get mode(){return mode;},get hasRolled(){return hasRolled;}
 };

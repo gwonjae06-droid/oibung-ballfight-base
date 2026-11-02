@@ -14,7 +14,7 @@ const action=(type)=>({kind:'action',action:{type,damage:22,radius:120,count:1,
 test('elementary-friendly builder offers obvious 3-step creation, plain speech and visible preview',()=>{
  const s=src('js/features/scratch-beginner.js');
  for(const phrase of ['① 기세가 100이 되면','② 행동을 최대 4개 선택','③ 순서와 연계 편집',
-  '나만의 전투 기술 설계','▶ 스킬 동작 시연 (승률 예측 아님)','기본 설계','고급 코딩',
+  '나만의 전투 기술 설계','미니 핀볼 실험장에서 동작 확인','반복 최대 2회',
   'kid-trigger-options','kid-action-grid','kid-plan','data-kid-command="random"']){
    assert.ok(s.includes(phrase),phrase);
  }
@@ -65,10 +65,10 @@ test('large controls remain legible and stacking works on mobile',()=>{
  assert.match(css,/@media\(max-width:440px\)/);
  assert.match(css,/\.kid-trigger\[aria-pressed=true\]/);
  assert.match(css,/focus-visible/);
- assert.match(css,/scratch-friendly-advanced/);
+ assert.match(css,/kid-step-card/);
  assert.match(css,/scratch-main-nav/);
 });
-test('advanced view and appearance UI remain reachable, original Scratch has no duplicated engine',()=>{
+test('appearance stays reachable while one visual editor owns skill input',()=>{
  const easy=src('js/features/scratch-beginner.js');
  assert.match(easy,/data-scratch-tab="looks"/);
  assert.match(easy,/S\.render\(\)/);
@@ -81,10 +81,10 @@ test('intermediate workbench edits validated action attributes and preserves adv
  const ui=src('js/features/scratch-beginner.js'),css=src('css/scratch-beginner.css');
  for(const word of ['data-kid-edit','data-kid-move','data-kid-dir','data-kid-key="link"',
   'data-kid-key="target"','data-kid-key="damage"','data-kid-key="radius"',
-  'compiler.safeAction','S.applyProgram','if(code.length>=4']){
+  'compiler.safeAction','S.applyProgram','builder.MAX_STEPS']){
   assert.ok(ui.includes(word),word);
  }
- assert.match(ui,/scratch-friendly-advanced/);
+ assert.match(ui,/SignatureSimpleDesigner/);
  assert.match(css,/kid-action-fields/);
- assert.match(css,/min-height:42px/);
+ assert.match(css,/min-height:44px/);
 });

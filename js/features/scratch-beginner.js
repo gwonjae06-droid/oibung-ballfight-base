@@ -1,223 +1,215 @@
-/* One-screen beginner builder that edits the SAME Scratch AST as the expert
- * editor. No new combat format, no untrusted code execution, no forced save migration. */
-(function(g){
-'use strict';
+/* One visual signature skill editor. Every field is visible on its own action
+ * card: no easy/expert tabs, collapsed workbenches, or second saved format.
+ * Existing complex ASTs remain unchanged until the owner opts to simplify. */
+(function(g){'use strict';
 const doc=g.document,studio=doc?.querySelector('#character-studio-dialog .forge-studio');
 const workspace=doc?.querySelector('#scratch-workbench'),forge=g.SkillForge;
-if(!studio||!workspace||!forge||!g.ScratchStudio||!g.SignatureScratch)return;
 const S=g.ScratchStudio,compiler=g.SignatureScratch,conds=g.SignatureProgram;
-const escape=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','"':'&quot;'}[c]));
+const builder=g.SignatureSimpleDesigner;
+if(!studio||!workspace||!forge||!S||!compiler||!conds||!builder)return;
+const escape=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const actions=[
- {id:'slash',icon:'⚔️',name:'가까이 베기',tip:'가까운 적을 때려요',group:'attack',damage:31},
- {id:'wave',icon:'💥',name:'충격파',tip:'주변을 넓게 공격해요',group:'attack',damage:30},
- {id:'shot',icon:'✨',name:'구슬 발사',tip:'멀리 있는 적을 공격해요',group:'attack',damage:27},
- {id:'bolt',icon:'⚡',name:'번개 공격',tip:'적 위치에 번개를 떨어뜨려요',group:'attack',damage:24},
- {id:'dash',icon:'💨',name:'빠르게 돌진',tip:'적에게 빠르게 다가가요',group:'move',damage:0},
- {id:'blink',icon:'🌟',name:'순간이동',tip:'다른 위치로 이동해요',group:'move',damage:0},
- {id:'retreat',icon:'↩️',name:'뒤로 피하기',tip:'적과 거리를 벌려요',group:'move',damage:0},
- {id:'shield',icon:'🛡️',name:'보호막',tip:'공격을 잠시 막아요',group:'defense',damage:0},
- {id:'heal',icon:'💚',name:'체력 회복',tip:'내 체력을 회복해요',group:'defense',damage:22},
- {id:'zone',icon:'❄️',name:'얼음 장판',tip:'공이 미끄러지는 지역을 만들어요',group:'special',damage:12,status:'ice'},
- {id:'timestop',icon:'🕰️',name:'시간 정지',tip:'적의 굴러감과 기세 충전을 잠깐 멈춰요',group:'special',damage:0},
- {id:'timeburst',icon:'⏩',name:'시간 가속',tip:'공 충돌·벽 반사로 얻는 기세가 1.75배',group:'special',damage:0},
- {id:'rewind',icon:'⏪',name:'시간 되감기',tip:'이전 위치·속도·기세 일부 복원',group:'special',damage:0},
- {id:'pull',icon:'🧲',name:'끌어당기기',tip:'공을 끌어와 충돌을 유도해요',group:'special',damage:16},
- {id:'wall',icon:'🧱',name:'벽 세우기',tip:'새로운 반사 벽을 만들어요',group:'special',damage:0},
- {id:'homing',icon:'🎯',name:'유도탄',tip:'상대를 찾아가는 투사체를 발사해요',group:'attack',damage:17},
- {id:'splitshot',icon:'💎',name:'분열탄',tip:'날아가는 중 여러 탄환으로 분열해요',group:'attack',damage:15}
+ {id:'slash',icon:'⚔️',name:'가까이 베기',tip:'가까운 적 공격',group:'attack',damage:31},
+ {id:'wave',icon:'💥',name:'충격파',tip:'주변을 넓게 공격',group:'attack',damage:30},
+ {id:'shot',icon:'✨',name:'구슬 발사',tip:'원거리 공격',group:'attack',damage:27},
+ {id:'bolt',icon:'⚡',name:'번개 공격',tip:'적 위치에 낙뢰',group:'attack',damage:24},
+ {id:'dash',icon:'💨',name:'빠르게 돌진',tip:'적에게 다가가기',group:'move',damage:0},
+ {id:'blink',icon:'🌟',name:'순간이동',tip:'위치 바꾸기',group:'move',damage:0},
+ {id:'retreat',icon:'↩️',name:'뒤로 피하기',tip:'거리 벌리기',group:'move',damage:0},
+ {id:'shield',icon:'🛡️',name:'보호막',tip:'공격 막기',group:'defense',damage:0},
+ {id:'heal',icon:'💚',name:'체력 회복',tip:'내 체력 회복',group:'defense',damage:22},
+ {id:'zone',icon:'❄️',name:'얼음 장판',tip:'상대 움직임 제한',group:'special',damage:12,status:'ice'},
+ {id:'timestop',icon:'🕰️',name:'시간 정지',tip:'상대의 이동을 잠시 정지',group:'special',damage:0},
+ {id:'timeburst',icon:'⏩',name:'시간 가속',tip:'충돌 기세 충전 증가',group:'special',damage:0},
+ {id:'rewind',icon:'⏪',name:'시간 되감기',tip:'이전 위치 복원',group:'special',damage:0},
+ {id:'pull',icon:'🧲',name:'끌어당기기',tip:'공을 가까이 당기기',group:'special',damage:16},
+ {id:'wall',icon:'🧱',name:'벽 세우기',tip:'반사 벽 설치',group:'special',damage:0},
+ {id:'homing',icon:'🎯',name:'유도탄',tip:'상대를 따라가는 탄환',group:'attack',damage:17},
+ {id:'splitshot',icon:'💎',name:'분열탄',tip:'탄환이 여러 개로 분열',group:'attack',damage:15}
 ].filter(a=>forge.TYPE[a.id]);
-const starters=[
- {id:'auto',icon:'⚡',name:'기세가 가득 차면',tip:'충돌로 기세 100을 모으면 자동 발동'}, 
- {id:'lowhp',icon:'❤️',name:'체력이 적을 때',tip:'위험할 때 기술 사용'},
- {id:'danger',icon:'🚨',name:'보스가 공격할 때',tip:'보스의 큰 공격을 보고 반응'},
- {id:'dodge',icon:'💨',name:'보스 공격을 피한 뒤',tip:'회피 성공 후 반격'},
- {id:'contact',icon:'🎱',name:'공끼리 부딪힌 뒤',tip:'충돌로 얻은 기세를 판단'},
- {id:'wall',icon:'🧱',name:'벽에 튕긴 뒤',tip:'벽 반사 후 동작을 조합'}
-];
 const templates=[
- {id:'brawler',icon:'⚔️',name:'달려가서 공격!',desc:'돌진 → 베기 → 충격파',trigger:'auto',sequence:['dash','slash','wave']},
- {id:'sniper',icon:'🎯',name:'멀리서 연속 공격!',desc:'구슬 → 번개 → 구슬',trigger:'auto',sequence:['shot','bolt','shot']},
- {id:'guardian',icon:'🛡️',name:'위험할 때 보호!',desc:'보호막 → 회복 → 충격파',trigger:'lowhp',sequence:['shield','heal','wave']},
- {id:'frost',icon:'❄️',name:'얼려서 공격!',desc:'얼음 장판 → 번개',trigger:'auto',sequence:['zone','bolt']},
- {id:'evasion',icon:'💫',name:'피한 뒤 반격!',desc:'회피 성공 → 순간이동 → 공격',trigger:'dodge',sequence:['blink','wave']},
- {id:'pinball',icon:'🎱',name:'벽 반사 돌격!',desc:'돌진 → 충격파',trigger:'auto',sequence:['dash','wave']},
- {id:'chrono',icon:'🕰️',name:'시간 튕김 조합!',desc:'시간 가속 → 끌어당기기 → 충격파',trigger:'auto',sequence:['timeburst','pull','wave']}
+ {id:'brawler',icon:'⚔️',name:'돌진 연타',sequence:['dash','slash','wave']},
+ {id:'sniper',icon:'🎯',name:'원거리 콤보',sequence:['shot','bolt','shot']},
+ {id:'guardian',icon:'🛡️',name:'수호자',sequence:['shield','heal','wave']},
+ {id:'frost',icon:'❄️',name:'빙결 콤보',sequence:['zone','bolt']},
+ {id:'evasion',icon:'💫',name:'회피 반격',sequence:['blink','wave']},
+ {id:'pinball',icon:'🎱',name:'벽 반사 공격',sequence:['dash','wave']},
+ {id:'chrono',icon:'🕰️',name:'시간 연계',sequence:['timeburst','pull','wave']}
 ];
-const nodeOf=(id)=>{const item=actions.find(a=>a.id===id);
- const d={type:id,damage:item?.damage??20,radius:id==='wave'?130:120,
-  speed:5,duration:id==='shield'?1.4:id==='timestop'?1.2:id==='rewind'?2.5:1.5,status:item?.status||'none',link:'after'};
- return {kind:'action',action:compiler.safeAction(d)};
+const TIMINGS={instant:'충전 즉시',contact:'다음 충돌',danger:'보스 공격 예고 시'};
+const TARGETS={nearest:'가까운 적',lowest:'체력 적은 적',random:'무작위 적'};
+const LINKS={after:'앞 행동 다음',with:'앞 행동과 동시',and:'함께 실행'};
+const STATUSES={none:'없음',ice:'둔화',fire:'화상',poison:'중독'};
+const makeStep=id=>{
+ const a=actions.find(x=>x.id===id);
+ return {action:compiler.safeAction({type:id,damage:a?.damage||0,radius:id==='wave'?130:120,
+  speed:5,duration:id==='shield'?1.4:1.5,status:a?.status||'none',link:'after'}),condition:'always',repeat:1};
 };
-const panel=doc.createElement('section');panel.id='scratch-beginner';panel.className='scratch-beginner';
-panel.setAttribute('aria-label','중급 고유 스킬 설계 작업실');
-panel.innerHTML='<div class="kid-top"><div><span class="kid-overline">MY SPECIAL MOVE</span><h3>나만의 전투 기술 설계</h3><p>전투 유형을 고르고 행동 4개를 조립하세요. 순서·대상·연계·위력을 직접 수정할 수 있습니다.</p></div><div class="kid-display"><button type="button" data-kid-view="toggle" aria-expanded="false" aria-controls="scratch-workbench">⚙ 조건·반복·정밀 블록 펼치기</button></div></div>'
- +'<div class="kid-legacy" hidden><strong>이 캐릭터는 예전 스킬을 사용하고 있어요.</strong><p>기존 기술은 그대로 보관돼요. 새 필살기 방식으로 바꾸고 싶을 때만 선택하세요.</p><button type="button" data-kid-command="convert">한 가지 필살기로 바꾸기</button></div>'
+const panel=doc.createElement('section');
+panel.id='scratch-beginner';panel.className='scratch-beginner';
+panel.setAttribute('aria-label','단일 고유 스킬 설계');
+panel.innerHTML='<div class="kid-top"><div><span class="kid-overline">ONE SKILL · ONE EDITOR</span><h3>나만의 전투 기술 설계</h3><p>행동을 누르고, 바로 아래 카드에서 조건·반복·연계·대상·수치를 변경하세요. 모든 조작은 한 화면에서 끝납니다.</p></div>'
+ +'<strong class="kid-limit-pill">최대 4단계 · 실행 6회 · 위력 170</strong></div>'
+ +'<div class="kid-legacy" hidden><strong>예전 4스킬 캐릭터입니다.</strong><p>기존 스킬은 그대로 보존됩니다. 원할 때만 하나의 필살기로 전환하세요.</p><button type="button" data-kid-command="convert">고유 스킬로 전환</button></div>'
  +'<div class="kid-easy-body">'
- +'<section class="kid-section" aria-labelledby="kid-step-one"><div class="kid-step-heading"><span class="kid-step-no">1</span><div><h4 id="kid-step-one">① 기세가 100이 되면</h4><p>⚡ 기세가 100이 되면 준비됩니다. 실제 발동 시점은 쉬운 설계 화면에서 바꿀 수 있어요.</p></div></div><div class="kid-trigger-options"></div></section>'
- +'<section class="kid-section" aria-labelledby="kid-step-two"><div class="kid-step-heading"><span class="kid-step-no">2</span><div><h4 id="kid-step-two">② 행동을 최대 4개 선택</h4><p>블록을 누르면 내 기술에 차례대로 추가돼요.</p></div></div><div class="kid-action-grid"></div></section>'
- +'<section class="kid-section kid-plan-section" aria-labelledby="kid-step-three"><div class="kid-step-heading"><span class="kid-step-no">3</span><div><h4 id="kid-step-three">③ 순서와 연계 편집</h4><p>위에서 아래로 순서대로 실행돼요.</p></div></div>'
- +'<label class="kid-name-label">내 필살기 이름<input id="kid-skill-name" type="text" maxlength="18" placeholder="예: 번개 돌진"></label><div class="kid-skill-summary"><div class="kid-plan"></div><div class="kid-count"></div></div>'
- +'<div class="kid-tempo kid-momentum-guide"><strong>⚡ 필살기는 기세가 100이 되면 준비돼요</strong><p>상대와 부딪히거나 벽에 튕기면 빨리 충전돼요. 충돌과 벽 반사로 쌓이고, 전투 중에는 천천히 자동 충전돼요.</p></div>'
- +'<button type="button" class="kid-preview-action" data-kid-command="preview">▶ 스킬 동작 시연 (승률 예측 아님)</button></section>'
- +'<section class="kid-templates" aria-labelledby="kid-templates-title"><div class="kid-templates-heading"><h4 id="kid-templates-title">무엇부터 만들지 모르겠나요?</h4><p>마음에 드는 예시를 누르면 블록이 자동으로 채워져요. 나중에 바꿀 수도 있어요.</p></div><div class="kid-template-grid"></div><button type="button" class="kid-random" data-kid-command="random">🎲 아무거나 재미있는 기술 만들기</button></section>'
- +'</div><div class="kid-feedback" role="status" aria-live="polite">기세 100이면 필살기가 준비돼요. 발동 조건을 설정하고 행동 블록을 골라 보세요.</div>';
+ +'<section class="kid-section kid-start-section"><div class="kid-step-heading"><span class="kid-step-no">1</span><div><h4>① 기세가 100이 되면</h4><p>기술의 발동 시점을 선택하세요.</p></div></div><div class="kid-trigger-options"></div></section>'
+ +'<section class="kid-section kid-library-section"><div class="kid-step-heading"><span class="kid-step-no">2</span><div><h4>② 행동을 최대 4개 선택</h4><p>색깔 행동을 눌러 기술에 추가하세요.</p></div></div><div class="kid-action-grid"></div></section>'
+ +'<section class="kid-section kid-plan-section"><div class="kid-step-heading"><span class="kid-step-no">3</span><div><h4>③ 순서와 연계 편집</h4><p>조건·반복·대상·위력까지 행동마다 바로 설정합니다.</p></div></div>'
+ +'<label class="kid-name-label">내 필살기 이름<input id="kid-skill-name" type="text" maxlength="18" placeholder="예: 번개 돌진"></label>'
+ +'<div class="kid-skill-summary"><div class="kid-plan"></div><div class="kid-count"></div></div>'
+ +'<p class="kid-momentum-guide">⚡ 최대 4단계 · 한 행동당 반복 최대 2회 · 실제 실행 최대 6회 · 합계 위력 170 이하</p>'
+ +'<button type="button" class="kid-preview-action" data-kid-command="preview">▶ 미니 핀볼 실험장에서 동작 확인</button></section>'
+ +'<section class="kid-templates"><div class="kid-templates-heading"><h4>추천 조합에서 시작하기</h4><p>예시를 선택해도 이 화면에서 모든 항목을 수정할 수 있습니다.</p></div>'
+ +'<div class="kid-template-grid"></div><button type="button" class="kid-random" data-kid-command="random">🎲 무작위 기술 조합</button></section>'
+ +'</div><div class="kid-feedback" role="status" aria-live="polite">행동을 선택하면 카드가 생깁니다. 바로 수정해 보세요.</div>';
 const work=studio.querySelector('#studio-panel-skills');work.insertBefore(panel,workspace);
 studio.classList.add('scratch-friendly-mode');
-// Preserve access to appearance editing even when the code panel is hidden.
+const $=sel=>panel.querySelector(sel),get=()=>forge.getDraft();
 const nav=studio.querySelector('.scratch-main-nav');
 const codeTab=nav?.querySelector('[data-scratch-tab="code"]');
 const looksTab=nav?.querySelector('[data-scratch-tab="looks"]');
 if(codeTab)codeTab.textContent='✏️ 스킬 만들기';
 if(looksTab)looksTab.textContent='🎨 외형 꾸미기';
-const $=sel=>panel.querySelector(sel),get=()=>forge.getDraft();
-let mode='easy';
-function tell(text){$('.kid-feedback').textContent=text;}
-function safeConfirm(question){return typeof g.confirm!=='function'||g.confirm(question);}
+function tell(message){$('.kid-feedback').textContent=message;}
+function safeConfirm(q){return typeof g.confirm!=='function'||g.confirm(q);}
 function migrate(){
- const old=get();
- if(old.signatureVersion===1)return true;
- if(!safeConfirm('이 캐릭터의 기존 4개 스킬을 한 개의 필살기로 바꿀까요? 원래 기술은 백업됩니다.'))return false;
- const converted=conds.migrate(old);
- forge.setDraft(converted);S.render();return true;
+ const old=get();if(old.signatureVersion===1)return true;
+ if(!safeConfirm('기존 4개 스킬을 하나로 바꿀까요? 원본 스킬은 백업됩니다.'))return false;
+ forge.setDraft(conds.migrate(old));S.render();return true;
 }
 function program(){return S.getProgram();}
-function setProgram(next,fields={},message='내 필살기에 적용했어요!'){
- S.applyProgram(next,fields,message);
- tell(message);
+function stepsOrWarn(){
+ const steps=builder.read(program());
+ if(!steps)tell('기존 복합 스킬이 있습니다. 저장된 코드는 유지됩니다. 확인 후 4단계로 정리할 수 있습니다.');
+ return steps;
 }
-function changeFields(fields){if(!migrate())return;S.applyFields(fields,'기술을 쓸 때를 바꿨어요!');tell('좋아요! 발동 순간을 선택했어요.');}
-function add(id){
- if(!migrate())return;
- const code=program();
- if(code.length>=4||compiler.preview(code).length>=4){tell('기본 설계는 행동 4개까지 가능합니다. 더 복잡한 조건·반복은 고급 코딩에서 수정하세요.');return;}
- code.push(nodeOf(id));
- setProgram(code,{},'좋아요! '+(actions.find(x=>x.id===id)?.name||'행동')+' 블록을 추가했어요.');
- g.CharacterStudioWorkspace?.selectPreviewSkill?.('all');
+function applySteps(steps,message){
+ try{
+  S.applyProgram(builder.build(steps),{},message);
+  tell(message);
+  g.CharacterStudioWorkspace?.selectPreviewSkill?.('all');
+  return true;
+ }catch(err){tell(err.message);return false;}
 }
-function displayPlan(nodes,depth=0){
- let result='';
- for(let i=0;i<nodes.length;i++){
-  const n=nodes[i],type=n.action?.type,action=actions.find(x=>x.id===type);
-  const caption=n.kind==='action'?(action?.name||forge.TYPE[type]||'행동'):
-   n.kind==='if'?'만약 '+(conds.CONDITIONS[n.condition]||'조건')+'라면':
-   n.kind==='repeat'?'아래 행동을 '+n.times+'번 반복':
-   n.kind==='wait'?(n.seconds||0)+'초 기다리기':
-   n.kind==='waitUntil'?(conds.CONDITIONS[n.condition]||'조건')+'까지 기다리기':
-   n.kind==='repeatUntil'?'조건이 맞을 때까지 반복':
-   n.kind==='set'?'충전 숫자를 '+n.value+'로 정하기':
-   n.kind==='change'?'충전 숫자 '+n.value+' 바꾸기':'동작';
-  const icon=n.kind==='action'?(action?.icon||'✨'):n.kind==='if'?'❓':n.kind==='repeat'||n.kind==='repeatUntil'?'🔁':n.kind==='wait'||n.kind==='waitUntil'?'⏳':'🔢';
-  const basic=depth===0&&n.kind==='action',a=n.action||{};
-  const option=(vals,val)=>Object.entries(vals).map(([k,v])=>'<option value="'+escape(k)+'"'+(k===val?' selected':'')+'>'+escape(v)+'</option>').join('');
-  const typeOptions=actions.map(t=>'<option value="'+escape(t.id)+'"'+(t.id===a.type?' selected':'')+'>'+escape(t.name)+'</option>').join('');
-  result+='<div class="kid-plan-item kid-plan-'+(n.kind==='action'?'action':'control')+'" style="--kid-indent:'+Math.min(depth,3)+'"><span aria-hidden="true">'+icon+'</span><span>'+escape(caption)+'</span>'
-   +(depth===0?'<span class="kid-item-controls"><button type="button" data-kid-move="'+i+'" data-kid-dir="-1" '+(i===0?'disabled':'')+' aria-label="위로 이동">↑</button>'
-    +'<button type="button" data-kid-move="'+i+'" data-kid-dir="1" '+(i===nodes.length-1?'disabled':'')+' aria-label="아래로 이동">↓</button>'
-    +'<button type="button" data-kid-delete="'+i+'" aria-label="'+escape(caption)+' 삭제">×</button></span>':'')+'</div>';
-  if(basic)result+='<details class="kid-action-settings" data-kid-settings="'+i+'"><summary>⚙ '+(i+1)+'번 행동 상세 설정</summary><div class="kid-action-fields">'
-   +'<label>동작<select data-kid-edit="'+i+'" data-kid-key="type">'+typeOptions+'</select></label>'
-   +'<label>대상<select data-kid-edit="'+i+'" data-kid-key="target">'+option(g.AbilityAtlas?.TARGETS||{nearest:'가장 가까운 적',lowest:'체력이 낮은 적',random:'무작위 적'},a.target||'nearest')+'</select></label>'
-   +'<label>연계<select data-kid-edit="'+i+'" data-kid-key="link">'+option({after:'앞 동작 다음에',with:'앞 동작과 동시에',and:'함께 실행'},a.link||'after')+'</select></label>'
-   +'<label>위력<input type="number" min="0" max="120" step="1" data-kid-edit="'+i+'" data-kid-key="damage" value="'+Number(a.damage||0)+'"></label>'
-   +'<label>범위<input type="number" min="30" max="300" step="5" data-kid-edit="'+i+'" data-kid-key="radius" value="'+Number(a.radius||120)+'"></label>'
-   +'<label>상태 효과<select data-kid-edit="'+i+'" data-kid-key="status">'+option({none:'없음',ice:'둔화',fire:'화상',poison:'중독'},a.status||'none')+'</select></label></div></details>';
-  if(n.kind==='if'){
-   if(n.then?.length)result+='<div class="kid-plan-subtitle">그러면</div>'+displayPlan(n.then,depth+1);
-   if(n.else?.length)result+='<div class="kid-plan-subtitle">아니면</div>'+displayPlan(n.else,depth+1);
-  }
-  if((n.kind==='repeat'||n.kind==='repeatUntil')&&n.body?.length)
-    result+=displayPlan(n.body,depth+1);
- }
- return result;
+function selectOptions(values,selected){
+ return Object.entries(values).map(([v,label])=>'<option value="'+escape(v)+'"'+(String(v)===String(selected)?' selected':'')+'>'+escape(label)+'</option>').join('');
+}
+function stepCard(step,index,total){
+ const a=step.action,kind=actions.find(x=>x.id===a.type);
+ const repeatAllowed=total.reduce((sum,s,i)=>sum+(i===index?2:s.repeat),0)<=builder.MAX_ACTIONS;
+ const reps={1:'한 번 실행',...(repeatAllowed||step.repeat===2?{2:'두 번 반복'}:{})};
+ const field=(label,key,html)=>'<label>'+label+html.replace(' data-key=',' data-kid-edit="'+index+'" data-kid-key="'+key+'" ')+'</label>';
+ const select=(label,key,vals,current)=>field(label,key,'<select data-key=>'+selectOptions(vals,current)+'</select>');
+ const number=(label,key,value,max,min=0,step=1)=>field(label,key,
+  '<input type="number" inputmode="numeric" min="'+min+'" max="'+max+'" step="'+step+'" data-key= value="'+Math.min(max,Math.max(min,Number(value)||0))+'">');
+ return '<article class="kid-step-card" aria-label="'+(index+1)+'번 행동">'
+  +'<header class="kid-step-card-head"><strong><span class="kid-step-index">'+(index+1)+'</span> '+(kind?.icon||'✨')+' '+escape(kind?.name||forge.TYPE[a.type]||a.type)+'</strong>'
+  +'<span class="kid-item-controls"><button type="button" data-kid-move="'+index+'" data-kid-dir="-1" '+(index===0?'disabled':'')+' aria-label="위로 이동">↑</button>'
+  +'<button type="button" data-kid-move="'+index+'" data-kid-dir="1" '+(index===total.length-1?'disabled':'')+' aria-label="아래로 이동">↓</button>'
+  +'<button type="button" data-kid-delete="'+index+'" aria-label="삭제">×</button></span></header>'
+  +'<div class="kid-action-fields">'
+  +select('행동','type',Object.fromEntries(actions.map(v=>[v.id,v.name])),a.type)
+  +select('실행 조건','condition',builder.CONDITIONS,step.condition)
+  +select('반복','repeat',reps,step.repeat)
+  +select('연계','link',LINKS,a.link||'after')
+  +select('대상','target',TARGETS,a.target||'nearest')
+  +select('상태이상','status',STATUSES,a.status||'none')
+  +number('위력 (0~65)','damage',a.damage,65)
+  +number('범위 (30~240)','radius',a.radius,240,30,5)
+  +'</div></article>';
 }
 function refresh(){
- const fighter=get(),legacy=fighter.signatureVersion!==1;
- $('.kid-legacy').hidden=!legacy;
- const easy=$('.kid-easy-body');easy.hidden=legacy;
+ const draft=get(),legacy=draft.signatureVersion!==1;
+ $('.kid-legacy').hidden=!legacy;$('.kid-easy-body').hidden=legacy;
  if(legacy)return;
- $('.kid-trigger-options').innerHTML='<div class="kid-fixed-trigger" role="note"><strong>⚡ 기세 100 → 필살기 준비</strong><p>기본은 즉시 발동합니다. 쉬운 설계에서 다음 충돌·보스 예고 시 발동도 고를 수 있으며, 2.3초 이내에는 자동 발동해요. 현재 설정: '+escape(({instant:'즉시',contact:'다음 충돌',danger:'보스 예고'}[get().signatureTiming]||'즉시'))+'.</p></div>';
- $('.kid-action-grid').innerHTML=actions.map(a=>'<button type="button" class="kid-action kid-action-'+a.group+'" data-kid-add="'+a.id+'" title="'+escape(a.tip)+'">'
-   +'<span class="kid-action-icon" aria-hidden="true">'+a.icon+'</span><strong>'+a.name+'</strong><small>'+a.tip+'</small><span class="kid-action-plus" aria-hidden="true">＋</span></button>').join('');
- $('#kid-skill-name').value=fighter.skills[0].name;
- const openCards=[...$('.kid-plan').querySelectorAll('[data-kid-settings][open]')].map(n=>n.dataset.kidSettings);
- const code=program();$('.kid-plan').innerHTML=code.length?displayPlan(code):'<div class="kid-empty">아직 블록이 없어요. 왼쪽(또는 위)의 색깔 블록을 눌러 주세요!</div>';
- for(const n of $('.kid-plan').querySelectorAll('[data-kid-settings]'))if(openCards.includes(n.dataset.kidSettings))n.open=true;
- $('.kid-count').textContent='연결된 행동 '+code.length+'개 · 블록을 눌러 세부 조정할 수 있습니다';
- // Signature fighters now earn their casts through contact and rebounds.
- // Legacy cooldown values remain in their saved JSON for compatibility.
+ $('.kid-trigger-options').innerHTML=Object.entries(TIMINGS).map(([id,label])=>
+  '<button type="button" class="kid-timing" data-kid-timing="'+id+'" aria-pressed="'+String((draft.signatureTiming||'instant')===id)+'">'+escape(label)+'</button>').join('')
+  +'<p class="kid-timing-help">최대 약 2.3초 대기 후 자동으로 발동합니다.</p>';
+ $('.kid-action-grid').innerHTML=actions.map(a=>
+  '<button type="button" class="kid-action kid-action-'+a.group+'" data-kid-add="'+a.id+'" title="'+escape(a.tip)+'"><span class="kid-action-icon" aria-hidden="true">'+a.icon+'</span><strong>'+a.name+'</strong><small>'+a.tip+'</small><span class="kid-action-plus" aria-hidden="true">＋</span></button>').join('');
+ $('#kid-skill-name').value=draft.skills[0].name;
+ const steps=builder.read(program());
+ if(!steps){
+  $('.kid-plan').innerHTML='<div class="kid-existing-program"><strong>예전에 만든 복합 코딩이 있습니다.</strong><p>중첩 조건·복잡한 반복·기다리기 블록은 자동으로 삭제하지 않습니다. 확인하고 간단한 설계로 정리할 수 있습니다.</p><button type="button" data-kid-command="simplify">4단계 설계로 정리</button></div>';
+  $('.kid-count').textContent='기존 프로그램 유지 · 변경하려면 확인이 필요합니다';
+ }else{
+  $('.kid-plan').innerHTML=steps.length?steps.map((s,i)=>stepCard(s,i,steps)).join(''):
+   '<div class="kid-empty">색깔 행동을 눌러 기술에 추가하세요.</div>';
+  const state=builder.inspect(steps);
+  $('.kid-count').textContent=steps.length+'/4단계 · 실행 '+state.count+'/6회 · 위력 '+state.power+'/170'+(state.ok?'':' · 기존 초안은 한도 밖입니다');
+ }
 }
-$('.kid-template-grid').innerHTML=templates.filter(t=>t.sequence.every(id=>forge.TYPE[id]))
- .map(t=>'<button type="button" class="kid-template" data-kid-template="'+t.id+'"><span aria-hidden="true">'+t.icon+'</span><strong>'+t.name+'</strong><small>'+t.desc+'</small></button>').join('');
-function replaceWithTemplate(t,random=false){
+$('.kid-template-grid').innerHTML=templates.filter(t=>t.sequence.every(id=>forge.TYPE[id])).map(t=>
+ '<button type="button" class="kid-template" data-kid-template="'+t.id+'"><span aria-hidden="true">'+t.icon+'</span><strong>'+t.name+'</strong></button>').join('');
+function preset(t,random=false){
  if(!t||!migrate())return;
- if(program().length>1&&!safeConfirm('현재 만든 블록을 새 예시로 바꿀까요? 이전 내용은 되돌릴 수 있어요.'))return;
- const sequence=random?[...t.sequence].sort(()=>Math.random()-.5):t.sequence;
- const code=[];
- for(let i=0;i<sequence.length;i++){
-  const id=sequence[i];
-  if(i>0&&['dash','blink','retreat'].includes(sequence[i-1]))
-   code.push({kind:'waitUntil',condition:'move',timeout:3});
-  code.push(nodeOf(id));
- }
- const name=random?'깜짝 필살기':t.name.replace(/[!]/g,'');
- setProgram(code,{trigger:t.trigger,name,cooldown:5},'짜잔! '+name+'를 만들었어요. 블록을 더 눌러 바꿀 수도 있어요.');
- g.CharacterStudioWorkspace?.selectPreviewSkill?.('all');
+ if(program().length>1&&!safeConfirm('작성 중인 기술을 새 예시로 바꿀까요? 저장 전에는 기존 캐릭터가 유지됩니다.'))return;
+ const types=random?[...t.sequence].sort(()=>Math.random()-.5):t.sequence;
+ const steps=types.slice(0,4).map(makeStep);
+ if(applySteps(steps,'예시 기술을 만들었습니다. 모든 설정을 아래에서 바로 수정할 수 있어요.'))
+  S.applyFields({name:random?'깜짝 필살기':t.name},'이름을 설정했습니다.');
 }
-function chooseMode(next){
- mode=next==='advanced'?'advanced':'easy';
- // One authoring surface: the visual steps stay open while precise Scratch
- // blocks expand inline. Both edit the same program and Undo history.
- studio.classList.toggle('scratch-friendly-advanced',mode==='advanced');
- const button=panel.querySelector('[data-kid-view="toggle"]');
- if(button){
-  button.setAttribute('aria-expanded',String(mode==='advanced'));
-  button.textContent=mode==='advanced'?'⚙ 조건·반복·정밀 블록 접기':'⚙ 조건·반복·정밀 블록 펼치기';
+panel.addEventListener('click',event=>{
+ const button=event.target.closest('button');if(!button)return;
+ const timing=button.dataset.kidTiming;
+ if(timing){
+  if(!TIMINGS[timing]||!migrate())return;
+  forge.setDraft({...get(),signatureTiming:timing});S.render();tell('발동 시점을 설정했습니다.');return;
  }
- if(mode==='advanced')S.render();
- tell(mode==='advanced'?'기본 행동 카드 아래에서 조건·반복·세부 블록을 편집할 수 있습니다.':'행동 블록을 고르고 필요할 때 세부 설정을 펼치세요.');
-}
-panel.addEventListener('click',e=>{
- const button=e.target.closest('button');if(!button)return;
- const trigger=button.dataset.kidTrigger,addId=button.dataset.kidAdd,templateId=button.dataset.kidTemplate;
- if(button.dataset.kidView){chooseMode(mode==='advanced'?'easy':'advanced');return;}
- if(trigger){return;}
- if(addId){add(addId);return;}
- if(templateId){replaceWithTemplate(templates.find(t=>t.id===templateId));return;}
+ const add=button.dataset.kidAdd;
+ if(add){
+  if(!migrate())return;const steps=stepsOrWarn();if(!steps)return;
+  if(steps.length>=builder.MAX_STEPS){tell('최대 4개 행동을 연결할 수 있습니다.');return;}
+  applySteps([...steps,makeStep(add)],'행동을 추가했습니다.');return;
+ }
+ if(button.dataset.kidTemplate){preset(templates.find(t=>t.id===button.dataset.kidTemplate));return;}
+ const dir=button.dataset.kidDir;
  if(button.dataset.kidMove!==undefined){
-  if(!migrate())return;
-  const code=program(),i=Number(button.dataset.kidMove),to=i+Number(button.dataset.kidDir);
-  if(i>=0&&to>=0&&to<code.length){[code[i],code[to]]=[code[to],code[i]];
-   setProgram(code,{},'행동 순서를 변경했습니다.');}return;
+  if(!migrate())return;const steps=stepsOrWarn();if(!steps)return;
+  const from=Number(button.dataset.kidMove),to=from+Number(dir);
+  if(to>=0&&to<steps.length){[steps[from],steps[to]]=[steps[to],steps[from]];applySteps(steps,'순서를 바꿨습니다.');}return;
  }
- if(button.dataset.kidDelete!==undefined){if(!migrate())return;const code=program(),index=Number(button.dataset.kidDelete);if(index>=0&&index<code.length){code.splice(index,1);setProgram(code,{},'블록 하나를 지웠어요. 다시 추가할 수 있어요.');}return;}
+ if(button.dataset.kidDelete!==undefined){
+  if(!migrate())return;const steps=stepsOrWarn();if(!steps)return;
+  const i=Number(button.dataset.kidDelete);if(i>=0&&i<steps.length){steps.splice(i,1);applySteps(steps,'행동을 삭제했습니다.');}return;
+ }
  const command=button.dataset.kidCommand;
- if(command==='random'){replaceWithTemplate(templates[Math.floor(Math.random()*templates.length)],true);return;}
- if(command==='preview'){g.CharacterStudioWorkspace?.selectPreviewSkill?.('all');tell('왼쪽 미니 핀볼 실험장에서 벽 반사와 스킬을 확인해 보세요.');return;}
+ if(command==='random')preset(templates[Math.floor(Math.random()*templates.length)],true);
+ if(command==='preview'){g.CharacterStudioWorkspace?.selectPreviewSkill?.('all');tell('미니 핀볼 실험장에서 기술의 움직임을 확인하세요.');}
  if(command==='convert')migrate();
+ if(command==='simplify'){
+  if(!safeConfirm('기존 복합 코딩을 4단계 기본 설계로 정리할까요? 현재 저장된 캐릭터는 다시 저장하기 전까지 유지됩니다.'))return;
+  applySteps(builder.flatten(program()),'4단계 설계로 정리했습니다.');
+ }
 });
 panel.addEventListener('change',event=>{
  const input=event.target.closest('[data-kid-edit]');
  if(input){
-  if(!migrate())return;
-  const code=program(),i=Number(input.dataset.kidEdit),key=input.dataset.kidKey;
-  if(i<0||i>=code.length||code[i].kind!=='action')return;
-  const action={...code[i].action};
-  let val=input.value;
-  if(key==='damage'||key==='radius')val=Number(val);
-  if(key==='type'&&!forge.TYPE[val])return;
-  action[key]=val;
-  if(key==='type'&&['dash','blink','retreat','leap','portal','swap','hover','glide'].includes(val)){
-   action.damage=0;action.status='none';action.knockback=0;
+  if(!migrate())return;const steps=stepsOrWarn();if(!steps)return;
+  const i=Number(input.dataset.kidEdit),key=input.dataset.kidKey;
+  if(i<0||i>=steps.length)return;
+  const value=input.value,a={...steps[i].action};
+  if(key==='condition'){if(!builder.CONDITIONS[value])return;steps[i].condition=value;}
+  else if(key==='repeat')steps[i].repeat=Number(value);
+  else{
+   if(key==='type'&&!actions.some(v=>v.id===value))return;
+   a[key]=key==='damage'?Math.max(0,Math.min(65,Number(value)||0)):
+      key==='radius'?Math.max(30,Math.min(240,Number(value)||120)):value;
+   if(key==='type'&&['dash','blink','retreat'].includes(value)){
+    a.damage=0;a.status='none';a.knockback=0;
+   }
+   steps[i].action=compiler.safeAction(a);
   }
-  code[i]={...code[i],action:compiler.safeAction(action)};
-  setProgram(code,{},'행동 설정을 변경했습니다.');return;
+  if(!applySteps(steps,'설정을 변경했습니다.'))refresh();
+  return;
  }
- if(event.target.id!=='kid-skill-name')return;
- if(!migrate())return;
- S.applyFields({name:event.target.value.trim()||'나만의 필살기'},'필살기 이름을 바꿨어요!');
- tell('멋진 이름이에요! 이제 기술을 시험해 보세요.');
+ if(event.target.id==='kid-skill-name'){
+  if(!migrate())return;
+  S.applyFields({name:event.target.value.trim()||'나만의 필살기'},'이름을 바꿨습니다.');
+  tell('이름을 변경했습니다.');
+ }
 });
 S.onChange=refresh;
-refresh();chooseMode('easy');
-g.ScratchBeginner={refresh,chooseMode,get mode(){return mode;}};
+refresh();
+g.ScratchBeginner={refresh,get mode(){return 'single';}};
 })(window);
