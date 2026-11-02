@@ -1,0 +1,118 @@
+/* Full-playfield, pointer-safe combo celebration. Overlay is unique per arena.
+   All movement happens in composited decoration, NOT in the battle canvas,
+   boss telegraph hitboxes, controls, HUD or game simulation. */
+.battle-screen .canvas-wrapper{position:relative}
+#arena-combo-screen-fx.combo-screen-fx{
+ --combo-hit-x:50%;--combo-hit-y:50%;--combo-glow:#eac37f;
+ --combo-peak:.12;--combo-jolt:1px;
+ position:absolute;inset:0;z-index:12;overflow:hidden;
+ pointer-events:none!important;user-select:none;
+ contain:paint;isolation:isolate;
+}
+#arena-combo-screen-fx[hidden]{display:none!important}
+#arena-combo-screen-fx > span{
+ position:absolute;inset:0;display:block;pointer-events:none;
+}
+#arena-combo-screen-fx[data-tier="1"]{--combo-glow:#e5ca85;--combo-peak:.12;--combo-jolt:1px}
+#arena-combo-screen-fx[data-tier="2"]{--combo-glow:#ffb968;--combo-peak:.18;--combo-jolt:2px}
+#arena-combo-screen-fx[data-tier="3"]{--combo-glow:#ff8fb1;--combo-peak:.24;--combo-jolt:2.5px}
+#arena-combo-screen-fx[data-tier="4"]{--combo-glow:#d1a5ff;--combo-peak:.28;--combo-jolt:3px}
+#arena-combo-screen-fx[data-tier="5"]{--combo-glow:#88eaff;--combo-peak:.34;--combo-jolt:3.5px}
+/* Keep the center free for dangerous patterns. The energy hugs the frame. */
+#arena-combo-screen-fx .combo-screen-aura{
+ inset:-10%;opacity:var(--combo-peak);
+ background:radial-gradient(ellipse at 50% 49%,
+  transparent 39%,transparent 55%,var(--combo-glow) 99%);
+ mix-blend-mode:screen;transition:opacity .14s ease-out;
+}
+#arena-combo-screen-fx .combo-screen-flash{
+ opacity:0;
+ background:radial-gradient(ellipse at var(--combo-hit-x) var(--combo-hit-y),
+  #fff9de88 0%,var(--combo-glow) 18%,transparent 58%);
+ mix-blend-mode:screen;
+}
+#arena-combo-screen-fx .combo-screen-rays{
+ opacity:0;inset:-24%;
+ background:repeating-conic-gradient(from 15deg at var(--combo-hit-x) var(--combo-hit-y),
+  transparent 0deg 13deg,var(--combo-glow) 13.6deg 14deg,transparent 14.7deg 26deg);
+ mask-image:radial-gradient(ellipse at center,transparent 28%,#000a 66%,transparent 97%);
+ mix-blend-mode:screen;
+}
+#arena-combo-screen-fx .combo-screen-shock{
+ inset:auto;width:150px;height:150px;left:var(--combo-hit-x);top:var(--combo-hit-y);
+ border-radius:50%;border:3px solid var(--combo-glow);
+ box-shadow:0 0 15px var(--combo-glow),inset 0 0 20px var(--combo-glow);
+ opacity:0;transform:translate(-50%,-50%) scale(.25);
+ will-change:transform,opacity;
+}
+#arena-combo-screen-fx .combo-screen-announcement{
+ inset:15% 0 auto;z-index:1;min-height:1.3em;text-align:center;
+ font:1000 clamp(17px,3.6vw,39px)/1.15 system-ui,sans-serif;
+ font-style:italic;letter-spacing:.075em;color:#fff9e5;
+ -webkit-text-stroke:.6px #543c48;
+ text-shadow:0 3px 2px #251627,0 0 18px var(--combo-glow);
+ opacity:0;transform:translateY(16px) scale(.85);
+}
+#arena-combo-screen-fx.combo-screen-burst .combo-screen-flash{
+ animation:arenaComboFlash .35s ease-out both
+}
+#arena-combo-screen-fx.combo-screen-burst .combo-screen-shock{
+ animation:arenaComboShock .52s cubic-bezier(.12,.6,.18,1) both
+}
+#arena-combo-screen-fx.combo-screen-burst[data-tier="2"] .combo-screen-rays,
+#arena-combo-screen-fx.combo-screen-burst[data-tier="3"] .combo-screen-rays,
+#arena-combo-screen-fx.combo-screen-burst[data-tier="4"] .combo-screen-rays,
+#arena-combo-screen-fx.combo-screen-burst[data-tier="5"] .combo-screen-rays{
+ animation:arenaComboRays .50s ease-out both
+}
+#arena-combo-screen-fx.combo-screen-burst[data-milestone="true"] .combo-screen-announcement{
+ animation:arenaComboHeadline .95s cubic-bezier(.13,.72,.22,1) both
+}
+#arena-combo-screen-fx.combo-screen-burst[data-tier="3"],
+#arena-combo-screen-fx.combo-screen-burst[data-tier="4"],
+#arena-combo-screen-fx.combo-screen-burst[data-tier="5"]{
+ animation:arenaComboMicroJolt .24s linear both
+}
+@keyframes arenaComboFlash{
+ 0%{opacity:0}12%{opacity:.25}100%{opacity:0}
+}
+@keyframes arenaComboShock{
+ 0%{opacity:.8;transform:translate(-50%,-50%) scale(.18)}
+ 65%{opacity:.6}100%{opacity:0;transform:translate(-50%,-50%) scale(3.2)}
+}
+@keyframes arenaComboRays{
+ 0%{opacity:0;transform:scale(.92) rotate(-7deg)}
+ 22%{opacity:.17}100%{opacity:0;transform:scale(1.08) rotate(6deg)}
+}
+@keyframes arenaComboHeadline{
+ 0%{opacity:0;transform:translateY(16px) scale(.8)}
+ 20%{opacity:1;transform:translateY(-3px) scale(1.08)}
+ 48%{opacity:1;transform:translateY(0) scale(1)}
+ 100%{opacity:0;transform:translateY(-18px) scale(1.03)}
+}
+@keyframes arenaComboMicroJolt{
+ 0%,100%{transform:none}
+ 16%{transform:translateX(calc(var(--combo-jolt)*-1))}
+ 34%{transform:translateX(var(--combo-jolt))}
+ 50%{transform:translateY(var(--combo-jolt))}
+ 70%{transform:translateY(calc(var(--combo-jolt)*-.5))}
+}
+@media(max-width:600px){
+ #arena-combo-screen-fx.combo-screen-fx{--combo-jolt:1px}
+ #arena-combo-screen-fx .combo-screen-announcement{
+  inset:22% 0 auto;font-size:clamp(16px,4.3vw,25px)
+ }
+ #arena-combo-screen-fx .combo-screen-rays{display:none}
+ #arena-combo-screen-fx .combo-screen-shock{width:100px;height:100px;border-width:2px}
+}
+@media(prefers-reduced-motion:reduce){
+ #arena-combo-screen-fx.combo-screen-fx,
+ #arena-combo-screen-fx.combo-screen-fx > span{
+  animation:none!important;transition:none!important;transform:none!important
+ }
+ #arena-combo-screen-fx .combo-screen-flash,
+ #arena-combo-screen-fx .combo-screen-rays,
+ #arena-combo-screen-fx .combo-screen-shock,
+ #arena-combo-screen-fx .combo-screen-announcement{display:none!important}
+ #arena-combo-screen-fx .combo-screen-aura{opacity:.08}
+}
