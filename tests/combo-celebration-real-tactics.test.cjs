@@ -22,7 +22,7 @@ function boot(){
   vm.runInContext(read(file),g,{filename:file});
  return {g,sound,nodes};
 }
-test('increasing combo counts 1-12 animate immediately and become energetic in the heading, not over the arena',()=>{
+test('increasing combo counts 1-12 animate immediately in the arena with no surrounding border',()=>{
  const {g,sound,nodes}=boot(),p=create(),q=create({playerNum:2,towerHero:false});
  const M=g.BounceMomentum,C=g.ArenaCombatV2;
  for(let n=1;n<=12;n++){
@@ -46,7 +46,7 @@ test('increasing combo counts 1-12 animate immediately and become energetic in t
  p._forgeActionClock+=1;
  assert.equal(M.wall(p,8,'bumper'),false);
  assert.equal(p._combat2Combo.chain,before);
- p._forgeActionClock+=200;M.wall(p,4,'wall');
+ p._forgeActionClock+=200;M.wall(p,7,'wall');
  assert.equal(p._combat2Combo.chain,1);
  assert.equal(p.hp,300);assert.equal(q.hp,300);
 });
