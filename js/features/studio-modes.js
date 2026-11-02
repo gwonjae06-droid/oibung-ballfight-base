@@ -33,7 +33,7 @@ picker.setAttribute('aria-label','캐릭터 스킬 제작 방법 선택');
 picker.innerHTML='<div class="studio-mode-intro"><span class="eyebrow">SKILL WORKSHOP</span><h3>어떤 방식으로 스킬을 만들까요?</h3><p>한 개의 고유 스킬을 무작위로 뽑거나, 조건·행동 블록을 직접 연결해 기술을 코딩하세요.</p></div>'
   +'<div class="studio-mode-choices">'
   +'<button type="button" data-studio-open="random" class="studio-mode-choice"><span class="studio-mode-icon" aria-hidden="true">🎲</span><strong>랜덤 생성기</strong><small>전체 동작에서 고유 스킬 1개 자동 생성<br>언제든 다시 뽑기 · 왼쪽 동작 시연</small><span class="studio-mode-cta">랜덤 스킬 만들기</span></button>'
-  +'<button type="button" data-studio-open="compose" class="studio-mode-choice"><span class="studio-mode-icon" aria-hidden="true">⚡</span><strong>직접 설계하기</strong><small>하나의 고유 스킬에 행동 블록을 붙이고<br>원하면 전문가 설정까지 자유롭게 편집</small><span class="studio-mode-cta">직접 조합하기</span></button></div>';
+  +'<button type="button" data-studio-open="compose" class="studio-mode-choice"><span class="studio-mode-icon" aria-hidden="true">⚡</span><strong>직접 설계하기</strong><small>하고 싶은 기술을 자유롭게 문장으로 적고<br>미니 핀볼에서 바로 시험</small><span class="studio-mode-cta">문장으로 만들기</span></button></div>';
 
 const randomView=document.createElement('section');
 randomView.id='studio-mode-random';
@@ -54,10 +54,10 @@ composeView.className='studio-mode-screen studio-compose-screen';
 composeView.hidden=true;
 const bar=document.createElement('div');
 bar.className='studio-mode-toolbar';
-bar.innerHTML='<button type="button" data-studio-back>← 제작 방법 선택</button><span>BLOCK SKILL EDITOR</span>';
+bar.innerHTML='<button type="button" data-studio-back>← 제작 방법 선택</button><span>SENTENCE SKILL CREATOR</span>';
 const heading=document.createElement('div');
 heading.className='studio-compose-heading';
-heading.innerHTML='<h3>스킬 조합하기</h3><p>오른쪽에서 기술을 만들고, 왼쪽에서 실제 동작과 연계를 확인하세요.</p>';
+heading.innerHTML='<h3>스킬 상상하기</h3><p>하고 싶은 기술을 문장으로 설명하고, 미니 핀볼에서 결과를 확인하세요.</p>';
 composeView.append(bar,heading);
 [blocks,tuning,library,...other].filter(Boolean).forEach(node=>composeView.append(node));
 skills.replaceChildren(picker,randomView,composeView);

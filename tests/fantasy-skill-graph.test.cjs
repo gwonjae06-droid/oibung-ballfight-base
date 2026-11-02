@@ -130,11 +130,11 @@ test('graph editor and client load order carry entire authored graph into the ba
   assert.ok(s.indexOf('fantasy-skill-graph.js')<s.indexOf('signature-rule-skill.js'));
  }
  const code=read('signature-rule-studio');
- assert.match(code,/data-step-field="type"/);
- assert.match(code,/graph-add/);
- assert.match(code,/graph-wait/);
- assert.match(code,/graph-if/);
- assert.match(code,/graph-repeat/);
+ assert.match(code,/rule-prompt/);
+ assert.match(code,/SkillSentenceEngine/);
+ assert.match(code,/sentence-interpretation/);
+ assert.doesNotMatch(code,/data-step-field="type"/);
+ assert.doesNotMatch(code,/graph-add/);
  const lab=read('studio-pinball-lab');
  assert.match(lab,/SignatureRuleLive\?\.step/);
  const casting=read('skill-forge-casting');

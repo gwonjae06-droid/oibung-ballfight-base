@@ -21,7 +21,7 @@ const rolePicker=document.createElement('section');
 rolePicker.id='forge-role-picker';rolePicker.className='forge-role-picker';
 rolePicker.setAttribute('aria-label','캐릭터 기본 전투 유형');
 rolePicker.innerHTML='<h3>공의 특성 선택</h3>'
- +'<p>이동속도·체력·피해 배율이 다른 공 유형을 고르세요. 기본 공격 없이, 직접 코딩한 스킬만 기세 100에 발동합니다.</p>'
+ +'<p>이동속도·체력·피해 배율이 다른 공 유형을 고르세요. 기본 공격 없이, 직접 설명한 스킬이 기세 100에서 발동합니다.</p>'
  +'<div class="forge-role-options" role="group" aria-label="전투 유형 다섯 가지">'
  +Object.entries(classes?.TYPES||{}).map(([id,r])=>
    '<button type="button" class="forge-role-option" data-archetype="'+id+'" aria-pressed="false">'
@@ -78,7 +78,7 @@ if(feedback)manager.append(feedback);
 const rest=Array.from(studio.children).filter(n=>![random,name,blocks,tuning,library,appearance,basics,create,saved].includes(n));
 const tabs=document.createElement('div');
 tabs.className='studio-category-tabs';tabs.setAttribute('role','tablist');tabs.setAttribute('aria-label','캐릭터 제작 카테고리');
-tabs.innerHTML='<button type="button" id="studio-tab-skills" role="tab" aria-selected="true" aria-controls="studio-panel-skills" tabindex="0">⚡ 스킬 코딩</button>'
+tabs.innerHTML='<button type="button" id="studio-tab-skills" role="tab" aria-selected="true" aria-controls="studio-panel-skills" tabindex="0">✨ 문장 스킬 만들기</button>'
   +'<button type="button" id="studio-tab-appearance" role="tab" aria-selected="false" aria-controls="studio-panel-appearance" tabindex="-1">🎨 외형 꾸미기</button>';
 const skills=document.createElement('section'),looks=document.createElement('section');
 skills.id='studio-panel-skills';looks.id='studio-panel-appearance';

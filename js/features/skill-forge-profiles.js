@@ -40,6 +40,7 @@ function normalize(value,{towerEnemy=false}={}){
     skills:value.skills.slice(0,towerEnemy?6:signature?1:4).map((s,i)=>{
       if(!Array.isArray(s.actions)||!s.actions.length)throw Error((i+1)+'번 스킬에 동작이 없습니다.');
       return {name:clean(s.name,18)||'스킬 '+(i+1),
+        promptText:signature?String(s.promptText||'').slice(0,300):undefined,
         // Block program is an inert, validated AST; saved and exported with the fighter.
         program:signature&&Array.isArray(s.program)?global.SignatureScratch?.normalize?.(s.program):undefined,
         ruleSet:signature&&s.ruleSet&&global.SignatureRuleSkill?.normalize?.(s.ruleSet)||undefined,

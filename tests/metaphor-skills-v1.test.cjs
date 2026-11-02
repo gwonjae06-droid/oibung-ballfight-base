@@ -114,10 +114,10 @@ test('PvP transmits compact metaphor art without changing attack physics',()=>{
 });
 test('studio UI allows customizing imagined appearance, saturation and size',()=>{
  const s=read('signature-rule-studio');
- assert.match(s,/data-rule-field="visual\.shape"/);
- assert.match(s,/data-rule-field="visual\.color"/);
- assert.match(s,/data-rule-field="visual\.scale"/);
- assert.match(s,/data-rule-field="visual\.charge"/);
+ assert.match(s,/sentence-only-studio/);
+ assert.match(s,/rule-prompt/);
+ assert.match(s,/SkillSentenceEngine/);
+ assert.doesNotMatch(s,/data-rule-field="visual\.shape"/);
  const lab=read('studio-pinball-lab');
  assert.match(lab,/visual:fx\.a\.visual/);
 });
