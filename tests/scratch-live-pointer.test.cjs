@@ -84,7 +84,7 @@ test('real game routes only queued actions into delayed live interpreter',()=>{
  assert.match(src,/const run=global.SignatureLive\?\.begin/);
  assert.match(src,/const a=global.SignatureLive\?\.step/);
  assert.match(src,/global.SignatureLive\?\.performed/);
- assert.match(src,/global.SignatureLive\?\.record\?\.\(p,'hit'\)/);
+ assert.match(read('js/features/skill-forge-impact.js'),/global.SignatureLive\?\.record\?\.\(p,'hit'\)/);
  const tower=read('js/features/tower-encounters.js');
  assert.match(tower,/SignatureLive\?\.record\?\.\(hero,'dodge'\)/);
  const html=read('index.html');
