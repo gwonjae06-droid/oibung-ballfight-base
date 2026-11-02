@@ -37,7 +37,7 @@ test('55 types show only controls actually wired to their execution family',()=>
   assert.equal(h.SkillForge.supportedParameter('resurrect','damage'),false);
   assert.equal(h.SkillForge.supportedParameter('fortify','duration'),true);
   assert.equal(h.SkillForge.supportedParameter('leap','duration'),false,'fixed leap hover is not user configurable');
-  assert.match(read('js/features/skill-forge.js'),/key&&!supportedParameter\(a.type,key\)/);
+  assert.match(read('js/features/skill-forge-editor.js'),/key&&!supportedParameter\(a.type,key\)/);
 });
 test('meteor, star rain and arcing projectiles actually use speed settings',()=>{
   const {h,p,target,api}=env(),enemy=target(2,270,100);
