@@ -36,7 +36,8 @@ function floor(base,id){
  // changing any saved player stats or requiring a specific power build.
  // Reduce high-floor HP inflation; decisive attacks now matter without erasing boss phases.
  const endurance=1+Math.pow((f.number-1)/9,1.45)*.45;
- f.hp=Math.round((190+f.number*26+(f.boss?170:0))*balance.hp*endurance);
+ const highFloorEasing=['time','ice'].includes(r.id)&&f.number>=6?1-.08*((f.number-5)/5):1;
+ f.hp=Math.round((190+f.number*26+(f.boss?170:0))*balance.hp*endurance*highFloorEasing);
  f.towerDefense=1-Math.pow((f.number-1)/9,1.3)*.16;
  f.damage=Math.round((15+f.number*3)*balance.damage);
  f.speed=Math.min(5,(1.35+f.number*.14)*balance.speed);
@@ -80,10 +81,10 @@ function apply(p,id,blessings){
   // energy gauge. Reducing their visible cooldown does not speed up casting.
   // Give modern player profiles a genuinely measurable, bounded gain instead.
   // Run-local only: this field is never written to saved forge definitions.
-  if(b==='haste'&&p.forge?.signatureVersion===1&&!p.towerEnemy)
+  if(b==='haste'&&!p.towerEnemy&&g.BounceMomentum?.enabled?.(p))
    p._towerMomentumBoost=Math.min(1.3225,(p._towerMomentumBoost||1)*1.15);
   for(const s of p.forge?.skills||[]){
-   if(b==='haste'&&p.forge?.signatureVersion!==1)s.cooldown=Math.max(.35,s.cooldown*.85);
+   if(b==='haste'&&!g.BounceMomentum?.enabled?.(p))s.cooldown=Math.max(.35,s.cooldown*.85);
    for(const a of s.actions||[]){
     if(!(a.damage>0))continue;
     if(b==='echo')a.damage=Math.round(a.damage*1.18);
