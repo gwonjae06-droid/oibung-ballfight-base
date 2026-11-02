@@ -117,7 +117,7 @@ test('arena collision, wall, script loading and gauge reuse the existing physics
  assert.match(forge,/BounceMomentum\.ready/);
  assert.match(forge,/BounceMomentum\?\.spend/);
  assert.match(forge,/function contact/);
- assert.match(forge,/basicAttack/);
+ assert.match(read('js/features/skill-forge-profiles.js'),/Legacy basicAttack data/);
  for(const file of ['index.html','pvp-runtime.html']){
   const s=read(file);
   assert.ok(s.indexOf('bounce-momentum.js')<s.indexOf('skill-forge.js'));
