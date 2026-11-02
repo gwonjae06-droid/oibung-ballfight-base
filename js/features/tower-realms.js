@@ -36,8 +36,7 @@ function floor(base,id){
  // changing any saved player stats or requiring a specific power build.
  // Reduce high-floor HP inflation; decisive attacks now matter without erasing boss phases.
  const endurance=1+Math.pow((f.number-1)/9,1.45)*.45;
- const highFloorEasing=['time','ice'].includes(r.id)&&f.number>=6?1-.08*((f.number-5)/5):1;
- f.hp=Math.round((190+f.number*26+(f.boss?170:0))*balance.hp*endurance*highFloorEasing);
+ f.hp=Math.round((190+f.number*26+(f.boss?170:0))*balance.hp*endurance);
  f.towerDefense=1-Math.pow((f.number-1)/9,1.3)*.16;
  f.damage=Math.round((15+f.number*3)*balance.damage);
  f.speed=Math.min(5,(1.35+f.number*.14)*balance.speed);
