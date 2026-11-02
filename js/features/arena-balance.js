@@ -38,9 +38,10 @@ function accelerationUptime(skills,signatureMomentum=false){
   return uptime+weighted;
  },0),0,1);
 }
-function summary(profile){
+function summary(profile,momentumDriven=false){
  const skills=profile?.allAbilities&&g.SkillForge?.allSkillset?g.SkillForge.allSkillset():profile?.skills||[];
- const perSkill=skills.map(s=>skillPressure(s,profile?.signatureVersion===1));
+ const energy=profile?.signatureVersion===1||momentumDriven;
+ const perSkill=skills.map(s=>skillPressure(s,energy));
  const charges=skills.flatMap(s=>s.actions||[]).filter(a=>a.type==='charge');
  // A separately authored charge skill also benefits other offensive slots,
  // so factor that benefit into the shared offensive budget.
@@ -50,9 +51,13 @@ function summary(profile){
  // not independent cooldown progression. Charge-up is bounded and the
  // estimated duration is measured against a 100-point energy cycle.
  const signature=profile?.signatureVersion===1;
- const timeAcceleration=accelerationUptime(skills,signature);
- const pressure=perSkill.reduce((sum,x)=>sum+x,0)*bonus*
-  (1+timeAcceleration*(signature?0.75:1));
+ const timeAcceleration=accelerationUptime(skills,energy);
+ // Legacy saved loadouts now cast ONE rotating skill per filled 100 energy,
+ // not 4 simultaneous .2s cooldown attacks. Budget their average active
+ // skill rather than summing all four imaginary cooldown frequencies.
+ const rotation=momentumDriven&&!signature?Math.max(1,skills.length):1;
+ const pressure=perSkill.reduce((sum,x)=>sum+x,0)/rotation*bonus*
+  (1+timeAcceleration*(energy?0.75:1));
  const multiplier=cap(pressure>BUDGET?Math.pow(BUDGET/pressure,.82):1,.18,1);
  return {pressure:Number(pressure.toFixed(1)),budget:BUDGET,
   percent:Math.round(multiplier*100),multiplier:Number(multiplier.toFixed(4)),
@@ -83,9 +88,13 @@ function defenseSkillPressure(s,signatureMomentum=false){
    (s?.actions||[]).slice(0,12).reduce((sum,a)=>sum+perAction(a),0);
  return pressure*availability;
 }
-function defenseSummary(profile){
+function defenseSummary(profile,momentumDriven=false){
  const skills=profile?.allAbilities&&g.SkillForge?.allSkillset?g.SkillForge.allSkillset():profile?.skills||[];
- const perSkill=skills.map(s=>defenseSkillPressure(s,profile?.signatureVersion===1)),pressure=perSkill.reduce((a,b)=>a+b,0)*(1+accelerationUptime(skills,profile?.signatureVersion===1)*(profile?.signatureVersion===1?0.75:1));
+ const energy=profile?.signatureVersion===1||momentumDriven;
+ const rotation=momentumDriven&&profile?.signatureVersion!==1?Math.max(1,skills.length):1;
+ const perSkill=skills.map(s=>defenseSkillPressure(s,energy)),
+  pressure=perSkill.reduce((a,b)=>a+b,0)/rotation*
+   (1+accelerationUptime(skills,energy)*(energy?0.75:1));
  // A gentle soft curve, with a floor instead of a hard cap. Even very long
  // shields can overlap; that is a legitimate authored defense strategy.
  const multiplier=cap(pressure>DEFENSE_BUDGET?
@@ -98,7 +107,9 @@ function defenseSummary(profile){
 // kept up. More shield slots do not create more invulnerability resources.
 // The refill is measured in simulated frames: 100x speed cannot bypass it.
 function shieldCapacity(p){
- const cds=(p?.forge?.skills||[]).filter(s=>(s.actions||[]).some(a=>a.type==='shield')).map(s=>Math.max(.2,n(s.cooldown,3)));
+ const energyDriven=!!g.BounceMomentum?.enabled?.(p);
+ const cds=(p?.forge?.skills||[]).filter(s=>(s.actions||[]).some(a=>a.type==='shield'))
+   .map(s=>energyDriven?5:Math.max(.2,n(s.cooldown,3)));
  return cap(Math.round(Math.min(8,...(cds.length?cds:[1]))*60*1.1),48,480);
 }
 function tickShield(p){
@@ -134,8 +145,8 @@ function healingWindow(p,desired){
  p._forgeHealingEnergy=Math.max(0,available-granted);
  return granted;
 }
-function factorOf(p){return !p?.forge||p.towerEnemy?1:summary(p.forge).multiplier;}
-function defenseFactorOf(p){return !p?.forge||p.towerEnemy?1:defenseSummary(p.forge).multiplier;}
+function factorOf(p){return !p?.forge||p.towerEnemy?1:summary(p.forge,!!g.BounceMomentum?.enabled?.(p)).multiplier;}
+function defenseFactorOf(p){return !p?.forge||p.towerEnemy?1:defenseSummary(p.forge,!!g.BounceMomentum?.enabled?.(p)).multiplier;}
 g.ArenaBalance=Object.freeze({summary,skillPressure,actionPressure,factorOf,
  defenseSummary,defenseSkillPressure,defenseFactorOf,tickShield,shieldWindow,shieldCapacity,
  tickHealing,healingWindow,healingCapacity,
