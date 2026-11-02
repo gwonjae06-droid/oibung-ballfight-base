@@ -42,6 +42,7 @@ function normalize(value,{towerEnemy=false}={}){
       return {name:clean(s.name,18)||'스킬 '+(i+1),
         // Block program is an inert, validated AST; saved and exported with the fighter.
         program:signature&&Array.isArray(s.program)?global.SignatureScratch?.normalize?.(s.program):undefined,
+        ruleSet:signature&&s.ruleSet&&global.SignatureRuleSkill?.normalize?.(s.ruleSet)||undefined,
         trigger:signature?'auto':TRIGGER[s.trigger]?s.trigger:'auto',
         cooldown:number(s.cooldown,.2,30,3),threshold:number(s.threshold,5,95,40),
         actions:s.actions.slice(0,signature?global.SignatureProgram?.MAX_ACTIONS||12:3).map(a=>({

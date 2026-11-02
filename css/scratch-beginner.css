@@ -190,3 +190,52 @@
  .scratch-friendly-mode .kid-limit-pill{font-size:11px}
  .scratch-friendly-mode .kid-step-card{padding:10px}
 }
+
+/* Sentence-rule studio is the only visible skill editing surface. */
+.scratch-friendly-mode .scratch-beginner.rule-studio{background:#182438}
+.scratch-friendly-mode .rule-studio .rule-hero{padding:20px;background:linear-gradient(110deg,#273a6c,#392748);border-bottom:1px solid #66728f}
+.scratch-friendly-mode .rule-hero>span{font-size:11px;letter-spacing:.14em;font-weight:800;color:#b2dcff}
+.scratch-friendly-mode .rule-hero h3{font-size:clamp(19px,3vw,28px);font-weight:900;color:#fff;margin:6px 0}
+.scratch-friendly-mode .rule-hero p{font-size:13px;line-height:1.6;color:#e1eafd;margin:0}
+.scratch-friendly-mode .rule-main{padding:16px;display:grid;gap:16px}
+.scratch-friendly-mode .rule-meta{display:grid;grid-template-columns:2fr 1fr;gap:12px}
+.scratch-friendly-mode .rule-row-list{display:grid;gap:11px}
+.scratch-friendly-mode .rule-row{padding:15px;border:1px solid #8a74b1;border-left:5px solid #b19ce6;background:#1d3048;border-radius:12px;display:grid;gap:12px}
+.scratch-friendly-mode .rule-row-heading{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.scratch-friendly-mode .rule-row-heading strong{color:#efebff;font-weight:900}
+.scratch-friendly-mode .rule-row-controls{display:flex;gap:5px;align-items:center}
+.scratch-friendly-mode .rule-row-controls button{background:#364c71;color:#fff;border:1px solid #8ba4c8;border-radius:7px;min-height:37px;min-width:37px;cursor:pointer}
+.scratch-friendly-mode .rule-sentence{display:grid;grid-template-columns:1fr 1fr .65fr;gap:10px}
+.scratch-friendly-mode .rule-tuners{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:9px}
+.scratch-friendly-mode .rule-studio label{color:#deebfc;font-weight:800;font-size:12px;display:grid;gap:6px;min-width:0}
+.scratch-friendly-mode .rule-studio select,.scratch-friendly-mode .rule-studio input{
+ background:#13253c;color:#fff;border:1px solid #8da8c5;border-radius:8px;padding:9px;min-height:44px;min-width:0;width:100%;font-size:13px
+}
+.scratch-friendly-mode .rule-studio select:focus-visible,.scratch-friendly-mode .rule-studio input:focus-visible{outline:3px solid #f8d57e}
+.scratch-friendly-mode .rule-number{display:flex;align-items:center;gap:5px;white-space:nowrap}
+.scratch-friendly-mode .rule-toolbar{display:flex;gap:9px;flex-wrap:wrap}
+.scratch-friendly-mode .rule-toolbar button,.scratch-friendly-mode .rule-intro button{
+ border:1px solid #a8d9ff;background:#285a7d;color:#fff;padding:12px;border-radius:10px;min-height:46px;cursor:pointer;font-weight:850
+}
+.scratch-friendly-mode .rule-templates{border-top:1px solid #516b85;padding-top:15px}
+.scratch-friendly-mode .rule-templates h4{color:#fff;font-size:17px;margin:0 0 5px}
+.scratch-friendly-mode .rule-templates p{color:#cdddec;font-size:12px;margin:0 0 13px}
+.scratch-friendly-mode .rule-template-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.scratch-friendly-mode .rule-template-grid button{display:grid;gap:6px;min-height:82px;text-align:left;background:#2b4165;border:1px solid #7890ba;border-radius:12px;color:#fff;padding:13px;cursor:pointer}
+.scratch-friendly-mode .rule-template-grid strong{font-size:14px}
+.scratch-friendly-mode .rule-template-grid small{font-size:11px;color:#d3e2fa;line-height:1.4}
+.scratch-friendly-mode .rule-intro{padding:15px;border:1px solid #bc9c72;border-radius:12px;background:#3b3336;display:grid;gap:9px}
+.scratch-friendly-mode .rule-intro strong{color:#ffe7b7}.scratch-friendly-mode .rule-intro p{margin:0;color:#ebdfcb;font-size:12px;line-height:1.5}
+.scratch-friendly-mode .rule-explain{font-size:12px;color:#d1e3f1;line-height:1.7}
+.scratch-friendly-mode #rule-feedback{background:#193d36;color:#c0f1da;border-radius:10px;padding:12px;font-size:13px}
+@media(max-width:850px){
+ .scratch-friendly-mode .rule-sentence{grid-template-columns:1fr 1fr}
+ .scratch-friendly-mode .rule-tuners{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+@media(max-width:520px){
+ .scratch-friendly-mode .rule-main{padding:10px}
+ .scratch-friendly-mode .rule-meta,.scratch-friendly-mode .rule-sentence{grid-template-columns:1fr}
+ .scratch-friendly-mode .rule-tuners{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .scratch-friendly-mode .rule-template-grid{grid-template-columns:1fr}
+ .scratch-friendly-mode .rule-hero{padding:15px}
+}

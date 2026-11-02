@@ -35,7 +35,13 @@ function begin(p){
 function baseSpeed(p){
  // Ordinary fighter type alters only movement SPEED, never AI direction.
  const forge=Number(p.forge?.speed);
- if(Number.isFinite(forge)&&forge>0)return clamp(forge*1.13,1.4,5.25);
+ if(Number.isFinite(forge)&&forge>0){
+  // Repeated authored speed rules are real rolling acceleration, not free
+  // teleportation. A short expiry and hard ceiling keep physics stable.
+  const buff=p._ruleSpeed,now=Number(p._forgeActionClock)||0;
+  const stacks=buff?.until>now?Math.min(7,buff.stacks||0):0;
+  return clamp(forge*1.13*(1+.5*stacks),1.4,stacks?10.5:5.25);
+ }
  return p.id==='oh'?(p.mode==='boin'?4.05:2.65):p.id==='choi'?3.06:p.id==='park'?3.12:3.18;
 }
 function initialDirection(p){

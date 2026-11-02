@@ -17,7 +17,9 @@ function actionPressure(a){
 }
 function skillPressure(s,signatureMomentum=false){
  const actions=(s?.actions||[]).slice(0,12),charge=actions.find(a=>a.type==='charge');
- const base=Array.isArray(s?.program)&&g.SignatureScratch?.worstPressure?
+ const base=s?.ruleSet&&g.SignatureRuleSkill?.pressure?
+   g.SignatureRuleSkill.pressure(s.ruleSet,actionPressure):
+   Array.isArray(s?.program)&&g.SignatureScratch?.worstPressure?
    g.SignatureScratch.worstPressure(s.program,actionPressure):
    actions.reduce((sum,a)=>sum+actionPressure(a),0);
  const raw=base*(charge?1+Math.min(.48,cap(n(charge.duration,1.2),.2,8)*.12):1);
@@ -84,7 +86,9 @@ function defenseSkillPressure(s,signatureMomentum=false){
    default:return 0;
   }
  };
- const pressure=Array.isArray(s?.program)&&g.SignatureScratch?.worstPressure?
+ const pressure=s?.ruleSet&&g.SignatureRuleSkill?.pressure?
+   g.SignatureRuleSkill.pressure(s.ruleSet,perAction):
+   Array.isArray(s?.program)&&g.SignatureScratch?.worstPressure?
    g.SignatureScratch.worstPressure(s.program,perAction):
    (s?.actions||[]).slice(0,12).reduce((sum,a)=>sum+perAction(a),0);
  return pressure*availability;

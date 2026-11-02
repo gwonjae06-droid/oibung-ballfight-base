@@ -342,6 +342,7 @@ function stepHeight(p,api){
     if(p.z===0&&previous>0){
       p.vz=0;
       p.jumpMotion={phase:'landing',age:0,kind:p.jumpMotion?.kind||'knockup'};
+      global.SignatureLive?.record?.(p,'land');
       mark('ring',p.x,p.y,75,color(p),24);
       mark('dust',p.x,p.y,63,color(p),22);
       // Landings without an authored slam are movement, not attack impacts.
@@ -493,14 +494,18 @@ function updateProjectiles(api){
     const trailLimit=reduced?2:projectiles.length>=65?2:projectiles.length>=32?4:11;
     if(trailLimit>0)b.trail.unshift({x:b.x,y:b.y-b.height});
     if(b.trail.length>trailLimit)b.trail.length=trailLimit;
-    if(b.kind==='splitshot'&&!b.split&&t>=.56){
+    if((b.kind==='splitshot'||b.kind==='fragment'&&b.fractureRemaining>1)&&!b.split&&t>=.56){
       b.split=true;const n=cap(Math.round(b.a.count||1),1,8);
+      const generations=cap(Number(b.fractureRemaining??b.a.fractureDepth??1),1,3);
+      global.SignatureLive?.record?.(p,'split');
       for(let j=0;j<n;j++){
         const theta=(j/n)*Math.PI*2;
         pushShot({kind:'fragment',owner:b.owner,x:b.x,y:b.y,startX:b.x,startY:b.y,
           tx:cap(b.x+Math.cos(theta)*Math.min(95,b.a.radius),15,canvas.width-15),
           ty:cap(b.y+Math.sin(theta)*Math.min(95,b.a.radius),15,canvas.height-15),
-          age:0,travel:cap(Math.ceil(95/Math.max(2,b.a.speed||6)),10,40),a:b.a,life:50,height:b.worldZ,startZ:b.worldZ,targetZ:b.worldZ});
+          age:0,travel:cap(Math.ceil(95/Math.max(2,b.a.speed||6)),10,40),
+          a:generations>1?{...b.a,damage:Math.max(1,Math.round(b.a.damage*.55))}:b.a,
+          fractureRemaining:generations-1,life:50,height:b.worldZ,startZ:b.worldZ,targetZ:b.worldZ});
       }
       mark('cleave',b.x,b.y,34,color(p),18,b.age*.24);
       mark('burst',b.x,b.y,33,color(p),17);

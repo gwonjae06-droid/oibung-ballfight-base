@@ -13,6 +13,16 @@ const transitionLead={leap:14,hover:12,glide:12,erupt:12,uppercut:7,
 const cooldownFrames=(p,s)=>global.BounceMomentum?.enabled?.(p)?1:
  Math.max(12,Math.round((p.forgeRush?Math.min(1,s.cooldown):s.cooldown)*60));
 function cast(p,s,target,index){
+  // A sentence-authored skill stays alive as a bounded simulation-time rule set.
+  if(p.forge?.signatureVersion===1&&s.ruleSet&&global.SignatureRuleLive){
+    if(p.forgeRuleRun&&!p.forgeRuleRun.finished)return false;
+    const run=global.SignatureRuleLive.begin(s.ruleSet,p);
+    if(!run)return false;
+    p.forgeRuleRun=run;
+    global.ArenaCombatV2?.onCast?.(p);
+    global.BattleFX?.caption?.(p,s.name,(p.forge.effectColor||p.forge.color));
+    return true;
+  }
   // A Scratch program is a coroutine: evaluate each branch AFTER the previous
   // action has actually executed, never by flattening conditions at cast time.
   if(p.forge?.signatureVersion===1&&Array.isArray(s.program)){
@@ -70,6 +80,16 @@ function tickQueue(p,target){
   const blocked=!!global.ForgeExpansion?.blocked(p);
   // Exactly one program action may be queued at a time; this preserves a
   // genuine opportunity to observe hit/movement/guard events before branching.
+  const live=p.forgeRuleRun;
+  if(live&&!live.finished&&!blocked){
+    const action=global.SignatureRuleLive?.step?.(live,p,target);
+    if(action){
+      const windup=global.ArenaTelegraph?.leadFrames?.(action)||0;
+      p.forgeQueue.push({remaining:Math.max(windup,1),step:Math.max(0,live.actions-1),
+        castId:p.forgeSerial,skillIndex:0,steps:live.actions,a:action,
+        targetNum:target?.playerNum??null,windup,rule:true});
+    }
+  }
   const run=p.forgeScratchRun;
   if(run&&!run.finished&&!blocked){
     const a=global.SignatureLive?.step?.(run,p,target);
@@ -106,6 +126,7 @@ function tickQueue(p,target){
     const castTarget=players.find(e=>e.playerNum===q.targetNum&&e.hp>0)||target;
     global.ArenaBattleDirector?.skillUsed?.(p,castTarget,q.a,p.forge?.skills?.[q.skillIndex]?.name);
     execute(p,q.a,castTarget);
+    if(q.rule)global.SignatureRuleLive?.performed?.(p,q.a);
     if(q.scratch){
       if(q.a.type==='shield'&&p.invincible>0)
         p._scratchShieldUntil=(Number(p._forgeActionClock)||0)+Math.min(480,p.invincible);
