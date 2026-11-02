@@ -40,30 +40,30 @@ test('HUD is visible at COMBO 0 before combat, even with no signature profile',(
  assert.equal(el.hidden,false);
  assert.equal(el.dataset.combo,'0');
  assert.equal(el.querySelector('.combo-number').textContent,'0');
- assert.match(el.querySelector('.combo-message').textContent,/첫 충돌/);
+ assert.match(el.querySelector('.combo-message').textContent,/강한 충돌/);
 });
-test('actual engine body collision increments combo for both legacy built-in fighters',()=>{
+test('actual engine body collision counts only the user's built-in fighter',()=>{
  const {g,nodes}=boot();g.ArenaCombatV2.reset();
  const a=fighter(),b=fighter(2);
  g.handleCombat(a,b);
  assert.equal(a._combat2Combo.chain,1);
- assert.equal(b._combat2Combo.chain,1);
+ assert.equal(b._combat2Combo,undefined,'opponent cannot grow my combo');
  assert.equal(nodes['arena-combo-status'].hidden,false);
  assert.equal(nodes['arena-combo-status'].dataset.combo,'1');
  assert.equal(a.hp,250);assert.equal(b.hp,250,'the scoreboard is visual only');
  assert.equal(a._combat2NextBoost,undefined,'legacy fighters never get free signature damage');
  assert.equal(b._combat2NextBoost,undefined);
- b._combat2Tick=50;
- assert.equal(g.ArenaCombatV2.signal(b,'wall-left',5),true);
+ a._combat2Tick=50;
+ assert.equal(g.ArenaCombatV2.signal(a,'wall-left',7),true);
  assert.equal(nodes['arena-combo-status'].dataset.combo,'2');
- assert.match(nodes['arena-combo-status'].querySelector('.combo-message').textContent,/P2/);
+ assert.doesNotMatch(nodes['arena-combo-status'].querySelector('.combo-message').textContent,/P[12]/);
 });
 test('real tower wall and bumper collide without momentum meter and can reach 2-combo',()=>{
  const {g,nodes}=boot();
  g.ArenaScreenRouter.active='tower';
  g.ArenaCombatV2.reset();
  const a=fighter();
- a.x=10;a.y=250;a.vx=-4;a.vy=0;a._combat2Tick=4;
+ a.x=10;a.y=250;a.vx=-7;a.vy=0;a._combat2Tick=4;
  assert.equal(g.ArenaTowerFlat.bounce(a,'time',500,500,1,4),true);
  assert.equal(a._combat2Combo.chain,1);
  assert.equal(nodes['arena-combo-status'].dataset.combo,'1');
@@ -76,7 +76,7 @@ test('real tower wall and bumper collide without momentum meter and can reach 2-
 test('exhausted combo resets to visible 0 with latest best, not disappearing',()=>{
  const {g,nodes}=boot(),p=fighter();
  g.ArenaCombatV2.reset();
- g.ArenaCombatV2.signal(p,'wall-left',5);p._combat2Tick=50;
+ g.ArenaCombatV2.signal(p,'wall-left',7);p._combat2Tick=50;
  g.ArenaCombatV2.signal(p,'wall-right',6);
  assert.equal(nodes['arena-combo-status'].dataset.combo,'2');
  p._combat2Tick=260;g.ArenaCombatV2.ui(p);
@@ -88,7 +88,7 @@ test('exhausted combo resets to visible 0 with latest best, not disappearing',()
  assert.equal(nodes['arena-combo-status'].dataset.best,'0');
 });
 test('legacy combo stays visual while signature combo keeps 100-energy one-cast reward',()=>{
- const {g}=boot(),old=fighter(1,{signatureVersion:0}),modern=fighter(2,{signatureVersion:1});
+ const {g}=boot(),old=fighter(1,{signatureVersion:0}),modern=fighter(1,{signatureVersion:1});
  for(const p of [old,modern]){
   for(const [i,kind] of ['wall-left','wall-right','bumper-0'].entries()){
    p._combat2Tick=1+i*40;p._forgeActionClock=1+i*40;
