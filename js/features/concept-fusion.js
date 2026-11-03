@@ -86,7 +86,7 @@ function analyze(input){
   isProjectile?'projectile':forms[0]||'none',
   homing:homeModifier,split:splitModifier,
   finalBurst:splitModifier&&finalBurst,
-  fragments:namedCount===undefined?3:namedCount,
+  fragments:namedFragments??namedCount??3,
   impact:impactModifier?impact:'none',
   radius:g.KoreanSkillParameters?.analyze?.(raw)?.values?.radius||85});
  return {elements,forms,main,homing:homeModifier,split:splitModifier,
