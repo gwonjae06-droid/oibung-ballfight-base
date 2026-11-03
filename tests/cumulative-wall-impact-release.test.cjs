@@ -63,7 +63,8 @@ test('only three DISTINCT confirmed boundary rebounds release stored impulse onc
  assert.equal(output[0].t,78);
  assert.equal(output[0].action.type,'nova');
  assert.equal(output[0].action.storedImpact.hits,3);
- assert.ok(output[0].action.storedImpact.impulse>10);
+ assert.ok(output[0].action.storedImpact.impulse>5,
+  'stored impulse follows radius-dependent 2D body mass');
  assert.ok(output[0].action.damage>r.recipe.rules[0].action.damage);
  assert.ok(output[0].action.damage<=120);
  assert.equal(run.wallCharge[0].count,0);
