@@ -99,7 +99,7 @@ function renderResults(profile){
   results.replaceChildren();
   const heading=document.createElement('p');
   heading.className='studio-result-heading';
-  heading.textContent='고유 스킬 1개 · 구성된 행동 '+profile.skills[0].actions.length+'개 · 왼쪽에서 연계를 시연합니다.';
+  heading.textContent='독립 스킬 '+profile.skills.length+'개 · 기세 100마다 하나씩 순환 발동합니다.';
   results.append(heading);
   profile.skills.forEach((s,i)=>{
     const card=document.createElement('button');
@@ -124,15 +124,15 @@ function selectRandomPreview(index){
   });
 }
 function rollFour(){
-  // Sample four distinct actions for ONE signature. Other callers can still
-  // use legacy randomProfile(...,4) without altering stored character saves.
+  // Random generation now creates four independent skills, not one overstuffed
+  // signature. Combat rotates them through the shared 100-energy gauge.
   const rolled=forge.randomProfile('any',Math.random,4);
   const previous=forge.getDraft();
-  const base=previous.signatureVersion===1?previous:global.SignatureProgram.migrate(previous);
-  const actions=rolled.skills.map((s,i)=>({...s.actions[0],condition:'always',link:i===0?'and':'after'}));
+  const base=previous;
+  const skills=rolled.skills.map(s=>({...s,trigger:'auto'}));
   const value=id=>document.getElementById(id)?.value;
   const next={...base,signatureVersion:1,allAbilities:false,
-    skills:[{name:'운명의 고유 스킬',trigger:'auto',cooldown:4.5,threshold:40,actions}],
+    skills,
     name:value('bf-name')||previous.name,
     blurb:value('bf-text')??previous.blurb,
     color:value('forge-color')||previous.color,
@@ -144,7 +144,7 @@ function rollFour(){
   renderResults(forge.getDraft());
   workspace.refresh?.();
   selectRandomPreview('all');
-  rollStatus.textContent='행동 블록 4개를 연결한 고유 스킬 1개 생성 완료 · 저장 전 초안입니다.';
+  rollStatus.textContent='독립 스킬 4개 생성 완료 · 기세 순환형 초안입니다.';
   return forge.getDraft();
 }
 
