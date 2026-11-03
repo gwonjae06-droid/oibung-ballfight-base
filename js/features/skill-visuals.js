@@ -306,8 +306,8 @@ function add(kind,p,type,action,target,location){
      global.MetaphorVisuals?.normalize?.(action?.visual),
     beamLength:target?clamp(Math.hypot(target.x-p.x,target.y-p.y)+55,60,450):
       clamp((action?.radius||120)*1.8,60,450),
-    color:global.SkillColorPolicy?.resolve?.(action?.visual,
-      p.forge?.effectColor||p.effectColor||p.forge?.color)?.color||
+    color:(action?.visual?.colorMode?global.SkillColorPolicy?.resolve?.(action?.visual,
+      p.forge?.effectColor||p.effectColor||p.forge?.color)?.color:null)||
       (global.arenaEffectColor?.(p.forge?.effectColor||p.effectColor||catalog[type][1])||p.forge?.effectColor||p.effectColor||catalog[type][1]),
     source:kind==='cast'&&!targeted&&!['wave','explosion'].includes(family)?p:null,
     scale:clamp((action?.radius||130)/130,.78,1.2),
