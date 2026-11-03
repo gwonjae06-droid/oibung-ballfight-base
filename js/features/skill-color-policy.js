@@ -42,6 +42,9 @@ function stages(input){
  for(const [color,re] of words){
   const scan=new RegExp(re.source,'g');let m,n=0;
   while((m=scan.exec(raw))!==null&&n++<20){
+   // 은색 is also a SUBSTRING of 붉은색/검은색. Never let that
+   // internal match override the actual complete color adjective.
+   if(m[0]==='은색'&&/[가-힣]/.test(raw[m.index-1]||''))continue;
    hits.push({color,term:m[0],index:m.index,end:m.index+m[0].length});
   }
  }
