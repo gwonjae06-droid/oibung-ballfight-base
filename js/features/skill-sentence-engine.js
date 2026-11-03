@@ -104,8 +104,9 @@ function parse(input){
  const raw=String(input??'').trim();
  const engine=g.SignaturePromptCompiler;
  const grammar=g.KoreanSkillGrammar?.analyze?.(raw,g.SkillForge?.TYPE||g.ActionRegistry?.TYPE||{});
- const generatedLaw=g.PhysicsLawEngine?.interpret?.(raw);
- const result=generatedLaw||engine?.parse?.(raw)||{ok:false,error:'문장 해석기를 불러오지 못했습니다.'};
+ const materialized=g.ImaginationConcepts?.interpret?.(raw);
+ const generatedLaw=materialized?null:g.PhysicsLawEngine?.interpret?.(raw);
+ const result=materialized||generatedLaw||engine?.parse?.(raw)||{ok:false,error:'문장 해석기를 불러오지 못했습니다.'};
  const unavailable=capabilities.filter(c=>c.re.test(raw)).map(c=>c.label);
  const limitations=unavailable.map(x=>x+'은(는) 아직 완전하게 구현되지 않았습니다.');
  if(result.ok){
