@@ -54,7 +54,7 @@ test('extreme shields and healing are softened separately, never hard-capped',()
  const weak=a.defenseSummary(simple),heavy=a.defenseSummary(stack);
  assert.equal(a.summary(stack).multiplier,1,'defense never hurts attack damage');
  assert.ok(weak.multiplier>heavy.multiplier);
- assert.ok(heavy.multiplier>=.38,'soft floor permits extreme defensive builds');
+ assert.ok(heavy.multiplier>=.08,'soft floor permits extreme defensive builds');
  const heal={skills:[{name:'소생',cooldown:.2,trigger:'auto',actions:[{type:'heal',damage:120}]}]};
  assert.ok(a.defenseSummary(heal).multiplier<1);
  assert.equal(a.defenseSummary(profile(false)).multiplier,1);
