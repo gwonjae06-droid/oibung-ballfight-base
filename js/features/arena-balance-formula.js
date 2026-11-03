@@ -3,13 +3,21 @@
  */
 (function(g){'use strict';
 // Movement and protective walls do not do damage. Charge/timeburst affect only relevant budgets.
-const TYPES=new Set('wave shot beam bolt pull orbit zone homing pierce boomerang chain nova meteor mine drain blackhole starfall dung flight burrow dive uppercut slash spinslash thrust aircombo arcshot splitshot summon turret trap burrowdash erupt tether repulse vortex'.split(' '));
-const REPEAT=new Set('zone orbit mine blackhole starfall dung turret summon trap tether vortex'.split(' '));
+const TYPES=new Set('phenomenon wave shot beam bolt pull orbit zone homing pierce boomerang chain nova meteor mine drain blackhole starfall dung flight burrow dive uppercut slash spinslash thrust aircombo arcshot splitshot summon turret trap burrowdash erupt tether repulse vortex'.split(' '));
+const REPEAT=new Set('phenomenon zone orbit mine blackhole starfall dung turret summon trap tether vortex'.split(' '));
 const cap=(n,l,h)=>Math.min(h,Math.max(l,n)),n=(v,d=0)=>Number.isFinite(Number(v))?Number(v):d;
 const BUDGET=65;
 function actionPressure(a){
  if(!a||!TYPES.has(a.type))return 0;
  const damage=cap(n(a.damage),0,120),count=cap(n(a.count,1),1,8);
+ if(a.type==='phenomenon'){
+  const law=g.PhysicsLawEngine?.normalize?.(a.law);
+  if(!law)return 0;
+  // Periodic field contacts plus physical displacement/control both cost.
+  const force=law.terms.reduce((sum,t)=>sum+t.strength*(t.op==='orbit'||t.op==='gravity'?1.6:1),0);
+  return (damage*2.6+force*10)*(1+law.radius/280)*
+   Math.min(3,Math.max(.4,law.duration/2))*(a.status&&a.status!=='none'?1.2:1);
+ }
  const radius=cap(n(a.radius,120),30,300),duration=cap(n(a.duration,1.5),.2,8);
  const fusion=g.ConceptFusion?.normalize?.(a.fusion);
  const fusionPressure=fusion?(fusion.homing?1.16:1)*(fusion.split?1+fusion.fragments*.32:1)*
