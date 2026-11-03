@@ -66,6 +66,13 @@ function analyze(input){
   /중력/.test(raw)&&/(?:전자석|자기력|자기장|자석)/.test(raw);
  intent.noEffect=/아무\s*(?:효과|기술|스킬|행동).{0,18}(?:않|안|없)|가만히\s*있는다/.test(raw);
  intent.unsupported=UNSUPPORTED.filter(def=>def.re.test(raw)).map(x=>x.label);
+ // Storage-only/negated releases must not silently invent an attack.
+ if(intent.wallStore){
+  const discharge=/(?:방출|발산|폭발|터뜨|터지|내보내)/.test(raw);
+  const negated=/(?:방출|폭발|터뜨|터지|내보내).{0,6}(?:하지\s*않|안\s*하|않는|않는다|하지\s*마)/.test(raw);
+  if(!discharge||negated)
+   intent.unsupported.push('누적 충격의 유효한 방출 동작이 지정되지 않음');
+ }
  if(intent.noEffect&&!/대신|그러나|그\s*후|다음에/.test(raw))
   intent.unsupported.push('아무 행동도 하지 않는 선택은 공격 스킬이 아닙니다');
  // A vague fading "law" without an operator has no physical direction.
