@@ -200,8 +200,8 @@ test('serialized event graph regenerates safe actions and ignores forged raw att
  }]});
  assert.equal(recipe.rules[0].when,'hit');
  assert.equal(recipe.rules[0].action.type,'heal');
- assert.deepEqual(recipe.rules[0].steps.filter(x=>x.kind==='cast')
-  .map(x=>x.action.type),['heal','shield']);
+ assert.deepEqual(Array.from(recipe.rules[0].steps.filter(x=>x.kind==='cast'),
+  x=>x.action.type),['heal','shield']);
  assert.ok(recipe.rules[0].steps.every(x=>x.kind!=='cast'||x.action.damage<=18));
  assert.equal(g.CombatEventGraph.verify(graph,recipe),true);
 });
