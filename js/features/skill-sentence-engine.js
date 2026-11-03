@@ -132,6 +132,8 @@ function parse(input){
   limitations.push(...proof.warnings);
   return {...result,summary:describe(result),grammar,verification:proof,
    semanticVerification:semantics,
+   semanticGraph:g.SemanticRelationshipGraph?.build?.(raw,result.recipe)||null,
+   semanticIR:g.SkillIR?.fromSentence?.(raw,result.recipe)||null,
    limitations:[...new Set(limitations)],sourceText:raw,mode:'offline'};
  }
  return {...result,summary:[],grammar,verification:audit(null),

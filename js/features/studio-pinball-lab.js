@@ -128,6 +128,24 @@ function make(profile={},focus=0,actionIndex=-1){
  }
  // Splitshots share the REAL combat trajectory: one target-aimed crystal
  // that bursts after 56% of its own flight, not an arbitrary 17-frame timer.
+ // One shared preview path mirrors ForgeWorld's bounded, nonrecursive
+ // child projectile creation. Triggered by elapsed time or real contact.
+ function fractureFusion(b){
+  if(b._fusionChild||!b.a?.fusion?.split)return false;
+  const number=Math.min(4,Math.max(2,Number(b.a.fusion.fragments)||3));
+  const dir=Math.atan2(target.y-b.y,target.x-b.x);
+  const speed=clamp(Number(b.a.speed)||5,2,14)*.8;
+  const sub={...b.a,damage:Math.round((Number(b.a.damage)||0)*.55),
+    fusion:{...b.a.fusion,split:false}};
+  for(let j=0;j<number&&bullets.length<SPLIT_OWNER_BUDGET;j++){
+   const angle=dir+(j-(number-1)/2)*.38;
+   bullets.push({...b,x:b.x,y:b.y,vx:Math.cos(angle)*speed,vy:Math.sin(angle)*speed,
+    a:sub,age:0,life:Math.max(28,Math.min(150,b.life)),
+    _fusionChild:true,reflects:0,maxRebounds:0});
+  }
+  previewEffect({...b.a,type:'splitshot'},'impact',b.x,b.y,24);
+  recordRuleEvent('split');b.life=0;return true;
+ }
  function splitshot(a){
   if(bullets.length>=SPLIT_OWNER_BUDGET)return;
   const tx=clamp(target.x,18,W-18),ty=clamp(target.y,18,H-18);
@@ -406,21 +424,12 @@ function make(profile={},focus=0,actionIndex=-1){
     if(d<ring.r*2){b.vx+=(ring.x-b.x)/d*.13;b.vy+=(ring.y-b.y)/d*.13;}
    }
    b.x+=b.vx;b.y+=b.vy;b.life--;b.age++;
-   // Preview the same bounded homing + split behavior as ForgeWorld.
-   if(b.type==='shot'&&b.a?.fusion?.split&&!b._fusionChild&&b.age>=12){
-    const number=Math.min(4,Math.max(2,Number(b.a.fusion.fragments)||3));
-    const dir=Math.atan2(target.y-b.y,target.x-b.x);
-    const speed=clamp(Number(b.a.speed)||5,2,14)*.8;
-    const sub={...b.a,damage:Math.round((Number(b.a.damage)||0)*.55),
-      fusion:{...b.a.fusion,split:false}};
-    for(let j=0;j<number&&bullets.length<SPLIT_OWNER_BUDGET;j++){
-     const angle=dir+(j-(number-1)/2)*.38;
-     bullets.push({...b,x:b.x,y:b.y,vx:Math.cos(angle)*speed,vy:Math.sin(angle)*speed,
-       a:sub,age:0,life:Math.max(28,Math.min(150,b.life)),
-       _fusionChild:true,reflects:0});
-    }
-    previewEffect({...b.a,type:'splitshot'},'impact',b.x,b.y,24);
-    recordRuleEvent('split');bullets.splice(i,1);continue;
+   // Existing time-fracture projectiles continue to split at 12 ticks.
+   // Explicit contact-fracture projectiles remain whole until target impact.
+   if(b.type==='shot'&&b.a?.fusion?.split&&
+      b.a.fusion.splitTrigger!=='hit'&&!b._fusionChild&&b.age>=12){
+    fractureFusion(b);
+    bullets.splice(i,1);continue;
    }
    if((b.type==='splitshot'||b.type==='fragment'&&b.fractureRemaining>0)&&
        !b.split&&b.age>=17){
@@ -459,6 +468,9 @@ function make(profile={},focus=0,actionIndex=-1){
      if(impact==='repulse'){target.vx*=1.3;target.vy*=1.3;}
      if(impact==='pull'){target.vx*=.72;target.vy*=.72;}
     }
+    if(b.type==='shot'&&b.a?.fusion?.split&&
+       b.a.fusion.splitTrigger==='hit'&&!b._fusionChild)
+      fractureFusion(b);
     b.life=0;
    }
    if(b.reflects>3||b.life<=0)bullets.splice(i,1);

@@ -8,6 +8,34 @@
  */
 (function(global){'use strict';
 global.SkillForgeWorldFactory=function({hit,hitGround,enemies}){
+// The event source is the authoritative collision callback below. Merely
+// displaying a burst VFX never counts as a hit or spawns fragment objects.
+function fracture(p,b,concept,index,victim){
+  const available=Math.max(0,100-p.forgeShots.length+1);
+  const count=Math.min(concept.fragments,available);
+  if(count<=0)return false;
+  const foe=victim||enemies(p).find(e=>e.playerNum===b.targetNum&&e.hp>0);
+  const direction=foe?Math.atan2(foe.y-b.y,foe.x-b.x):
+    Math.atan2(b.vy,b.vx);
+  const speed=Math.max(2,Math.min(14,Number(b.a.speed)||5));
+  const action={...b.a,damage:Math.round((Number(b.a.damage)||0)*.55),
+    fusion:{...concept,split:false}};
+  // Remove the parent first. Children are visited in a *later* tick so
+  // contact events cannot recursively spawn or immediately double-hit.
+  p.forgeShots.splice(index,1);
+  for(let n=0;n<count;n++){
+    const theta=direction+(n-(count-1)/2)*.38;
+    p.forgeShots.push({...b,a:action,_fusionChild:true,_fusionAge:0,
+      targetNum:foe?.playerNum??b.targetNum,
+      x:b.x,y:b.y,prevX:b.x,prevY:b.y,
+      vx:Math.cos(theta)*speed,vy:Math.sin(theta)*speed,
+      life:Math.min(Math.max(28,b.life),150),_reboundCount:0});
+  }
+  global.BattleFX?.mark?.('shot',b.x,b.y,
+    b.a.visual?.color||p.forge?.effectColor||'#a8b1ff',18);
+  global.SignatureLive?.record?.(p,'split');
+  return true;
+}
 function tick(p,target){
   for(let i=p.forgeShots.length-1;i>=0;i--){
     const b=p.forgeShots[i];
@@ -25,31 +53,12 @@ function tick(p,target){
         b.vx=b.vx/magnitude*speed;b.vy=b.vy/magnitude*speed;
       }
     }
-    // One projectile can physically divide into a bounded fan of
-    // independently homing fragments. Child payloads disable further
-    // splitting, so there is no exponential recursion.
-    if(concept?.split&&b.a?.type==='shot'&&!b._fusionChild&&
+    // Legacy split skills fracture after 12 frames; newer explicit
+    // "명중하면 깨진다" payloads remain intact until a confirmed collision.
+    if(concept?.split&&concept.splitTrigger!=='hit'&&
+       b.a?.type==='shot'&&!b._fusionChild&&
        (b._fusionAge=(b._fusionAge||0)+1)>=12){
-      const available=Math.max(0,100-p.forgeShots.length+1);
-      const count=Math.min(concept.fragments,available);
-      const victim=enemies(p).find(e=>e.playerNum===b.targetNum&&e.hp>0);
-      const direction=victim?Math.atan2(victim.y-b.y,victim.x-b.x):
-        Math.atan2(b.vy,b.vx);
-      const speed=Math.max(2,Math.min(14,Number(b.a.speed)||5));
-      const action={...b.a,damage:Math.round((Number(b.a.damage)||0)*.55),
-        fusion:{...concept,split:false}};
-      p.forgeShots.splice(i,1);
-      for(let n=0;n<count;n++){
-        const theta=direction+(n-(count-1)/2)*.38;
-        p.forgeShots.push({...b,a:action,_fusionChild:true,_fusionAge:0,
-          x:b.x,y:b.y,prevX:b.x,prevY:b.y,
-          vx:Math.cos(theta)*speed,vy:Math.sin(theta)*speed,
-          life:Math.min(Math.max(28,b.life),150),_reboundCount:0});
-      }
-      global.BattleFX?.mark?.('shot',b.x,b.y,
-        b.a.visual?.color||p.forge?.effectColor||'#a8b1ff',18);
-      global.SignatureLive?.record?.(p,'split');
-      continue;
+      if(fracture(p,b,concept,i))continue;
     }
     b.prevX=b.x;b.prevY=b.y;b.x+=b.vx;b.y+=b.vy;
     if(Number.isFinite(b.heightVelocity)){
@@ -97,6 +106,9 @@ function tick(p,target){
     const e=enemies(p).find(e=>(global.ActionRegistry?.sweptCircle?.(
       b.prevX,b.prevY,b.x,b.y,e.x,e.y,e.radius+8)??
       Math.hypot(e.x-b.x,e.y-b.y)<=e.radius+8)&&hit(p,e,b.a,1,b.z||0));
+    if(e&&concept?.split&&concept.splitTrigger==='hit'&&
+       b.a?.type==='shot'&&!b._fusionChild&&
+       fracture(p,b,concept,i,e))continue;
     if(e||b.life<=0||b.x<0||b.y<0||b.x>canvas.width||b.y>canvas.height)p.forgeShots.splice(i,1);
   }
   if(p.forgeZones.length>32)p.forgeZones.splice(0,p.forgeZones.length-32);

@@ -2,10 +2,23 @@
  * Both actual combat and the mini pinball studio use paint().
  * An interpreted metaphor has an EXISTING executable action as its physics. */
 (function(g){'use strict';
-const SHAPES=Object.freeze({jaw:'거대한 턱',beam:'광선',claw:'발톱',crystal:'수정 결정',halo:'에너지 고리',aura:'조합 이펙트'});
+const SHAPES=Object.freeze({jaw:'거대한 턱',beam:'광선',claw:'발톱',crystal:'수정 결정',halo:'에너지 고리',aura:'조합 이펙트',
+ butterfly:'나비 날개',jellyfish:'해파리',roots:'뿌리·촉수',
+ dragon:'용의 실루엣',liquid:'유체 형상',mechanical:'기계 관절'});
 const HEX=/^#[0-9a-f]{6}$/i;
 const clamp=(v,lo,hi,fallback)=>Number.isFinite(Number(v))?
  Math.max(lo,Math.min(hi,Number(v))):fallback;
+// Reuse geometry primitives based on explicit nouns; this is a visual
+// hint and never overrides the user's explicit physical action verb.
+function shapeFor(input){
+ const raw=String(input||'').normalize('NFC');
+ return /해파리/.test(raw)?'jellyfish':
+  /나비/.test(raw)?'butterfly':
+  /(?:뿌리|촉수|덩굴)/.test(raw)?'roots':
+  /(?:드래곤|용의 날개|용족)/.test(raw)?'dragon':
+  /(?:유체|액체생명|액체 생명|슬라임)/.test(raw)?'liquid':
+  /(?:기계 관절|기계장치|톱니바퀴)/.test(raw)?'mechanical':null;
+}
 function normalize(value){
  if(!value||typeof value!=='object')return undefined;
  const layers=g.SkillFXComposer?.normalize?.(value.layers)||[];
@@ -56,7 +69,11 @@ function paint(ctx,options={}){
  const length=clamp(options.length,48,500,180);
  ctx.save();ctx.globalAlpha*=alpha;
  ctx.lineCap='round';ctx.lineJoin='round';
- if(v.shape==='jaw'){
+ if(g.ProceduralVisualGeometry?.paint?.(ctx,{shape:v.shape,
+  color:v.color,scale:sc,radius:size,progress:t,phase,
+  low:options.low===true})){
+  // Shape painter owns the silhouette; common semantic FX are layered below.
+ }else if(v.shape==='jaw'){
   // A socket grows from the rim of the circular ball: two interlocking
   // upper/lower mandibles with individual ivory teeth, then a sweep.
   const grow=phase==='impact'?1:Math.min(1,t*5),swing=phase==='impact'?.05:
@@ -123,5 +140,5 @@ function paint(ctx,options={}){
   radius:size,length,low:options.low===true});
  ctx.restore();return true;
 }
-g.MetaphorVisuals=Object.freeze({SHAPES,normalize,interpret,paint});
+g.MetaphorVisuals=Object.freeze({SHAPES,shapeFor,normalize,interpret,paint});
 })(typeof window!=='undefined'?window:globalThis);

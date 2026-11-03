@@ -304,6 +304,16 @@ function drawFighter(p,renderCtx){
       ink.beginPath();ink.moveTo(x-b.vx*3,y-b.vy*3);ink.lineTo(x,y);ink.stroke();
     }
     ink.globalAlpha=1;ink.translate(x,y);ink.rotate(heading);
+    // New conceptual projectiles share the same bounded silhouette painter
+    // used by cast FX. Shattered children use regular small shard geometry.
+    if(!b._fusionChild&&global.ProceduralVisualGeometry?.SHAPES?.[b.a?.visual?.shape]){
+      const tint=global.SkillColorPolicy?.resolve?.(b.a.visual,
+        p.forge.effectColor||p.forge.color)?.color||c;
+      global.ProceduralVisualGeometry.paint(ink,{
+        shape:b.a.visual.shape,color:tint,scale:.65,
+        progress:((b.life||0)%60)/60,low:projectileDetail>0});
+      ink.restore();return;
+    }
     ink.strokeStyle='#253344';ink.fillStyle=c;ink.lineWidth=2;
     // All projectiles have a physical pointed direction; their status
     // adds a stable silhouette that reads against the white battleground.

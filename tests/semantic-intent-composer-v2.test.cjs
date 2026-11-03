@@ -124,15 +124,16 @@ test('Opposing gravity and magnetic field produce physically opposed mathematica
  assert.deepEqual(Array.from(action(r).law.terms,x=>x.op),['gravity','repel']);
  assert.ok(r.semanticVerification.matched.includes('opposed'));
 });
-test('On-hit fracture cannot silently claim physical contact-split semantics',()=>{
+test('On-hit fracture is compiled into actual contact-triggered split semantics',()=>{
  const g=boot(),r=g.SkillSentenceEngine.parse(
   '분홍색 번개로 적을 4번 타격하고 명중할 때마다 투사체가 분열한다');
  assert.equal(r.ok,true,r.error);
  assert.equal(action(r).type,'shot');
  assert.equal(action(r).visual.colorMode,'explicit');
  assert.equal(action(r).fusion.split,true);
- assert.ok(r.semanticVerification.missing.includes('hitSplit'));
- assert.ok(r.limitations.some(s=>s.includes('명중 순간')||s.includes('명중 순간 분열')));
+ assert.equal(action(r).fusion.splitTrigger,'hit');
+ assert.ok(!r.semanticVerification.missing.includes('hitSplit'));
+ assert.ok(!r.limitations.some(s=>s.includes('명중 순간 분열은 구현하지 못했습니다')));
 });
 test('Fading forces require an actual force operator; otherwise explicit rejection',()=>{
  const g=boot();
