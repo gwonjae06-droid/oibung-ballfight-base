@@ -107,8 +107,9 @@ function unpack(value){
 // Authorized HP events are derived from actual fighter state, never from
 // damage text, particles or unconfirmed damage estimates.
 function observeHealth(p,previous,current){
- if(!Number.isFinite(Number(previous))||!Number.isFinite(Number(current)))return null;
- const before=Number(previous),after=Number(current);
+ if(typeof previous!=='number'||typeof current!=='number'||
+  !Number.isFinite(previous)||!Number.isFinite(current))return null;
+ const before=previous,after=current;
  if(before<0||after<0||before===after)return null;
  const type=after<before?'hpDrop':'hpGain';
  g.SignatureLive?.record?.(p,type);
