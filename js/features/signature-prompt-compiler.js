@@ -327,9 +327,13 @@ function parse(input){
   step.action={...step.action,...(matched?.action||{}),
    ...(local?params.apply({},local):{})};
  }
- const recipe=R.normalize({window,rules:rows});
+ const baseline=R.normalize({window,rules:rows});
+ const composed=g.ConceptFusion?.weave?.(baseline,raw);
+ const recipe=composed?.recipe||baseline;
+ if(composed?.changed)notes.push('개념 융합: '+composed.concepts.labels.join(' + ')+'. 기존 물리 동작의 특성을 결합했습니다.');
  const primary=physicalTypes[0]||activeMetaphor?.type|| (types.has('splitshot')?'splitshot':speed?'haste':jump?'leap':mentions[0].id);
  return {ok:true,name:safeName[primary]||'나만의 폭주 기술',recipe,notes,
+  concepts:composed?.concepts||null,
   recognized:mentions.map(x=>x.id),method:'offline-rule-parser'};
 }
 g.SignaturePromptCompiler=Object.freeze({parse,patterns:patterns.map(p=>p.id)});
