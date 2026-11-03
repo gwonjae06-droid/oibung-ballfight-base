@@ -85,6 +85,12 @@ function resultHTML(result){
  const bundles=result.bundleSummary||[];
  const limitations=[...new Set(result.limitations||[])];
  const verification=result.verification;
+ const intent=result.semanticVerification;
+ const intentView=intent?.requested?.length?'<section class="sentence-intent-check"><strong>요청한 행동의 실제 구현 점검</strong><ul>'+
+  intent.matched.map(x=>'<li class="sentence-intent-ok">✓ '+E(g.SemanticIntentComposer?.LABELS?.[x]||x)+' 구현 경로 확인</li>').join('')+
+  intent.missing.map(x=>'<li class="sentence-intent-missing">⚠ '+E(g.SemanticIntentComposer?.LABELS?.[x]||x)+' 누락</li>').join('')+
+  (intent.approximations||[]).map(x=>'<li class="sentence-intent-approx">≈ '+E(x)+'</li>').join('')+'</ul>'+
+  '<small>컴파일된 동작과 선언적 물리 특성을 확인한 것입니다. 실제 전투 명중까지 보장하지 않습니다.</small></section>':'';
  const parts=(result.grammar?.tokens||[]).filter(t=>
    ['verb','noun','adverb'].includes(t.pos)&&t.semantic).slice(0,14);
  const grammarPreview=parts.length?'<details class="sentence-more"><summary>한국어 문장 분석 보기</summary>'
@@ -130,7 +136,7 @@ function resultHTML(result){
   ).join('')+'</div>'
  +(limitations.length?'<div class="sentence-limitations"><strong>현재 구현 범위 안내</strong><ul>'
   +limitations.map(n=>'<li>'+E(n)+'</li>').join('')+'</ul></div>':'')
- +grammarPreview+auditView+sandboxView+physicsView
+ +intentView+grammarPreview+auditView+sandboxView+physicsView
  +((result.notes||[]).length?'<details class="sentence-more"><summary>해석과 안전 제한 자세히</summary><ul>'
  +(result.notes||[]).map(x=>'<li>'+E(x)+'</li>').join('')+'</ul></details>':'')
  +'<p class="sentence-local-note">오프라인 개념 해석과 합성 물리 수식을 사용합니다. 지원하지 않는 현상은 설명하며, 모든 상상 속 법칙을 보장하는 범용 AI는 아닙니다.</p>'

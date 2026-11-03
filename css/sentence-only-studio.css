@@ -165,3 +165,14 @@
 .sentence-color-swatch{display:inline-block;vertical-align:-.12em;
  width:1em;height:1em;margin:0 5px 0 2px;border-radius:50%;
  border:1px solid rgba(255,255,255,.4);box-shadow:0 0 0 1px rgba(0,0,0,.3)}
+
+/* Show supported, missing, and approximate semantics before a skill is saved. */
+.sentence-intent-check{margin:12px 0;padding:12px 14px;border-radius:12px;
+ border:1px solid rgba(130,153,179,.35);background:rgba(85,112,139,.08)}
+.sentence-intent-check strong{display:block;margin-bottom:7px}
+.sentence-intent-check ul{list-style:none;padding:0;margin:5px 0}
+.sentence-intent-check li{margin:5px 0;line-height:1.45}
+.sentence-intent-check small{opacity:.8}
+.sentence-intent-ok{color:var(--text-main,inherit)}
+.sentence-intent-missing{color:#edb96c}
+.sentence-intent-approx{color:#a5c3df}
