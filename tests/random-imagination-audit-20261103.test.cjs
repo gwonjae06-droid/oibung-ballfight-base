@@ -162,3 +162,33 @@ test('Audit 60 seeded Korean skill prompts; report unsupported behavior without 
  }
  console.log('AUDIT_SUMMARY|'+JSON.stringify(stats));
 });
+
+test('AUDIT: run all compiled spells through the ACTUAL studio pinball simulator, without claiming guaranteed hit',()=>{
+ const g=boot(),stats={attempted:0,launched:0,damage:0,motion:0,exceptions:0,notCompiled:0};
+ for(const item of cases){
+  let record={id:item.id};
+  try{
+   const parsed=g.SkillSentenceEngine.parse(item.input);
+   if(!parsed.ok){stats.notCompiled++;console.log('SIM_ROW|'+JSON.stringify({...record,compiled:false}));continue;}
+   const aa=actions(parsed.recipe);
+   if(!aa.length){stats.notCompiled++;console.log('SIM_ROW|'+JSON.stringify({...record,compiled:false}));continue;}
+   const profile={name:'audit',color:'#ca44ee',effectColor:'#7788ff',
+    signatureVersion:1,skills:[{name:'검증',actions:aa,ruleSet:parsed.recipe}]};
+   const lab=g.StudioPinballLab.make(profile,0);
+   if(!lab)throw Error('no pinball lab');
+   const start=lab.balls[1].hp;
+   const startVelocity=[lab.balls[1].vx,lab.balls[1].vy];
+   lab.fire();lab.advanceTo(3400);
+   const casts=lab.casts,damage=Math.round(start-lab.balls[1].hp);
+   const motion=Math.round(Math.hypot(lab.balls[1].vx-startVelocity[0],
+    lab.balls[1].vy-startVelocity[1])*100)/100;
+   const launched=casts>0,hit=damage>0;
+   stats.attempted++;if(launched)stats.launched++;if(hit)stats.damage++;
+   if(motion>0)stats.motion++;
+   record={id:item.id,compiled:true,launched,casts,damage,hit,
+    enemyHp:lab.balls[1].hp,motion,ruleActions:lab.ruleActions};
+  }catch(e){stats.exceptions++;record={id:item.id,error:e.message.slice(0,150)};}
+  console.log('SIM_ROW|'+JSON.stringify(record));
+ }
+ console.log('SIM_SUMMARY|'+JSON.stringify(stats));
+});
