@@ -50,10 +50,12 @@ test('PvP and local modes load identical budget revisions and the forge UI expla
        pvp=fs.readFileSync('pvp-runtime.html','utf8'),
        editor=read('block-forge');
  for(const file of [html,pvp]){
-   assert.match(file,/arena-balance\.js\?v=periodic-balance1/);
+   assert.match(file,/arena-balance\.js\?v=[\w-]+/);
    assert.match(file,/forge-expansion\.js\?v=(?:periodic-balance1|flight2|fx25d1)/);
    assert.match(file,/skill-forge\.js\?v=[\w-]+/);
  }
+ const revision=text=>text.match(/arena-balance\.js\?v=([\w-]+)/)?.[1];
+ assert.equal(revision(html),revision(pvp),'PvP and local battle use the same budget revision');
  assert.match(editor,/회복·보호 밸런스/);
  assert.match(editor,/defenseSummary/);
  assert.match(read('skill-forge-executor'),/defenseFactorOf/);
