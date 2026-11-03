@@ -191,3 +191,67 @@ test('60 seeded arbitrary skill sentences: parser, effect painter, pinball runti
  console.log('AUDIT_TOTAL '+JSON.stringify(total));
  assert.equal(total.exception,0,'unhandled random input is a parser regression');
 });
+
+test('random parsed actions against genuine Forge impact + dispatch + world collision path',()=>{
+ const g=boot();
+ for(const mod of ['skill-forge-impact','skill-forge-executor','skill-forge-world'])
+  vm.runInContext(source(mod),g,{filename:mod+'.js'});
+ // Independent adapters mimic the game's target/terrain environment, not
+ // its damage. The production ForgeImpactFactory alone reduces real HP.
+ g.AdvancedCombat={canHit:()=>true,height:()=>0,execute:()=>false};
+ g.ForgeExpansion={execute:()=>false,damageScale:()=>1,applyStatus(){}};
+ g.AbilityAtlas={choose:(_p,enemies)=>enemies[0]||null,execute:()=>false};
+ g.BattleFX={cast(){},beam(){},mark(){},sound(){}};
+ const supported=new Set(['wave','shot','beam','bolt','pull','zone',
+  'tether','repulse','vortex','phenomenon','kinetic_relay']);
+ let rows=0,actualDamage=0,crashes=0;
+ for(let i=0;i<samples.length;i++){
+  const raw=g.SkillSentenceEngine.parseBundle(samples[i].text);
+  if(!raw.ok)continue;
+  const actions=(raw.skills||[]).flatMap(s=>s.recipe.rules)
+   .flatMap(r=>r.steps?.length?r.steps.filter(s=>s.kind==='cast')
+    .map(s=>s.action):[r.action]).filter(a=>supported.has(a.type));
+  for(const a of actions){
+   const p={x:100,y:100,radius:20,playerNum:1,hp:200,maxHp:200,
+    vx:0,vy:0,_forgeBalanceFrame:1,
+    forge:{color:'#57bd86',effectColor:'#57bd86'},
+    forgeShots:[],forgeZones:[],forgeOrbs:[]};
+   const foe={x:146,y:100,radius:20,playerNum:2,hp:400,maxHp:400,
+    vx:3,vy:0,invincible:0};
+   let attempted=0,impacts=0,err=null;
+   const resolver=g.SkillForgeImpactFactory({
+    MOVEMENT_ONLY:g.ActionRegistry.MOVEMENT_ONLY,enemies:()=>[foe]});
+   const hit=(...args)=>{attempted++;
+    const before=foe.hp,ok=resolver.hit(...args);
+    if(ok&&foe.hp<before)impacts++;
+    return ok;
+   };
+   const executor=g.SkillForgeExecutorFactory({
+    MOVEMENT_ONLY:g.ActionRegistry.MOVEMENT_ONLY,hit,enemies:()=>[foe]});
+   const world=g.SkillForgeWorldFactory({
+    hit,hitGround:resolver.hitGround,enemies:()=>[foe]});
+   try{
+    executor.execute(p,a,foe);
+    for(let t=0;t<105;t++){
+     p._forgeBalanceFrame=t+2;
+     foe._forgeActionClock=t+2;
+     foe.invincible=Math.max(0,(foe.invincible||0)-1);
+     foe._forgeImpactGrace=Math.max(0,(foe._forgeImpactGrace||0)-1);
+     world.tick(p,foe);
+    }
+   }catch(e){err=String(e?.message||e);crashes++;}
+   const lost=400-foe.hp;
+   if(lost>0)actualDamage++;
+   rows++;
+   console.log('LIVE_ROW '+JSON.stringify({n:i+1,action:a.type,
+    expectedOffense:!!g.ActionRegistry.get(a.type)?.offense,
+    requestedDamage:a.damage,actualDamage:lost,
+    confirmedHits:impacts,hitCalls:attempted,
+    motion:+Math.hypot(foe.vx-3,foe.vy).toFixed(2),
+    error:err}));
+  }
+ }
+ console.log('LIVE_TOTAL '+JSON.stringify({coveredActions:rows,
+  actualDamage,crashes,note:'Unsupported execution families deliberately excluded'}));
+ assert.equal(crashes,0);
+});
