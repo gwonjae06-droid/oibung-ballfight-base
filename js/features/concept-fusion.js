@@ -65,7 +65,9 @@ function analyze(input){
   /(?:맞|닿|적중|충돌).{0,18}(?:밀쳐|밀어내|튕겨내)/.test(raw)?'repulse':
   /(?:맞|닿|적중|충돌).{0,18}(?:소용돌이|휘말리)/.test(raw)?'vortex':
   elements.includes('gravity')&&forms.includes('projectile')?'pull':'none';
- const namedCount=g.KoreanSkillParameters?.analyze?.(raw)?.values?.count;
+ const numeric=g.KoreanSkillParameters?.analyze?.(raw)?.values;
+ const namedCount=numeric?.count;
+ const namedFragments=numeric?.fragmentCount;
  const isProjectile=forms.includes('projectile')||/분열탄|추적탄|유도탄/.test(raw);
  const chain=forms.includes('chain')&&/(?:묶|끌어당|휘감|붙잡|포박|낚아채|감싸|속박)/.test(raw);
  const main=chain?'tether':
