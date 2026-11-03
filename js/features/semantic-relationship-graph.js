@@ -131,12 +131,19 @@ function build(input,recipe){
   const verified=g.CombatEventGraph?.normalize?.(rule.eventGraph);
   if(verified&&verified.trigger===rule.when){
    conditions.push({trigger:verified.trigger,mode:'confirmed_combat_event',
-    maxFires:1,windowFrames:Math.round((Number(recipe.window)||8)*60)});
+    maxFires:1,windowFrames:Math.round((Number(recipe.window)||8)*60),
+    ...(verified.minCount?{requiredHits:verified.minCount}:{}),
+    ...(verified.hpBelow!==undefined?{casterHpAtMost:verified.hpBelow}:{} )});
    const triggers=verified.actions;
    for(let j=0;j<triggers.length&&first+j<actions.length;j++){
     const next=actions[first+j].id;
-    if(j===0)push('caster','on_verified_combat_event',next,{
-     event:verified.trigger});
+    if(j===0){
+     push('caster','on_verified_combat_event',next,{
+      event:verified.trigger,confirmedCount:verified.minCount||1});
+     if(verified.hpBelow!==undefined)
+      push('caster','requires_live_hp_threshold',next,{
+       hpPercentAtMost:verified.hpBelow,measuredAt:'execution'});
+    }
     else push(actions[first+j-1].id,'then_after_execution',next,{
      stage:j,event:verified.trigger});
    }
