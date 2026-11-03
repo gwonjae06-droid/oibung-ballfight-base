@@ -52,6 +52,11 @@ function analyze(input){
  set('delay',[
   /(?:발동\s*지연|시전\s*지연|발사\s*지연|딜레이)\s*(?:는|이|가|:|=)?\s*(\d+(?:\.\d+)?)\s*초?/
  ],0,2);
+ // Distinct from projectile count: the ordinal for cumulative wall releases.
+ set('wallHits',[
+  /(\d+)\s*(?:번|회)\s*(?:벽|충돌|부딪|튕)/,
+  /(?:벽|충돌|부딪|튕).{0,18}?(\d+)\s*(?:번|회)/
+ ],2,6,true);
  set('ricochet',[
   /(?:벽에|벽에서)\s*(\d+)\s*번\s*(?:반사|튕)/,
   /(?:반사|튕기기)\s*(\d+)\s*(?:번|회)/
