@@ -79,9 +79,14 @@ function stages(input){
     const gap=h.index-anchor.index-anchor[0].length;
     if(gap<0||gap>8)return false;
     const between=raw.slice(anchor.index+anchor[0].length,h.index);
-    return /^(?:들)?(?:이|가|은|는|을|를|도|만)?\s*$/.test(between);
+    return /^(?:들)?(?:이|가|은|는|을|를|도|만)\s*$/.test(between);
    }).sort((a,b)=>a.index-b.index)[0];
-   const near=before||after;
+   // Prefer the nearest grammatical color attachment. An adjective
+   // from a preceding clause must not beat '폭발은 보라색으로' immediately
+   // after the terminal noun.
+   const beforeGap=before?anchor.index-before.end:Infinity;
+   const afterGap=after?after.index-anchor.index-anchor[0].length:Infinity;
+   const near=afterGap<beforeGap?after:before;
    if(near&&(!best||near.end>best.end))best=near;
   }
   if(best)found[role]={color:best.color,term:best.term};
