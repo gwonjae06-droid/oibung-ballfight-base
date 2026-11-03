@@ -66,7 +66,7 @@ function repair(input,original){
    clamp(base.fusion?.fragments,2,4,3));
  },'파편 분열');
  fix('hitSplit',!negativeSplit&&!!intent.hitSplit&&
-  (f.split||intent.split)&&!f.splitTrigger,()=>{
+  (f.split||intent.split||intent.hitSplit)&&!f.splitTrigger,()=>{
   f.split=true;f.splitTrigger='hit';
   f.fragments=clamp(values.fragmentCount,2,4,clamp(f.fragments,2,4,3));
  },'명중 순간 분열');
