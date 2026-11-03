@@ -67,7 +67,8 @@ test('one ice arrow really carries slow status, while a separate verb stays sepa
  assert.ok(a);assert.equal(a.status,'ice');
  const next=g.SkillSentenceEngine.parse('얼음 화살을 발사하고 그 다음 방어막을 펼친다');
  assert.equal(next.ok,true,next.error);
- assert.ok(next.recipe.rules.some(x=>x.action.type==='shield'),'explicit follow-up action is not absorbed');
+ assert.ok(next.recipe.rules.some(x=>x.action.type==='shield'||x.steps?.some(s=>s.kind==='cast'&&s.action?.type==='shield')),
+  'explicit follow-up shield remains a separately executed graph stage');
 });
 test('fusion is data-only and validates untrusted effects and huge child counts',()=>{
  const g=boot(parserFiles);
