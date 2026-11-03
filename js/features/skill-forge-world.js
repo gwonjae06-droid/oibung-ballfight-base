@@ -88,6 +88,9 @@ function tick(p,target){
     }
     if(o.life<=0)p.forgeOrbs.splice(i,1);
   }
+  // Persistent semantic forces use the same clock and hit resolver as
+  // projectiles, zones and all other authored combat actions.
+  global.SemanticPhysics?.tick?.(p,enemies(p),hit);
 
 }
 return Object.freeze({tick});
