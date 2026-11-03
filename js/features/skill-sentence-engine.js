@@ -104,9 +104,12 @@ function parse(input){
  const raw=String(input??'').trim();
  const engine=g.SignaturePromptCompiler;
  const grammar=g.KoreanSkillGrammar?.analyze?.(raw,g.SkillForge?.TYPE||g.ActionRegistry?.TYPE||{});
- const materialized=g.ImaginationConcepts?.interpret?.(raw);
- const generatedLaw=materialized?null:g.PhysicsLawEngine?.interpret?.(raw);
- const compiled=materialized||generatedLaw||engine?.parse?.(raw)||{ok:false,error:'문장 해석기를 불러오지 못했습니다.'};
+ // The relation composer gets first refusal: a named weapon may not
+ // silently replace an explicit verb (homing, orbiting, binding, etc).
+ const intentional=g.SemanticIntentComposer?.compose?.(raw);
+ const materialized=intentional?null:g.ImaginationConcepts?.interpret?.(raw);
+ const generatedLaw=intentional||materialized?null:g.PhysicsLawEngine?.interpret?.(raw);
+ const compiled=intentional||materialized||generatedLaw||engine?.parse?.(raw)||{ok:false,error:'문장 해석기를 불러오지 못했습니다.'};
  const colored=compiled.ok?g.SkillColorPolicy?.decorate?.(compiled.recipe,raw):null;
  const result=colored?{...compiled,recipe:colored.recipe,
   colorPriority:colored.priority,explicitColor:colored.explicit}:compiled;
@@ -116,6 +119,10 @@ function parse(input){
   for(const n of result.notes||[])if(/제한|지원하지|맞췄|상한/.test(n))
    limitations.push(n);
   const proof=audit(result.recipe);
+  const semantics=g.SemanticIntentComposer?.verify?.(raw,result.recipe)||result.semanticVerification;
+  for(const request of semantics?.missing||[])limitations.push(
+   '요청 행동 미구현: '+(g.SemanticIntentComposer?.LABELS?.[request]||request)+'.');
+  limitations.push(...(semantics?.approximations||[]));
   for(const clause of grammar?.clauses||[]){
    if(clause.chosen?.source==='analogy')limitations.push(
     '비유 유추: "'+clause.text+'"는(은) '+
@@ -124,6 +131,7 @@ function parse(input){
   }
   limitations.push(...proof.warnings);
   return {...result,summary:describe(result),grammar,verification:proof,
+   semanticVerification:semantics,
    limitations:[...new Set(limitations)],sourceText:raw,mode:'offline'};
  }
  return {...result,summary:[],grammar,verification:audit(null),
