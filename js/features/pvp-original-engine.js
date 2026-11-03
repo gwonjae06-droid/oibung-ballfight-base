@@ -145,7 +145,8 @@
    if(s.program)base[5]=s.program.slice(0,32).map(compactNode);
    if(s.ruleSet)base[6]=[s.ruleSet.window,(s.ruleSet.rules||[]).slice(0,8).map(r=>
      [r.when,r.interval,r.fracture,encode(r.action),
-      r.steps?.length?r.steps.slice(0,36).map(compactGraph):null])];
+      r.steps?.length?r.steps.slice(0,36).map(compactGraph):null,
+      ...(r.when==='wallStored'?[r.wallHits]:[])])];
    return base;
   });
   const packet={v:3,bp:3,id:d.id,name:d.name,
@@ -169,6 +170,7 @@
     ...(signature===1&&Array.isArray(recipe)?{ruleSet:{
      version:1,window:recipe[0],rules:(recipe[1]||[]).slice(0,8).map(r=>({
       when:r[0],interval:r[1],fracture:r[2],action:decode(r[3]),
+      ...(r[0]==='wallStored'?{wallHits:r[5]}:{}),
       ...(Array.isArray(r[4])?{steps:r[4].map(expandGraph).filter(Boolean)}:{})
      }))
     }}:{})
