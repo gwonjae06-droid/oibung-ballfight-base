@@ -117,7 +117,7 @@ test('sentence-only UI hides manual block creation but retains numerical edit su
  for(const file of ['index.html','pvp-runtime.html']){
   const html=fs.readFileSync(file,'utf8');
   assert.ok(html.includes('skill-forge.js?v=simultaneous-sentence1'));
-  assert.ok(html.includes('arena-balance-formula.js?v=concept-fusion1'));
+  assert.ok(html.includes('arena-balance-formula.js?v=physics-law1'));
  }
  assert.ok(fs.readFileSync('index.html','utf8').includes('korean-skill-parameters.js?v=1-korean-numeric'));
 });
