@@ -59,7 +59,9 @@ function normalize(value){
  if(second!==undefined){
   if(!second||typeof second!=='object'||Array.isArray(second)||
    !Object.hasOwn(EVENTS,second.trigger)||second.trigger===value.trigger||
-   !['and','or'].includes(second.mode)||threshold!==undefined)return undefined;
+   !['and','or'].includes(second.mode)||threshold!==undefined||
+   Object.keys(second).some(key=>!['trigger','mode','minCount'].includes(key)))
+   return undefined;
   const n=second.minCount===undefined?1:second.minCount;
   if(!Number.isInteger(n)||n<1||n>4||
    (n>1&&second.trigger!=='hit'))return undefined;
@@ -80,6 +82,10 @@ function parse(text){
  const raw=String(text||'').normalize('NFC').trim().slice(0,300);
  const threshold=hpPercentPattern.exec(raw),hitCount=hitCountPattern.exec(raw),
   pair=pairEvents.exec(raw);
+ if(/(?:명중시키|적중시키|명중하|적중하|맞히|맞추).{0,10}(?:않|못|안).{0,50}(?:회피|방어|막아내)/.test(raw))
+  return {error:'부정된 명중 사건을 긍정적인 AND·OR 조건으로 바꿀 수 없습니다.'};
+ if(/(?:명중시키|적중시키|명중하|적중하|맞히|맞추).{0,8}(?:또는|혹은).{0,36}(?:회피|방어|막아내)/.test(raw))
+  return {error:'사건 연결 표현이 모호합니다. “명중시키거나 ... 회피하면”으로 작성해 주세요.'};
  if(pair&&threshold)return {error:'사건의 AND·OR 조합에 체력 비율까지 동시에 거는 문장은 아직 지원하지 않습니다.'};
  // Do not misread a loosely connected second conditional as the old
  // single-event skill. Fail closed when its connective is not recognized.
