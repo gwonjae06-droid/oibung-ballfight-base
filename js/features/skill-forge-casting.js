@@ -101,7 +101,9 @@ function tickQueue(p,target){
   }
   if(p.forgeRuleRuns){
     p.forgeRuleRuns=p.forgeRuleRuns.filter(entry=>!entry.run.finished);
-    p.forgeRuleRun=p.forgeRuleRuns[0]?.run||null;
+    // Keep the most recent completed run inspectable for legacy test and
+    // replay surfaces; the completed run can never execute again.
+    p.forgeRuleRun=p.forgeRuleRuns[0]?.run||p.forgeRuleRun;
   }
   const run=p.forgeScratchRun;
   if(run&&!run.finished&&!blocked){
