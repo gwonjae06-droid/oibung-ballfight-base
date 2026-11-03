@@ -104,8 +104,9 @@ function parse(input){
  const raw=String(input??'').trim();
  const engine=g.SignaturePromptCompiler;
  const grammar=g.KoreanSkillGrammar?.analyze?.(raw,g.SkillForge?.TYPE||g.ActionRegistry?.TYPE||{});
- const generatedLaw=g.PhysicsLawEngine?.interpret?.(raw);
- const result=generatedLaw||engine?.parse?.(raw)||{ok:false,error:'문장 해석기를 불러오지 못했습니다.'};
+ const materialized=g.ImaginationConcepts?.interpret?.(raw);
+ const generatedLaw=materialized?null:g.PhysicsLawEngine?.interpret?.(raw);
+ const result=materialized||generatedLaw||engine?.parse?.(raw)||{ok:false,error:'문장 해석기를 불러오지 못했습니다.'};
  const unavailable=capabilities.filter(c=>c.re.test(raw)).map(c=>c.label);
  const limitations=unavailable.map(x=>x+'은(는) 아직 완전하게 구현되지 않았습니다.');
  if(result.ok){
@@ -134,6 +135,10 @@ function splitIdeas(raw){
    .map(x=>x.trim()).filter(Boolean);
  const groups=[];
  for(const part of parts){
+  // "드래곤 브레스... . 범위 180, 피해 35" is one skill with a
+  // trailing parameter sentence, not a second uncastable skill.
+  const numericDetail=/^(?:범위|반경|피해량|피해|데미지|대미지|위력|공격력|지속시간|공격\s*속도|투사체\s*속도|속도|세기|강도|갯수|개수)\s*[:=]?\s*\d/.test(part);
+  if(numericDetail&&groups.length){groups[groups.length-1]+=', '+part;continue;}
   const linked=/^(?:그리고|그러고\s*나서|이어서|그\s*다음|그\s*뒤|한\s*뒤|동시에|그와\s*동시에)/.test(part);
   const previous=groups[groups.length-1];
   if(previous&&(linked||/(?:하면|때마다|자마자|한\s*뒤|그\s*후)$/.test(previous)))

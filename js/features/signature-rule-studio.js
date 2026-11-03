@@ -110,6 +110,10 @@ function resultHTML(result){
    +'<br>실제 피해는 명중·거리·방어·무적 판정에 따라 달라집니다.</p>':'';
  return '<section class="sentence-interpretation" aria-label="문장 해석 결과">'
  +'<h4>이 문장을 이렇게 구현합니다</h4>'
+ +(result.plan?'<div class="sentence-materialization-plan"><strong>'+
+    (result.plan.strategy==='new-primitive'?'✦ 신규 물리 동작 생성':'♻ 기존 동작·효과의 조합')+'</strong><p>'+
+    E(result.plan.explanation)+'</p><small>'+E(result.plan.conceptIds.join(' + '))+
+    ' · '+E(result.plan.visualKinds.join(' + '))+'</small></div>':'')
  +(result.concepts?.fused?'<div class="sentence-fusion-explainer"><strong>🧩 개념 융합</strong><p>'+
    E(result.concepts.labels.join(' + '))+'</p><small>기존 동작의 속성·형태·물리 특성을 결합합니다. 미지원 기능은 기존 물리로 근사하며, 새로운 엔진 코드를 실시간으로 만드는 것은 아닙니다.</small></div>':'')
  +(bundles.length>1?'<p class="sentence-local-note">의미상 연결된 행동은 합치고, 독립된 문장은 '+bundles.length+'개 기술로 나누었습니다.</p>'+bundles.map((x,i)=>
@@ -259,7 +263,10 @@ function render(){
  +'<button type="button" data-rule-example="beam">🌑 멘헤라빔</button>'
  +'<button type="button" data-rule-example="chain">💎 연쇄 분열</button>'
  +'<button type="button" data-rule-example="wall">⚡ 벽 충돌 가속</button>'
- +'<button type="button" data-rule-example="physics">🌀 물리 법칙 만들기</button></div>'
+ +'<button type="button" data-rule-example="physics">🌀 물리 법칙 만들기</button>'
+ +'<button type="button" data-rule-example="fantasy">🐉 판타지</button>'
+ +'<button type="button" data-rule-example="machine">⚙ 현대 기계</button>'
+ +'<button type="button" data-rule-example="relay">🔋 신규 물리 개념</button></div>'
  +'<label class="sentence-name" for="rule-name">기술 이름 (선택 사항)'
  +'<input id="rule-name" maxlength="18" type="text" value="'+E(name)+'" placeholder="문장을 해석해 자동으로 이름 붙이기"></label>'
  +'<button type="button" data-rule-command="generate" class="sentence-generate">✨ 문장에서 스킬 구현하기</button>'
@@ -304,7 +311,10 @@ panel.addEventListener('click',event=>{
    beam:'오슬우의 멘헤라가 응축되어 어두운 두꺼운 멘헤라빔을 발사합니다.',
    chain:'분열탄을 5개로 분열시키고 분열할 때마다 새로운 탄환을 발사합니다.',
    wall:'벽에 튕길 때마다 몸의 속도가 빨라지고 상대와 부딪히면 충격파를 발사합니다.',
-   physics:'반경 180의 역중력장에 회전력과 진동을 동시에 적용한다. 세기 3, 4초 동안 점점 약해진다.'
+   physics:'반경 180의 역중력장에 회전력과 진동을 동시에 적용한다. 세기 3, 4초 동안 점점 약해진다.',
+   fantasy:'드래곤이 거대한 화염 브레스를 내뿜고, 적에게 명중하면 폭발한다. 범위 180, 피해 35',
+   machine:'레일건에서 전자기 광선을 발사한다. 위력 42, 범위 220',
+   relay:'기계식 축전기가 상대의 운동량을 흡수해 저장했다가 충격파로 방출한다.'
   };
   promptDraft=samples[example.dataset.ruleExample]||promptDraft;
   proposal=null;render();panel.querySelector('#rule-prompt')?.focus?.();return;

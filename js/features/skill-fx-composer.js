@@ -10,10 +10,13 @@ const KINDS=Object.freeze({
  wind:'바람 칼날',water:'물결',runes:'마법진',petals:'꽃잎',
  shards:'파편',shadow:'어둠 그림자',rings:'충격파 고리',
  chains:'사슬',thorns:'가시',hearts:'심장 파동',rain:'낙하 빛줄기',
- orbit:'회전 위성',trail:'속도 잔상',web:'거미줄'});
+ orbit:'회전 위성',trail:'속도 잔상',web:'거미줄',
+ gears:'톱니 회전',circuit:'회로·기판',hologram:'홀로그램',
+ steam:'증기',feathers:'불사조 깃털',plasma:'플라스마 아크'});
 const PALETTE=Object.freeze({dark:'#54306d',fire:'#ff7941',ice:'#a4e5ff',
  lightning:'#a19dff',nature:'#74d9a6',water:'#56b9ec',
- blood:'#d25172',gold:'#ffd779',default:'#b4a3ff'});
+ blood:'#d25172',gold:'#ffd779',machine:'#66d7f0',
+ gold:'#ffd779',default:'#b4a3ff'});
 const HEX=/^#[\da-f]{6}$/i;
 const NAMES=[
  ['lightning',/번개|낙뢰|벼락|전격|뇌전|전류|찌릿|빠직|전기/],
@@ -37,7 +40,13 @@ const NAMES=[
  ['rain',/쏟아지|폭우|비처럼|빗발치|낙하|내리꽂|비가/],
  ['orbit',/공전|궤도|위성|둥글게\s*회전|주위를\s*돌/],
  ['trail',/잔상|빠르게|질주|광속|번개같이|스쳐|흔적/],
- ['web',/거미줄|그물|그물망|얽히|연결망/]
+ ['web',/거미줄|그물|그물망|얽히|연결망/],
+ ['gears',/톱니|기어|태엽|기계장치|회전톱/],
+ ['circuit',/회로|컴퓨터|전자장치|로봇|AI\s|나노머신|드론/],
+ ['hologram',/홀로그램|투영|증강현실|AR\s|디지털|데이터/],
+ ['steam',/증기|스팀|피스톤|보일러|압축기/],
+ ['feathers',/불사조|피닉스|천사|깃털|날개/],
+ ['plasma',/플라스마|플라즈마|테슬라|고전압|레이저포/]
 ];
 const limit=(v,min,max,alt)=>Number.isFinite(Number(v))?
  Math.max(min,Math.min(max,Number(v))):alt;
@@ -59,6 +68,7 @@ function infer(raw){
   /물|해일|바다|파도/.test(phrase)?PALETTE.water:
   /꽃|숲|덩굴|나무/.test(phrase)?PALETTE.nature:
   /황금|금빛|태양|빛나는/.test(phrase)?PALETTE.gold:
+  /기계|메카|로봇|회로|드론|포탑|테슬라|홀로그램|전자기/.test(phrase)?PALETTE.machine:
   /번개|전기|뇌/.test(phrase)?PALETTE.lightning:PALETTE.default;
  const large=/거대|굵|두껍|초대형|엄청|웅장|큰|커다란/.test(phrase);
  const intense=/엄청|미친|강력|격렬|폭주|휘몰아|과격/.test(phrase);
@@ -196,6 +206,60 @@ function paint(ctx,options={}){
       ctx.beginPath();ctx.ellipse(Math.cos(a)*d*.7,Math.sin(a)*d*.7,
        6,3,a,0,Math.PI*2);ctx.stroke();
      }
+    }break;
+   }
+   case 'gears':{
+    for(let j=0;j<2;j++){
+     const cx=(j?1:-1)*r*.43,cy=0,rr=r*(j?.30:.40);
+     ctx.save();ctx.translate(cx,cy);ctx.rotate(theta*(j?-1:1));
+     ctx.beginPath();ctx.arc(0,0,rr*.68,0,Math.PI*2);ctx.stroke();
+     for(let n=0;n<10;n++){
+      const a=n*Math.PI/5,co=Math.cos(a),si=Math.sin(a);
+      path(ctx,[[co*rr*.7,si*rr*.7],[co*rr,si*rr]]);
+     }
+     ctx.restore();
+    }break;
+   }
+   case 'circuit':{
+    for(let j=0;j<6;j++){
+     const y=(j-2.5)*r*.18,x=j%2?-r*.65:r*.65;
+     path(ctx,[[0,y],[x*.45,y],[x,y+(j%2?1:-1)*r*.16]]);
+     ctx.beginPath();ctx.arc(x,y+(j%2?1:-1)*r*.16,2.3,0,Math.PI*2);ctx.fill();
+    }break;
+   }
+   case 'hologram':{
+    for(let j=0;j<4;j++){
+     const h=r*(.26+j*.12);
+     ctx.strokeRect(-h,-h,h*2,h*2);
+     path(ctx,[[-h,-h],[0,-h-6],[h,-h]]);
+    }break;
+   }
+   case 'steam':{
+    for(let j=0;j<5;j++){
+     ctx.beginPath();
+     const x=(j-2)*r*.18;
+     ctx.moveTo(x,r*.6);
+     ctx.bezierCurveTo(x+r*.24,-r*.1,x-r*.24,-r*.35,x,-r*.8);
+     ctx.stroke();
+    }break;
+   }
+   case 'feathers':{
+    for(let j=0;j<7;j++){
+     const a=j*Math.PI*2/7+theta*.28;
+     ctx.save();ctx.rotate(a);
+     ctx.beginPath();ctx.ellipse(0,-r*.63,r*.095,r*.29,.3,0,Math.PI*2);
+     ctx.stroke();ctx.restore();
+    }break;
+   }
+   case 'plasma':{
+    for(let j=0;j<5;j++){
+     const a=j*Math.PI*2/5+theta*.4;
+     const coords=[];
+     for(let n=0;n<7;n++){
+      const dist=r*(.16+n*.14),zig=n%2?r*.09:-r*.09;
+      coords.push([Math.cos(a)*dist-Math.sin(a)*zig,Math.sin(a)*dist+Math.cos(a)*zig]);
+     }
+     path(ctx,coords);
     }break;
    }
    case 'trail':

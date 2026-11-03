@@ -3,13 +3,19 @@
  */
 (function(g){'use strict';
 // Movement and protective walls do not do damage. Charge/timeburst affect only relevant budgets.
-const TYPES=new Set('phenomenon wave shot beam bolt pull orbit zone homing pierce boomerang chain nova meteor mine drain blackhole starfall dung flight burrow dive uppercut slash spinslash thrust aircombo arcshot splitshot summon turret trap burrowdash erupt tether repulse vortex'.split(' '));
-const REPEAT=new Set('phenomenon zone orbit mine blackhole starfall dung turret summon trap tether vortex'.split(' '));
+const TYPES=new Set('kinetic_relay phenomenon wave shot beam bolt pull orbit zone homing pierce boomerang chain nova meteor mine drain blackhole starfall dung flight burrow dive uppercut slash spinslash thrust aircombo arcshot splitshot summon turret trap burrowdash erupt tether repulse vortex'.split(' '));
+const REPEAT=new Set('kinetic_relay phenomenon zone orbit mine blackhole starfall dung turret summon trap tether vortex'.split(' '));
 const cap=(n,l,h)=>Math.min(h,Math.max(l,n)),n=(v,d=0)=>Number.isFinite(Number(v))?Number(v):d;
 const BUDGET=65;
 function actionPressure(a){
  if(!a||!TYPES.has(a.type))return 0;
  const damage=cap(n(a.damage),0,120),count=cap(n(a.count,1),1,8);
+ if(a.type==='kinetic_relay'){
+  const relay=g.ImaginationConcepts?.normalizeRelay?.(a.relay);
+  if(!relay)return 0;
+  return (damage*1.6+20+relay.absorb*60)*(1+relay.radius/230)*
+   Math.min(2,(relay.charge+relay.release)/1.2);
+ }
  if(a.type==='phenomenon'){
   const law=g.PhysicsLawEngine?.normalize?.(a.law);
   if(!law)return 0;

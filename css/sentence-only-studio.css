@@ -149,3 +149,11 @@
 .sentence-law-term input{min-width:0;width:100%}
 @media(max-width:560px){.sentence-law-term{grid-template-columns:1fr 1fr}
 .sentence-law-term strong{grid-column:1 / -1}}
+
+/* Show provenance before a user confirms a generated skill. */
+.sentence-materialization-plan{margin:12px 0;padding:13px 15px;
+ border-radius:12px;border:1px solid rgba(112,166,192,.32);
+ background:rgba(72,110,148,.10)}
+.sentence-materialization-plan strong{font-weight:700}
+.sentence-materialization-plan p{margin:7px 0;line-height:1.5}
+.sentence-materialization-plan small{opacity:.8;overflow-wrap:anywhere}

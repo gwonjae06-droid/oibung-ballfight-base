@@ -134,6 +134,9 @@ function tick(p,target){
   global.SemanticPhysics?.tick?.(p,enemies(p),hit);
   // Compose generated field equations in the authoritative 60Hz world.
   global.PhysicsLawEngine?.tick?.(p,enemies(p),hit);
+  // Stateful storage/release is the one new primitive not representable by
+  // existing one-shot attacks or stateless field algebra.
+  global.ImaginationConcepts?.relayTick?.(p,enemies(p),hit);
 
 }
 return Object.freeze({tick});
