@@ -3,7 +3,7 @@
  * Must be loaded before skill-forge.js; calls back into no UI editor code.
  */
 (function(global){'use strict';
-global.SkillForgeImpactFactory=function({MOVEMENT_ONLY}){
+global.SkillForgeImpactFactory=function({MOVEMENT_ONLY,enemies}){
 function groundImpactZ(target){
  return global.AdvancedCombat?.floorHeight?.(target) ??
   Math.max(0,Number(target?.towerGroundZ)||0);
@@ -101,6 +101,10 @@ function hit(p,e,action,multiplier=1,attackZ) {
   if(action.knockback>0&&!global.ImpactPhysics){const dx=e.x-p.x,dy=e.y-p.y,dist=Math.hypot(dx,dy)||1;e.vx+=dx/dist*action.knockback;e.vy+=dy/dist*action.knockback;}
   global.SkillVisuals?.impact(p,e,action); // Only after damage/status actually connects.
   global.ForgeComboFX?.impact?.(p,e,action);
+  // A fused projectile executes its secondary physical concept only on a
+  // genuinely landed damage hit, never at cast time or through shields.
+  if(d>0&&hpBeforeHit>e.hp&&action.fusion)
+    global.ConceptFusion?.impact?.(p,e,action,{hit,enemies});
   if(d>0&&action.charged)global.SkillVisuals?.impact?.(p,e,{type:'charge',radius:90,damage:d});
   return true;
 }
