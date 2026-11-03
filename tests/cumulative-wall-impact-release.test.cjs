@@ -82,8 +82,11 @@ test('real nova applies health damage through one authoritative hit resolver',()
  }
  assert.ok(result);
  const hit=g.SkillForgeImpactFactory({MOVEMENT_ONLY:new Set(),enemies:()=>[e]}).hit;
+ const visualColors=[];g.BattleFX={mark(_type,_x,_y,color){visualColors.push(color);}};
  assert.equal(g.ForgeExpansion.execute(p,result,e,{hit,enemies:()=>[e]}),true);
  assert.ok(e.hp<250,'nova must damage a nearby enemy, not only create VFX');
+ assert.ok(visualColors.includes('#ff454f'),
+  'real explosion uses explicit red skill color, not character default');
  const before=e.hp;p.x=440;p.y=300;e.invincible=0;e._forgeImpactGrace=0;
  g.ForgeExpansion.execute(p,result,e,{hit,enemies:()=>[e]});
  assert.equal(e.hp,before,'distant target must not be hit by visual alone');
