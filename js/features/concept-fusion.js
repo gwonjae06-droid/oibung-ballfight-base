@@ -26,6 +26,16 @@ const FORMS=Object.freeze({
 });
 const IMPACTS=Object.freeze({none:'없음',burst:'충돌 폭발',pull:'충돌 흡인',repulse:'충돌 반발',vortex:'충돌 소용돌이'});
 const fusionKeys=new Set(['none',...Object.keys(IMPACTS)]);
+// One recognized temporal chain: after the LAST real child projectile is
+// retired (hit, obstruction, lifetime or perimeter), trigger an area burst.
+// Merely naming shards or explosions does NOT imply this ordered event.
+function terminalIntent(text){
+ const raw=String(text||'').normalize('NFC').slice(0,300);
+ const shards=/(?:마지막|최후의|모든|전부|모두).{0,12}(?:파편|조각|부스러기)|(?:파편|조각|부스러기).{0,12}(?:모두|전부|마지막)/.test(raw);
+ const ending=/(?:사라지|소멸|없어지|소진|다\s*떨어지|수명.{0,8}끝나).{0,45}(?:폭발|폭파|터지|터뜨|충격파)/.test(raw);
+ const negated=/(?:폭발|폭파|터지|터뜨).{0,8}(?:하지\s*않|지\s*않|안\s*하|않는|않는다|하지\s*마)/.test(raw);
+ return shards&&ending&&!negated;
+}
 const normalize=v=>{
  if(!v||typeof v!=='object'||Array.isArray(v))return undefined;
  const impact=fusionKeys.has(v.impact)?v.impact:'none';
@@ -37,6 +47,7 @@ const normalize=v=>{
   fragments:Math.round(cap(v.fragments,2,4,3)),
   // Pre-existing skills default to the original 12-tick midair fracture.
   ...(split&&v.splitTrigger==='hit'?{splitTrigger:'hit'}:{}),
+  ...(split&&v.finalBurst===true?{finalBurst:true}:{}),
   impact,radius:cap(v.radius,35,160,85)};
 };
 function analyze(input){
@@ -44,9 +55,11 @@ function analyze(input){
  const elements=Object.entries(ELEMENTS).filter(([,v])=>v.re.test(raw)).map(([id])=>id);
  const forms=Object.entries(FORMS).filter(([,v])=>v.re.test(raw)).map(([id])=>id);
  const home=/추적|유도|뒤쫓|따라가|쫓아가|따라붙|목표를\s*좇|적을\s*좇/.test(raw);
- const split=/분열|갈라지|쪼개지|여러\s*개로\s*나뉘|산산이\s*흩어/.test(raw);
+ const split=/분열|갈라지|쪼개지|부서지|깨지|여러\s*개로\s*나뉘|산산이\s*흩어/.test(raw);
+ const finalBurst=terminalIntent(raw);
  const sequence=/그\s*다음|그러고\s*나서|뒤이어|이어서|그\s*후|그\s*뒤|(?:하|한|하고)\s*뒤에|순서대로/.test(raw);
- const hitExplosion=/(?:맞|적중|명중|닿|충돌|부딪|접촉|도달|착탄|피격|명중시).{0,22}(?:폭발|터지|터뜨|터져)|(?:맞으면|닿으면|충돌하면|명중하면|적중하면).{0,22}(?:폭발|퍼지|퍼뜨)|(?:폭발하는|터지는|폭발성|충돌\s*폭발|착탄\s*폭발)/.test(raw);
+ const hitExplosion=(!finalBurst||/(?:명중|적중|착탄|맞으면|닿으면).{0,18}(?:폭발|터지|터뜨)/.test(raw))&&
+  /(?:맞|적중|명중|닿|충돌|부딪|접촉|도달|착탄|피격|명중시).{0,22}(?:폭발|터지|터뜨|터져)|(?:맞으면|닿으면|충돌하면|명중하면|적중하면).{0,22}(?:폭발|퍼지|퍼뜨)|(?:폭발하는|터지는|폭발성|충돌\s*폭발|착탄\s*폭발)/.test(raw);
  const impact=hitExplosion?'burst':
   /(?:맞|닿|적중|충돌).{0,18}(?:끌어당|흡입|빨아들|중력장)/.test(raw)?'pull':
   /(?:맞|닿|적중|충돌).{0,18}(?:밀쳐|밀어내|튕겨내)/.test(raw)?'repulse':
@@ -70,17 +83,20 @@ function analyze(input){
  const fusion=normalize({element:chosenElement,form:chain?'chain':
   isProjectile?'projectile':forms[0]||'none',
   homing:homeModifier,split:splitModifier,
+  finalBurst:splitModifier&&finalBurst,
   fragments:namedCount===undefined?3:namedCount,
   impact:impactModifier?impact:'none',
   radius:g.KoreanSkillParameters?.analyze?.(raw)?.values?.radius||85});
  return {elements,forms,main,homing:homeModifier,split:splitModifier,
+  finalBurst:!!fusion?.finalBurst,
   impact:impactModifier?impact:'none',lightningModifier,sequence,fused,fusion,
   labels:[
    ...elements.map(id=>ELEMENTS[id].label),
    ...forms.map(id=>FORMS[id].label),
    ...(homeModifier?['목표 추적']:[]),
    ...(splitModifier?['탄환 분열']:[]),
-   ...(impactModifier?[IMPACTS[impact]]:[])
+   ...(impactModifier?[IMPACTS[impact]]:[]),
+   ...(fusion?.finalBurst?['마지막 파편 소멸 시 폭발']:[])
   ].slice(0,12)};
 }
 function visualOf(action,raw,concepts){
@@ -217,5 +233,5 @@ function impact(attacker,victim,action,api={}){
  }
  return true;
 }
-g.ConceptFusion=Object.freeze({ELEMENTS,FORMS,IMPACTS,normalize,analyze,weave,impact});
+g.ConceptFusion=Object.freeze({ELEMENTS,FORMS,IMPACTS,normalize,analyze,weave,impact,terminalIntent});
 })(typeof window!=='undefined'?window:globalThis);
