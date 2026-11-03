@@ -51,6 +51,7 @@ function build(input,recipe){
   const a={id,type,trigger:rule.when||'pulse',target,
    ...(object?{object}:{}),...(theme?{shape:theme}:{}),
    ...(action.visual?.colorMode?{colorMode:action.visual.colorMode}:{}),
+   ...(action.visual?.color?{sourceColor:action.visual.color}:{}),
    ...(isProjectile?{delivery:'projectile'}:isSupport?{delivery:'support'}:{delivery:'contact'})};
   actions.push(a);
   push('caster','performs',id);
