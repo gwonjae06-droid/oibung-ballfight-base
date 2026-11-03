@@ -234,7 +234,7 @@ const GROUPS=Object.freeze([
 `],
  ['food','음식·생활',`
 설탕결정~설탕결정|각설탕|설탕가루~shot~shards,stars
-초콜릿~초콜릿폭포|초콜릿구름|초콜릿탄~zone~water,shadow
+초콜릿~초콜릿\\s*폭포|초콜릿\\s*구름|초콜릿\\s*탄|초콜릿~zone~water,shadow
 캔디~사탕폭풍|별사탕|사탕탄환~shot~shards,stars
 밀가루~밀가루폭풍|밀가루구름|가루폭탄~zone~mist,wind
 커피~커피소용돌이|에스프레소탄|커피폭탄~shot~water,vortex
