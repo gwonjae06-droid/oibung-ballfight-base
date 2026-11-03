@@ -118,6 +118,9 @@ function weave(value,input){
    rows[0].action.type;
  }
  const chosen=rows.find(r=>r.action.type===primary)||rows[0];
+ // The projectile itself must still launch on a normal pulse. 'On hit'
+ // is a property of its payload, not its own activation condition.
+ if(concepts.main==='shot'&&concepts.impact!=='none'&&chosen.when==='hit')chosen.when='pulse';
  const canProjectile=['shot','homing','pierce','boomerang','arcshot','splitshot'].includes(primary);
  if(concepts.main==='shot'&&canProjectile&&g.ActionRegistry?.get?.('shot'))
   chosen.action.type='shot';
@@ -152,8 +155,10 @@ function weave(value,input){
   if(concepts.homing&&concepts.main==='shot')modifiers.add('homing');
   if(concepts.impact==='burst')for(const t of ['wave','nova'])if(primary!==t)modifiers.add(t);
   if(concepts.impact==='pull')for(const t of ['pull','blackhole'])if(primary!==t)modifiers.add(t);
+  if(concepts.fusion?.element==='gravity'&&concepts.main==='shot')modifiers.add('blackhole');
   for(let i=rows.length-1;i>=0;i--)
-   if(rows[i]!==chosen&&modifiers.has(rows[i].action.type)&&rows[i].when==='pulse')
+   if(rows[i]!==chosen&&modifiers.has(rows[i].action.type)&&
+      (rows[i].when==='pulse'||rows[i].when==='hit'&&concepts.impact==='burst'))
     rows.splice(i,1);
   for(const row of rows)if(row.steps?.length){
    row.steps=row.steps.filter(s=>s.kind!=='cast'||!modifiers.has(s.action?.type));
