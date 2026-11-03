@@ -135,7 +135,10 @@ const inferredStatus=raw=>STATUS.find(([,re])=>re.test(raw))?.[0]||'none';
 const supported=type=>!!g.ActionRegistry?.get?.(type);
 function visual(raw,selected){
  const inferred=g.SkillFXComposer?.infer?.(raw);
- const names=[...new Set([...selected.flatMap(x=>x.visual),
+ // Each distinct concept contributes at least its primary motif before
+ // decorative extras. Rune + drone must show BOTH runes and circuitry.
+ const names=[...new Set([...selected.map(x=>x.visual[0]),
+  ...selected.flatMap(x=>x.visual.slice(1)),
   ...(inferred?.layers||[]).map(l=>l.kind)])].slice(0,5);
  const color=inferred?.color||
   (selected.some(x=>x.genre==='machine')?'#66d7f0':'#c4a7ff');
@@ -157,8 +160,8 @@ function chooseAction(raw,selected){
  if(/베어|베기|절단|가르|참격|회전톱/.test(raw))return 'slash';
  if(/끌어당|전자석|자기장|자력/.test(raw))return supported('phenomenon')?'phenomenon':'pull';
  if(/폭발|폭파|터뜨|터지|방사|충격파|분출|브레스/.test(raw))return 'wave';
- if(/주변에\s*퍼|영역|장판|지속\s*구역|마법진/.test(raw))return 'zone';
  if(/소환|분신|드론|골렘|요정/.test(raw))return 'summon';
+ if(/주변에\s*퍼|영역|장판|지속\s*구역|마법진/.test(raw))return 'zone';
  return primary?.base||'wave';
 }
 function interpret(rawInput){
