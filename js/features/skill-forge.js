@@ -87,11 +87,10 @@ const {cast,tickQueue,tickSkills,cooldownFrames}=
 function update(p,target){
   p._forgeActionClock=(p._forgeActionClock||0)+1;
   global.SignatureLive?.tickMove?.(p);
-  const loss=p.forgeLastHp-p.hp;p.forgeLastHp=p.hp;
-  // Actual settled HP delta, not particles or predicted hit chance.
-  // The active 100-momentum rule observes this on the same simulation tick.
-  if(Number.isFinite(loss)&&loss>0)global.SignatureLive?.record?.(p,'hpDrop');
-  else if(Number.isFinite(loss)&&loss<0)global.SignatureLive?.record?.(p,'hpGain');
+  const previousHp=p.forgeLastHp,loss=previousHp-p.hp;
+  p.forgeLastHp=p.hp;
+  // Use the same authenticated HP-delta observer in PvE, PvP and tests.
+  global.CombatEventGraph?.observeHealth?.(p,previousHp,p.hp);
   const cruise=p.forge.speed*(p.speedMultiplier||1),v=Math.hypot(p.vx,p.vy);
   if(p.forgeDash>0){
     p.forgeDash--;
