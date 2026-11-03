@@ -266,7 +266,7 @@ function compose(input){
     homing:intent.homing,split:intent.split||intent.hitSplit,
     splitTrigger:intent.hitSplit?'hit':'age',
     finalBurst:intent.terminalBurst,
-    fragments:cap(count,2,4,3),
+    fragments:cap(values.fragmentCount??count,2,4,3),
     impact:intent.hitExplosion?'burst':
      intent.terminalBurst?'none':existing?.impact||'none',
     radius:cap(radius,35,160,90)
