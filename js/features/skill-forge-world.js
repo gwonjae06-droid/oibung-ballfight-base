@@ -8,6 +8,48 @@
  */
 (function(global){'use strict';
 global.SkillForgeWorldFactory=function({hit,hitGround,enemies}){
+// Terminal bursts are bound to ONE real fracture family. The group lives
+// only on its in-flight child objects: no global timers, map, or stale IDs.
+// An expiry, shielded/blocked collision, or perimeter exit retires one child.
+function finalFragmentBurst(p,group,x,y,z){
+ if(group.finished||group.remaining!==0)return;
+ group.finished=true;
+ const frame=Number(p._forgeActionClock)||Number(p._forgeBalanceFrame)||0;
+ const count=p._fusionFinalAt===frame?p._fusionFinalCount||0:0;
+ if(count>=4)return; // a large 100-momentum volley cannot flood the scene
+ p._fusionFinalAt=frame;p._fusionFinalCount=count+1;
+ const action=group.action||{},radius=Math.max(35,Math.min(160,group.radius||85));
+ const xx=Math.max(0,Math.min(canvas.width,Number(x)||0));
+ const yy=Math.max(0,Math.min(canvas.height,Number(y)||0));
+ const original=p.forge?.effectColor||p.forge?.color||'#b4a3ff';
+ const tint=global.SkillColorPolicy?.resolve?.(action.visual,original)?.color||
+  action.visual?.color||original;
+ // This effect is spatially anchored on the LAST fragment, not the caster,
+ // not the original hit location, and never an invisible textual promise.
+ global.BattleFX?.cast?.(p,'wave',{x:xx,y:yy,radius,color:tint});
+ global.BattleFX?.mark?.('wave',xx,yy,tint,radius);
+ const damage=Math.min(52,Math.max(0,Math.round((Number(action.damage)||0)*.42)));
+ if(damage>0){
+  const burst={...action,type:'wave',damage,radius,knockback:0,
+   status:'none',fusion:undefined};
+  let contacts=0;
+  for(const e of enemies(p)){
+   if(!e||e===p||e.hp<=0||++contacts>24)continue;
+   if(Math.hypot(e.x-xx,e.y-yy)<=radius+(Number(e.radius)||0))
+    hit(p,e,burst,1,Number.isFinite(z)?z:0);
+  }
+ }
+ global.SignatureLive?.record?.(p,'finalFragment');
+}
+function retire(p,b,index){
+ p.forgeShots.splice(index,1);
+ const group=b?._fusionTerminalGroup;
+ if(!group||b._fusionTerminalRetired)return;
+ b._fusionTerminalRetired=true;
+ if(group.remaining<=0||group.finished)return;
+ group.remaining--;
+ if(group.remaining===0)finalFragmentBurst(p,group,b.x,b.y,b.z);
+}
 // The event source is the authoritative collision callback below. Merely
 // displaying a burst VFX never counts as a hit or spawns fragment objects.
 function fracture(p,b,concept,index,victim){
@@ -20,8 +62,11 @@ function fracture(p,b,concept,index,victim){
   const speed=Math.max(2,Math.min(14,Number(b.a.speed)||5));
   const action={...b.a,damage:Math.round((Number(b.a.damage)||0)*.55),
     fusion:{...concept,split:false}};
-  // Remove the parent first. Children are visited in a *later* tick so
-  // contact events cannot recursively spawn or immediately double-hit.
+  // A source orb is NOT one of the children. Its own retirement must
+  // never decrement the family or trigger the explosion prematurely.
+  const terminal=concept.finalBurst?{remaining:count,finished:false,
+   action:b.a,radius:concept.radius}:null;
+  // Remove parent first; new children are visited on the NEXT world tick.
   p.forgeShots.splice(index,1);
   for(let n=0;n<count;n++){
     const theta=direction+(n-(count-1)/2)*.38;
@@ -29,7 +74,8 @@ function fracture(p,b,concept,index,victim){
       targetNum:foe?.playerNum??b.targetNum,
       x:b.x,y:b.y,prevX:b.x,prevY:b.y,
       vx:Math.cos(theta)*speed,vy:Math.sin(theta)*speed,
-      life:Math.min(Math.max(28,b.life),150),_reboundCount:0});
+      life:Math.min(Math.max(28,b.life),150),_reboundCount:0,
+      ...(terminal?{_fusionTerminalGroup:terminal}:{} )});
   }
   global.BattleFX?.mark?.('shot',b.x,b.y,
     b.a.visual?.color||p.forge?.effectColor||'#a8b1ff',18);
@@ -100,7 +146,7 @@ function tick(p,target){
       b.prevX,b.prevY,initialZ,b.x,b.y,flightZ,7);
     const blocked=terrainBlock||global.AdvancedCombat?.blockSegment?.(
       b.prevX,b.prevY,b.x,b.y,b.a?.damage||10,flightZ,p.playerNum);
-    if(blocked){p.forgeShots.splice(i,1);continue;}
+    if(blocked){retire(p,b,i);continue;}
     // Ground-level bullets use a ground-level hit check, not the firing
     // character's current jump height. Swept contact prevents tunneling.
     const e=enemies(p).find(e=>(global.ActionRegistry?.sweptCircle?.(
@@ -109,7 +155,8 @@ function tick(p,target){
     if(e&&concept?.split&&concept.splitTrigger==='hit'&&
        b.a?.type==='shot'&&!b._fusionChild&&
        fracture(p,b,concept,i,e))continue;
-    if(e||b.life<=0||b.x<0||b.y<0||b.x>canvas.width||b.y>canvas.height)p.forgeShots.splice(i,1);
+    if(e||b.life<=0||b.x<0||b.y<0||b.x>canvas.width||b.y>canvas.height)
+      retire(p,b,i);
   }
   if(p.forgeZones.length>32)p.forgeZones.splice(0,p.forgeZones.length-32);
   for(let i=p.forgeZones.length-1;i>=0;i--){
