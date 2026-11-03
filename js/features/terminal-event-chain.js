@@ -85,7 +85,8 @@ function unpack(value){
  return normalize(value.map(v=>({type:TYPES_ID[v?.[0]],gate:GATES_ID[v?.[1]]})));
 }
 function evaluate(value,ctx){
- const steps=normalize(value),executed=[],stopped=null;
+ const steps=normalize(value),executed=[];
+ let stopped=null;
  if(!steps||!ctx||typeof ctx.perform!=='function')
   return {executed,stopped:'invalid'};
  let lastDamage=false;
