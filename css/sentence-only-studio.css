@@ -111,3 +111,27 @@
 .sentence-collection-list>button{padding:7px 10px;border:1px solid rgba(150,171,218,.3);border-radius:9px;background:rgba(80,103,145,.11);color:inherit;font:inherit;cursor:pointer;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .sentence-collection-list>button[aria-pressed="true"]{border-color:#9ebcff;background:rgba(77,112,191,.35)}
 .sentence-collection button:focus-visible,.sentence-interpretation button:focus-visible{outline:2px solid #a9c6ff;outline-offset:2px}
+
+/* Sentence-first creator: old Scratch/block/manual add paths remain in the
+ * application for legacy data but are not parallel authoring choices. */
+#studio-mode-picker,
+#studio-mode-random,
+#studio-mode-compose > .studio-easy-tabs,
+#studio-mode-compose > #studio-easy-panel,
+#studio-mode-compose > #studio-expert-panel,
+#studio-mode-compose .block-forge,
+#studio-mode-compose .scratch-workbench,
+#studio-mode-compose .studio-random-entry,
+#studio-mode-compose .forge-tuning,
+#studio-mode-compose .forge-library{display:none!important}
+#studio-mode-compose > #scratch-beginner{display:block!important}
+#studio-mode-compose .studio-mode-toolbar{display:flex;flex-wrap:wrap;gap:10px;
+ padding:10px 12px;border-radius:10px;background:rgba(77,108,155,.13);font-size:.85rem}
+.sentence-collection-header>span{color:#9dbbe9;font-size:.85rem}
+.sentence-tune{margin-top:14px;padding:12px;border-radius:12px;border:1px solid rgba(146,180,221,.27)}
+.sentence-tune summary{cursor:pointer;font-weight:700}
+.sentence-tune-action{margin-top:12px;padding:12px;border:1px solid rgba(138,163,196,.2);border-radius:10px}
+.sentence-tune-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:8px;margin:12px 0}
+.sentence-tune label{display:flex;flex-direction:column;gap:5px;font-size:.86rem;margin-top:8px}
+.sentence-tune input,.sentence-tune select{width:100%;min-width:0;max-width:100%;border:1px solid rgba(160,176,216,.4);background:rgba(10,17,36,.32);color:inherit;border-radius:8px;padding:7px}
+.sentence-collection-list{max-height:220px}
