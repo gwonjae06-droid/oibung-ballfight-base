@@ -43,7 +43,8 @@ function make(profile={},focus=0,actionIndex=-1){
  const splitHistory=[];
  // The shared graph tests proximity and HP against simulated actors,
  // never empty placeholder coordinates, so mini-lab conditions match combat.
- const previewActor={hp:100,maxHp:100,x:hero.x,y:hero.y,_forgeActionClock:0,
+ const previewActor={hp:100,maxHp:100,x:hero.x,y:hero.y,radius:hero.radius,
+  forge:{signatureVersion:1},_forgeActionClock:0,
   _scratchEvents:Object.create(null)};
  function recordRuleEvent(name){
   const old=previewActor._scratchEvents[name]||{count:0,frame:-100};
@@ -57,12 +58,14 @@ function make(profile={},focus=0,actionIndex=-1){
   sparks.push({x,y,color,t:0,life:clamp(strength,6,20)});
  }
  function squash(p,imp,nx,ny){g.ArenaBallSquash?.wall?.(p,nx,ny,imp);}
- function rebound(p,nx,ny,isHero){
+ function rebound(p,nx,ny,isHero,wallKind=null){
   const d=p.vx*nx+p.vy*ny;
   if(d>=0)return;
   p.vx-=1.91*d*nx;p.vy-=1.91*d*ny;
   p.vx*=.985;p.vy*=.985;
   squash(p,-d,nx,ny);spark(p.x,p.y,isHero?color:'#f5a8a8',11);
+  // Only physical perimeter rebounds, not bumpers, charge wall storage.
+  if(isHero&&wallKind)g.WallImpactStore?.record?.(previewActor,-d,wallKind);
   if(isHero&&frame-lastWall>=26){energy=clamp(energy+9,0,100);lastWall=frame;recordRuleEvent('wall');}
  }
  function bounds(p,isHero){
@@ -74,10 +77,10 @@ function make(profile={},focus=0,actionIndex=-1){
    p.x=o.x+nx*(limit+.1);p.y=o.y+ny*(limit+.1);
    rebound(p,nx,ny,isHero);
   }
-  if(p.x<19+r){p.x=19+r;rebound(p,1,0,isHero);}
-  if(p.x>W-19-r){p.x=W-19-r;rebound(p,-1,0,isHero);}
-  if(p.y<19+r){p.y=19+r;rebound(p,0,1,isHero);}
-  if(p.y>H-19-r){p.y=H-19-r;rebound(p,0,-1,isHero);}
+  if(p.x<19+r){p.x=19+r;rebound(p,1,0,isHero,'wall-left');}
+  if(p.x>W-19-r){p.x=W-19-r;rebound(p,-1,0,isHero,'wall-right');}
+  if(p.y<19+r){p.y=19+r;rebound(p,0,1,isHero,'wall-top');}
+  if(p.y>H-19-r){p.y=H-19-r;rebound(p,0,-1,isHero,'wall-bottom');}
   for(const [x,y] of BUMPERS){
    const d=Math.hypot(p.x-x,p.y-y),threshold=r+12;
    if(d>=threshold)continue;
@@ -599,7 +602,8 @@ function make(profile={},focus=0,actionIndex=-1){
    .map(b=>({type:b.type,x:b.x,y:b.y,age:b.age,travel:b.travel,
     remaining:b.fractureRemaining}));},
   get landEvents(){return previewActor._scratchEvents.land?.count||0;},
-  get wallEvents(){return previewActor._scratchEvents.wall?.count||0;}};
+  get wallEvents(){return previewActor._scratchEvents.wall?.count||0;},
+  get storedWallImpacts(){return g.WallImpactStore?.serial?.(previewActor)||0;}};
 }
 g.StudioPinballLab=Object.freeze({make,actionsFor,WIDTH:W,HEIGHT:H});
 })(typeof window!=='undefined'?window:globalThis);
