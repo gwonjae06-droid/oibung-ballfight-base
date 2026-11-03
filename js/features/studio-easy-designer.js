@@ -34,7 +34,7 @@ function readBasics(){
 }
 function presetPlan(kind,profile){
  const p=PLANS[kind];if(!p)throw Error('전투 스타일을 선택하세요.');
- const base=profile.signatureVersion===1?profile:global.SignatureProgram.migrate(profile);
+ const base=profile;
  const actions=p.skills.map(([name,type,damage,cooldown],i)=>{
    const a=blocks.action(type);
    a.damage=damage;
@@ -46,14 +46,14 @@ function presetPlan(kind,profile){
    if(type==='fortify')a.duration=2;
    return {...a,condition:'always',link:i===0?'and':'after'};
  });
- const result={...base,signatureVersion:1,allAbilities:false,skills:[{
-   name:p.name+' 고유 스킬',trigger:'auto',cooldown:4.5,threshold:40,actions
- }]};
+ const result={...base,signatureVersion:1,allAbilities:false,skills:actions.map((a,i)=>({
+   name:(p.skills[i][0]||p.name).slice(0,18),trigger:'auto',
+   cooldown:4.5,threshold:40,actions:[{...a,link:'and'}]
+ }))};
  return forge.normalize(result);
 }
 function change(profile,kind,skill,value){
  const si=Number(skill);
- if(profile.signatureVersion===1&&(kind==='new-skill'||kind==='remove-skill'))throw Error('고유 스킬은 하나만 사용합니다. 전문가 설정에서 행동 블록을 추가하세요.');
  if(kind==='new-skill')return blocks.modify(profile,{kind:'new-skill',type:'wave'});
  if(kind==='remove-skill')return blocks.modify(profile,{kind:'remove-skill',skill:si});
  if(kind==='type')return blocks.modify(profile,{kind:'type',skill:si,index:0,type:value});
@@ -135,13 +135,14 @@ function refresh(){
    '<button type="button" class="studio-easy-preset'+(lastStyle===key?' is-active':'')+'" data-easy-preset="'+key+'" aria-pressed="'+String(lastStyle===key)+'">'
    +'<span aria-hidden="true">'+p.icon+'</span><strong>'+E(p.name)+'</strong><small>'+E(p.hint)+'</small></button>').join('');
  simple.innerHTML='<div class="studio-easy-step"><div class="studio-easy-step-title"><b>1</b>'
-   +'<div><h4>고유 스킬 시작 템플릿 <small>선택 사항</small></h4><p>선택한 기본 전투 유형은 유지하고, 행동 블록 4개가 연결된 고유 스킬 1개를 생성합니다.</p></div></div>'
+   +'<div><h4>고유 스킬 시작 템플릿 <small>선택 사항</small></h4><p>선택한 기본 전투 유형은 유지하고, 동작 4개를 독립된 스킬 4개로 생성합니다. 기세 100마다 하나씩 돌아가며 발동합니다.</p></div></div>'
    +'<div class="studio-easy-presets">'+styles+'</div></div>'
    +'<div class="studio-easy-step"><div class="studio-easy-step-title"><b>2</b>'
-   +'<div><h4>고유 스킬 설정 <small>'+profile.skills.length+' / '+(profile.signatureVersion===1?'1':'4 · 기존')+'</small></h4>'
-   +'<p>한 개의 스킬 안에서 발동·행동·연계를 코딩합니다. 조건 블록·동시 실행·행동 순서는 전문가 설정에서 조절하세요.</p></div></div>'
+   +'<div><h4>스킬 구성 <small>'+profile.skills.length+'개 · 제한 없음</small></h4>'
+   +'<p>각 스킬은 독립적으로 발동합니다. 스킬 수와 효율에 따라 피해·유지력이 자동 조절됩니다.</p></div></div>'
    +(profile.allAbilities?'<div class="studio-easy-all" role="status"><strong>전체 능력 모드 사용 중</strong><span>아래 개별 스킬 대신 모든 능력이 발동됩니다. 직접 만든 스킬을 사용하려면 일반 스킬 조합으로 전환하세요.</span><button type="button" data-easy-enable>일반 스킬 조합으로 전환</button></div>':'')
    +'<div class="studio-easy-cards">'+profile.skills.map(makeCard).join('')+'</div>'
+   +'<button type="button" class="forge-add" data-easy-add>+ 독립 스킬 추가 ('+profile.skills.length+'개)</button>'
    +(profile.signatureVersion===1?'': '<div class="signature-program-legacy">기존 4스킬 캐릭터입니다. 블록 편집기에서 고유 스킬 1개로 전환할 수 있습니다.</div>')+'</div>'
    +'<div class="studio-easy-step studio-easy-finish"><div class="studio-easy-step-title"><b>3</b>'
    +'<div><h4>움직임 확인하고 저장하기</h4><p>왼쪽 미리보기로 확인한 후 캐릭터 생성·변경 내용 저장 버튼을 누르세요.</p></div></div>'
@@ -173,7 +174,7 @@ simple.addEventListener('click',e=>{
  if(p){
   const current=forge.getDraft();
   if((current.skills.length>1||current.skills[0]?.name!=='새 스킬')&&
-     typeof global.confirm==='function'&&!global.confirm('현재 스킬 구성을 하나의 고유 스킬 템플릿으로 교체할까요?'))return;
+     typeof global.confirm==='function'&&!global.confirm('현재 스킬 구성을 네 개의 독립 스킬 템플릿으로 교체할까요?'))return;
   try{forge.setDraft(presetPlan(p.dataset.easyPreset,readBasics()));lastStyle=p.dataset.easyPreset;
    global.CharacterStudioWorkspace?.refresh?.();refresh();}catch(err){global.alert?.(err.message);}
   return;
