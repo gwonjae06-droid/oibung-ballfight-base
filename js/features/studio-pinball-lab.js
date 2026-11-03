@@ -147,7 +147,7 @@ function make(profile={},focus=0,actionIndex=-1){
    hitTarget(px,py,true); // visual preview only, never modify target HP
   recordRuleEvent('finalFragment');
   if(terminalBurstHistory.length>=24)terminalBurstHistory.shift();
-  terminalBurstHistory.push({frame,x:px,y:py,radius});
+  terminalBurstHistory.push({frame,x:px,y:py,radius,color:tint});
  }
  // Splitshots share the REAL combat trajectory: one target-aimed crystal
  // that bursts after 56% of its own flight, not an arbitrary 17-frame timer.
@@ -641,7 +641,9 @@ function make(profile={},focus=0,actionIndex=-1){
   get wallEvents(){return previewActor._scratchEvents.wall?.count||0;},
   get storedWallImpacts(){return g.WallImpactStore?.serial?.(previewActor)||0;},
   get terminalBurstEvents(){return previewActor._scratchEvents.finalFragment?.count||0;},
-  get terminalBurstHistory(){return terminalBurstHistory.map(x=>({...x}));}};
+  get terminalBurstHistory(){return terminalBurstHistory.map(x=>({...x}));},
+  get fusionChildren(){return bullets.filter(b=>b._fusionChild).map(b=>({x:b.x,y:b.y,
+   color:b.color,homing:!!b.a?.fusion?.homing}));}};
 }
 g.StudioPinballLab=Object.freeze({make,actionsFor,WIDTH:W,HEIGHT:H});
 })(typeof window!=='undefined'?window:globalThis);
