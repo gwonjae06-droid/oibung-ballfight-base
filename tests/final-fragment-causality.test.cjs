@@ -71,7 +71,8 @@ test('one final AoE follows the LAST projectile retirement and truly damages nea
  // can arise from the original impact or just the first two expiries.
  p._forgeActionClock=28;p._forgeBalanceFrame=28;
  for(let i=0;i<p.forgeShots.length;i++){
-  const b=p.forgeShots[i];b.x=154+i*35;b.y=160;b.vx=0;b.vy=0;
+  const b=p.forgeShots[i];b.x=i===0?154:310+i*45;
+  b.y=i===0?160:245;b.vx=0;b.vy=0;
   b.life=i===0?99:1;
  }
  world.tick(p,e);
