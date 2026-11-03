@@ -1,7 +1,8 @@
 /* Safe declarative skill rules. No arbitrary JS, no recursive execution.
  * A 100-momentum activation runs bounded reactions for a fixed time window. */
 (function(g){'use strict';
-const WHEN=Object.freeze({pulse:'일정 시간마다',wall:'벽에 튕기면',contact:'상대와 충돌하면',
+const WHEN=Object.freeze({pulse:'일정 시간마다',wall:'벽에 튕기면',
+ wallStored:'벽 충돌 충격을 지정 횟수만큼 모으면',contact:'상대와 충돌하면',
  land:'착지하면',hit:'공격이 맞으면',split:'탄환이 분열하면',
  guard:'공격을 방어하면',dodge:'위험을 회피하면',status:'상태이상을 걸면',
  move:'이동 스킬을 사용하면',hpLow:'내 체력이 낮으면',near:'적이 가까우면',far:'적이 멀리 있으면'});
@@ -19,9 +20,10 @@ function rule(value){
  return {when:Object.hasOwn(WHEN,v.when)?v.when:'pulse',
   interval:cap(v.interval,.35,4,1),
   fracture:type==='splitshot'?Math.round(cap(v.fracture,1,3,1)):1,
+  ...(v.when==='wallStored'?{wallHits:Math.round(cap(v.wallHits,2,6,3))}:{}),
   action:{...action,damage:Math.round(cap(action.damage,0,120,18)),
    count:Math.round(cap(action.count,1,8,1))},
-  ...(Array.isArray(v.steps)&&g.FantasySkillGraph?
+  ...(v.when!=='wallStored'&&Array.isArray(v.steps)&&g.FantasySkillGraph?
    {steps:g.FantasySkillGraph.normalize(v.steps)}:{})};
 }
 function normalize(value){
@@ -44,7 +46,8 @@ function pressure(value,weight){
    // the same per-rule cooldown floor and shared 80-action cap as RuleLive.
    const interval=Math.max(.35,r.interval);
    const ceiling=Math.ceil(set.window/interval);
-   return r.when==='pulse'?ceiling:ceiling*.5;
+   return r.when==='pulse'?ceiling:
+    r.when==='wallStored'?Math.max(1,ceiling/Math.max(2,r.wallHits)):ceiling*.5;
  });
  const total=estimates.reduce((a,b)=>a+b,0);
  const scale=total>MAX_ACTIONS?MAX_ACTIONS/total:1;
