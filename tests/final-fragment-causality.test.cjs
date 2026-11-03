@@ -13,7 +13,7 @@ function boot(files){
 const parser=['action-registry','semantic-physics','physics-law-engine',
  'signature-program','skill-fx-composer','metaphor-visuals','skill-color-policy',
  'semantic-concept-atlas','concept-fusion','imagination-concepts',
- 'semantic-intent-composer','signature-scratch','fantasy-skill-graph',
+ 'semantic-intent-composer','signature-scratch','signature-live','fantasy-skill-graph',
  'signature-rule-skill','skill-ir','signature-rule-live','korean-skill-grammar',
  'korean-skill-parameters','signature-prompt-compiler',
  'semantic-relationship-graph','skill-sentence-engine'];
