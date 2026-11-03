@@ -3,7 +3,8 @@
  const keys=['type','pattern','target','damage','radius','count','speed','duration','status','knockback','delay','link','visual'];
  // User-authored layered FX must fit the deployed 2,500-char RPC. Retain
  // compatibility with older ordinary-object visual payloads.
- const shapes=['aura','jaw','beam','claw','crystal','halo'];
+ const shapes=['aura','jaw','beam','claw','crystal','halo',
+  'butterfly','jellyfish','roots','dragon','liquid','mechanical'];
  const kindNames=['lightning','coil','burst','embers','mist','ice','vortex','stars',
   'wind','water','runes','petals','shards','shadow','rings','chains','thorns',
   'hearts','rain','orbit','trail','web',
