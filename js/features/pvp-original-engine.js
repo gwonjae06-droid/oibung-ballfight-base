@@ -6,7 +6,8 @@
  const shapes=['aura','jaw','beam','claw','crystal','halo'];
  const kindNames=['lightning','coil','burst','embers','mist','ice','vortex','stars',
   'wind','water','runes','petals','shards','shadow','rings','chains','thorns',
-  'hearts','rain','orbit','trail','web'];
+  'hearts','rain','orbit','trail','web',
+  'gears','circuit','hologram','steam','feathers','plasma'];
  const round=v=>Number.isFinite(Number(v))?Math.round(Number(v)*100)/100:1;
  const packVisual=v=>{
   if(!v||typeof v!=='object')return null;
@@ -54,11 +55,20 @@
     falloff:falls[t?.[2]],sign:t?.[3],rest:t?.[4]}))
   });
  };
+ const packRelay=raw=>{
+  const r=g.ImaginationConcepts?.normalizeRelay?.(raw);
+  return r?[round(r.charge),round(r.release),round(r.absorb),round(r.radius)]:null;
+ };
+ const unpackRelay=raw=>Array.isArray(raw)&&raw.length===4?
+  g.ImaginationConcepts?.normalizeRelay?.({charge:raw[0],
+   release:raw[1],absorb:raw[2],radius:raw[3]}):undefined;
  const encode=a=>{
   const data=keys.map(k=>k==='visual'?packVisual(a?.visual):a?.[k]??null);
   const fusion=packFusion(a?.fusion);
   const law=packLaw(a?.law);
-  if(law)data.push(fusion,law); // optional index 14, old index 13 preserved
+  const relay=packRelay(a?.relay);
+  if(relay)data.push(fusion,law,relay); // new index 15, keep old indexes stable
+  else if(law)data.push(fusion,law);
   else if(fusion)data.push(fusion);
   return data;
  };
@@ -69,6 +79,8 @@
   if(fusion)result.fusion=fusion;
   const law=unpackLaw(a?.[keys.length+1]);
   if(law)result.law=law;
+  const relay=unpackRelay(a?.[keys.length+2]);
+  if(relay)result.relay=relay;
   return result;
  };
  // Compact Scratch AST rather than repeating long field names in the queue.
