@@ -16,14 +16,14 @@ test('guided designer is valid JS and exposes distinct presets without DOM',()=>
  assert.ok(api&&api.presetPlan&&api.change);
  assert.deepEqual(Object.keys(api.PLANS).sort(),['agile','assault','balanced','control','guardian'].sort());
 });
-test('all guided templates use one signature skill with four validated action blocks',()=>{
+test('all guided templates produce four independent signature skills with one action each',()=>{
  const h=world(),api=h.StudioEasyDesigner,original=h.SkillForge.getDraft();
  for(const type of Object.keys(api.PLANS)){
   const p=api.presetPlan(type,original);
-  assert.equal(p.skills.length,1,type);
+  assert.equal(p.skills.length,4,type);
   assert.equal(p.signatureVersion,1,type);
   assert.equal(p.allAbilities,false,type);
-  assert.equal(p.skills[0].actions.length,4,type);
+  assert.ok(p.skills.every(s=>s.actions.length===1),type);
   assert.ok(p.skills.every(s=>s.cooldown>=.2&&s.cooldown<=30),type);
   assert.ok(p.skills.every(s=>s.actions.every(a=>h.SkillForge.TYPE[a.type])),type);
  }
@@ -37,8 +37,8 @@ test('choosing a starter style retains saved character name, appearance and HP',
  const result=api.presetPlan('guardian',p);
  for(const key of ['name','color','effectColor','hp','speed','artKey'])assert.equal(result[key],p[key],key);
  assert.equal(result.skills[0].actions[0].type,'shield');
- assert.equal(result.skills[0].actions[1].type,'heal');
- assert.equal(result.skills[0].actions[2].type,'drain');
+ assert.equal(result.skills[1].actions[0].type,'heal');
+ assert.equal(result.skills[2].actions[0].type,'drain');
 });
 test('simple edits modify exactly the same recipe accepted by the expert BlockForge',()=>{
  const h=world(),easy=h.StudioEasyDesigner,block=h.BlockForge;
@@ -62,18 +62,17 @@ test('simple edits modify exactly the same recipe accepted by the expert BlockFo
  assert.equal(p.skills[0].actions.length,5,'simple edit must not discard expert chain');
  assert.equal(p.skills[0].actions[4].type,'zone');
 });
-test('adding/removing respects 4-skill limit while retaining extra expert options',()=>{
+test('adding/removing unlimited skills retains existing settings and order',()=>{
  const h=world(),easy=h.StudioEasyDesigner;
  let p=h.SkillForge.normalize({
   name:'A',skills:[{name:'스킬1',cooldown:3,actions:[{type:'timestop',duration:2,delay:.5}]}]
  });
  p=easy.change(p,'new-skill');
  assert.equal(p.skills.length,2);
- p=easy.change(p,'new-skill');p=easy.change(p,'new-skill');
- assert.equal(p.skills.length,4);
- assert.throws(()=>easy.change(p,'new-skill'),/최대 4/);
+ for(let i=0;i<35;i++)p=easy.change(p,'new-skill');
+ assert.equal(p.skills.length,37);
  p=easy.change(p,'remove-skill',2);
- assert.equal(p.skills.length,3);
+ assert.equal(p.skills.length,36);
  assert.equal(p.skills[0].actions[0].type,'timestop');
 });
 test('expert inspector remains wired to a visible switch and existing block values',()=>{
