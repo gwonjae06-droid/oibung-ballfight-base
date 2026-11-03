@@ -134,7 +134,13 @@ function resultHTML(result){
     E(result.explicitColor.color)+'"></span>문장 속 '+E(result.explicitColor.term)+' ('+
     E(result.explicitColor.color)+') 우선':
     '캐릭터가 선택한 이펙트 색을 따라갑니다 (외형에서 변경 가능)')+'</div>':'')
- +(result.plan?'<div class="sentence-materialization-plan"><strong>'+
+ +(result.stageColors?'<div class="sentence-color-choice"><strong>객체별 색상 · </strong>'+[
+    ['source','원래 투사체'],['fragment','실제 분열 파편'],['terminal','마지막 폭발']]
+    .filter(([id])=>result.stageColors[id])
+    .map(([id,label])=>'<span class="sentence-color-swatch" style="background-color:'+
+      E(result.stageColors[id].color)+'"></span>'+E(label)+' '+
+      E(result.stageColors[id].color)).join(' · ')+'</div>':'')
+  +(result.plan?'<div class="sentence-materialization-plan"><strong>'+
     (result.plan.strategy==='new-primitive'?'✦ 신규 물리 동작 생성':'♻ 기존 동작·효과의 조합')+'</strong><p>'+
     E(result.plan.explanation)+'</p><small>'+E(result.plan.conceptIds.join(' + '))+
     ' · '+E(result.plan.visualKinds.join(' + '))+'</small></div>':'')
