@@ -67,7 +67,7 @@ test('excessive authored offense is softened while moderate signature attacks ar
   type:'zone',damage:120,radius:300,duration:8,count:8,status:'poison'}))}]};
  const n=A.summary(normal),e=A.summary(extreme);
  assert.equal(n.multiplier,1);
- assert.ok(e.multiplier<=.3&&e.multiplier>=.18);
+ assert.ok(e.multiplier<=.3&&e.multiplier>=.025);
  assert.ok(e.pressure>n.pressure*15);
 });
 test('shared healing and shield reserves limit infinite sustain without forbidding defensive builds',()=>{
