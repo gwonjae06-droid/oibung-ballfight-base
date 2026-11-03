@@ -39,12 +39,13 @@ function repair(input,original){
  const shots=[];
  for(let i=0;i<original.rules.length;i++){
   const rule=original.rules[i];
-  if(rule?.action?.type==='shot'&&!rule.steps?.length&&rule.when==='pulse')
-   shots.push(i);
+  if(rule?.action?.type==='shot')shots.push(i);
  }
- if(shots.length!==1)
+ const candidateRule=shots.length===1?original.rules[shots[0]]:null;
+ if(!candidateRule||candidateRule.when!=='pulse'||candidateRule.steps?.length)
   return result(original,'unresolved',[],[
-   shots.length?'분열·투사체 대상이 여러 개이므로 수정하지 않았습니다.':
+   shots.length>1?'분열·투사체 대상이 여러 개이므로 수정하지 않았습니다.':
+    shots.length?'조건부·다단계 투사체의 원래 순서를 변경하지 않았습니다.':
     '수정 가능한 단일 투사체가 없어 새 공격을 만들지 않았습니다.']);
  const index=shots[0],base=original.rules[index].action;
  if(!g.ActionRegistry.get(base.type))
