@@ -11,7 +11,7 @@ const bound=(v,lo,hi,f=lo)=>Number.isFinite(Number(v))?
 const OPS=Object.freeze({
  attract:{label:'중심으로 끌어당기는 힘',pattern:/끌어당|당겨|빨아들이|흡인|인력|중력\s*우물|중심.{0,12}(?:당기|모이|모으)/},
  repel:{label:'중심 밖으로 밀어내는 힘',pattern:/밀어내|밀쳐|튕겨내|반발|척력|역중력|바깥으로\s*날리|밖으로\s*날리/},
- spin:{label:'접선 방향의 회전력',pattern:/회전시|회오리|소용돌이|빙글|휘감아\s*돌|공전|빙빙|나선형/},
+ spin:{label:'접선 방향의 회전력',pattern:/회전력|회전시|회오리|소용돌이|빙글|휘감아\s*돌|공전|빙빙|나선형/},
  spring:{label:'거리에 따른 탄성 복원력',pattern:/탄성|고무줄|용수철|스프링|늘어난\s*만큼|거리.{0,12}복원/},
  pulse:{label:'반복되는 방사형 압력',pattern:/진동|파동|맥동|펄스|주기적.{0,8}(?:밀|튕)|쿵쿵|진앙/},
  drag:{label:'운동 감쇠·마찰',pattern:/마찰|감속|느려지|느리게|점성|저항|끈적|속도를\s*줄/},
@@ -49,7 +49,11 @@ function interpret(input){
  // language only when the sentence establishes a law/force relationship.
  const relational=/법칙|물리|역중력|힘이\s*(?:작용|생겨|발생)|힘으로|힘을|힘의|끌어당기면서|밀어내면서|회전시키면서|동시에\s*(?:당기|밀|회전)|중심.{0,14}(?:당기|밀|회전)|거리가.{0,14}(?:멀|가까)|거리.{0,14}(?:힘|세기|강해|약해)|마찰력|탄성력|자기장|힘의\s*장|중력장|역제곱|사인파|시간.{0,14}(?:힘|세기|강해|약해)/.test(raw);
  if(!relational)return null;
- const selected=Object.entries(OPS).filter(([,def])=>def.pattern.test(raw));
+ let selected=Object.entries(OPS).filter(([,def])=>def.pattern.test(raw));
+ // An inverse-square gravity law is ONE force, not an extra copy of
+ // generic attraction merely because the word "인력" appears in its name.
+ if(selected.some(([id])=>id==='gravity'))
+  selected=selected.filter(([id])=>id!=='attract');
  // A single fictional noun without a force verb cannot be compiled.
  if(!selected.length)return null;
  const radius=number(raw,/(?:반경|범위|영향\s*거리|반지름)\s*(?:은|는|을|를|:|=)?\s*(\d+(?:\.\d+)?)/);
