@@ -35,7 +35,12 @@ function describe(parsed){
     }
    };walk(r.steps);
   }else names.push(g.SkillForge?.TYPE?.[r.action?.type]||r.action?.type||'행동');
-  const when=r.when==='wallStored'?'실제 벽 충돌 '+r.wallHits+'회 축적 후':
+  const when=r.eventGraph?
+    (labels[r.when]||r.when)+(r.eventGraph.minCount?
+     ' · 누적 '+r.eventGraph.minCount+'회 확인':'')+
+    (r.eventGraph.hpBelow!==undefined?
+     ' · 실제 체력 '+r.eventGraph.hpBelow+'% 이하':''):
+   r.when==='wallStored'?'실제 벽 충돌 '+r.wallHits+'회 축적 후':
     labels[r.when]||r.when;
   const styles=[];
   const gather=steps=>{for(const step of steps||[]){
