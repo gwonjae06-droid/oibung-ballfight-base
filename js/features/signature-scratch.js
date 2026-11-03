@@ -23,6 +23,7 @@ const safeAction=a=>{
   knockback:clamp(src.knockback,0,9,2),delay:clamp(src.delay,0,2,0),
   visual:g.MetaphorVisuals?.normalize?.(src.visual),
   fusion:g.ConceptFusion?.normalize?.(src.fusion),
+  law:g.PhysicsLawEngine?.normalize?.(src.law),
   ricochet:type==='shot'?Math.round(clamp(src.ricochet,0,3,0)):0,
   link:['and','after','with'].includes(src.link)?src.link:'after'};
 };
