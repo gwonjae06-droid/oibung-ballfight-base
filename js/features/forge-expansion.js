@@ -118,12 +118,12 @@ function execute(p,a,target,api){
   if(!TYPES[a.type])return false;
   const foes=api.enemies(p),near=global.AbilityAtlas?.choose(p,foes,a.target)||target;
   const show=(x,y,r)=>{
-    // Explicit authored color outranks the owner's default arena tint.
-    // Other/legacy skills keep their historic color if no policy is set.
-    const tint=global.SkillColorPolicy?.resolve?.(a.visual,
-      p.forge.effectColor||p.forge.color)?.color||
-      p.forge.effectColor||p.forge.color;
-    global.BattleFX?.mark?.('wave',x,y,tint,r);
+    if(!global.BattleFX?.mark)return;
+    // Optional forge data: legacy characters and isolated combat tests
+    // must still execute even if they have no custom fighter profile.
+    const original=p.forge?.effectColor||p.forge?.color||p.themeColor||'#a78bfa';
+    const tint=global.SkillColorPolicy?.resolve?.(a.visual,original)?.color||original;
+    global.BattleFX.mark('wave',x,y,tint,r);
   };
   const around=(x,y,r)=>foes.filter(e=>Math.hypot(e.x-x,e.y-y)<=r+e.radius);
   p.forgeExtras ||= [];
