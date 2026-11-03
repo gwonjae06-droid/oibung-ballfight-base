@@ -301,10 +301,14 @@ function add(kind,p,type,action,target,location){
   const duration=kind==='impact'?(family==='explosion'?26:19):family==='time'?48:
     family==='cosmos'?50:kind==='cast'?27:30;
   const entry={type,family,kind,x,y,z:location?.z??(targeted?0:(global.AdvancedCombat?.height?.(p)||0)),angle,age:0,life:duration,radius:clamp(action?.radius||80,20,300),
-    visual:global.MetaphorVisuals?.normalize?.(action?.visual),
+    visual:global.SkillColorPolicy?.resolve?.(action?.visual,
+     p.forge?.effectColor||p.effectColor||p.forge?.color||p.themeColor)||
+     global.MetaphorVisuals?.normalize?.(action?.visual),
     beamLength:target?clamp(Math.hypot(target.x-p.x,target.y-p.y)+55,60,450):
       clamp((action?.radius||120)*1.8,60,450),
-    color:global.arenaEffectColor?.(p.forge?.effectColor||p.effectColor||catalog[type][1])||p.forge?.effectColor||p.effectColor||catalog[type][1],
+    color:global.SkillColorPolicy?.resolve?.(action?.visual,
+      p.forge?.effectColor||p.effectColor||p.forge?.color)?.color||
+      (global.arenaEffectColor?.(p.forge?.effectColor||p.effectColor||catalog[type][1])||p.forge?.effectColor||p.effectColor||catalog[type][1]),
     source:kind==='cast'&&!targeted&&!['wave','explosion'].includes(family)?p:null,
     scale:clamp((action?.radius||130)/130,.78,1.2),
     lastX:p.x,lastY:p.y};
@@ -503,7 +507,8 @@ function previewFrame(ctx,options={}){
   const e={type,family,kind,age:t*100,life:100,
     angle:Number(options.angle)||0,radius:clamp(Number(options.radius)||75,25,160),
     color:options.color||catalog[type][1],scale:1,
-    visual:global.MetaphorVisuals?.normalize?.(options.visual)};
+    visual:global.SkillColorPolicy?.resolve?.(options.visual,options.color)||
+       global.MetaphorVisuals?.normalize?.(options.visual)};
   ctx.save();ctx.translate(Number(options.x)||0,Number(options.y)||0);
   ctx.rotate(e.angle);ctx.strokeStyle=e.color;ctx.fillStyle=e.color;
   ctx.globalAlpha=.8;ctx.lineWidth=2.8;ctx.lineJoin='round';ctx.lineCap='round';
