@@ -34,7 +34,8 @@ function describe(parsed){
     }
    };walk(r.steps);
   }else names.push(g.SkillForge?.TYPE?.[r.action?.type]||r.action?.type||'행동');
-  const when=labels[r.when]||r.when;
+  const when=r.when==='wallStored'?'실제 벽 충돌 '+r.wallHits+'회 축적 후':
+    labels[r.when]||r.when;
   const styles=[];
   const gather=steps=>{for(const step of steps||[]){
    if(step.action?.visual)styles.push(step.action.visual);

@@ -6,11 +6,13 @@ function begin(config,p){
  const skill=g.SignatureRuleSkill?.normalize?.(config);
  if(!skill?.rules?.length)return null;
  const now=Number(p?._forgeActionClock)||0;
- const observed=skill.rules.map(r=>r.when==='dodge'?
+ const observed=skill.rules.map(r=>r.when==='wallStored'?
+  g.WallImpactStore?.serial?.(p)||0:r.when==='dodge'?
   Number(p?._forgeDodgeSerial)||0:(p?._scratchEvents?.[r.when]?.count)||0);
  return {rules:skill.rules,window:Math.round(skill.window*60),clock:0,actions:0,
   nextAt:skill.rules.map(()=>0),seen:observed,startedAt:now,finished:false,cursor:0,
-  pending:[],waitUntil:0,visual:null,tunes:[]};
+  pending:[],waitUntil:0,visual:null,tunes:[],
+  wallCharge:skill.rules.map(()=>({count:0,impulse:0}))};
 }
 function step(run,p,target){
  if(!run||run.finished||!p||p.hp<=0)return null;
@@ -30,6 +32,19 @@ function step(run,p,target){
   const i=(run.cursor+t)%run.rules.length,r=run.rules[i];
   if(run.clock<run.nextAt[i])continue;
   const when=r.when;
+  // This condition listens to accepted physical arena-wall bounces,
+  // not to generic hit VFX or a fixed timer masquerading as a collision.
+  if(when==='wallStored'){
+   const events=g.WallImpactStore?.since?.(p,run.seen[i],run.startedAt)||[];
+   if(events.length){
+    run.seen[i]=events[events.length-1].seq;
+    const charge=run.wallCharge[i];
+    charge.count=Math.min(12,charge.count+events.length);
+    for(const event of events)charge.impulse=Math.min(200,
+      charge.impulse+Math.max(0,Number(event.impulse)||0));
+   }
+   if(run.wallCharge[i].count<r.wallHits)continue;
+  }
   const isState=when==='hpLow'||when==='near'||when==='far';
   const current=when==='dodge'?Number(p._forgeDodgeSerial)||0:
    (p._scratchEvents?.[when]?.count||0);
@@ -37,10 +52,10 @@ function step(run,p,target){
    if(when==='hpLow'&&(p.hp/Math.max(1,p.maxHp||p.hp))>.4)continue;
    if(when==='near'&&(!target||Math.hypot(p.x-target.x,p.y-target.y)>130))continue;
    if(when==='far'&&(!target||Math.hypot(p.x-target.x,p.y-target.y)<130))continue;
-  }else if(when!=='pulse'&&current<=run.seen[i])continue;
+  }else if(when!=='pulse'&&when!=='wallStored'&&current<=run.seen[i])continue;
   const delta=Math.max(21,Math.round(r.interval*60));
   run.nextAt[i]=run.clock+delta;
-  if(!isState&&when!=='pulse')run.seen[i]=current;
+  if(!isState&&when!=='pulse'&&when!=='wallStored')run.seen[i]=current;
   run.cursor=(i+1)%run.rules.length;
   if(r.steps?.length&&graph){
    run.pending=graph.compile(r.steps,p,target);
@@ -55,6 +70,15 @@ function step(run,p,target){
   }
   run.actions++;
   const a={...r.action};
+  if(when==='wallStored'){
+   const charge=run.wallCharge[i],total=charge.impulse;
+   // The stored normal impulse changes damage only after the Nth real
+   // bounce. This is deliberately capped by the same authored damage cap.
+   a.damage=Math.min(120,Math.round((Number(a.damage)||0)*
+     (1+Math.min(.6,total/(Math.max(2,r.wallHits)*20)))));
+   a.storedImpact={hits:charge.count,impulse:Math.round(total*100)/100};
+   run.wallCharge[i]={count:0,impulse:0};
+  }
   if(a.type==='splitshot')a.fractureDepth=r.fracture;
   return a;
  }

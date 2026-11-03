@@ -331,6 +331,9 @@ function update() {
         const wallSource=bounceX?
           (p.x<=p.radius?'wall-left':'wall-right'):
           (p.y<=p.radius?'wall-top':'wall-bottom');
+        // Real boundary contact is the sole source of stored wall impulse.
+        // No VFX, projectile or temporary force field may forge this event.
+        globalThis.WallImpactStore?.record?.(p,normalSpeed,wallSource);
         if(globalThis.BounceMomentum?.enabled?.(p))
           globalThis.BounceMomentum.wall(p,normalSpeed,wallSource);
         else globalThis.ArenaCombatV2?.signal?.(p,wallSource,normalSpeed);

@@ -20,6 +20,7 @@ const PATTERNS=Object.freeze({
  area:/영역|구역|장판|범위|반경\s*\d|주변|퍼지|퍼진/,
  hitExplosion:/(?:명중|맞|적중|착탄|충돌|닿).{0,26}(?:폭발|터지|터뜨|터져)/,
  hitSplit:/(?:명중|맞|적중|착탄|충돌|닿).{0,35}(?:분열|갈라지|쪼개|깨지|부서지|조각|산산이)/,
+ wallStore:/(?:벽|벽면).{0,48}(?:충격|운동량|에너지).{0,34}(?:저장|축적|모아|모은|쌓)/,
  fade:/점점\s*약|서서히\s*약|시간이\s*지날수록\s*약|시간에\s*따라.{0,10}약/,
  law:/물리\s*법칙|새로운?\s*법칙|힘의\s*법칙|힘의\s*장|중력장|자기장|역중력/,
  force:/마찰|중력|자기장|자기력|끌어당|밀어내|회전력|공전|탄성|용수철|진동|파동|인력|척력|가속|감속/,
@@ -34,6 +35,7 @@ const LABELS=Object.freeze({
  teleport:'순간이동',damage:'피해 판정',split:'탄환 분열',
  area:'영역 동작',hitExplosion:'명중 시 폭발',hitSplit:'명중 순간 분열',
  fade:'시간에 따른 힘 감쇠',relay:'운동량 흡수·저장·방출',
+ wallStore:'벽 충돌 에너지 누적 후 조건부 방출',
  opposed:'서로 반대 방향의 힘'
 });
 const UNSUPPORTED=Object.freeze([
@@ -56,10 +58,21 @@ function analyze(input){
  // True storage/release requires both phases. "absorbs damage" alone
  // must not be mislabeled as a kinetic battery.
  intent.relay=intent.relayNoun&&intent.relayAbsorb&&intent.relayRelease;
+ // A stored wall impact is not an enemy projectile's on-hit burst.
+ // Distinguish a separately named victim hit from a boundary collision.
+ if(intent.wallStore&&!/(?:명중|적중|착탄|맞으면|적에게\s*닿)/.test(raw))
+  intent.hitExplosion=false;
  intent.opposed=/반대\s*방향|서로\s*반대|정반대로/.test(raw)&&
   /중력/.test(raw)&&/(?:전자석|자기력|자기장|자석)/.test(raw);
  intent.noEffect=/아무\s*(?:효과|기술|스킬|행동).{0,18}(?:않|안|없)|가만히\s*있는다/.test(raw);
  intent.unsupported=UNSUPPORTED.filter(def=>def.re.test(raw)).map(x=>x.label);
+ // Storage-only/negated releases must not silently invent an attack.
+ if(intent.wallStore){
+  const discharge=/(?:방출|발산|폭발|터뜨|터지|내보내)/.test(raw);
+  const negated=/(?:방출|폭발|터뜨|터지|내보내).{0,6}(?:하지\s*않|안\s*하|않는|않는다|하지\s*마)/.test(raw);
+  if(!discharge||negated)
+   intent.unsupported.push('누적 충격의 유효한 방출 동작이 지정되지 않음');
+ }
  if(intent.noEffect&&!/대신|그러나|그\s*후|다음에/.test(raw))
   intent.unsupported.push('아무 행동도 하지 않는 선택은 공격 스킬이 아닙니다');
  // A vague fading "law" without an operator has no physical direction.
@@ -67,10 +80,10 @@ function analyze(input){
   intent.unsupported.push('시간에 따라 약해질 힘의 종류와 방향이 지정되지 않음');
  const requested=[
   ...['homing','orbit','attract','spin','repel','tether','heal','shield',
-   'teleport','damage','split','area','hitExplosion','hitSplit','fade','relay','opposed']
+   'teleport','damage','split','area','hitExplosion','hitSplit','fade','relay','opposed','wallStore']
    .filter(k=>intent[k])
  ];
- const priority=!!(intent.relay||intent.orbit||intent.homing||intent.tether||
+ const priority=!!(intent.wallStore||intent.relay||intent.orbit||intent.homing||intent.tether||
   intent.repel||(intent.heal&&intent.shield)||(intent.teleport&&intent.damage)||
   intent.opposed||(intent.law&&intent.fade)||(intent.hitSplit)||
   intent.split||(intent.area&&/(?:적|상대).{0,22}피해|(?:피해|공격).{0,15}(?:적|상대)/.test(raw)));
@@ -114,6 +127,8 @@ function verify(input,recipe){
   a.fusion?.split===true&&a.fusion?.splitTrigger==='hit');
  bits.fade=actions.some(a=>a.type==='phenomenon'&&a.law?.decay==='fade');
  bits.relay=has('kinetic_relay');
+ bits.wallStore=(recipe?.rules||[]).some(r=>r.when==='wallStored'&&
+  r.action?.type==='nova'&&Number(r.wallHits)>=2);
  bits.opposed=actions.some(a=>a.type==='phenomenon'&&
   (a.law?.terms||[]).some(t=>['attract','gravity'].includes(t.op))&&
   (a.law?.terms||[]).some(t=>t.op==='repel'));
@@ -185,7 +200,24 @@ function compose(input){
  });
  if(!g.SignatureScratch||!g.SignatureRuleSkill)return null;
  const actions=[],notes=['문장 속 행동·조건을 개념 명사보다 먼저 분해하여 실행 동작을 선택했습니다.'];
- if(intent.heal&&intent.shield){
+ if(intent.wallStore){
+  // This 100-momentum activation arms a real collision-reactive window;
+  // only the boundary solver generates events, and no normal attack occurs.
+  const wallHits=cap(values.wallHits,2,6,3);
+  const action=make('nova',{status:'none',damage,count:1,visual});
+  if(action.type!=='nova'||!g.ActionRegistry?.get?.('nova'))
+   return {ok:false,error:'누적 충격을 실제 범위 피해로 방출하는 동작이 없습니다.'};
+  const recipe=g.SignatureRuleSkill.normalize({window:18,
+   rules:[{when:'wallStored',wallHits,interval:.35,action}]});
+  return {ok:true,name:'충격 저장 후 방출',recipe,
+   method:'offline-verb-first-semantic-composer',
+   plan:{strategy:'reuse',genre:'causal',domains:['physics'],
+    conceptIds:['wall-impulse-storage'],action:'nova',visualKinds:motifs,
+    explanation:'기세 100 발동 후 벽의 실제 반사 충격량을 '+wallHits+'회 누적하고 자신 중심에서 범위 피해를 줍니다.'},
+   notes:['충격 누적은 기세 발동 이후 18초 동안 적용되며 충돌 26프레임 중복 방지와 2~6회 상한을 사용합니다.',
+    '시전자 중심의 범위 피해와 명시한 폭발 색상을 기존 전투 이펙트로 출력합니다.'],
+   semanticVerification:verify(intent,recipe)};
+ }else if(intent.heal&&intent.shield){
   actions.push(make('regen',{damage:0}),make('shield',{damage:0}));
  }else if(intent.relay){
   actions.push(make('kinetic_relay',{relay:g.ImaginationConcepts?.normalizeRelay?.({

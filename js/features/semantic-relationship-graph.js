@@ -56,6 +56,12 @@ function build(input,recipe){
   push('caster','performs',id);
   push(id,'affects',target);
   if(object)push(id,'creates',object);
+  if(rule.when==='wallStored'){
+   a.wallHits=rule.wallHits;
+   push('caster','accumulates_wall_impulse',id,{on:'confirmed_wall_rebound'});
+   push(id,'releases_on_count','enemy',{count:rule.wallHits,
+    resource:'normal_collision_impulse'});
+  }
   if(action.fusion?.homing&&object)push(object,'tracks','enemy');
   if(action.fusion?.impact&&action.fusion.impact!=='none')
    push(id,'on_confirmed_hit','enemy',{effect:action.fusion.impact});
