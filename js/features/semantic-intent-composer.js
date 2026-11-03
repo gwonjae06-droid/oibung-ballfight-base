@@ -58,6 +58,10 @@ function analyze(input){
  // True storage/release requires both phases. "absorbs damage" alone
  // must not be mislabeled as a kinetic battery.
  intent.relay=intent.relayNoun&&intent.relayAbsorb&&intent.relayRelease;
+ // A stored wall impact is not an enemy projectile's on-hit burst.
+ // Distinguish a separately named victim hit from a boundary collision.
+ if(intent.wallStore&&!/(?:명중|적중|착탄|맞으면|적에게\s*닿)/.test(raw))
+  intent.hitExplosion=false;
  intent.opposed=/반대\s*방향|서로\s*반대|정반대로/.test(raw)&&
   /중력/.test(raw)&&/(?:전자석|자기력|자기장|자석)/.test(raw);
  intent.noEffect=/아무\s*(?:효과|기술|스킬|행동).{0,18}(?:않|안|없)|가만히\s*있는다/.test(raw);
