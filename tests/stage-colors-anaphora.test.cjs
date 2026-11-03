@@ -124,6 +124,18 @@ test('old single-color skills and explicit origin hue remain backwards-compatibl
  assert.equal(g.SkillColorPolicy.explicit('검은 레일건을 발사한다').color,'#101827');
  assert.equal(g.SkillColorPolicy.stages('은색 파편으로 분열한다').fragment.color,'#9ca3af');
 });
+test('Korean adjective after ' + "'남은 파편은'" + ' attaches to shards, and longest colors win',()=>{
+ const g=boot(parser);
+ const palette=g.SkillColorPolicy.stages('그 파편들은 붉게 빛나고 마지막 폭발은 보라색으로 퍼진다');
+ assert.equal(palette.fragment.color,'#ff454f');
+ assert.equal(palette.terminal.color,'#a855f7');
+ assert.equal(g.SkillColorPolicy.stages('연보라 파편이 분열한다').fragment.color,'#c4b5fd');
+ const {a}=parsed(g,
+  '푸른 투사체가 명중하면 세 조각으로 분열하고 그 파편들은 붉게 빛나며 적을 추적한다');
+ assert.equal(a.visual.color,'#276df0');
+ assert.equal(a.fusion.childColor,'#ff454f');
+ assert.equal(a.fusion.childHoming,true);
+});
 test('an orphan demonstrative does not invent earlier physical shards',()=>{
  const g=boot(parser);
  for(const raw of ['그 파편들이 적을 추적한다',
