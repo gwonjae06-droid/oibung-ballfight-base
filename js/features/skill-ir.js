@@ -18,7 +18,10 @@ const own=(v,k)=>Object.prototype.hasOwnProperty.call(v,k);
 const primitives=action=>{
  const type=String(action?.type||'');
  const definition=g.ActionRegistry?.get?.(type);
- const operations=PRESETS[type]||(
+ const operations=type==='phenomenon'&&g.PhysicsLawEngine?.normalize?.(action?.law)?
+  ['create-force-field',...action.law.terms.map(t=>'force-'+t.op),
+   'time-envelope','bounded-motion','confirmed-contact-hit']:
+  PRESETS[type]||(
   definition?.physics==='projectile'?['spawn-projectile','collision-hit']:
   definition?.movementOnly?['self-motion','movement-only']:
   definition?.offense?['target-select','contact-hit']:['support-effect']);
