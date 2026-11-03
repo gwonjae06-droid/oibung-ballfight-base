@@ -33,6 +33,44 @@ function explicit(raw){
  hits.sort((a,b)=>a.index-b.index);
  return hits[0]?{color:hits[0].color,term:hits[0].term}:null;
 }
+// Associate explicit color adjectives with named physical objects, not with
+// whichever hue happened to occur first in the whole 300-char sentence.
+// This is intentionally a bounded local grammar, not unrestricted coreference.
+function stages(input){
+ const raw=String(input||'').normalize('NFC').slice(0,300);
+ const hits=[];
+ for(const [color,re] of words){
+  const scan=new RegExp(re.source,'g');let m,n=0;
+  while((m=scan.exec(raw))!==null&&n++<20){
+   hits.push({color,term:m[0],index:m.index,end:m.index+m[0].length});
+  }
+ }
+ const hex=/(#[0-9a-f]{6})(?![0-9a-f])/gi;let m;
+ while((m=hex.exec(raw))!==null&&hits.length<64)
+  hits.push({color:m[1].toLowerCase(),term:m[1],index:m.index,end:m.index+7});
+ hits.sort((a,b)=>a.index-b.index);
+ const nouns={
+  source:/투사체|탄환|탄알|미사일|화살|구슬|발사체|분열탄|추적탄|유도탄/g,
+  fragment:/파편|조각|부스러기/g,
+  terminal:/폭발|폭파|충격파|폭렬/g
+ };
+ const boundaries=/투사체|탄환|미사일|화살|구슬|분열탄|추적탄|유도탄|파편|조각|부스러기|폭발|폭파|충격파|폭렬/;
+ const found={};
+ for(const [role,pattern] of Object.entries(nouns)){
+  const scan=new RegExp(pattern.source,'g');let anchor,best=null,n=0;
+  while((anchor=scan.exec(raw))!==null&&n++<24){
+   const near=hits.filter(h=>{
+    const gap=anchor.index-h.end;
+    if(gap<0||gap>23)return false;
+    const between=raw.slice(h.end,anchor.index);
+    return !/[.!?;\n]/.test(between)&&!boundaries.test(between);
+   }).sort((a,b)=>b.end-a.end)[0];
+   if(near&&(!best||near.end>best.end))best=near;
+  }
+  if(best)found[role]={color:best.color,term:best.term};
+ }
+ return found;
+}
 function normalized(hex,alternative='#a78bfa'){
  return typeof hex==='string'&&HEX.test(hex)?hex.toLowerCase():alternative;
 }
@@ -52,14 +90,25 @@ function resolve(value,characterColor){
 }
 function decorate(recipe,text){
  if(!recipe||!Array.isArray(recipe.rules))return {recipe,priority:'none',explicit:null};
- const selected=explicit(text);
+ const palette=stages(text);
+ // Only a genuine shard-producing shot supports three differently colored
+ // physical phases. Other legacy skills retain the original first-color rule.
+ const hasSplit=recipe.rules.some(r=>r.action?.type==='shot'&&r.action?.fusion?.split);
+ const scoped=hasSplit&&(palette.fragment||palette.terminal);
+ const selected=palette.source||(!scoped?explicit(text):null);
  const mode=selected?'explicit':'inherit';
  const applyAction=a=>{
   if(!a||typeof a!=='object')return a;
   const old=g.MetaphorVisuals?.normalize?.(a.visual);
   // Existing effect motif is kept; only palette selection changes.
   if(!old)return a;
-  return {...a,visual:{...old,color:selected?.color||old.color,colorMode:mode}};
+  const fusion=a.type==='shot'&&a.fusion?.split?g.ConceptFusion?.normalize?.({
+   ...a.fusion,
+   ...(palette.fragment?{childColor:palette.fragment.color}:{}),
+   ...(a.fusion.finalBurst&&palette.terminal?{finalColor:palette.terminal.color}:{})
+  }):a.fusion;
+  return {...a,visual:{...old,color:selected?.color||old.color,colorMode:mode},
+   ...(fusion?{fusion}:{})};
  };
  const walk=steps=>(steps||[]).map(s=>{
   if(!s||typeof s!=='object')return s;
@@ -73,8 +122,9 @@ function decorate(recipe,text){
   ...(rule.steps?{steps:walk(rule.steps)}:{})
  }))};
  return {recipe:g.SignatureRuleSkill?.normalize?.(raw)||raw,
-  priority:selected?'skill-sentence':'character',
-  explicit:selected};
+  priority:scoped?'phase-specific':selected?'skill-sentence':'character',
+  explicit:selected,
+  stages:scoped?palette:null};
 }
-g.SkillColorPolicy=Object.freeze({explicit,normalized,shade,resolve,decorate});
+g.SkillColorPolicy=Object.freeze({explicit,stages,normalized,shade,resolve,decorate});
 })(typeof window!=='undefined'?window:globalThis);
