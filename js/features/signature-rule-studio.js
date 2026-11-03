@@ -111,7 +111,7 @@ function resultHTML(result){
  return '<section class="sentence-interpretation" aria-label="문장 해석 결과">'
  +'<h4>이 문장을 이렇게 구현합니다</h4>'
  +(result.plan?'<div class="sentence-materialization-plan"><strong>'+
-    (result.plan.strategy==='reuse'?'♻ 기존 동작·효과의 조합':'✦ 신규 물리 동작 생성')+'</strong><p>'+
+    (result.plan.strategy==='new-primitive'?'✦ 신규 물리 동작 생성':'♻ 기존 동작·효과의 조합')+'</strong><p>'+
     E(result.plan.explanation)+'</p><small>'+E(result.plan.conceptIds.join(' + '))+
     ' · '+E(result.plan.visualKinds.join(' + '))+'</small></div>':'')
  +(result.concepts?.fused?'<div class="sentence-fusion-explainer"><strong>🧩 개념 융합</strong><p>'+
