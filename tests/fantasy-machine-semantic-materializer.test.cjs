@@ -200,7 +200,7 @@ test('genre parser only activates for recognized subject nouns; older skills sta
 test('both entrypoints load concept module before normalizers and studio displays reuse vs new',()=>{
  for(const page of ['index.html','pvp-runtime.html']){
   const html=fs.readFileSync(page,'utf8');
-  assert.ok(html.includes('imagination-concepts.js?v=1-fantasy-machine-materializer'));
+  assert.ok(html.includes('imagination-concepts.js?v=multidomain-color1'));
   assert.ok(html.indexOf('imagination-concepts.js')<html.indexOf('signature-scratch.js'));
   assert.ok(html.indexOf('imagination-concepts.js')<html.indexOf('skill-forge-world.js'));
  }
