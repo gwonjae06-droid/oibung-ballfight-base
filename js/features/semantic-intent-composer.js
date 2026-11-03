@@ -166,7 +166,7 @@ function compose(input){
  if(!motifs.length)motifs.push('rings');
  const theme=older?.visual?.color||fx?.color||'#a89fe3';
  const visual=g.MetaphorVisuals?.normalize?.({
-  shape:'aura',color:theme,scale:fx?.scale||1.55,
+  shape:g.MetaphorVisuals?.shapeFor?.(raw)||'aura',color:theme,scale:fx?.scale||1.55,
   charge:!!fx?.charge||intent.relay,
   layers:motifs.map(kind=>({kind,color:theme,power:1.15,spin:1}))
  });
