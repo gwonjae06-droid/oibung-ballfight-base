@@ -171,7 +171,12 @@ function chooseAction(raw,selected){
  if(/폭발|폭파|터뜨|터지|방사|충격파|분출|브레스/.test(raw))return 'wave';
  if(/소환|분신|드론|골렘|요정/.test(raw))return 'summon';
  if(/돌진|질주|뛰어들|달려들/.test(raw))return 'dash';
- if(/주변에\s*퍼|영역|장판|지속\s*구역|마법진/.test(raw))return 'zone';
+ if(/주변에\s*퍼|영역|장판|지속\s*구역|마법진|안개처럼\s*퍼/.test(raw))return 'zone';
+ // A biological/medical concept can heal, harm or protect depending on
+ // the user's verb. A bare DNA noun must not turn "hurt the enemy" into heal.
+ if(/(?:적|상대).{0,14}(?:피해|공격|타격|상처)|(?:피해|타격|공격).{0,14}(?:적|상대)/.test(raw)&&
+  ['heal','regen','shield','haste','fortify'].includes(primary?.base))
+  return /구름|안개|감염|바이러스|포자/.test(raw)?'zone':'wave';
  return primary?.base||'wave';
 }
 function interpret(rawInput){
