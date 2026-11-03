@@ -79,7 +79,29 @@ function build(input,recipe){
     if(action.fusion.childColor)a.childColor=action.fusion.childColor;
     if(action.fusion.finalColor)a.finalColor=action.fusion.finalColor;
     push(fragments,'may_hit','enemy');
-    if(action.fusion.finalShield){
+    const chain=g.TerminalEventChain?.normalize?.(action.fusion.terminalChain);
+    if(chain){
+     a.terminalChain=chain.map(step=>({...step}));
+     let previous=fragments;
+     for(let i=0;i<chain.length;i++){
+      const step=chain[i],next=entity('terminal_step',
+       g.TerminalEventChain?.TYPES?.[step.type]||step.type);
+      if(!next)break;
+      push(previous,i===0?'when_all_retired':'next_stage',next,{
+       event:i===0?'last_fragment_retired':'previous_stage_completed',
+       index:i,gate:step.gate});
+      if(step.gate==='damage')push(previous,'requires_confirmed_damage',next,{
+       condition:'previous_stage_reduced_enemy_hp'});
+      if(step.gate==='near')push('enemy','requires_nearby_target',next,{
+       condition:'enemy_alive_within_caster_radius'});
+      push(next,step.type==='burst'?'confirmed_area_damage':
+       step.type==='tether'?'binds_target':
+       step.type==='heal'?'heals_caster':'grants_shield',
+       step.type==='burst'||step.type==='tether'?'enemy':'caster');
+      previous=next;
+     }
+    }
+    if(action.fusion.finalShield&&!chain){
      const guard=entity('terminal_guard','파편 소멸 후 보호막');
      a.finalShield=true;
      if(guard){
@@ -87,7 +109,7 @@ function build(input,recipe){
       push(guard,'grants_shield','caster',{target:'caster',trigger:'confirmed_child_family_end'});
      }
     }
-    if(action.fusion.finalBurst){
+    if(action.fusion.finalBurst&&!chain){
      const burst=entity('terminal_effect','최종 폭발');
      a.finalBurst=true;
      if(burst){
