@@ -20,9 +20,35 @@
    layers:(v[4]||[]).slice(0,5).filter(a=>a[0]>=0&&a[0]<kindNames.length)
     .map(a=>({kind:kindNames[a[0]],color:a[1],power:a[2],spin:a[3]}))};
  };
- const encode=a=>keys.map(k=>k==='visual'?packVisual(a?.visual):a?.[k]??null);
- const decode=a=>Object.fromEntries(keys.map((k,i)=>[
-  k,k==='visual'?unpackVisual(a?.[i]):a?.[i]??undefined]));
+ // Optional compact fusion trailer: legacy v3 packets have no trailer.
+ // Do not add a null array slot to every old action or exceed the 2.5KB RPC.
+ const elements=['none','fire','ice','poison','lightning','gravity','shadow','nature','water','wind'];
+ const forms=['none','projectile','chain','beam','wave','field','vortex'];
+ const impacts=['none','burst','pull','repulse','vortex'];
+ const packFusion=value=>{
+  const f=g.ConceptFusion?.normalize?.(value);
+  return f?[elements.indexOf(f.element),forms.indexOf(f.form),
+   f.homing?1:0,f.split?1:0,f.fragments,impacts.indexOf(f.impact),f.radius]:null;
+ };
+ const unpackFusion=v=>{
+  if(!Array.isArray(v)||v.length!==7)return undefined;
+  return g.ConceptFusion?.normalize?.({element:elements[v[0]],form:forms[v[1]],
+   homing:v[2]===1,split:v[3]===1,fragments:v[4],
+   impact:impacts[v[5]],radius:v[6]});
+ };
+ const encode=a=>{
+  const data=keys.map(k=>k==='visual'?packVisual(a?.visual):a?.[k]??null);
+  const fusion=packFusion(a?.fusion);
+  if(fusion)data.push(fusion);
+  return data;
+ };
+ const decode=a=>{
+  const result=Object.fromEntries(keys.map((k,i)=>[
+   k,k==='visual'?unpackVisual(a?.[i]):a?.[i]??undefined]));
+  const fusion=unpackFusion(a?.[keys.length]);
+  if(fusion)result.fusion=fusion;
+  return result;
+ };
  // Compact Scratch AST rather than repeating long field names in the queue.
  const compactNode=n=>{
   if(n.kind==='action')return ['a',encode(n.action)];
