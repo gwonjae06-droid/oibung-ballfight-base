@@ -37,8 +37,9 @@ function apply(result){
  const name=(panel.querySelector('#rule-name')?.value||'').trim().slice(0,18);
  const skills=list.map((item,i)=>{
   if(!item?.ok)throw Error((i+1)+'번째 기술을 해석하지 못했습니다.');
-  const ir=g.SkillIR?.fromSentence?.(item.sourceText,item.recipe)||
-   g.SkillIR?.fromRecipe?.(item.recipe);
+  // Saved fighter contract remains IR v1. The v2 semantic graph is an
+  // optional editor-side explanation linked to retained promptText.
+  const ir=g.SkillIR?.fromRecipe?.(item.recipe);
   const recipe=ir?g.SkillIR.toRecipe(ir):rules.normalize(item.recipe);
   if(!recipe.rules.length)throw Error((i+1)+'번째 기술에 실행 동작이 없습니다.');
   return {name:list.length===1&&name?name:item.name||'문장 기술 '+(i+1),
