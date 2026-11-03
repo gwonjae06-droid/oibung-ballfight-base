@@ -34,13 +34,14 @@
  const packFusion=value=>{
   const f=g.ConceptFusion?.normalize?.(value);
   return f?[elements.indexOf(f.element),forms.indexOf(f.form),
-   f.homing?1:0,f.split?1:0,f.fragments,impacts.indexOf(f.impact),f.radius]:null;
+   f.homing?1:0,f.split?1:0,f.fragments,impacts.indexOf(f.impact),f.radius,
+   ...(f.splitTrigger==='hit'?[1]:[])]:null;
  };
  const unpackFusion=v=>{
-  if(!Array.isArray(v)||v.length!==7)return undefined;
+  if(!Array.isArray(v)||(v.length!==7&&v.length!==8))return undefined;
   return g.ConceptFusion?.normalize?.({element:elements[v[0]],form:forms[v[1]],
    homing:v[2]===1,split:v[3]===1,fragments:v[4],
-   impact:impacts[v[5]],radius:v[6]});
+   impact:impacts[v[5]],radius:v[6],splitTrigger:v[7]===1?'hit':'age'});
  };
  const opIds=['attract','repel','spin','spring','pulse','drag','propel','gravity','orbit','wave'];
  const falls=['constant','linear','quadratic','inverse','edge'];
