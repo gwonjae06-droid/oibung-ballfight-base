@@ -62,7 +62,8 @@ function cast(p,s,target,index){
       waitApex:step>0&&['leap','glide','hover','uppercut'].includes(previous.type)&&
         ['dive','aircombo','slash','spinslash','thrust'].includes(a.type)});
   }
-  if(p.forgeQueue.length>48)p.forgeQueue.splice(0,p.forgeQueue.length-48);
+  // Do not discard earlier skill actions when one energy burst launches many
+  // independent skills. The per-frame execution budget below prevents stalls.
   global.ArenaCombatV2?.onCast?.(p);
   global.BattleFX?.caption?.(p,s.name,(p.forge.effectColor||p.forge.color));
   return true;
@@ -81,6 +82,8 @@ function tickSkills(p,blocked=false){
   return !blocked;
 }
 function tickQueue(p,target){
+  const MAX_ACTIONS_PER_TICK=18;
+  let executed=0;
   const blocked=!!global.ForgeExpansion?.blocked(p);
   // Exactly one program action may be queued at a time; this preserves a
   // genuine opportunity to observe hit/movement/guard events before branching.
@@ -120,7 +123,7 @@ function tickQueue(p,target){
     const q=p.forgeQueue[i];
     if(q.remaining>0)q.remaining--;
     if(q.remaining>0){i++;continue;}
-    if(blocked){i++;continue;} // keep the action pending instead of dropping it
+    if(blocked||executed>=MAX_ACTIONS_PER_TICK){i++;continue;} // queue remains for next frame
     // Across separate skills, attacks also wait until charging completes.
     // Movement/support blocks remain independent and can play during windup.
     if(p.forgeCharge?.phase==='charging'&&global.ArenaCharge?.ATTACK?.has(q.a.type)){
@@ -141,6 +144,7 @@ function tickQueue(p,target){
     const castTarget=players.find(e=>e.playerNum===q.targetNum&&e.hp>0)||target;
     global.ArenaBattleDirector?.skillUsed?.(p,castTarget,q.a,p.forge?.skills?.[q.skillIndex]?.name);
     execute(p,q.a,castTarget);
+    executed++;
     if(q.rule)global.SignatureRuleLive?.performed?.(p,q.a);
     if(q.scratch){
       if(q.a.type==='shield'&&p.invincible>0)
