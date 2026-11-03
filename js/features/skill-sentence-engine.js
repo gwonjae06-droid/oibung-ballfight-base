@@ -38,6 +38,10 @@ function describe(parsed){
   const when=r.eventGraph?
     (labels[r.when]||r.when)+(r.eventGraph.minCount?
      ' · 누적 '+r.eventGraph.minCount+'회 확인':'')+
+    (r.eventGraph.secondary?
+     (r.eventGraph.secondary.mode==='and'?' 그리고 ':' 또는 ')+
+     (labels[r.eventGraph.secondary.trigger]||r.eventGraph.secondary.trigger)+
+     ' (확인 '+(r.eventGraph.secondary.minCount||1)+'회)':'')+
     (r.eventGraph.hpBelow!==undefined?
      ' · 실제 체력 '+r.eventGraph.hpBelow+'% 이하':''):
    r.when==='wallStored'?'실제 벽 충돌 '+r.wallHits+'회 축적 후':
