@@ -1,5 +1,7 @@
 /* Separate the custom studio's single-signature generator and detailed block editor.
- * Reuse the original forge draft, preview canvas, save button and roster. */
+ * Reuse the original forge draft, preview canvas, save button and roster.
+ * Sentence creation is the only visible entry; old generator/editors are
+ * hidden for backward-compatible saved characters and existing engines. */
 (function(global){
 'use strict';
 const dialog=document.getElementById('character-studio-dialog');
@@ -54,10 +56,10 @@ composeView.className='studio-mode-screen studio-compose-screen';
 composeView.hidden=true;
 const bar=document.createElement('div');
 bar.className='studio-mode-toolbar';
-bar.innerHTML='<button type="button" data-studio-back>← 제작 방법 선택</button><span>SENTENCE SKILL CREATOR</span>';
+bar.innerHTML='<span>1 · 기술 문장 입력</span><span>2 · 기술 시연</span><span>3 · 외형 꾸미기</span><span>4 · 캐릭터 생성</span>';
 const heading=document.createElement('div');
 heading.className='studio-compose-heading';
-heading.innerHTML='<h3>스킬 상상하기</h3><p>하고 싶은 기술을 문장으로 설명하고, 미니 핀볼에서 결과를 확인하세요.</p>';
+heading.innerHTML='<h3>문장으로 스킬 만들기</h3><p>상상한 기술을 한국어로 적으세요. 해석한 기술이 자동으로 만들어지고 왼쪽 핀볼에서 시연됩니다.</p>';
 composeView.append(bar,heading);
 [blocks,tuning,library,...other].filter(Boolean).forEach(node=>composeView.append(node));
 skills.replaceChildren(picker,randomView,composeView);
@@ -77,15 +79,16 @@ function showMode(next,{keepTab=false}={}){
   if(!keepTab)baseSelect(appearance?'appearance':'skills');
   shell.dataset.studioMode=mode;
   studio.dataset.studioMode=mode;
-  picker.hidden=mode!=='choose';
-  randomView.hidden=mode!=='random';
+  picker.hidden=true; // no competing random/block creation entrypoints
+  randomView.hidden=true;
   composeView.hidden=mode!=='compose';
-  name.hidden=mode==='choose';
-  if(rolePicker)rolePicker.hidden=mode==='choose';
-  create.hidden=mode==='choose';
-  saved.hidden=mode==='choose';
-  if(helper)helper.hidden=mode!=='compose';
-  if(saveHint)saveHint.hidden=mode==='choose';
+  name.hidden=!appearance;
+  if(rolePicker)rolePicker.hidden=!appearance;
+  create.hidden=!appearance;
+  saved.hidden=!appearance;
+  if(manager)manager.hidden=!appearance;
+  if(helper)helper.hidden=true;
+  if(saveHint)saveHint.hidden=!appearance;
   // One original motion renderer, only mounted for the two skill workspaces.
   preview.hidden=mode==='choose'||appearance;
   workspace.setPreviewVisible?.(!preview.hidden);
@@ -99,7 +102,7 @@ function renderResults(profile){
   results.replaceChildren();
   const heading=document.createElement('p');
   heading.className='studio-result-heading';
-  heading.textContent='독립 스킬 '+profile.skills.length+'개 · 기세 100마다 하나씩 순환 발동합니다.';
+  heading.textContent='독립 스킬 '+profile.skills.length+'개 · 기세 100마다 동시 발동합니다.';
   results.append(heading);
   profile.skills.forEach((s,i)=>{
     const card=document.createElement('button');
@@ -124,8 +127,8 @@ function selectRandomPreview(index){
   });
 }
 function rollFour(){
-  // Random generation now creates four independent skills, not one overstuffed
-  // signature. Combat rotates them through the shared 100-energy gauge.
+  // Retained only for old saved templates and external integrations.
+  // The user-facing skill workflow is sentence interpretation.
   const rolled=forge.randomProfile('any',Math.random,4);
   const previous=forge.getDraft();
   const base=previous;
@@ -144,7 +147,7 @@ function rollFour(){
   renderResults(forge.getDraft());
   workspace.refresh?.();
   selectRandomPreview('all');
-  rollStatus.textContent='독립 스킬 4개 생성 완료 · 기세 순환형 초안입니다.';
+  rollStatus.textContent='독립 스킬 4개 생성 완료 · 기세 동시 발동형 초안입니다.';
   return forge.getDraft();
 }
 
