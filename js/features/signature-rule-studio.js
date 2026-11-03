@@ -80,6 +80,12 @@ function resultHTML(result){
    +(t.ending?' · 어미 '+E(t.ending):'')
    +(t.prefix?' · 접두사 '+E(t.prefix):'')
    +(t.suffix?' · 접미사 '+E(t.suffix):'')+'</li>').join('')+'</ul></details>':'';
+ const probes=verification?.sandbox?.probes||[];
+ const sandboxView=probes.length?'<p class="sentence-local-note">격리 물리 시험: '
+  +probes.map(p=>E(g.SkillForge?.TYPE?.[p.type]||p.type)+' · '+
+    (p.passed?'통과':'점검 필요')+' · 가까운 대상 피해 '+p.near.damage+
+    ' / 먼 대상 '+p.far.damage+' / 보호 대상 '+p.shield.damage).join(' / ')
+  +'<br>실제 경기의 피해량·명중을 보장하지 않는 별도 거리·보호막 검사입니다.</p>':'';
  const auditView=verification?.checks?.length?
   '<p class="sentence-local-note">전투 실행 확인: '
    +verification.checks.map(c=>E(c.label)+' · '+(c.vfx?'이펙트 등록됨':'이펙트 점검 필요')
@@ -94,7 +100,7 @@ function resultHTML(result){
   ).join('')+'</div>'
  +(limitations.length?'<div class="sentence-limitations"><strong>현재 구현 범위 안내</strong><ul>'
   +limitations.map(n=>'<li>'+E(n)+'</li>').join('')+'</ul></div>':'')
- +grammarPreview+auditView
+ +grammarPreview+auditView+sandboxView
  +((result.notes||[]).length?'<details class="sentence-more"><summary>해석과 안전 제한 자세히</summary><ul>'
  +(result.notes||[]).map(x=>'<li>'+E(x)+'</li>').join('')+'</ul></details>':'')
  +'<p class="sentence-local-note">이 결과는 오프라인 동작 사전과 실행 규칙으로 구성됩니다. 새로운 물리 능력이나 연출을 무조건 생성하는 AI는 아닙니다.</p>'

@@ -16,6 +16,7 @@ function execute(p,a,target) {
       a.type==='blink'||a.type==='swap'||a.type==='portal'?4:10;
     p.movementOnlyFrames=Math.max(p.movementOnlyFrames||0,Math.min(240,grace));
   }
+  global.SemanticPhysics?.noteCast?.(p,a);
   const visualReady=global.SkillVisuals?.cast(p,a,target);
   // A future user-authored action may have a valid executor but no VFX motif
   // yet. Never let it execute completely invisibly; render a safe generic cue.
