@@ -55,6 +55,7 @@ const normalize=v=>{
  const element=Object.hasOwn(ELEMENTS,v.element)?v.element:'none';
  const form=Object.hasOwn(FORMS,v.form)?v.form:'none';
  const homing=v.homing===true,split=v.split===true;
+ const terminalChain=split?g.TerminalEventChain?.normalize?.(v.terminalChain):undefined;
  if(!homing&&!split&&impact==='none'&&element==='none')return undefined;
  return {version:1,element,form,homing,split,
   fragments:Math.round(cap(v.fragments,2,4,3)),
@@ -62,6 +63,7 @@ const normalize=v=>{
   ...(split&&v.splitTrigger==='hit'?{splitTrigger:'hit'}:{}),
   ...(split&&v.finalBurst===true?{finalBurst:true}:{}),
   ...(split&&v.finalShield===true?{finalShield:true}:{}),
+  ...(terminalChain?{terminalChain}:{}),
   ...(split&&v.childHoming===true?{childHoming:true}:{}),
   ...(split&&safeTint(v.childColor)?{childColor:safeTint(v.childColor)}:{}),
   ...(split&&v.finalBurst===true&&safeTint(v.finalColor)?{finalColor:safeTint(v.finalColor)}:{}),
@@ -75,6 +77,7 @@ function analyze(input){
  const split=/분열|갈라지|쪼개지|부서지|깨지|여러\s*개로\s*나뉘|산산이\s*흩어/.test(raw);
  const finalBurst=terminalIntent(raw);
  const finalShield=terminalShieldIntent(raw);
+ const terminalChain=g.TerminalEventChain?.parse?.(raw)?.steps;
  const sequence=/그\s*다음|그러고\s*나서|뒤이어|이어서|그\s*후|그\s*뒤|(?:하|한|하고)\s*뒤에|순서대로/.test(raw);
  const hitExplosion=(!finalBurst||/(?:명중|적중|착탄|맞으면|닿으면).{0,18}(?:폭발|터지|터뜨)/.test(raw))&&
   /(?:맞|적중|명중|닿|충돌|부딪|접촉|도달|착탄|피격|명중시).{0,22}(?:폭발|터지|터뜨|터져)|(?:맞으면|닿으면|충돌하면|명중하면|적중하면).{0,22}(?:폭발|퍼지|퍼뜨)|(?:폭발하는|터지는|폭발성|충돌\s*폭발|착탄\s*폭발)/.test(raw);
@@ -107,11 +110,13 @@ function analyze(input){
   childHoming:childOnly,
   finalBurst:splitModifier&&finalBurst,
   finalShield:splitModifier&&finalShield,
+  terminalChain:splitModifier?terminalChain:undefined,
   fragments:namedFragments??namedCount??3,
   impact:impactModifier?impact:'none',
   radius:g.KoreanSkillParameters?.analyze?.(raw)?.values?.radius||85});
  return {elements,forms,main,homing:homeModifier,split:splitModifier,
   childOnly,finalBurst:!!fusion?.finalBurst,finalShield:!!fusion?.finalShield,
+  terminalChain:fusion?.terminalChain||null,
   impact:impactModifier?impact:'none',lightningModifier,sequence,fused,fusion,
   labels:[
    ...elements.map(id=>ELEMENTS[id].label),
@@ -120,7 +125,8 @@ function analyze(input){
    ...(splitModifier?['탄환 분열']:[]),
    ...(impactModifier?[IMPACTS[impact]]:[]),
    ...(fusion?.finalBurst?['마지막 파편 소멸 시 폭발']:[]),
-   ...(fusion?.finalShield?['마지막 파편 소멸 시 시전자 보호막']:[])
+   ...(fusion?.finalShield?['마지막 파편 소멸 시 시전자 보호막']:[]),
+   ...(fusion?.terminalChain?['파편 종료 후 '+fusion.terminalChain.length+'단계 순차 실행']:[])
   ].slice(0,12)};
 }
 function visualOf(action,raw,concepts){

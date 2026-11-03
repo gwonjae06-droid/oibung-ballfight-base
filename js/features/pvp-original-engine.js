@@ -38,7 +38,11 @@
    f.homing?1:0,f.split?1:0,f.fragments,impacts.indexOf(f.impact),f.radius,
    // Optional three-phase palette / child-only pursuit uses a full
    // 12-slot trailer. Old 7/8/9-slot payloads remain byte-identical.
-   ...(f.finalShield?
+   ...(f.terminalChain?
+     [f.splitTrigger==='hit'?1:0,f.finalBurst?1:0,
+      f.childColor||null,f.finalColor||null,f.childHoming?1:0,
+      f.finalShield?1:0,g.TerminalEventChain?.pack?.(f.terminalChain)]:
+    f.finalShield?
      [f.splitTrigger==='hit'?1:0,f.finalBurst?1:0,
       f.childColor||null,f.finalColor||null,f.childHoming?1:0,1]:
     f.childHoming||f.childColor||f.finalColor?
@@ -48,12 +52,13 @@
       f.splitTrigger==='hit'?[1]:[])]:null;
  };
  const unpackFusion=v=>{
-  if(!Array.isArray(v)||![7,8,9,12,13].includes(v.length))return undefined;
+  if(!Array.isArray(v)||![7,8,9,12,13,14].includes(v.length))return undefined;
   return g.ConceptFusion?.normalize?.({element:elements[v[0]],form:forms[v[1]],
    homing:v[2]===1,split:v[3]===1,fragments:v[4],
    impact:impacts[v[5]],radius:v[6],splitTrigger:v[7]===1?'hit':'age',
    finalBurst:v[8]===1,finalShield:v[12]===1,
-   childColor:v[9],finalColor:v[10],childHoming:v[11]===1});
+   childColor:v[9],finalColor:v[10],childHoming:v[11]===1,
+   terminalChain:g.TerminalEventChain?.unpack?.(v[13])});
  };
  const opIds=['attract','repel','spin','spring','pulse','drag','propel','gravity','orbit','wave'];
  const falls=['constant','linear','quadratic','inverse','edge'];

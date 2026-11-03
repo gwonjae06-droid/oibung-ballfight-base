@@ -16,47 +16,98 @@ function finalFragmentEvent(p,group,x,y,z){
  group.finished=true;
  const frame=Number(p._forgeActionClock)||Number(p._forgeBalanceFrame)||0;
  const count=p._fusionFinalAt===frame?p._fusionFinalCount||0:0;
- if(count>=4)return; // a large 100-momentum volley cannot flood the scene
+ if(count>=4)return; // per-fighter bound across independent families
  p._fusionFinalAt=frame;p._fusionFinalCount=count+1;
- const action=group.action||{},radius=Math.max(35,Math.min(160,group.radius||85));
- const fusion=action.fusion||{};
+ const action=group.action||{},fusion=action.fusion||{};
+ const radius=Math.max(35,Math.min(160,Number(group.radius)||85));
  const xx=Math.max(0,Math.min(canvas.width,Number(x)||0));
  const yy=Math.max(0,Math.min(canvas.height,Number(y)||0));
- const original=p.forge?.effectColor||p.forge?.color||'#b4a3ff';
- const tint=action.fusion?.finalColor||
-  global.SkillColorPolicy?.resolve?.(action.visual,original)?.color||
-  action.visual?.color||original;
- if(fusion.finalBurst){
- // This effect is spatially anchored on the LAST fragment, not the caster,
- // not the original hit location, and never an invisible textual promise.
- global.BattleFX?.cast?.(p,'wave',{x:xx,y:yy,radius,color:tint});
- global.BattleFX?.mark?.('wave',xx,yy,tint,radius);
- const damage=Math.min(52,Math.max(0,Math.round((Number(action.damage)||0)*.42)));
- if(damage>0){
-  const burst={...action,type:'wave',damage,radius,knockback:0,
-   status:'none',fusion:undefined};
-  let contacts=0;
-  for(const e of enemies(p)){
-   if(!e||e===p||e.hp<=0||++contacts>24)continue;
-   if(Math.hypot(e.x-xx,e.y-yy)<=radius+(Number(e.radius)||0))
-    hit(p,e,burst,1,Number.isFinite(z)?z:0);
+ const baseColor=p.forge?.effectColor||p.forge?.color||'#b4a3ff';
+ const tint=fusion.finalColor||
+  global.SkillColorPolicy?.resolve?.(action.visual,baseColor)?.color||
+  action.visual?.color||baseColor;
+ const registered=type=>!!global.ActionRegistry?.get?.(type);
+ const create=(type,overrides)=>global.SignatureScratch?.safeAction?.({
+  ...action,type,target:type==='heal'||type==='shield'?'self':'nearest',
+  damage:0,count:1,knockback:0,status:'none',fusion:undefined,
+  ...overrides
+ })||{
+  ...action,type,damage:0,count:1,knockback:0,status:'none',
+  fusion:undefined,...overrides
+ };
+ function burst(){
+  // Real spatial collision test, world height and real hit resolver.
+  global.BattleFX?.cast?.(p,'wave',{x:xx,y:yy,radius,color:tint});
+  global.BattleFX?.mark?.('wave',xx,yy,tint,radius);
+  const damage=Math.min(52,Math.max(0,Math.round((Number(action.damage)||0)*.42)));
+  let dealt=0;
+  if(damage>0){
+   const attack=create('wave',{target:'nearest',damage,radius});
+   let contacts=0;
+   for(const e of enemies(p)){
+    if(!e||e===p||e.hp<=0||++contacts>24)continue;
+    if(Math.hypot(e.x-xx,e.y-yy)<=radius+(Number(e.radius)||0)){
+     const hp=e.hp;hit(p,e,attack,1,Number.isFinite(z)?z:0);
+     dealt+=Math.max(0,hp-e.hp);
+    }
+   }
   }
+  global.SignatureLive?.record?.(p,'finalFragment');
+  return dealt>0;
  }
- global.SignatureLive?.record?.(p,'finalFragment');
- }
- // Separate post-event, emitted only after the SAME authoritative family
- // reaches zero. Never award shields on mere source contact or fixed age.
- if(fusion.finalShield&&p.hp>0&&typeof execute==='function'){
-  const defense=global.SignatureScratch?.safeAction?.({
-   type:'shield',target:'self',damage:0,count:1,
-   duration:Math.max(.4,Math.min(2.0,Number(action.duration)||1.3)),
-   status:'none',visual:action.visual
-  })||{type:'shield',target:'self',damage:0,
-   duration:Math.max(.4,Math.min(2,Number(action.duration)||1.3)),
-   status:'none',visual:action.visual};
-  execute(p,defense,p); // SAME registered combat action executor.
+ function shield(){
+  if(p.hp<=0||typeof execute!=='function'||!registered('shield'))return false;
+  const defense=create('shield',{duration:Math.max(.4,Math.min(2,
+   Number(action.duration)||1.3))});
+  execute(p,defense,p);
   global.SignatureLive?.record?.(p,'finalShield');
+  return true;
  }
+ function heal(){
+  if(p.hp<=0||typeof execute!=='function'||!registered('heal'))return false;
+  const amount=Math.min(22,Math.max(1,Math.round((Number(action.damage)||0)*.32)));
+  execute(p,create('heal',{damage:amount,duration:1}),p);
+  global.SignatureLive?.record?.(p,'terminalHeal');
+  return true;
+ }
+ const near=()=>{
+  const r=Math.min(130,Math.max(55,radius));
+  return (enemies(p)||[]).filter(e=>e&&e!==p&&e.hp>0&&
+   Math.hypot(e.x-p.x,e.y-p.y)<=r+(Number(e.radius)||0))
+   .sort((a,b)=>Math.hypot(a.x-p.x,a.y-p.y)-Math.hypot(b.x-p.x,b.y-p.y))[0];
+ };
+ function tether(){
+  if(p.hp<=0||typeof execute!=='function'||!registered('tether'))return false;
+  const enemy=near();if(!enemy)return false;
+  execute(p,create('tether',{target:'nearest',
+   damage:Math.min(14,Math.max(0,Math.round((Number(action.damage)||0)*.22))),
+   radius:Math.min(130,Math.max(55,radius)),duration:1.2}),enemy);
+  global.SignatureLive?.record?.(p,'terminalTether');
+  return true;
+ }
+ // Declarative post-event steps are authoritative when present. Legacy
+ // finalBurst/finalShield booleans stay intact for saved pre-chain skills,
+ // and are NOT replayed on top of a valid newer graph.
+ const chain=global.TerminalEventChain?.normalize?.(fusion.terminalChain);
+ if(chain){
+  const report=global.TerminalEventChain.evaluate(chain,{
+   near:()=>!!near(),
+   perform(type){
+    if(type==='burst')return {performed:true,damaged:burst()};
+    if(type==='heal')return {performed:heal(),damaged:false};
+    if(type==='tether')return {performed:tether(),damaged:false};
+    if(type==='shield')return {performed:shield(),damaged:false};
+    return {performed:false,damaged:false};
+   }
+  });
+  const history=p._terminalChainHistory||=([]);
+  history.push({frame,executed:report.executed.slice(),stopped:report.stopped});
+  if(history.length>16)history.shift();
+  if(report.executed.length)global.SignatureLive?.record?.(p,'terminalChain');
+  return;
+ }
+ if(fusion.finalBurst)burst();
+ if(fusion.finalShield)shield();
 }
 function retire(p,b,index){
  p.forgeShots.splice(index,1);
@@ -84,7 +135,7 @@ function fracture(p,b,concept,index,victim){
     fusion:{...concept,split:false,homing:concept.homing||concept.childHoming}};
   // A source orb is NOT one of the children. Its own retirement must
   // never decrement the family or trigger the explosion prematurely.
-  const terminal=(concept.finalBurst||concept.finalShield)?{remaining:count,finished:false,
+  const terminal=(concept.finalBurst||concept.finalShield||concept.terminalChain)?{remaining:count,finished:false,
    action:b.a,radius:concept.radius}:null;
   // Remove parent first; new children are visited on the NEXT world tick.
   p.forgeShots.splice(index,1);
