@@ -191,6 +191,13 @@ function make(profile={},focus=0,actionIndex=-1){
    clamp(Math.round((g.ActionRegistry?.duration?.(type)||1050)/35),18,58));
   activity=frame+90;
   const dx=target.x-hero.x,dy=target.y-hero.y,angle=Math.atan2(dy,dx);
+  if(type==='kinetic_relay'&&g.ImaginationConcepts){
+   g.ImaginationConcepts.relayBegin(hero,a);
+   const radius=clamp(a.relay?.radius||a.radius||140,35,260);
+   previewEffect(a,'cast',hero.x,hero.y,48);
+   rings.push({x:hero.x,y:hero.y,r:radius*.45,age:0,life:48,color:a.visual?.color||color});
+   return;
+  }
   if(type==='phenomenon'&&g.PhysicsLawEngine){
    g.PhysicsLawEngine.fieldFor(hero,a,target);
    const radius=clamp(a.law?.radius||a.radius||120,30,300);
@@ -340,6 +347,7 @@ function make(profile={},focus=0,actionIndex=-1){
   // Same bounded attraction/rotation code as the actual combat world.
   g.SemanticPhysics?.tick?.(hero,[target],previewPhysicalHit);
   g.PhysicsLawEngine?.tick?.(hero,[target],previewPhysicalHit);
+  g.ImaginationConcepts?.relayTick?.(hero,[target],previewPhysicalHit);
   for(const p of [hero,target]){
    if(p.portalCooldown>0)p.portalCooldown--;
    if(p===target&&p.frozen>0){p.frozen--;continue;}
