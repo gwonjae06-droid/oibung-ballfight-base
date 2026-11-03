@@ -35,7 +35,22 @@ function describe(parsed){
    };walk(r.steps);
   }else names.push(g.SkillForge?.TYPE?.[r.action?.type]||r.action?.type||'행동');
   const when=labels[r.when]||r.when;
-  return {when,action:names.join(' → '),interval:r.interval,visual:r.action?.visual?.shape||null};
+  const styles=[];
+  const gather=steps=>{for(const step of steps||[]){
+   if(step.action?.visual)styles.push(step.action.visual);
+   gather(step.body);gather(step.then);gather(step.else);
+  }};
+  gather(r.steps);
+  if(!styles.length&&r.action?.visual)styles.push(r.action.visual);
+  const all=new Set();
+  for(const v of styles)for(const layer of v.layers||[])all.add(layer.kind);
+  const composite=[...all].map(id=>g.SkillFXComposer?.KINDS?.[id]||id);
+  return {when,action:names.join(' → '),interval:r.interval,
+   visual:composite.length?composite.join(' + '):
+    styles[0]?.shape&&styles[0].shape!=='aura'?
+      g.MetaphorVisuals?.SHAPES?.[styles[0].shape]||styles[0].shape:null,
+   layers:composite};
+}
  });
 }
 // Compile-time combat readiness check: presentation and damage authorization
@@ -79,6 +94,12 @@ function parse(input){
   for(const n of result.notes||[])if(/제한|지원하지|맞췄|상한/.test(n))
    limitations.push(n);
   const proof=audit(result.recipe);
+  for(const clause of grammar?.clauses||[]){
+   if(clause.chosen?.source==='analogy')limitations.push(
+    '비유 유추: "'+clause.text+'"는(은) '+
+    (g.SkillForge?.TYPE?.[clause.chosen.type]||clause.chosen.type)+
+    ' 동작으로 표현했습니다. 새로운 전투 물리까지 구현한 것은 아닙니다.');
+  }
   limitations.push(...proof.warnings);
   return {...result,summary:describe(result),grammar,verification:proof,
    limitations:[...new Set(limitations)],sourceText:raw,mode:'offline'};

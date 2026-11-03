@@ -51,6 +51,21 @@ const events=[
  {when:'near',pattern:/상대.*(?:가까|근접|붙)|적이.*가까/},
  {when:'far',pattern:/상대.*(?:멀|거리)|적이.*멀/}
 ];
+function mergeVisual(base,fx){
+ if(!fx)return base;
+ const layers=[...(base?.layers||[]),...(fx.layers||[])];
+ const unique=[],seen=new Set();
+ for(const layer of layers){
+  if(!seen.has(layer.kind)){unique.push(layer);seen.add(layer.kind);}
+ }
+ return g.MetaphorVisuals?.normalize?.({
+  shape:base?.shape||'aura',
+  color:base?.shape&&base.shape!=='aura'?base.color:fx.color,
+  scale:Math.max(Number(base?.scale)||1,Number(fx.scale)||1),
+  charge:!!base?.charge||!!fx.charge,
+  layers:unique.slice(0,5)
+ })||base;
+}
 function readNumber(text,pattern){const m=text.match(pattern);return m?Number(m[1]):null;}
 function parse(input){
  const raw=String(input??'').trim();
@@ -193,7 +208,13 @@ function parse(input){
     }
     const rule=rows.find(r=>r.action.type===type&&r.when===clause.when);
     if(rule&&clause.chosen.visual)rule.action.visual=clause.chosen.visual;
+    if(rule&&clause.fx)rule.action.visual=mergeVisual(rule.action.visual,clause.fx);
    }
+  }
+  if(grammar.clauses.length===1){
+   const c=grammar.clauses[0];
+   for(const row of rows)if(c.fx&&!c.negated)
+    row.action.visual=mergeVisual(row.action.visual,c.fx);
   }
   for(const clause of grammar.clauses){
    if(clause.negated&&clause.suppressed)
@@ -215,8 +236,28 @@ function parse(input){
  }
  // A literal sequence becomes one bounded graph, rather than independent
  // simultaneous casts. The existing ruleSet still owns wall/hit triggers.
- const sequence=g.FantasySkillGraph?.fromText?.(raw,{
+ let sequence=g.FantasySkillGraph?.fromText?.(raw,{
   types:supported,action:rows[0]?.action});
+ // Temporal participles ("휘감다가 폭발한다") form a REAL sequential
+ // program. Only when every clause is unconditional: reactive rules stay
+ // separately triggered, so wall/contact conditions never turn into pulses.
+ if(!sequence?.length&&grammar?.clauses?.length>=2&&grammar.clauses.length<=5){
+  const clauses=grammar.clauses.filter(c=>c.chosen&&!c.negated);
+  if(clauses.length>=2&&clauses.every(c=>c.when==='pulse')){
+   const stage=[];
+   for(const c of clauses){
+    const r=rows.find(v=>v.action.type===c.chosen.type);
+    if(!r)continue;
+    const a={...r.action,visual:mergeVisual(r.action.visual,c.fx)};
+    if(c.chosen.visual)a.visual=mergeVisual(c.chosen.visual,c.fx);
+    stage.push({kind:'cast',action:a});
+    if(/(?:다가|고나서|자마자)$/.test(c.text)&&stage.length<10)
+     stage.push({kind:'wait',seconds:.25});
+   }
+   if(stage.filter(v=>v.kind==='cast').length>=2)
+    sequence=g.FantasySkillGraph?.normalize?.(stage)||stage;
+  }
+ }
  if(sequence?.length>=2){
   const leader=rows.find(r=>r.when==='pulse')||rows[0];
   if(leader){

@@ -21,7 +21,8 @@ const VERBS=[
  ['beam',/^(?:발사|쏘|내뿜|뿜|방출|뿜어|레이저)/],
  ['slash',/^(?:후려치|휘두르|내리치|때리|치|베|할퀴|긁|물어뜯|깨물|물)/],
  ['splitshot',/^(?:분열|쪼개|갈라|증식)/],
- ['wave',/^(?:폭발|터뜨리|터지|펑|충격파|울리|진동)/],
+ ['wave',/^(?:폭발|폭파|터뜨리|터지|펑|충격파|울리|진동)/],
+ ['bolt',/^(?:번개|찌릿|방전|감전)/],
  ['leap',/^(?:점프|뛰어오르|도약|솟아오르)/],
  ['dive',/^(?:낙하|내려찍|내리꽂|급강하)/],
  ['dash',/^(?:돌진|들이받|박치기|달려들)/],
@@ -32,6 +33,7 @@ const VERBS=[
 ];
 const NOUNS=[
  ['beam',/멘헤라빔|광선|레이저|빔|열선|빛줄기/],
+ ['bolt',/번개|낙뢰|뇌전|전기|벼락|전류|찌릿/],
  ['slash',/턱|이빨|발톱|검|칼날|주먹|망치/],
  ['splitshot',/분열탄|분열하는\s*(?:탄|구슬)|파편탄/],
  ['shot',/탄환|탄알|화살|투사체|총알|미사일/],
@@ -87,7 +89,7 @@ function segments(raw){
    const cond=/(?:면|때마다|자마자|고나서|고나면|면서|다가|고)$/.test(word);
    const stem=word.replace(/(?:때마다|자마자|고나서|고나면|으면|면서|다가|면|고)$/,'');
    const verb=VERBS.some(([,re])=>re.test(stem))||
-    /(?:튀기|부딪히|부딪|맞|적중|명중|충돌|착지|모이|모아|응축|커지|변하|변형|회전|다가가)/.test(stem);
+    /(?:튀기|부딪히|부딪|맞|적중|명중|충돌|착지|모이|모아|응축|커지|변하|변형|회전|다가가|휘감|휘몰|돌다가|폭발|터지)/.test(stem);
    if(cond&&verb&&buffer.length){
     pieces.push(buffer.join(' '));buffer.length=0;
    }
@@ -120,6 +122,10 @@ const pickType=(text,types,context={})=>{
  const verb=verbs.find(([k])=>k==='slash'&&/때리|후려|휘두르/.test(raw))||verbs[0];
  if(verb)return {type:verb[0],source:'verb'};
  if(lexical.length)return {type:lexical[0],source:'lexicon'};
+ // Even unfamiliar poetic imagery can suggest an existing combat mechanic,
+ // without claiming to invent a new physics system.
+ const analogue=g.SkillFXComposer?.suggestAction?.(raw,types);
+ if(analogue)return analogue;
  if(/뿅|슝|퓽|휙|펑|쾅|콰광|빠직|찌릿/.test(raw)){
   const guessed=/찌릿|빠직/.test(raw)?'bolt':/쾅|콰광|펑/.test(raw)?'wave':'shot';
   if(supported(guessed))return {type:guessed,source:'onomatopoeia'};
@@ -146,6 +152,12 @@ function analyze(input,types={}){
   if(c.negated){c.suppressed=c.chosen;c.chosen=null;}
  }
  const adverbs=tokens.filter(x=>x.pos==='adverb').map(x=>x.semantic);
+ // Modifiers belong to their nearest clause; never apply '검은' or
+ // '천천히' from the first action to every later action.
+ for(const clause of clauses){
+  const fx=g.SkillFXComposer?.infer?.(clause.text);
+  if(fx)clause.fx=fx;
+ }
  return {tokens,clauses,adverbs,negative:clauses.some(c=>c.negated),
   hasAction:clauses.some(c=>!!c.chosen),
   confidence:clauses.filter(c=>c.chosen).length/Math.max(1,clauses.length)};

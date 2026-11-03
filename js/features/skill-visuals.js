@@ -444,7 +444,7 @@ function draw(ctx,options={}){
     }
     if(e.visual)global.MetaphorVisuals?.paint?.(ctx,{
       visual:e.visual,phase:e.kind,progress:t,radius:e.radius,
-      length:e.beamLength});
+      length:e.beamLength,low});
     ctx.restore();ctx.restore();
     };
     if(!ground&&global.ArenaDepth?.air)
@@ -510,7 +510,7 @@ function previewFrame(ctx,options={}){
   if(!renderFamily(ctx,e))drawMotif(ctx,e.type,e.age,e.life);
   if(e.visual)global.MetaphorVisuals?.paint?.(ctx,{
     visual:e.visual,phase:kind,progress:t,radius:e.radius,
-    length:Number(options.length)||Math.min(440,e.radius*2)});
+    length:Number(options.length)||Math.min(440,e.radius*2),low});
   global.ForgeComboFX?.preview?.(ctx,{type,status:options.status,link:options.link,progress:t,color:e.color});
   ctx.restore();return true;
 }

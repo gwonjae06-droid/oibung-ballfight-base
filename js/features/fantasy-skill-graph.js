@@ -102,11 +102,21 @@ function fromText(sentence,options={}){
  for(const part of parts){
   const metaphor=g.MetaphorVisuals?.interpret?.(part);
   const recognized=g.NaturalForge?.recognize?.(part)||[];
+  const grammar=g.KoreanSkillGrammar?.pickType?.(part,supported);
   const type=metaphor?.type&&Object.hasOwn(supported,metaphor.type)?
-   metaphor.type:recognized.find(x=>Object.hasOwn(supported,x.type))?.type;
+   metaphor.type:grammar?.type||
+   recognized.find(x=>Object.hasOwn(supported,x.type))?.type;
   if(!type)return [];
-  if(metaphor?.visual)all.push({kind:'morph',visual:metaphor.visual});
-  const a={...fallback,type,visual:metaphor?.visual,damage:
+  const fx=g.SkillFXComposer?.infer?.(part);
+  const visual=g.MetaphorVisuals?.normalize?.({
+   ...(metaphor?.visual||{shape:'aura'}),
+   color:metaphor?.visual?.color||fx?.color,
+   scale:Math.max(metaphor?.visual?.scale||1,fx?.scale||1),
+   charge:!!metaphor?.visual?.charge||!!fx?.charge,
+   layers:[...(metaphor?.visual?.layers||[]),...(fx?.layers||[])]
+  });
+  if(visual)all.push({kind:'morph',visual});
+  const a={...fallback,type,visual,damage:
    ['haste','leap','blink','dash','shield','timestop'].includes(type)?0:
     fallback.damage??18};
   all.push({kind:'cast',action:a});

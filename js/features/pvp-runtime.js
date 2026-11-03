@@ -22,7 +22,10 @@ function captureFx(effect,owner){
     id:++fxSequence,owner:src,follow:!!effect.source,
     type:effect.type,kind:effect.kind,x:effect.x,y:effect.y,
     angle:effect.angle,radius:effect.radius,color:effect.color,
-    life:effect.life,scale:effect.scale,z:effect.z||0
+    life:effect.life,scale:effect.scale,z:effect.z||0,
+    // Carry the authored semantic FX recipe, not a different client guess.
+    ...(effect.visual?{visual:effect.visual}:{}),
+    ...(effect.visual?.shape==='beam'?{beamLength:effect.beamLength}:{})
   });
   fxWake?.();
 }

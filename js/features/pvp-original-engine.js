@@ -1,8 +1,28 @@
 /* Compact, versioned profiles fit the existing matchmaking JSON limit. */
 (function(g){
  const keys=['type','pattern','target','damage','radius','count','speed','duration','status','knockback','delay','link','visual'];
- const encode=a=>keys.map(k=>a?.[k]??null);
- const decode=a=>Object.fromEntries(keys.map((k,i)=>[k,a?.[i]??undefined]));
+ // User-authored layered FX must fit the deployed 2,500-char RPC. Retain
+ // compatibility with older ordinary-object visual payloads.
+ const shapes=['aura','jaw','beam','claw','crystal','halo'];
+ const kindNames=['lightning','coil','burst','embers','mist','ice','vortex','stars',
+  'wind','water','runes','petals','shards','shadow','rings','chains','thorns',
+  'hearts','rain','orbit','trail','web'];
+ const round=v=>Number.isFinite(Number(v))?Math.round(Number(v)*100)/100:1;
+ const packVisual=v=>{
+  if(!v||typeof v!=='object')return null;
+  return [shapes.indexOf(v.shape),v.color,round(v.scale),v.charge?1:0,
+   (v.layers||[]).slice(0,5).map(a=>[
+    kindNames.indexOf(a.kind),a.color,round(a.power),round(a.spin)])];
+ };
+ const unpackVisual=v=>{
+  if(!Array.isArray(v))return v;
+  return {shape:shapes[v[0]]||'aura',color:v[1],scale:v[2],charge:v[3]===1,
+   layers:(v[4]||[]).slice(0,5).filter(a=>a[0]>=0&&a[0]<kindNames.length)
+    .map(a=>({kind:kindNames[a[0]],color:a[1],power:a[2],spin:a[3]}))};
+ };
+ const encode=a=>keys.map(k=>k==='visual'?packVisual(a?.visual):a?.[k]??null);
+ const decode=a=>Object.fromEntries(keys.map((k,i)=>[
+  k,k==='visual'?unpackVisual(a?.[i]):a?.[i]??undefined]));
  // Compact Scratch AST rather than repeating long field names in the queue.
  const compactNode=n=>{
   if(n.kind==='action')return ['a',encode(n.action)];

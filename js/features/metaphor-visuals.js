@@ -2,16 +2,19 @@
  * Both actual combat and the mini pinball studio use paint().
  * An interpreted metaphor has an EXISTING executable action as its physics. */
 (function(g){'use strict';
-const SHAPES=Object.freeze({jaw:'거대한 턱',beam:'광선',claw:'발톱',crystal:'수정 결정',halo:'에너지 고리'});
+const SHAPES=Object.freeze({jaw:'거대한 턱',beam:'광선',claw:'발톱',crystal:'수정 결정',halo:'에너지 고리',aura:'조합 이펙트'});
 const HEX=/^#[0-9a-f]{6}$/i;
 const clamp=(v,lo,hi,fallback)=>Number.isFinite(Number(v))?
  Math.max(lo,Math.min(hi,Number(v))):fallback;
 function normalize(value){
- if(!value||typeof value!=='object'||!Object.hasOwn(SHAPES,value.shape))return undefined;
- return {shape:value.shape,
+ if(!value||typeof value!=='object')return undefined;
+ const layers=g.SkillFXComposer?.normalize?.(value.layers)||[];
+ if(!Object.hasOwn(SHAPES,value.shape)&&!layers.length)return undefined;
+ return {shape:Object.hasOwn(SHAPES,value.shape)?value.shape:'aura',
    color:HEX.test(value.color)?value.color:'#a88eff',
    scale:clamp(value.scale,.6,2.8,1.5),
-   charge:value.charge===true};
+   charge:value.charge===true,
+   ...(layers.length?{layers}:{})};
 }
 function interpret(input){
  const raw=String(input||'');
@@ -28,6 +31,7 @@ function interpret(input){
  const scale=/초거대|엄청나게\s*(?:크|굵|두껍)/.test(raw)?2.65:
    /거대|커다란|거대한|두꺼운|굵은|강력|압도적/.test(raw)?2.2:1.45;
  const charge=/모아|모여|응축|차징|집중|축적|충전/.test(raw);
+ const composed=g.SkillFXComposer?.infer?.(raw);
  let shape,type;
  if(namedJaw){shape='jaw';type=/회전|빙글|사방/.test(raw)?'spinslash':'slash';}
  else if(laser){shape='beam';type='beam';}
@@ -35,7 +39,7 @@ function interpret(input){
  else if(crystal){shape='crystal';type=/분열/.test(raw)?'splitshot':'shot';}
  else if(halo){shape='halo';type='wave';}
  else return null;
- return {type,visual:normalize({shape,color,scale,charge}),meaning:
+ return {type,visual:normalize({shape,color,scale,charge,layers:composed?.layers}),meaning:
   SHAPES[shape]+' · '+(isDark?'어둠':isFire?'화염':isIce?'빙결':isGold?'광휘':'에너지')+' 연출'};
 }
 // Context coordinates are already translated to the caster, and rotated
@@ -114,6 +118,8 @@ function paint(ctx,options={}){
   for(let k=0;k<3;k++){ctx.beginPath();ctx.ellipse(0,0,size*.25*sc,
     size*.09*sc,k*Math.PI/3,0,Math.PI*2);ctx.stroke();}
  }
+ g.SkillFXComposer?.paint?.(ctx,{visual:v,progress:t,phase,
+  radius:size,length,low:options.low===true});
  ctx.restore();return true;
 }
 g.MetaphorVisuals=Object.freeze({SHAPES,normalize,interpret,paint});
