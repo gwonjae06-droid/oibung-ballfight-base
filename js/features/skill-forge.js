@@ -74,7 +74,7 @@ const enemies=p=>players.filter(q=>q!==p&&q.hp>0)
 // External SkillForge API remains exactly the same for saved fighters and old mods.
 if(!global.SkillForgeImpactFactory||!global.SkillForgeCastingFactory)
   throw Error('Forge dependencies missing: load skill-forge-impact.js and skill-forge-casting.js before skill-forge.js');
-const {hit,hitGround,groundImpactZ}=global.SkillForgeImpactFactory({MOVEMENT_ONLY});
+const {hit,hitGround,groundImpactZ}=global.SkillForgeImpactFactory({MOVEMENT_ONLY,enemies});
 if(!global.SkillForgeWorldFactory)
   throw Error('Forge dependency missing: load skill-forge-world.js before skill-forge.js');
 const world=global.SkillForgeWorldFactory({hit,hitGround,enemies});

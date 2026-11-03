@@ -10,7 +10,48 @@
 global.SkillForgeWorldFactory=function({hit,hitGround,enemies}){
 function tick(p,target){
   for(let i=p.forgeShots.length-1;i>=0;i--){
-    const b=p.forgeShots[i];b.prevX=b.x;b.prevY=b.y;b.x+=b.vx;b.y+=b.vy;
+    const b=p.forgeShots[i];
+    const concept=global.ConceptFusion?.normalize?.(b.a?.fusion);
+    if(concept?.homing&&b.a?.type==='shot'){
+      const foe=enemies(p).find(e=>e.playerNum===b.targetNum&&e.hp>0)||
+        enemies(p).filter(e=>e.hp>0).sort((x,y)=>
+          Math.hypot(x.x-b.x,x.y-b.y)-Math.hypot(y.x-b.x,y.y-b.y))[0];
+      if(foe){
+        const dx=foe.x-b.x,dy=foe.y-b.y,d=Math.hypot(dx,dy)||1;
+        const speed=Math.max(2,Math.min(14,Number(b.a.speed)||5));
+        b.vx=b.vx*.90+dx/d*speed*.10;
+        b.vy=b.vy*.90+dy/d*speed*.10;
+        const magnitude=Math.hypot(b.vx,b.vy)||1;
+        b.vx=b.vx/magnitude*speed;b.vy=b.vy/magnitude*speed;
+      }
+    }
+    // One projectile can physically divide into a bounded fan of
+    // independently homing fragments. Child payloads disable further
+    // splitting, so there is no exponential recursion.
+    if(concept?.split&&b.a?.type==='shot'&&!b._fusionChild&&
+       (b._fusionAge=(b._fusionAge||0)+1)>=12){
+      const available=Math.max(0,100-p.forgeShots.length+1);
+      const count=Math.min(concept.fragments,available);
+      const victim=enemies(p).find(e=>e.playerNum===b.targetNum&&e.hp>0);
+      const direction=victim?Math.atan2(victim.y-b.y,victim.x-b.x):
+        Math.atan2(b.vy,b.vx);
+      const speed=Math.max(2,Math.min(14,Number(b.a.speed)||5));
+      const action={...b.a,damage:Math.round((Number(b.a.damage)||0)*.55),
+        fusion:{...concept,split:false}};
+      p.forgeShots.splice(i,1);
+      for(let n=0;n<count;n++){
+        const theta=direction+(n-(count-1)/2)*.38;
+        p.forgeShots.push({...b,a:action,_fusionChild:true,_fusionAge:0,
+          x:b.x,y:b.y,prevX:b.x,prevY:b.y,
+          vx:Math.cos(theta)*speed,vy:Math.sin(theta)*speed,
+          life:Math.min(Math.max(28,b.life),150),_reboundCount:0});
+      }
+      global.BattleFX?.mark?.('shot',b.x,b.y,
+        b.a.visual?.color||p.forge?.effectColor||'#a8b1ff',18);
+      global.SignatureLive?.record?.(p,'split');
+      continue;
+    }
+    b.prevX=b.x;b.prevY=b.y;b.x+=b.vx;b.y+=b.vy;
     if(Number.isFinite(b.heightVelocity)){
       if(b.targetNum!==undefined){const victim=enemies(p).find(e=>e.playerNum===b.targetNum&&e.hp>0);
         if(victim){const alt=global.AdvancedCombat?.height?.(victim)||0;

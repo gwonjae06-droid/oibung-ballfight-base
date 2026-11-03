@@ -45,7 +45,14 @@ function describe(parsed){
   const all=new Set();
   for(const v of styles)for(const layer of v.layers||[])all.add(layer.kind);
   const composite=[...all].map(id=>g.SkillFXComposer?.KINDS?.[id]||id);
-  return {when,action:names.join(' → '),interval:r.interval,
+  const traits=(r.steps||[]).filter(s=>s.kind==='cast').map(s=>s.action?.fusion)
+   .concat([r.action?.fusion]).filter(Boolean);
+  const trait=traits[0],fusion=trait?[
+   trait.element!=='none'?(g.ConceptFusion?.ELEMENTS?.[trait.element]?.label||trait.element):'',
+   trait.homing?'추적':'',trait.split?'분열 '+trait.fragments+'갈래':'',
+   trait.impact!=='none'?g.ConceptFusion?.IMPACTS?.[trait.impact]||trait.impact:''
+  ].filter(Boolean).join(' + '):'';
+  return {when,action:names.join(' → '),interval:r.interval,fusion,
    visual:composite.length?composite.join(' + '):
     styles[0]?.shape&&styles[0].shape!=='aura'?
       g.MetaphorVisuals?.SHAPES?.[styles[0].shape]||styles[0].shape:null,

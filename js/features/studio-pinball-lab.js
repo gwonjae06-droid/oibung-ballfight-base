@@ -122,7 +122,7 @@ function make(profile={},focus=0,actionIndex=-1){
   if(bullets.length>=SPLIT_OWNER_BUDGET)return;
   const speed=clamp(Number(a.speed)||5,2,12)*.8;
   bullets.push({x:hero.x,y:hero.y,vx:Math.cos(angle)*speed,vy:Math.sin(angle)*speed,
-   life:220,r:5,color,status:a.status||'none',type:a.type,reflects:0,split:false,age:0,
+   life:220,r:5,color:a.visual?.color||color,status:a.status||'none',type:a.type,a,reflects:0,split:false,age:0,
    fractureRemaining:clamp(Math.round(a.fractureDepth||1),1,3),fragmentCount:clamp(Math.round(a.count||1),1,8),
    maxRebounds:a.type==='shot'?clamp(Math.round(Number(a.ricochet)||0),0,3):0});
  }
@@ -381,7 +381,7 @@ function make(profile={},focus=0,actionIndex=-1){
     if(b.life<=0)bullets.splice(i,1);
     continue;
    }
-   if(b.type==='homing'){
+   if(b.type==='homing'||b.a?.fusion?.homing&&b.type==='shot'){
     const a=Math.atan2(target.y-b.y,target.x-b.x);
     b.vx=b.vx*.93+Math.cos(a)*.42;b.vy=b.vy*.93+Math.sin(a)*.42;
    }
@@ -390,6 +390,22 @@ function make(profile={},focus=0,actionIndex=-1){
     if(d<ring.r*2){b.vx+=(ring.x-b.x)/d*.13;b.vy+=(ring.y-b.y)/d*.13;}
    }
    b.x+=b.vx;b.y+=b.vy;b.life--;b.age++;
+   // Preview the same bounded homing + split behavior as ForgeWorld.
+   if(b.type==='shot'&&b.a?.fusion?.split&&!b._fusionChild&&b.age>=12){
+    const number=Math.min(4,Math.max(2,Number(b.a.fusion.fragments)||3));
+    const dir=Math.atan2(target.y-b.y,target.x-b.x);
+    const speed=clamp(Number(b.a.speed)||5,2,14)*.8;
+    const sub={...b.a,damage:Math.round((Number(b.a.damage)||0)*.55),
+      fusion:{...b.a.fusion,split:false}};
+    for(let j=0;j<number&&bullets.length<SPLIT_OWNER_BUDGET;j++){
+     const angle=dir+(j-(number-1)/2)*.38;
+     bullets.push({...b,x:b.x,y:b.y,vx:Math.cos(angle)*speed,vy:Math.sin(angle)*speed,
+       a:sub,age:0,life:Math.max(28,Math.min(150,b.life)),
+       _fusionChild:true,reflects:0});
+    }
+    previewEffect({...b.a,type:'splitshot'},'impact',b.x,b.y,24);
+    recordRuleEvent('split');bullets.splice(i,1);continue;
+   }
    if((b.type==='splitshot'||b.type==='fragment'&&b.fractureRemaining>0)&&
        !b.split&&b.age>=17){
      fragment(b);
@@ -416,7 +432,18 @@ function make(profile={},focus=0,actionIndex=-1){
    if(near(b,target)<target.radius+b.r){
     previewEffect({type:b.type==='fragment'?'splitshot':b.type,
       radius:35,status:b.status},'impact',target.x,target.y,18);
-    hitTarget(b.x-b.vx,b.y-b.vy);b.life=0;
+    hitTarget(b.x-b.vx,b.y-b.vy);
+    const impact=b.a?.fusion?.impact||'none';
+    if(impact!=='none'){
+     const radius=clamp(Number(b.a.fusion.radius)||85,35,160);
+     previewEffect({...b.a,type:impact==='burst'?'wave':impact==='vortex'?'vortex':'pull'},
+       'impact',target.x,target.y,25);
+     rings.push({x:target.x,y:target.y,r:Math.min(95,radius*.7),age:0,
+       life:25,color:b.a.visual?.color||color});
+     if(impact==='repulse'){target.vx*=1.3;target.vy*=1.3;}
+     if(impact==='pull'){target.vx*=.72;target.vy*=.72;}
+    }
+    b.life=0;
    }
    if(b.reflects>3||b.life<=0)bullets.splice(i,1);
   }

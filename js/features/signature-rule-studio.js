@@ -110,12 +110,14 @@ function resultHTML(result){
    +'<br>실제 피해는 명중·거리·방어·무적 판정에 따라 달라집니다.</p>':'';
  return '<section class="sentence-interpretation" aria-label="문장 해석 결과">'
  +'<h4>이 문장을 이렇게 구현합니다</h4>'
+ +(result.concepts?.fused?'<div class="sentence-fusion-explainer"><strong>🧩 개념 융합</strong><p>'+
+   E(result.concepts.labels.join(' + '))+'</p><small>기존 동작의 속성·형태·물리 특성을 결합합니다. 미지원 기능은 기존 물리로 근사하며, 새로운 엔진 코드를 실시간으로 만드는 것은 아닙니다.</small></div>':'')
  +(bundles.length>1?'<p class="sentence-local-note">의미상 연결된 행동은 합치고, 독립된 문장은 '+bundles.length+'개 기술로 나누었습니다.</p>'+bundles.map((x,i)=>
   '<p><strong>'+(i+1)+'. '+E(x.name)+'</strong> · '+E(x.sourceText)+'</p>').join(''):'')
  +'<div class="sentence-understood">'+rows.map((r,i)=>
    '<div class="sentence-understood-row"><span>'+String(i+1).padStart(2,'0')+'</span>'
    +'<div><strong>'+E(r.when)+' → '+E(r.action)+'</strong>'
-   +'<small>발동 최소 간격 '+E(r.interval)+'초'+(r.visual?' · '+E(r.visual)+' 연출':'')+'</small></div></div>'
+   +'<small>발동 최소 간격 '+E(r.interval)+'초'+(r.fusion?' · 개념 융합 '+E(r.fusion):'')+(r.visual?' · '+E(r.visual)+' 연출':'')+'</small></div></div>'
   ).join('')+'</div>'
  +(limitations.length?'<div class="sentence-limitations"><strong>현재 구현 범위 안내</strong><ul>'
   +limitations.map(n=>'<li>'+E(n)+'</li>').join('')+'</ul></div>':'')
