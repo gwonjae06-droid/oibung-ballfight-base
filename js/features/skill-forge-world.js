@@ -132,6 +132,8 @@ function tick(p,target){
   // Persistent semantic forces use the same clock and hit resolver as
   // projectiles, zones and all other authored combat actions.
   global.SemanticPhysics?.tick?.(p,enemies(p),hit);
+  // Compose generated field equations in the authoritative 60Hz world.
+  global.PhysicsLawEngine?.tick?.(p,enemies(p),hit);
 
 }
 return Object.freeze({tick});
