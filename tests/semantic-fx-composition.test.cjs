@@ -119,7 +119,7 @@ test('the same composer is loaded before both PvP and PvE combat visual renderer
   assert.ok(x>0);
   assert.ok(x<page.indexOf('metaphor-visuals.js'));
   assert.ok(x<page.indexOf('skill-visuals.js'));
-  assert.ok(page.includes('skill-visuals.js?v=5-layered-fx'));
+  assert.ok(page.includes('skill-visuals.js?v=multidomain-color1'));
  }
  const skill=read('skill-visuals');
  assert.match(skill,/MetaphorVisuals\?\.paint/);

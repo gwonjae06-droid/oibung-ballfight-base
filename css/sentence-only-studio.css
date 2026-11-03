@@ -157,3 +157,11 @@
 .sentence-materialization-plan strong{font-weight:700}
 .sentence-materialization-plan p{margin:7px 0;line-height:1.5}
 .sentence-materialization-plan small{opacity:.8;overflow-wrap:anywhere}
+
+/* Inherit the selected character effect color unless the skill sentence names a color. */
+.sentence-color-choice{margin:10px 0;padding:10px 12px;border-radius:10px;
+ border:1px solid rgba(143,166,189,.30);background:rgba(90,120,150,.09);
+ font-size:.85rem;line-height:1.5}
+.sentence-color-swatch{display:inline-block;vertical-align:-.12em;
+ width:1em;height:1em;margin:0 5px 0 2px;border-radius:50%;
+ border:1px solid rgba(255,255,255,.4);box-shadow:0 0 0 1px rgba(0,0,0,.3)}

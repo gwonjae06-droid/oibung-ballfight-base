@@ -137,7 +137,7 @@ function visual(raw,selected){
  const inferred=g.SkillFXComposer?.infer?.(raw);
  // Each distinct concept contributes at least its primary motif before
  // decorative extras. Rune + drone must show BOTH runes and circuitry.
- const names=[...new Set([...selected.map(x=>x.visual[0]),
+ const names=[...new Set([...selected.map(x=>x.visual[0]).filter(Boolean),
   ...selected.flatMap(x=>x.visual.slice(1)),
   ...(inferred?.layers||[]).map(l=>l.kind)])].slice(0,5);
  const color=inferred?.color||
@@ -150,9 +150,18 @@ function visual(raw,selected){
 }
 function chooseAction(raw,selected){
  const primary=selected[0];
+ // Use verbal relations to choose real registered physics independently
+ // of concept nouns: one atlas term may act as a shot, field or shield.
+ if(/소용돌이|회오리|나선으로\s*(?:끌|돌)|회전시키|휘말리게/.test(raw))
+  return supported('vortex')?'vortex':'blackhole';
+ if(/순간이동|텔레포트|공간이동|자리\s*바꾸/.test(raw))return 'blink';
+ if(/포털|차원문|공간문|통로를\s*열/.test(raw))return 'portal';
+ if(/덫|함정|지뢰/.test(raw))return 'trap';
  // More specific nouns and explicit verbs override genre-based defaults.
  if(/회복|치유|재생|수리|복구/.test(raw))return 'regen';
  if(/방어|보호|막아|장벽|보호막|실드|방벽/.test(raw))return 'shield';
+ if(/되돌아오|돌아오는\s*(?:탄|공|무기)|부메랑/.test(raw))return 'boomerang';
+ if(/가속해|빨라지|속도\s*증가/.test(raw))return 'haste';
  if(/레이저|빔|광선|레일건|가우스포|전자기\s*포/.test(raw))return 'beam';
  if(/포탑|터렛|센트리/.test(raw))return 'turret';
  if(/유도탄|미사일|로켓탄|추적탄|발사체|탄환|화살|투사체/.test(raw))return 'shot';
@@ -161,13 +170,23 @@ function chooseAction(raw,selected){
  if(/끌어당|전자석|자기장|자력/.test(raw))return supported('phenomenon')?'phenomenon':'pull';
  if(/폭발|폭파|터뜨|터지|방사|충격파|분출|브레스/.test(raw))return 'wave';
  if(/소환|분신|드론|골렘|요정/.test(raw))return 'summon';
- if(/주변에\s*퍼|영역|장판|지속\s*구역|마법진/.test(raw))return 'zone';
+ if(/돌진|질주|뛰어들|달려들/.test(raw))return 'dash';
+ if(/주변에\s*퍼|영역|장판|지속\s*구역|마법진|안개처럼\s*퍼/.test(raw))return 'zone';
+ // A biological/medical concept can heal, harm or protect depending on
+ // the user's verb. A bare DNA noun must not turn "hurt the enemy" into heal.
+ if(/(?:적|상대).{0,14}(?:피해|공격|타격|상처)|(?:피해|타격|공격).{0,14}(?:적|상대)/.test(raw)&&
+  ['heal','regen','shield','haste','fortify'].includes(primary?.base))
+  return /구름|안개|감염|바이러스|포자/.test(raw)?'zone':'wave';
  return primary?.base||'wave';
 }
 function interpret(rawInput){
  const raw=String(rawInput||'').normalize('NFC').trim();
  if(!raw||raw.length>300)return null;
- const chosen=CATALOG.filter(def=>def.re.test(raw));
+ const original=CATALOG.filter(def=>def.re.test(raw));
+ const additional=g.SemanticConceptAtlas?.match?.(raw,8)||[];
+ // Keep every author-defined concept's signature VFX; unfamiliar domains
+ // contribute the same validated material atoms, not bespoke JS abilities.
+ const chosen=[...original,...additional].slice(0,10);
  if(!chosen.length)return null;
  const warnings=AMBIGUOUS.filter(x=>x.re.test(raw)).map(x=>x.name);
  if(warnings.length)return {ok:false,error:warnings.join(' / ')+'. 전투 안에서 실행할 행동을 설명해 주세요.'};
@@ -230,11 +249,16 @@ function interpret(rawInput){
  const recipe=g.SignatureRuleSkill?.normalize?.({window:Math.min(18,Math.max(4,(action.duration||2)+2)),
   rules:[{when:'pulse',interval,action}]});
  if(!recipe?.rules?.length)return null;
- const genre=chosen.some(x=>x.genre==='machine')?'machine':'fantasy';
+ const genres=[...new Set(chosen.map(x=>x.domainName||x.genre))];
+ const genre=chosen.some(x=>x.genre==='machine')?'machine':
+  chosen.some(x=>x.genre==='fantasy')?'fantasy':
+  additional.length?'multidomain':'fantasy';
  return {ok:true,name:chosen[0].name+' 조합 기술',recipe,recognized:[type],
   method:'offline-concept-materializer',
-  concepts:{fused:true,labels:names,genre},
-  plan:{strategy:isNovel?'new-primitive':'reuse',genre,conceptIds:chosen.map(x=>x.id),
+  concepts:{fused:true,labels:names,genre,domains:genres},
+  atlas:g.SemanticConceptAtlas?.explain?.(raw)||null,
+  plan:{strategy:isNovel?'new-primitive':'reuse',genre,domains:genres,
+   conceptIds:chosen.map(x=>x.id),
    action:type,visualKinds:(effects?.layers||[]).map(l=>l.kind),
    explanation:isNovel?'운동량 보존 상태를 가지는 신규 물리 동작':
     '기존 물리 동작과 그래픽 레이어를 조합'},

@@ -106,7 +106,10 @@ function parse(input){
  const grammar=g.KoreanSkillGrammar?.analyze?.(raw,g.SkillForge?.TYPE||g.ActionRegistry?.TYPE||{});
  const materialized=g.ImaginationConcepts?.interpret?.(raw);
  const generatedLaw=materialized?null:g.PhysicsLawEngine?.interpret?.(raw);
- const result=materialized||generatedLaw||engine?.parse?.(raw)||{ok:false,error:'문장 해석기를 불러오지 못했습니다.'};
+ const compiled=materialized||generatedLaw||engine?.parse?.(raw)||{ok:false,error:'문장 해석기를 불러오지 못했습니다.'};
+ const colored=compiled.ok?g.SkillColorPolicy?.decorate?.(compiled.recipe,raw):null;
+ const result=colored?{...compiled,recipe:colored.recipe,
+  colorPriority:colored.priority,explicitColor:colored.explicit}:compiled;
  const unavailable=capabilities.filter(c=>c.re.test(raw)).map(c=>c.label);
  const limitations=unavailable.map(x=>x+'은(는) 아직 완전하게 구현되지 않았습니다.');
  if(result.ok){
@@ -160,7 +163,9 @@ function parseBundle(input){
  const primary=skills[0];
  return {...primary,sourceText:raw,skills,
   bundleSummary:skills.map((x,i)=>({index:i,name:x.name,
-   sourceText:x.sourceText,summary:x.summary,notes:x.notes,limitations:x.limitations})),
+   sourceText:x.sourceText,summary:x.summary,notes:x.notes,
+   colorPriority:x.colorPriority,explicitColor:x.explicitColor,
+   limitations:x.limitations})),
   notes:[...new Set(skills.flatMap(x=>x.notes||[]))],
   limitations:[...new Set(skills.flatMap(x=>x.limitations||[]))]};
 }

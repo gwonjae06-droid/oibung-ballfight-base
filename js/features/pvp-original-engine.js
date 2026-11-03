@@ -11,15 +11,20 @@
  const round=v=>Number.isFinite(Number(v))?Math.round(Number(v)*100)/100:1;
  const packVisual=v=>{
   if(!v||typeof v!=='object')return null;
-  return [shapes.indexOf(v.shape),v.color,round(v.scale),v.charge?1:0,
+  const packed=[shapes.indexOf(v.shape),v.color,round(v.scale),v.charge?1:0,
    (v.layers||[]).slice(0,5).map(a=>[
-    kindNames.indexOf(a.kind),a.color,round(a.power),round(a.spin)])];
+    kindNames.indexOf(a.kind),a.color,round(a.power),round(a.spin)]),
+   ];
+  if(v.colorMode==='explicit')packed.push(1);
+  else if(v.colorMode==='inherit')packed.push(2);
+  return packed;
  };
  const unpackVisual=v=>{
   if(!Array.isArray(v))return v;
   return {shape:shapes[v[0]]||'aura',color:v[1],scale:v[2],charge:v[3]===1,
    layers:(v[4]||[]).slice(0,5).filter(a=>a[0]>=0&&a[0]<kindNames.length)
-    .map(a=>({kind:kindNames[a[0]],color:a[1],power:a[2],spin:a[3]}))};
+    .map(a=>({kind:kindNames[a[0]],color:a[1],power:a[2],spin:a[3]})),
+   ...(v[5]===1?{colorMode:'explicit'}:v[5]===2?{colorMode:'inherit'}:{})};
  };
  // Optional compact fusion trailer: legacy v3 packets have no trailer.
  // Do not add a null array slot to every old action or exceed the 2.5KB RPC.
