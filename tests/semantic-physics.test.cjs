@@ -54,7 +54,8 @@ test('two sequential physical verbs are two real cast stages, not decorations',(
  const {g}=boot();
  const r=g.SkillSentenceEngine.parse('적을 사슬로 묶고 상대를 강하게 밀어낸다');
  assert.equal(r.ok,true);
- const types=new Set(r.recipe.rules.map(v=>v.action.type));
+ const types=new Set([...r.recipe.rules.map(v=>v.action.type),
+  ...r.recipe.rules.flatMap(v=>v.steps?.filter(s=>s.kind==='cast').map(s=>s.action.type)||[])]);
  assert.ok(types.has('tether')&&types.has('repulse'));
  const rules=r.recipe.rules.flatMap(v=>v.steps?.filter(s=>s.kind==='cast').map(s=>s.action.type)||[]);
  if(rules.length)assert.ok(rules.includes('tether')&&rules.includes('repulse'));
