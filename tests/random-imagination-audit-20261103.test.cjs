@@ -8,7 +8,7 @@ function boot(){
  g.window=g;g.globalThis=g;vm.createContext(g);
  const files=['action-registry','semantic-physics','physics-law-engine','signature-program',
  'skill-fx-composer','metaphor-visuals','skill-color-policy','semantic-concept-atlas',
- 'concept-fusion','imagination-concepts','signature-scratch','fantasy-skill-graph',
+ 'concept-fusion','imagination-concepts','semantic-intent-composer','signature-scratch','fantasy-skill-graph',
  'signature-rule-skill','skill-ir','signature-rule-live','korean-skill-grammar',
  'korean-skill-parameters','signature-prompt-compiler','skill-sentence-engine',
  'skill-visuals','studio-pinball-lab'];
@@ -125,7 +125,7 @@ test('Audit 60 seeded Korean skill prompts; report unsupported behavior without 
  assert.equal(cases.length,60);
  const g=boot(),stats={parse:0,vfx:0,semantic:0,offensePath:0,customRun:0,customDamage:0,
   exact:0,partial:0,rejected:0,falsePositive:0,exception:0};
- console.log('AUDIT_META|'+JSON.stringify({sha:'993564e157e00b07a5a639d03af6b34c0f099774',seed:20261103,count:cases.length}));
+ console.log('AUDIT_META|'+JSON.stringify({baselineSha:'993564e157e00b07a5a639d03af6b34c0f099774',target:'verb-first-v2',seed:20261103,count:cases.length}));
  for(const item of cases){
   let result;
   try{
