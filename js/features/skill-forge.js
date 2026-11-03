@@ -131,6 +131,29 @@ function update(p,target){
       }
     }
   }else{
+    // One shared gauge launches every authored player skill together.
+    // The charge is spent exactly once, never per skill. Each skill keeps
+    // its own cast ID and its own bounded rules/condition executor.
+    const simultaneous=global.BounceMomentum?.enabled?.(p)&&!p.towerEnemy;
+    if(simultaneous){
+      if(target&&target.hp>0&&!global.ForgeExpansion?.blocked(p)&&
+         global.BounceMomentum.ready(p)&&
+         (p.forge.signatureVersion!==1||
+           global.ArenaCombatV2?.shouldCast?.(p,target)!==false)){
+        let launched=0;
+        p.forge.skills.forEach((s,i)=>{
+          if(cast(p,s,target,i)){launched++;p.forgeTicks[i]=0;}
+        });
+        if(launched){
+          global.BounceMomentum.spend(p);
+          p._playerEnergyCursor=(p._playerEnergyCursor||0)+1;
+          p._forgeBurstSkills=launched;
+        }
+      }
+      advanceWorld(p,target);
+      global.ArenaCombatV2?.ui?.(p);
+      return;
+    }
     const chargedBoss=global.BounceMomentum?.isBoss?.(p);
     const chargedMinion=global.BounceMomentum?.isMinion?.(p);
     const chargedPlayer=global.BounceMomentum?.enabled?.(p)&&!p.towerEnemy;
