@@ -18,7 +18,7 @@ const SPLIT_OWNER_BUDGET=45;
 function actionsFor(profile,index,actionIndex=-1){
  const list=profile?.allAbilities?g.SkillForge?.allSkillset?.()||[]:profile?.skills||[];
  if(!list.length)return [];
- const selected=index==='all'?list.slice(0,Math.min(list.length,5)):
+ const selected=index==='all'?list.slice(0,Math.min(list.length,24)):
   [list[clamp(Number(index)||0,0,list.length-1)]];
  return selected.map(s=>{
   // The real Scratch preview compiler bounds loops and keeps the true branch
@@ -39,7 +39,7 @@ function make(profile={},focus=0,actionIndex=-1){
  const target={x:355,y:148,vx:-2.7,vy:2.0,radius:19,hp:100,playerNum:2,energy:62};
  hero.baseRadius=hero.radius;
  const bullets=[],rings=[],sparks=[],queue=[],walls=[],portals=[],activeEffects=[];
- let cursor=0,lastContact=-100,lastWall=-100,ruleRun=null;
+ let lastContact=-100,lastWall=-100,ruleRun=null,ruleRuns=[];
  const splitHistory=[];
  // The shared graph tests proximity and HP against simulated actors,
  // never empty placeholder coordinates, so mini-lab conditions match combat.
@@ -260,7 +260,7 @@ function make(profile={},focus=0,actionIndex=-1){
      life:clamp(Math.round((Number(a.duration)||1.5)*60),30,300)});
    if(type==='timeburst')hero.fastTime=clamp(Math.round((Number(a.duration)||1.5)*60),12,480);
    if(type==='haste')hero.hasteTime=clamp(Math.round((Number(a.duration)||1.5)*60),12,480);
-   if((type==='haste'||type==='timeburst')&&ruleRun)g.SignatureRuleLive?.performed?.(previewActor,a);
+   if((type==='haste'||type==='timeburst')&&ruleRuns.length)g.SignatureRuleLive?.performed?.(previewActor,a);
    if(type==='grow'||type==='shrink'){
      hero.radius=type==='grow'?clamp(hero.baseRadius*(1.25+(Number(a.count)||1)*.08),22,44):
        clamp(hero.baseRadius*(.6-(Number(a.count)||1)*.015),9,18);
@@ -278,18 +278,21 @@ function make(profile={},focus=0,actionIndex=-1){
  }
  function launch(){
   if(!skills.length)return;
-  const skill=skills[cursor++%skills.length];
-  const list=skill.actions;
-  if(!list.length)return;
-  energy=0;casts++;active=skill.name;activity=frame+80;
-  ruleRun=skill.ruleSet&&g.SignatureRuleLive?.begin?.(skill.ruleSet,previewActor)||null;
-  if(ruleRun)return;
-  let next=frame+3;
-  for(let i=0;i<list.length;i++){
-   const a=list[i],link=a.link||'and',delay=clamp(Math.round((a.delay||0)*60),0,120);
-   if(i>0&&link!=='with')next+=link==='after'?28:12;
-   queue.push({when:next+delay,action:a});
-   if(queue.length>36)break;
+  energy=0;casts++;
+  active=skills.length===1?skills[0].name:skills.length+'개 스킬 동시 발동';
+  activity=frame+80;
+  ruleRuns=[];
+  for(const skill of skills){
+   const list=skill.actions;
+   if(!list.length)continue;
+   const run=skill.ruleSet&&g.SignatureRuleLive?.begin?.(skill.ruleSet,previewActor)||null;
+   if(run){ruleRuns.push(run);ruleRun=run;continue;}
+   let next=frame+3;
+   for(let i=0;i<list.length;i++){
+    const a=list[i],link=a.link||'and',delay=clamp(Math.round((a.delay||0)*60),0,120);
+    if(i>0&&link!=='with')next+=link==='after'?28:12;
+    queue.push({when:next+delay,action:a});
+   }
   }
  }
  function step(){
@@ -318,13 +321,14 @@ function make(profile={},focus=0,actionIndex=-1){
     recordRuleEvent('land');
     rings.push({x:hero.x,y:hero.y,r:48,age:0,life:27,color});
   }
-  if(energy>=100&&queue.length===0&&(!ruleRun||ruleRun.finished))launch();
-  if(ruleRun&&!ruleRun.finished){
-    const ruleAction=g.SignatureRuleLive?.step?.(ruleRun,previewActor,target);
-    if(ruleAction&&queue.length<36)queue.push({when:frame+2,action:ruleAction});
+  if(energy>=100&&queue.length===0&&ruleRuns.every(r=>r.finished))launch();
+  for(const run of ruleRuns)if(!run.finished&&queue.length<42){
+   const action=g.SignatureRuleLive?.step?.(run,previewActor,target);
+   if(action)queue.push({when:frame+2,action});
   }
-  for(let i=queue.length-1;i>=0;i--)if(queue[i].when<=frame){
-   perform(queue[i].action);queue.splice(i,1);
+  let budget=18;
+  for(let i=queue.length-1;i>=0&&budget>0;i--)if(queue[i].when<=frame){
+   perform(queue[i].action);queue.splice(i,1);budget--;
   }
   // Same bounded attraction/rotation code as the actual combat world.
   g.SemanticPhysics?.tick?.(hero,[target],previewPhysicalHit);
@@ -533,7 +537,7 @@ function make(profile={},focus=0,actionIndex=-1){
  return {advanceTo,render,fire:()=>{energy=100;},get frame(){return frame;},
   get energy(){return energy;},get casts(){return casts;},get title(){return frame<activity?active:'벽·공 충돌로 기세 충전 중';},
   get projectiles(){return bullets.length;},get walls(){return walls.length;},get portals(){return portals.length;},get balls(){return [hero,target];},
-  get ruleActions(){return ruleRun?.actions||0;},
+  get ruleActions(){return ruleRuns.reduce((n,r)=>n+r.actions,0)||ruleRun?.actions||0;},
   get splitEvents(){return previewActor._scratchEvents.split?.count||0;},
   get splitHistory(){return splitHistory.map(x=>({...x,positions:x.positions.map(p=>({...p}))}));},
   get splitProjectiles(){return bullets.filter(b=>b.type==='splitshot'||b.type==='fragment')
