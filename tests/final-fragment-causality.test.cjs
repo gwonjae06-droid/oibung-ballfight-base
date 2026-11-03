@@ -45,6 +45,7 @@ test('Korean last-fragment expiry is a real post-fracture physical trigger',()=>
  assert.equal(a.fusion.splitTrigger,'hit');
  assert.equal(a.fusion.finalBurst,true);
  assert.equal(a.fusion.fragments,3);
+ assert.equal(a.count,1,'three pieces must not spawn three source shots');
  assert.equal(a.fusion.impact,'none','final detonation is not the source hit');
  assert.equal(a.visual.colorMode,'explicit');
  assert.equal(a.visual.color,'#ff454f');
