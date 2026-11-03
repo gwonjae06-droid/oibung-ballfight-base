@@ -40,7 +40,7 @@ function make(profile={},focus=0,actionIndex=-1){
  hero.baseRadius=hero.radius;
  const bullets=[],rings=[],sparks=[],queue=[],walls=[],portals=[],activeEffects=[];
  let lastContact=-100,lastWall=-100,ruleRun=null,ruleRuns=[];
- const splitHistory=[];
+ const splitHistory=[],terminalBurstHistory=[];
  // The shared graph tests proximity and HP against simulated actors,
  // never empty placeholder coordinates, so mini-lab conditions match combat.
  const previewActor={hp:100,maxHp:100,x:hero.x,y:hero.y,radius:hero.radius,
@@ -129,6 +129,26 @@ function make(profile={},focus=0,actionIndex=-1){
    fractureRemaining:clamp(Math.round(a.fractureDepth||1),1,3),fragmentCount:clamp(Math.round(a.count||1),1,8),
    maxRebounds:a.type==='shot'?clamp(Math.round(Number(a.ricochet)||0),0,3):0});
  }
+ function retireFusionPreview(b){
+  const group=b?._fusionTerminalGroup;
+  if(!group||b._fusionTerminalRetired)return;
+  b._fusionTerminalRetired=true;
+  group.remaining=Math.max(0,group.remaining-1);
+  if(group.remaining||group.finished)return;
+  group.finished=true;
+  const radius=clamp(Number(group.a?.fusion?.radius)||85,35,160);
+  const px=clamp(b.x,0,W),py=clamp(b.y,0,H);
+  const tint=group.a?.visual?.color||color;
+  previewEffect({...group.a,type:'wave',radius},'impact',px,py,35);
+  rings.push({x:px,y:py,r:Math.min(96,radius*.7),age:0,
+   life:29,color:tint});
+  spark(px,py,tint,20);
+  if(Math.hypot(px-target.x,py-target.y)<=radius+target.radius)
+   hitTarget(px,py,true); // visual preview only, never modify target HP
+  recordRuleEvent('finalFragment');
+  if(terminalBurstHistory.length>=24)terminalBurstHistory.shift();
+  terminalBurstHistory.push({frame,x:px,y:py,radius});
+ }
  // Splitshots share the REAL combat trajectory: one target-aimed crystal
  // that bursts after 56% of its own flight, not an arbitrary 17-frame timer.
  // One shared preview path mirrors ForgeWorld's bounded, nonrecursive
@@ -140,11 +160,14 @@ function make(profile={},focus=0,actionIndex=-1){
   const speed=clamp(Number(b.a.speed)||5,2,14)*.8;
   const sub={...b.a,damage:Math.round((Number(b.a.damage)||0)*.55),
     fusion:{...b.a.fusion,split:false}};
+  const terminal=b.a.fusion.finalBurst?{remaining:0,finished:false,a:b.a}:null;
   for(let j=0;j<number&&bullets.length<SPLIT_OWNER_BUDGET;j++){
    const angle=dir+(j-(number-1)/2)*.38;
    bullets.push({...b,x:b.x,y:b.y,vx:Math.cos(angle)*speed,vy:Math.sin(angle)*speed,
     a:sub,age:0,life:Math.max(28,Math.min(150,b.life)),
-    _fusionChild:true,reflects:0,maxRebounds:0});
+    _fusionChild:true,reflects:0,maxRebounds:0,
+    ...(terminal?{_fusionTerminalGroup:terminal}:{})});
+   if(terminal)terminal.remaining++;
   }
   previewEffect({...b.a,type:'splitshot'},'impact',b.x,b.y,24);
   recordRuleEvent('split');b.life=0;return true;
@@ -476,7 +499,10 @@ function make(profile={},focus=0,actionIndex=-1){
       fractureFusion(b);
     b.life=0;
    }
-   if(b.reflects>3||b.life<=0)bullets.splice(i,1);
+   if(b.reflects>3||b.life<=0){
+    retireFusionPreview(b);
+    bullets.splice(i,1);
+   }
   }
   for(let i=rings.length-1;i>=0;i--){
    const ring=rings[i];ring.age++;
@@ -609,7 +635,9 @@ function make(profile={},focus=0,actionIndex=-1){
     remaining:b.fractureRemaining}));},
   get landEvents(){return previewActor._scratchEvents.land?.count||0;},
   get wallEvents(){return previewActor._scratchEvents.wall?.count||0;},
-  get storedWallImpacts(){return g.WallImpactStore?.serial?.(previewActor)||0;}};
+  get storedWallImpacts(){return g.WallImpactStore?.serial?.(previewActor)||0;},
+  get terminalBurstEvents(){return previewActor._scratchEvents.finalFragment?.count||0;},
+  get terminalBurstHistory(){return terminalBurstHistory.map(x=>({...x}));}};
 }
 g.StudioPinballLab=Object.freeze({make,actionsFor,WIDTH:W,HEIGHT:H});
 })(typeof window!=='undefined'?window:globalThis);
