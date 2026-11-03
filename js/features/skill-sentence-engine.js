@@ -78,8 +78,16 @@ function audit(recipe){
   if(rule.steps?.length)walk(rule.steps,rule.when);
   else inspect(rule.action,rule.when);
  }
- return {checks,warnings:[...new Set(warnings)],
-  // An offensive delivery is only POTENTIAL damage: collision is simulated.
+ const sandbox=g.SemanticPhysics?.verifyRecipe?.(recipe)||null;
+ for(const probe of sandbox?.probes||[]){
+  const check=checks.find(c=>c.type===probe.type);
+  if(check)check.sandbox={tested:true,passed:probe.passed,
+   nearDamage:probe.near.damage,farDamage:probe.far.damage,
+   shieldDamage:probe.shield.damage,displacement:probe.near.displacement};
+  if(!probe.passed)warnings.push(probe.type+'의 격리 물리 시험이 통과하지 못했습니다.');
+ }
+ return {checks,warnings:[...new Set(warnings)],sandbox,
+  // A validated collision path is not a promise of hitting a moving enemy.
   hasPotentialDamage:checks.some(c=>c.expectedDamage)};
 }
 function parse(input){
