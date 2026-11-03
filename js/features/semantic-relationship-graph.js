@@ -133,7 +133,10 @@ function build(input,recipe){
    conditions.push({trigger:verified.trigger,mode:'confirmed_combat_event',
     maxFires:1,windowFrames:Math.round((Number(recipe.window)||8)*60),
     ...(verified.minCount?{requiredHits:verified.minCount}:{}),
-    ...(verified.hpBelow!==undefined?{casterHpAtMost:verified.hpBelow}:{} )});
+    ...(verified.hpBelow!==undefined?{casterHpAtMost:verified.hpBelow}:{} ),
+    ...(verified.secondary?{additionalEvent:verified.secondary.trigger,
+     eventOperator:verified.secondary.mode,
+     additionalRequired:verified.secondary.minCount||1}:{})});
    const triggers=verified.actions;
    for(let j=0;j<triggers.length&&first+j<actions.length;j++){
     const next=actions[first+j].id;
@@ -143,6 +146,12 @@ function build(input,recipe){
      if(verified.hpBelow!==undefined)
       push('caster','requires_live_hp_threshold',next,{
        hpPercentAtMost:verified.hpBelow,measuredAt:'execution'});
+     if(verified.secondary)
+      push('caster',verified.secondary.mode==='and'?
+       'verified_event_AND':'verified_event_OR',next,{
+       primary:verified.trigger,primaryCount:verified.minCount||1,
+       secondary:verified.secondary.trigger,
+       secondaryCount:verified.secondary.minCount||1});
     }
     else push(actions[first+j-1].id,'then_after_execution',next,{
      stage:j,event:verified.trigger});
