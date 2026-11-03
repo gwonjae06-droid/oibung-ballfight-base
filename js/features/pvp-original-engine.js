@@ -11,10 +11,13 @@
  const round=v=>Number.isFinite(Number(v))?Math.round(Number(v)*100)/100:1;
  const packVisual=v=>{
   if(!v||typeof v!=='object')return null;
-  return [shapes.indexOf(v.shape),v.color,round(v.scale),v.charge?1:0,
+  const packed=[shapes.indexOf(v.shape),v.color,round(v.scale),v.charge?1:0,
    (v.layers||[]).slice(0,5).map(a=>[
     kindNames.indexOf(a.kind),a.color,round(a.power),round(a.spin)]),
-   v.colorMode==='explicit'?1:v.colorMode==='inherit'?2:null];
+   ];
+  if(v.colorMode==='explicit')packed.push(1);
+  else if(v.colorMode==='inherit')packed.push(2);
+  return packed;
  };
  const unpackVisual=v=>{
   if(!Array.isArray(v))return v;
