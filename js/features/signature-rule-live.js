@@ -13,6 +13,7 @@ function begin(config,p){
   nextAt:skill.rules.map(()=>0),seen:observed,startedAt:now,finished:false,cursor:0,
   pending:[],waitUntil:0,visual:null,tunes:[],
   graphFires:skill.rules.map(()=>0),
+  graphCounts:skill.rules.map(()=>0),
   wallCharge:skill.rules.map(()=>({count:0,impulse:0}))};
 }
 function step(run,p,target){
@@ -52,11 +53,25 @@ function step(run,p,target){
   const isState=when==='hpLow'||when==='near'||when==='far';
   const current=when==='dodge'?Number(p._forgeDodgeSerial)||0:
    (p._scratchEvents?.[when]?.count||0);
+  if(r.eventGraph){
+   // Accumulate strictly NEW confirmed events since this momentum activation.
+   // Events before activation are already included in run.seen baselines.
+   // Keep the count while HP is still high; require the live state at FIRE.
+   const increase=Math.max(0,current-(run.seen[i]||0));
+   if(increase>0){
+    run.graphCounts[i]=Math.min(4,(run.graphCounts[i]||0)+increase);
+    run.seen[i]=current;
+   }
+   if(run.graphCounts[i]<(r.eventGraph.minCount||1))continue;
+   if(r.eventGraph.hpBelow!==undefined&&
+    (!(Number(p.maxHp)>0)||!(p.hp>0)||
+     p.hp/Number(p.maxHp)*100>r.eventGraph.hpBelow))continue;
+  }
   if(isState){
    if(when==='hpLow'&&(p.hp/Math.max(1,p.maxHp||p.hp))>.4)continue;
    if(when==='near'&&(!target||Math.hypot(p.x-target.x,p.y-target.y)>130))continue;
    if(when==='far'&&(!target||Math.hypot(p.x-target.x,p.y-target.y)<130))continue;
-  }else if(when!=='pulse'&&when!=='wallStored'&&current<=run.seen[i])continue;
+  }else if(!r.eventGraph&&when!=='pulse'&&when!=='wallStored'&&current<=run.seen[i])continue;
   const delta=Math.max(21,Math.round(r.interval*60));
   run.nextAt[i]=run.clock+delta;
   if(!isState&&when!=='pulse'&&when!=='wallStored')run.seen[i]=current;
