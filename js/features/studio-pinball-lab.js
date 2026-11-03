@@ -176,6 +176,13 @@ function make(profile={},focus=0,actionIndex=-1){
   const t=den?clamp(((px-ax)*dx+(py-ay)*dy)/den,0,1):0;
   return Math.hypot(px-(ax+dx*t),py-(ay+dy*t));
  }
+ function previewPhysicalHit(_attacker,e,a){
+  // Never modify HP in preview. Real collision/damage goes through ForgeImpact.
+  previewEffect(a,'impact',e.x,e.y,20);
+  spark(e.x,e.y,'#ffb5a4',15);
+  recordRuleEvent('hit');
+  return true;
+ }
  function perform(action){
   const a=action||{},type=a.type||'wave';
   active=(g.SkillForge?.TYPE?.[type]||type)+' 실험 중';
@@ -184,6 +191,15 @@ function make(profile={},focus=0,actionIndex=-1){
    clamp(Math.round((g.ActionRegistry?.duration?.(type)||1050)/35),18,58));
   activity=frame+90;
   const dx=target.x-hero.x,dy=target.y-hero.y,angle=Math.atan2(dy,dx);
+  if(['tether','repulse','vortex'].includes(type)&&g.SemanticPhysics){
+   g.ActionRegistry?.run?.(hero,a,target,{hit:previewPhysicalHit,enemies:()=>[target]});
+   const life=clamp(Math.round((Number(a.duration)||1.5)*60),15,480);
+   if(type==='tether')hero._semanticTetherUntil=frame+life;
+   if(type==='vortex')hero._semanticVortexUntil=frame+life;
+   rings.push({x:hero.x,y:hero.y,r:clamp(a.radius||120,40,220)*.35,
+    age:0,life:52,color});
+   return;
+  }
   if(RANGED.has(type)){
    if(['bolt','meteor','starfall','arcshot','beam','chain'].includes(type)){
     const falling=['bolt','meteor','starfall','arcshot'].includes(type);
@@ -310,6 +326,8 @@ function make(profile={},focus=0,actionIndex=-1){
   for(let i=queue.length-1;i>=0;i--)if(queue[i].when<=frame){
    perform(queue[i].action);queue.splice(i,1);
   }
+  // Same bounded attraction/rotation code as the actual combat world.
+  g.SemanticPhysics?.tick?.(hero,[target],previewPhysicalHit);
   for(const p of [hero,target]){
    if(p.portalCooldown>0)p.portalCooldown--;
    if(p===target&&p.frozen>0){p.frozen--;continue;}
@@ -475,6 +493,19 @@ function make(profile={},focus=0,actionIndex=-1){
    ctx.beginPath();ctx.arc(v.x,v.y,5+v.t*1.5,0,TAU);ctx.stroke();
   }
   ctx.globalAlpha=1;
+  if(hero._semanticTetherUntil>frame){
+   ctx.save();ctx.strokeStyle='#c7a7ff';ctx.lineWidth=3;
+   ctx.setLineDash([7,5]);ctx.beginPath();ctx.moveTo(hero.x,hero.y);
+   ctx.lineTo(target.x,target.y);ctx.stroke();ctx.restore();
+  }
+  if(hero._semanticVortexUntil>frame){
+   ctx.save();ctx.strokeStyle='#93a0ff';ctx.globalAlpha=.62;ctx.lineWidth=3;
+   for(let i=0;i<3;i++){
+    ctx.beginPath();ctx.arc(hero.x,hero.y,36+i*21,
+     frame*.075+i*2,frame*.075+i*2+Math.PI*1.55);ctx.stroke();
+   }
+   ctx.restore();
+  }
   disk(ctx,target,'#dd7785','적');
   disk(ctx,hero,profile.color||'#69a8f7',(profile.name||'나').slice(0,1));
   // Reuse the REAL visual family's motif for every ACTUALLY performed
