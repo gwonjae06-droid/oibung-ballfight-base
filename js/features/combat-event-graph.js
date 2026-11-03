@@ -36,7 +36,7 @@ const actionPatterns=[
 const forbidden=/(?:하지\s*않|안\s*하|못\s*하|말아|마라|않는다|금지|무한|영원히|영구히)/;
 // Only N real hits since activation AND a live caster HP percent is supported.
 // Never treat an omitted or malformed threshold as a success.
-const hpPercentPattern=/(?:내|나의|자신의|시전자의)?\s*체력(?:이|은|도)?\s*(\d{1,3})\s*(?:%|퍼센트)\s*(?:이하|미만|아래)(?:라면|이라면|라|이면|일\s*때)?/;
+const hpPercentPattern=/(?:내|나의|자신의|시전자의)?\s*체력(?:이|은|도)?\s*(\d{1,3})\s*(?:%|퍼센트)\s*이하(?:라면|이라면|라|이면|일\s*때)?/;
 const hitCountPattern=/(?:공격|투사체|탄환|기술|스킬|적|상대)(?:을|를|이|가|에게)?[\s\S]{0,44}?(두|세|네|[2-4])\s*(?:번|회)\s*(?:.{0,13})?(?:명중|적중|맞히|맞추)/;
 const secondaryConditional=/(?:그\s*다음|그\s*뒤|이어서|한\s*뒤|그\s*후|그리고).{0,40}?(?:하면|이라면|때만|때마다)/;
 function normalize(value){
@@ -62,6 +62,8 @@ function normalize(value){
 function parse(text){
  const raw=String(text||'').normalize('NFC').trim().slice(0,300);
  const threshold=hpPercentPattern.exec(raw),hitCount=hitCountPattern.exec(raw);
+ if(hitCount&&/체력.{0,14}\d{1,3}\s*(?:%|퍼센트)\s*(?:미만|아래|이상|초과)/.test(raw))
+  return {error:'체력 조건은 현재 “N% 이하”만 지원하며 미만·이상·초과와 혼동하지 않습니다.'};
  let compound=null;
  if(threshold){
   const count=hitCount?({두:2,세:3,네:4}[hitCount[1]]||Number(hitCount[1])):null;
