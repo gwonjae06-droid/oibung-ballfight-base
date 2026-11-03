@@ -59,6 +59,7 @@ function normalize(value,{towerEnemy=false}={}){
           visual:global.MetaphorVisuals?.normalize?.(a.visual),
           fusion:global.ConceptFusion?.normalize?.(a.fusion),
           law:global.PhysicsLawEngine?.normalize?.(a.law),
+          relay:a.type==='kinetic_relay'?global.ImaginationConcepts?.normalizeRelay?.(a.relay):undefined,
           ricochet:a.type==='shot'?Math.round(number(a.ricochet,0,3,0)):0,
           link:['and','after','with'].includes(a.link)?a.link:'and',
           condition:signature?global.SignatureProgram?.validCondition?.(a.condition)||'always':'always'
