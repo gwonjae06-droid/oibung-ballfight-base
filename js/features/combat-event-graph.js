@@ -34,28 +34,53 @@ const actionPatterns=[
  ['tether',/(?:속박|구속|결박|포박)/g]
 ];
 const forbidden=/(?:하지\s*않|안\s*하|못\s*하|말아|마라|않는다|금지|무한|영원히|영구히)/;
+// Only N real hits since activation AND a live caster HP percent is supported.
+// Never treat an omitted or malformed threshold as a success.
+const hpPercentPattern=/(?:내|나의|자신의|시전자의)?\s*체력(?:이|은|도)?\s*(\d{1,3})\s*(?:%|퍼센트)\s*(?:이하|미만|아래)(?:라면|이라면|라|이면|일\s*때)?/;
+const hitCountPattern=/(?:공격|투사체|탄환|기술|스킬|적|상대)(?:을|를|이|가|에게)?[\s\S]{0,44}?(두|세|네|[2-4])\s*(?:번|회)\s*(?:.{0,13})?(?:명중|적중|맞히|맞추)/;
 const secondaryConditional=/(?:그\s*다음|그\s*뒤|이어서|한\s*뒤|그\s*후|그리고).{0,40}?(?:하면|이라면|때만|때마다)/;
 function normalize(value){
  if(!value||typeof value!=='object'||Array.isArray(value)||
   !Object.hasOwn(EVENTS,value.trigger)||!Array.isArray(value.actions)||
   value.actions.length<1||value.actions.length>MAX_STAGES)return undefined;
+ const count=value.minCount===undefined?1:value.minCount;
+ const threshold=value.hpBelow;
+ if(!Number.isInteger(count)||count<1||count>4)return undefined;
+ if(threshold!==undefined&&(!Number.isInteger(threshold)||
+  threshold<10||threshold>90))return undefined;
+ if((count>1||threshold!==undefined)&&value.trigger!=='hit')return undefined;
+ if(threshold!==undefined&&count<2)return undefined;
  const seen=new Set(),actions=[];
  for(const id of value.actions){
   if(typeof id!=='string'||!Object.hasOwn(ACTIONS,id)||seen.has(id))return undefined;
   seen.add(id);actions.push(id);
  }
- return {version:1,trigger:value.trigger,actions};
+ return {version:1,trigger:value.trigger,actions,
+  ...(count>1?{minCount:count}:{}),
+  ...(threshold!==undefined?{hpBelow:threshold}:{})};
 }
 function parse(text){
  const raw=String(text||'').normalize('NFC').trim().slice(0,300);
+ const threshold=hpPercentPattern.exec(raw),hitCount=hitCountPattern.exec(raw);
+ let compound=null;
+ if(threshold){
+  const count=hitCount?({두:2,세:3,네:4}[hitCount[1]]||Number(hitCount[1])):null;
+  if(!hitCount||hitCount.index+hitCount[0].length>threshold.index||
+   count<2||count>4||Number(threshold[1])<10||Number(threshold[1])>90)
+   return {error:'복합 조건은 “공격을 2~4회 명중시키고 내 체력이 10~90% 이하라면” 형식만 지원합니다.'};
+  compound={minCount:count,hpBelow:Number(threshold[1]),
+   end:threshold.index+threshold[0].length};
+ }
  const matches=[];
  for(const [trigger,re] of eventPatterns){
   const m=re.exec(raw);
   if(m)matches.push({trigger,index:m.index,end:m.index+m[0].length,text:m[0]});
  }
- if(!matches.length)return null;
+ if(!matches.length&&!compound)return null;
  matches.sort((a,b)=>a.index-b.index||a.end-b.end);
- const first=matches[0],tail=raw.slice(first.end);
+ const first=compound?{trigger:'hit',index:hitCount.index,
+  end:compound.end}:matches[0];
+ const tail=raw.slice(first.end);
  if(matches.some(m=>m.trigger!==first.trigger))
   return {error:'서로 다른 사건이 한 문장에서 섞여 있어 실행 순서를 확정할 수 없습니다.'};
  if(forbidden.test(tail))
@@ -72,7 +97,8 @@ function parse(text){
  if(!tokens.length)return {error:'사건 뒤에 실제로 수행할 보호막·회복·충격파·속박 중 하나를 적어 주세요.'};
  if(tokens.length>MAX_STAGES)
   return {error:'사건 하나에 연결할 후속 행동은 최대 3개입니다.'};
- const graph=normalize({trigger:first.trigger,actions:tokens.map(x=>x.type)});
+ const graph=normalize({trigger:first.trigger,actions:tokens.map(x=>x.type),
+  ...(compound?{minCount:compound.minCount,hpBelow:compound.hpBelow}:{})});
  return graph?{graph}:{
   error:'중복되거나 모호한 후속 행동을 안전하게 하나의 연쇄로 연결할 수 없습니다.'};
 }
@@ -96,13 +122,22 @@ function toSteps(input){
 }
 function pack(input){
  const graph=normalize(input);
- return graph?[EVENT_IDS.indexOf(graph.trigger),...graph.actions.map(x=>ACTION_IDS.indexOf(x))]:null;
+ return graph?[EVENT_IDS.indexOf(graph.trigger),
+  ...graph.actions.map(x=>ACTION_IDS.indexOf(x)),
+  ...(graph.minCount?[-1,graph.minCount,graph.hpBelow??null]:[])]:null;
 }
 function unpack(value){
- if(!Array.isArray(value)||value.length<2||value.length>1+MAX_STAGES)return undefined;
- if(!value.every(x=>Number.isInteger(x)))return undefined;
+ if(!Array.isArray(value)||value.length<2||value.length>1+MAX_STAGES+3)return undefined;
+ const index=value.indexOf(-1),tail=index<0?[]:value.slice(index+1);
+ const actionIds=index<0?value.slice(1):value.slice(1,index);
+ if(!Number.isInteger(value[0])||actionIds.length<1||
+  actionIds.length>MAX_STAGES||!actionIds.every(x=>Number.isInteger(x))||
+  (index>=0&&(tail.length!==2||!Number.isInteger(tail[0])||
+   !(tail[1]===null||Number.isInteger(tail[1])))))return undefined;
  return normalize({trigger:EVENT_IDS[value[0]],
-  actions:value.slice(1).map(x=>ACTION_IDS[x])});
+  actions:actionIds.map(x=>ACTION_IDS[x]),
+  ...(index>=0?{minCount:tail[0],
+   ...(tail[1]!==null?{hpBelow:tail[1]}:{})}:{})});
 }
 // Authorized HP events are derived from actual fighter state, never from
 // damage text, particles or unconfirmed damage estimates.
@@ -120,8 +155,7 @@ function verify(input,recipe){
  if(!gph)return false;
  return !!(recipe?.rules||[]).some(rule=>{
   const compiled=normalize(rule.eventGraph);
-  if(!compiled||compiled.trigger!==gph.trigger||
-    compiled.actions.join('|')!==gph.actions.join('|')||
+  if(!compiled||JSON.stringify(compiled)!==JSON.stringify(gph)||
     rule.when!==gph.trigger)return false;
   const stages=(rule.steps||[]).filter(x=>x.kind==='cast').map(x=>x.action?.type);
   return stages.join('|')===gph.actions.join('|');
