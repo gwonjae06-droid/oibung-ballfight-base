@@ -211,3 +211,12 @@ test('both entrypoints load concept module before normalizers and studio display
  assert.match(ui,/data-rule-example="machine"/);
  assert.match(ui,/data-rule-example="fantasy"/);
 });
+
+test('trailing numeric sentences are merged into one generated skill in real studio flow',()=>{
+ const g=boot(lang),s=g.SkillSentenceEngine.parseBundle(
+  '드래곤이 화염 브레스를 내뿜는다. 범위 180, 피해 35');
+ assert.equal(s.ok,true,s.error);
+ assert.equal(s.skills.length,1);
+ const a=s.skills[0].recipe.rules[0].action;
+ assert.equal(a.radius,180);assert.equal(a.damage,35);
+});
