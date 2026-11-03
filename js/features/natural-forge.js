@@ -255,8 +255,7 @@ function parse(text,name='',choices={}){
   const skills=[],unmapped=[],aliases=new Set(),questions=[];
   const sentences=semanticSentences(original,choices,questions);
   for(const [re,msg] of CONVENTIONS)if(test(re,original))aliases.add(msg);
-  for(const sentence of sentences.slice(0,14)){
-    if(skills.length>=4){unmapped.push('스킬은 최대 4개입니다: '+sentence);break;}
+  for(const sentence of sentences){
     // Connectors define ordering. Plain co-occurrences follow first mention.
     // Keep "3초 후" together for precise timing, but split
     // "이동 후 독딜" and "텔레포트하고 독딜" into distinct actions.
