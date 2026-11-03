@@ -35,6 +35,8 @@ const normalize=v=>{
  if(!homing&&!split&&impact==='none'&&element==='none')return undefined;
  return {version:1,element,form,homing,split,
   fragments:Math.round(cap(v.fragments,2,4,3)),
+  // Pre-existing skills default to the original 12-tick midair fracture.
+  ...(split&&v.splitTrigger==='hit'?{splitTrigger:'hit'}:{}),
   impact,radius:cap(v.radius,35,160,85)};
 };
 function analyze(input){
