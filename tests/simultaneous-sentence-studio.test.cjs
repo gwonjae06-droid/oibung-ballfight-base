@@ -82,6 +82,12 @@ test('Korean parameter limits are visible and malformed values do not create exe
  assert.equal(result.interval,.35);
  assert.ok(result.warnings.length>=4);
 });
+test('native Korean counts and attack rate are parsed without external APIs',()=>{
+ const g=language(),p=g.KoreanSkillParameters.analyze('화살 다섯 발을 초당 두 번 발사한다');
+ assert.equal(p.values.count,5);
+ assert.equal(p.interval,.5);
+ assert.equal(g.KoreanSkillParameters.analyze('독립 스킬').values.status,undefined);
+});
 test('same idea is merged, independent Korean sentences create separate skills',()=>{
  const g=language();
  const one=g.SkillSentenceEngine.parseBundle('거대한 턱으로 적을 후려치고 검은 레이저를 발사한다.');
