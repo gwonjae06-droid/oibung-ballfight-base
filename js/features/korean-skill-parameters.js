@@ -13,7 +13,7 @@ function analyze(input){
  // numeric declarations too. Replace counters only in numeric contexts.
  const numbers={한:1,두:2,세:3,네:4,다섯:5,여섯:6,일곱:7,여덟:8,아홉:9,열:10,스무:20};
  const text=String(input||'').normalize('NFC').replace(
-   /(스무|다섯|여섯|일곱|여덟|아홉|한|두|세|네|열)\s*(?=(?:개|발|줄기|갈래|마리|번|회|타|초)(?:\s|$|마다|간|동안|씩|로|을|를|가|이|는|은|에|의))/g,
+   /(스무|다섯|여섯|일곱|여덟|아홉|한|두|세|네|열)\s*(?=(?:개|발|줄기|갈래|조각|파편|마리|번|회|타|초)(?:\s|$|마다|간|동안|씩|으로|로|을|를|가|이|는|은|에|의))/g,
    word=>String(numbers[word.trim()]||word));
  const values={},warnings=[],recognized=[];
  function set(key,patterns,lo,hi,integer=false){
@@ -32,6 +32,14 @@ function analyze(input){
   /(?:투사체|탄환|탄알|총알|화살|파편|탄막|구슬|미사일|빔|불덩이)\s*(?:를|을|가|이|은|는)?\s*(\d+)\s*(?:개|발|줄기|갈래)/,
   /(\d+)\s*(?:개|발|줄기|갈래|마리|개의|발의|발씩|개씩)(?:\s*(?:의)?\s*(?:투사체|탄환|탄알|총알|화살|파편|구슬|미사일|레이저|빔))?/
  ],1,8,true);
+ // Number of children is NOT the number of parent bullets fired.
+ // "세 조각으로 분열" creates one shot with three child fragments.
+ set('fragmentCount',[
+  /(\d+)\s*(?:개|갈래|조각)(?:의)?\s*(?:파편|조각)(?:으로)?/,
+  /(\d+)\s*(?:조각|갈래)(?:으로)?\s*(?:분열|갈라|깨|부서)/,
+  /(?:분열|갈라|쪼개).{0,16}?(\d+)\s*(?:개|갈래|조각|파편)/,
+  /(?:파편|조각)\s*(?:을|를)?\s*(\d+)\s*(?:개|갈래)/
+ ],2,4,true);
  set('radius',[
   /(?:반경|범위|사거리|공격범위|폭발범위)\s*(?:은|는|이|가|를|을|:|=)?\s*(\d+(?:\.\d+)?)/,
   /(\d+(?:\.\d+)?)\s*(?:거리|반경|범위)(?:까지|안에|내에)/

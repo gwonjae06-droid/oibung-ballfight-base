@@ -74,6 +74,16 @@ function build(input,recipe){
       {count:a.fragments});
     if(action.fusion.homing)push(fragments,'tracks','enemy');
     push(fragments,'may_hit','enemy');
+    if(action.fusion.finalBurst){
+     const burst=entity('terminal_effect','최종 폭발');
+     a.finalBurst=true;
+     if(burst){
+      push(fragments,'when_all_retired',burst,{
+       event:'last_fragment_retired',radius:action.fusion.radius});
+      push(burst,'confirmed_area_damage','enemy',{
+       damageMultiplier:.42,maxDamage:52});
+     }
+    }
    }
   }
   if(action.law?.terms)for(const t of action.law.terms.slice(0,5))

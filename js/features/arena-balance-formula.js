@@ -27,7 +27,8 @@ function actionPressure(a){
  const radius=cap(n(a.radius,120),30,300),duration=cap(n(a.duration,1.5),.2,8);
  const fusion=g.ConceptFusion?.normalize?.(a.fusion);
  const fusionPressure=fusion?(fusion.homing?1.16:1)*(fusion.split?1+fusion.fragments*.32:1)*
-   (fusion.impact==='burst'?1.5:fusion.impact!=='none'?1.18:1):1;
+   (fusion.impact==='burst'?1.5:fusion.impact!=='none'?1.18:1)*
+   (fusion.finalBurst?1.45:1):1;
  return damage*fusionPressure*(1+(count-1)*.13)*(1+Math.max(0,radius-125)/420)*
   (REPEAT.has(a.type)?1+Math.min(1.1,duration*.13):1)*
   (a.status&&a.status!=='none'?1.13:1);
