@@ -40,9 +40,13 @@ function actors(a){
 }
 function forceTerminal(g,a,options={}){
  const {p,e}=actors(a),effects=[];
- let hitReady=options.hitReady??false,damageEnabled=options.damageEnabled??true;
+ let hitReady=false,damageEnabled=options.damageEnabled??true;
  const hit=(actor,target,attack)=>{
-  if(!damageEnabled||!hitReady||target.invincible>0||attack.damage<=0)return false;
+  // Source contact is a separate, confirmed physical hit. A shield can
+  // suppress ONLY the later burst and must not retroactively undo fracture.
+  if(attack.type==='shot'&&!hitReady)return false;
+  if(attack.type!=='shot'&&!damageEnabled)return false;
+  if(target.invincible>0||attack.damage<=0)return false;
   target.hp-=Math.min(target.hp,attack.damage);return true;
  };
  const execute=(actor,act,target)=>{
@@ -57,7 +61,7 @@ function forceTerminal(g,a,options={}){
  const start=a.fusion.splitTrigger==='hit';
  if(start){hitReady=true;e.x=150;world.tick(p,e);
   assert.equal(p.forgeShots.length,3);
-  hitReady=false;
+  hitReady=false;e.hp=260; // measure actual burst HP separately from source hit
  }else{
   p.forgeShots[0].x=30;p.forgeShots[0].y=30;p.forgeShots[0].vx=0;
   for(let i=0;i<12;i++)world.tick(p,e);
@@ -73,7 +77,7 @@ function forceTerminal(g,a,options={}){
   b.x=bx+i*2;b.y=by;b.vx=0;b.vy=0;
  }
  p._forgeActionClock=31;p._forgeBalanceFrame=31;
- hitReady=true;world.tick(p,e);
+ hitReady=false;world.tick(p,e);
  assert.equal(group.remaining,1);
  assert.equal(effects.length,0);
  p.forgeShots[0].life=1;p.forgeShots[0].vx=0;p.forgeShots[0].vy=0;
@@ -158,7 +162,7 @@ test('a shielded enemy cannot satisfy the damage gate despite collision',()=>{
 });
 test('two-stage sequential burst then self-healing works with a timed fracture',()=>{
  const g=boot(['skill-forge-world']),{r,a}=parse(g,short);
- assert.deepEqual(a.fusion.terminalChain.map(x=>x.type),['burst','heal']);
+ assert.deepEqual(Array.from(a.fusion.terminalChain,x=>x.type),['burst','heal']);
  assert.equal(a.fusion.splitTrigger,undefined);
  assert.ok(r.semanticVerification.matched.includes('heal'));
  const {p,e,effects}=forceTerminal(g,a);
@@ -195,7 +199,7 @@ test('untrusted graph cannot inject arbitrary operations, infinite loops or impo
   {type:'burst',gate:'always'},{type:'heal',gate:'damage'}],
   {perform:t=>({performed:true,damaged:false})});
  assert.equal(once.stopped,'no-confirmed-damage');
- assert.deepEqual(once.executed,['burst']);
+ assert.deepEqual(Array.from(once.executed),['burst']);
 });
 test('semantic input validation rejects ambiguous conditional structures instead of claiming success',()=>{
  const g=boot();
