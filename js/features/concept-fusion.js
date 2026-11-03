@@ -164,21 +164,17 @@ function weave(value,input){
  for(const row of rows)if(row.steps?.length){
   const stage=row.steps.find(s=>s.kind==='cast'&&
    (s.action.type===primary||s.action.type===chosen.action.type));
-  if(stage)stage.action={...fusedAction(stage.action),type:chosen.action.type};
+  if(stage)stage.action=fusedAction({...stage.action,type:chosen.action.type});
   else if(row===chosen&&!concepts.sequence)row.steps.unshift({kind:'cast',action:chosen.action});
  }
- // For the "one projectile with attributes" case, keep one rule,
- // rather than a salvo of individually named primitives.
- if(!concepts.sequence&&concepts.main&&rows.length>1){
-  for(let i=rows.length-1;i>=0;i--)
-   if(rows[i]!==chosen&&rows[i].when==='pulse')rows.splice(i,1);
- }
+ // Keep truly independent action verbs (e.g. "chain and then explode").
+ // Only recognized modifiers above are folded into the primary object.
  recipe=model.normalize({...recipe,rules:rows});
  return {recipe,concepts,changed:true};
 }
 function impact(attacker,victim,action,api={}){
  const fusion=normalize(action?.fusion);
- if(!fusion||fusion.impact==='none'||!attacker||!victim||victim.hp<=0)return false;
+ if(!fusion||fusion.impact==='none'||!attacker||!victim)return false;
  const frame=Number(attacker._forgeActionClock)||0;
  const stat=attacker._fusionImpactFrame===frame?attacker._fusionImpactCount||0:0;
  if(stat>=5)return false; // bound splash bursts in 100-skill loadouts
