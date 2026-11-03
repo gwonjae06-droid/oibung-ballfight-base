@@ -163,7 +163,9 @@ function parseBundle(input){
  const primary=skills[0];
  return {...primary,sourceText:raw,skills,
   bundleSummary:skills.map((x,i)=>({index:i,name:x.name,
-   sourceText:x.sourceText,summary:x.summary,notes:x.notes,limitations:x.limitations})),
+   sourceText:x.sourceText,summary:x.summary,notes:x.notes,
+   colorPriority:x.colorPriority,explicitColor:x.explicitColor,
+   limitations:x.limitations})),
   notes:[...new Set(skills.flatMap(x=>x.notes||[]))],
   limitations:[...new Set(skills.flatMap(x=>x.limitations||[]))]};
 }
