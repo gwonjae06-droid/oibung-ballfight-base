@@ -89,7 +89,7 @@ function segments(raw){
    const cond=/(?:면|때마다|자마자|고나서|고나면|면서|다가|고)$/.test(word);
    const stem=word.replace(/(?:때마다|자마자|고나서|고나면|으면|면서|다가|면|고)$/,'');
    const verb=VERBS.some(([,re])=>re.test(stem))||
-    /(?:튀기|부딪히|부딪|맞|적중|명중|충돌|착지|모이|모아|응축|커지|변하|변형|회전|다가가|휘감|휘몰|돌다가|폭발|터지)/.test(stem);
+    /(?:튀기|부딪히|부딪|맞|적중|명중|충돌|착지|모이|모아|응축|커지|변하|변형|회전|다가가|휘감|휘몰|돌다가|폭발|터지|묶|붙잡|포박|끌어당|잡아당|낚아채|밀쳐|밀어내|날려버|회전시키|돌려|휘말)/.test(stem);
    if(cond&&verb&&buffer.length){
     pieces.push(buffer.join(' '));buffer.length=0;
    }
@@ -113,6 +113,8 @@ const pickType=(text,types,context={})=>{
  const nt=tokenize(raw),supported=k=>Object.hasOwn(types,k);
  const available=NOUNS.filter(([k,re])=>re.test(raw)&&supported(k));
  const lexical=(g.NaturalForge?.recognize?.(raw)||[]).filter(x=>supported(x.type)).map(x=>x.type);
+ const physical=g.SemanticPhysics?.choose?.(raw,types);
+ if(physical)return physical;
  const metaphor=g.MetaphorVisuals?.interpret?.(raw);
  // A dominant named object has priority over the incidental verb "발사".
  if(metaphor&&supported(metaphor.type))return {type:metaphor.type,visual:metaphor.visual,source:'metaphor'};
