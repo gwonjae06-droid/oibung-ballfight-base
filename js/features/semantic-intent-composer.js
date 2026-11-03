@@ -38,6 +38,7 @@ const LABELS=Object.freeze({
  wallStore:'벽 충돌 에너지 누적 후 조건부 방출',
  terminalBurst:'마지막 파편이 실제로 소멸할 때 최종 폭발',
  terminalShield:'마지막 파편이 실제로 소멸할 때 시전자 보호막',
+ terminalChain:'파편 소멸 후 순차 후속 동작·조건 검증',
  opposed:'서로 반대 방향의 힘'
 });
 const UNSUPPORTED=Object.freeze([
@@ -62,6 +63,8 @@ function analyze(input){
  intent.relay=intent.relayNoun&&intent.relayAbsorb&&intent.relayRelease;
  intent.terminalBurst=!!g.ConceptFusion?.terminalIntent?.(raw);
  intent.terminalShield=!!g.ConceptFusion?.terminalShieldIntent?.(raw);
+ const chain=g.TerminalEventChain?.parse?.(raw);
+ intent.terminalChain=chain?.steps||null;
  intent.childOnly=!!g.ConceptFusion?.childChase?.(raw);
  // A shard expiry is not the initial source projectile hitting a victim.
  if(intent.terminalBurst&&!/(?:명중|적중|맞으면|착탄).{0,15}(?:폭발|터지)/.test(raw))
@@ -74,6 +77,9 @@ function analyze(input){
   /중력/.test(raw)&&/(?:전자석|자기력|자기장|자석)/.test(raw);
  intent.noEffect=/아무\s*(?:효과|기술|스킬|행동).{0,18}(?:않|안|없)|가만히\s*있는다/.test(raw);
  intent.unsupported=UNSUPPORTED.filter(def=>def.re.test(raw)).map(x=>x.label);
+ if(chain?.error)intent.unsupported.push(chain.error);
+ if(intent.terminalChain&&!(intent.split||intent.hitSplit))
+  intent.unsupported.push('순차 후속 동작에 연결할 실제 파편 생성 단계가 없음');
  if(g.ConceptFusion?.shardAnaphora?.(raw)&&!(intent.split||intent.hitSplit))
   intent.unsupported.push('지시어가 가리킬 기존 파편 생성 단계가 없음');
  if(intent.terminalShield&&!(intent.split||intent.hitSplit))
@@ -94,10 +100,10 @@ function analyze(input){
   intent.unsupported.push('시간에 따라 약해질 힘의 종류와 방향이 지정되지 않음');
  const requested=[
   ...['homing','orbit','attract','spin','repel','tether','heal','shield',
-   'teleport','damage','split','area','hitExplosion','hitSplit','fade','relay','opposed','wallStore','terminalBurst','terminalShield']
+   'teleport','damage','split','area','hitExplosion','hitSplit','fade','relay','opposed','wallStore','terminalBurst','terminalShield','terminalChain']
    .filter(k=>intent[k])
  ];
- const priority=!!(intent.terminalShield||intent.terminalBurst||intent.wallStore||intent.relay||intent.orbit||intent.homing||intent.tether||
+ const priority=!!(intent.terminalChain||intent.terminalShield||intent.terminalBurst||intent.wallStore||intent.relay||intent.orbit||intent.homing||intent.tether||
   intent.repel||(intent.heal&&intent.shield)||(intent.teleport&&intent.damage)||
   intent.opposed||(intent.law&&intent.fade)||(intent.hitSplit)||
   intent.split||(intent.area&&/(?:적|상대).{0,22}피해|(?:피해|공격).{0,15}(?:적|상대)/.test(raw)));
@@ -128,23 +134,28 @@ function verify(input,recipe){
  bits.attract=has('tether')||has('pull')||has('vortex')||terms(['attract','gravity','orbit']);
  bits.spin=has('vortex')||terms(['spin','orbit']);
  bits.repel=has('repulse')||terms(['repel']);
- bits.tether=has('tether');
- bits.heal=has('heal')||has('regen')||has('lifebloom');
+ bits.tether=has('tether')||actions.some(a=>a.type==='shot'&&a.fusion?.terminalChain?.some(s=>s.type==='tether'));
+ bits.heal=has('heal')||has('regen')||has('lifebloom')||
+  actions.some(a=>a.type==='shot'&&a.fusion?.terminalChain?.some(s=>s.type==='heal'));
  bits.shield=has('shield')||has('fortify')||
+  actions.some(a=>a.type==='shot'&&a.fusion?.terminalChain?.some(s=>s.type==='shield'))||
   actions.some(a=>a.type==='shot'&&a.fusion?.split&&a.fusion?.finalShield);
  bits.teleport=has('blink')||has('portal')||has('swap');
  bits.damage=actions.some(a=>a.damage>0&&g.ActionRegistry?.get?.(a.type)?.offense);
  bits.split=actions.some(a=>a.type==='splitshot'||a.type==='shot'&&a.fusion?.split);
  bits.area=actions.some(a=>['zone','wave','nova','phenomenon','blackhole','vortex'].includes(a.type)||
-  a.type==='shot'&&a.fusion?.finalBurst);
+  a.type==='shot'&&(a.fusion?.finalBurst||a.fusion?.terminalChain?.some(s=>s.type==='burst')));
  bits.hitExplosion=actions.some(a=>a.fusion?.impact==='burst');
  // Actual contact-triggered physical fracture is distinct from timed fracture.
  bits.hitSplit=actions.some(a=>a.type==='shot'&&
   a.fusion?.split===true&&a.fusion?.splitTrigger==='hit');
  bits.terminalBurst=actions.some(a=>a.type==='shot'&&a.fusion?.split===true&&
-  a.fusion?.finalBurst===true);
+  (a.fusion?.finalBurst===true||a.fusion?.terminalChain?.some(s=>s.type==='burst')));
  bits.terminalShield=actions.some(a=>a.type==='shot'&&a.fusion?.split===true&&
-  a.fusion?.finalShield===true);
+  (a.fusion?.finalShield===true||a.fusion?.terminalChain?.some(s=>s.type==='shield')));
+ bits.terminalChain=!!intent.terminalChain&&actions.some(a=>a.type==='shot'&&a.fusion?.split&&
+  JSON.stringify(g.TerminalEventChain?.normalize?.(a.fusion?.terminalChain))===
+  JSON.stringify(intent.terminalChain));
  bits.fade=actions.some(a=>a.type==='phenomenon'&&a.law?.decay==='fade');
  bits.relay=has('kinetic_relay');
  bits.wallStore=(recipe?.rules||[]).some(r=>r.when==='wallStored'&&
@@ -238,7 +249,7 @@ function compose(input){
    notes:['충격 누적은 기세 발동 이후 18초 동안 적용되며 충돌 26프레임 중복 방지와 2~6회 상한을 사용합니다.',
     '시전자 중심의 범위 피해와 명시한 폭발 색상을 기존 전투 이펙트로 출력합니다.'],
    semanticVerification:verify(intent,recipe)};
- }else if(intent.heal&&intent.shield){
+ }else if(intent.heal&&intent.shield&&!intent.terminalChain){
   actions.push(make('regen',{damage:0}),make('shield',{damage:0}));
  }else if(intent.relay){
   actions.push(make('kinetic_relay',{relay:g.ImaginationConcepts?.normalizeRelay?.({
@@ -265,11 +276,11 @@ function compose(input){
   if(!law)return {ok:false,error:'지정한 힘을 실행 가능한 물리 연산자로 바꾸지 못했습니다.'};
   actions.push(make('phenomenon',{law,damage}));
   if(intent.orbit)notes.push('공전은 전투 상대를 움직이는 궤도력으로 구현합니다. 발사체 자체가 공전하는 것은 아닙니다.');
- }else if(intent.tether){
+ }else if(intent.tether&&!intent.terminalChain){
   actions.push(make('tether'));
- }else if(intent.repel){
+ }else if(intent.repel&&!intent.terminalChain){
   actions.push(make('repulse'));
- }else if(intent.homing||intent.split||intent.hitSplit||intent.terminalBurst||intent.terminalShield){
+ }else if(intent.terminalChain||intent.homing||intent.split||intent.hitSplit||intent.terminalBurst||intent.terminalShield){
   const existing=g.ConceptFusion?.analyze?.(raw);
   actions.push(make('shot',{
    fusion:g.ConceptFusion?.normalize?.({
@@ -278,6 +289,7 @@ function compose(input){
     split:intent.split||intent.hitSplit,
     splitTrigger:intent.hitSplit?'hit':'age',
     finalBurst:intent.terminalBurst,finalShield:intent.terminalShield,
+    terminalChain:intent.terminalChain,
     fragments:cap(values.fragmentCount??count,2,4,3),
     impact:intent.hitExplosion?'burst':
      intent.terminalBurst?'none':existing?.impact||'none',
@@ -285,6 +297,7 @@ function compose(input){
    })
   }));
   if(intent.childOnly)notes.push('지시어가 가리키는 파편에만 유도 이동을 적용합니다. 원래 탄환은 일반 비행을 유지합니다.');
+  if(intent.terminalChain)notes.push('파편의 실제 소멸 이후 후속 동작을 순서대로 수행합니다. 조건(직전 충격파의 실제 피해·가까운 적 존재)이 불충족되면 남은 단계를 실행하지 않습니다. 최대 3단계입니다.');
   if(intent.terminalShield)notes.push('실제 마지막 분열 파편이 소멸할 때에만 시전자에게 1회 보호막을 부여합니다. 명중 직후나 고정 시간 후에는 보호막을 생성하지 않습니다.');
   if(intent.terminalBurst)notes.push(
     '마지막 자식 파편이 실제 명중·소멸·장애물 차단·경계 이탈로 사라진 뒤, 그 마지막 좌표에서 한 번만 범위 폭발합니다. 피해량은 원탄 위력의 42%(최대 52)이며 일반 방어 판정을 따릅니다.');
