@@ -45,6 +45,25 @@ test('Korean clause compiles into a counted physical wall trigger, not a pulse',
  assert.ok(r.semanticGraph.relations.some(x=>x.type==='accumulates_wall_impulse'));
  assert.ok(r.semanticGraph.relations.some(x=>x.type==='releases_on_count'&&x.count===3));
 });
+test('unseen wall synonyms reuse the same counted trigger, without example-specific hardcoding',()=>{
+ const g=boot(compiler),variant=g.SkillSentenceEngine.parse(
+  '벽에 튕길 때마다 운동량을 축적하고 네 번 부딪치면 금빛 폭발로 방출한다');
+ assert.equal(variant.ok,true,variant.error);
+ assert.equal(variant.recipe.rules[0].when,'wallStored');
+ assert.equal(variant.recipe.rules[0].wallHits,4);
+ assert.equal(variant.recipe.rules[0].action.visual.colorMode,'explicit');
+});
+test('storage-only and explicitly negated releases cannot invent a nova attack',()=>{
+ const g=boot(compiler);
+ for(const sentence of [
+  '벽에 부딪힐 때마다 충격을 몸에 저장한다',
+  '벽에 부딪힐 때마다 충격을 저장하고 세 번 튕겨도 폭발하지 않는다'
+ ]){
+  const parsed=g.SkillSentenceEngine.parse(sentence);
+  assert.equal(parsed.ok,false,sentence);
+  assert.match(parsed.error,/구현할 수 없습니다/);
+ }
+});
 test('only three DISTINCT confirmed boundary rebounds release stored impulse once',()=>{
  const g=boot(compiler),{r,p,e,run}=scenario(g);
  assert.ok(run);
