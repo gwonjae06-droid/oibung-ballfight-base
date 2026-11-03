@@ -124,7 +124,7 @@ function resultHTML(result){
  +grammarPreview+auditView+sandboxView+physicsView
  +((result.notes||[]).length?'<details class="sentence-more"><summary>해석과 안전 제한 자세히</summary><ul>'
  +(result.notes||[]).map(x=>'<li>'+E(x)+'</li>').join('')+'</ul></details>':'')
- +'<p class="sentence-local-note">이 결과는 오프라인 동작 사전과 실행 규칙으로 구성됩니다. 새로운 물리 능력이나 연출을 무조건 생성하는 AI는 아닙니다.</p>'
+ +'<p class="sentence-local-note">오프라인 개념 해석과 합성 물리 수식을 사용합니다. 지원하지 않는 현상은 설명하며, 모든 상상 속 법칙을 보장하는 범용 AI는 아닙니다.</p>'
  +'<button type="button" data-rule-command="apply" class="sentence-apply">✓ 문장 속 기술을 생성하고 시연하기</button></section>';
 }
 const NUMERIC=Object.freeze({
@@ -166,6 +166,41 @@ function tune(skillIndex,ruleIndex,stageIndex,key,value){
  forge.setDraft({...current,skills});
  return true;
 }
+function tuneLaw(skillIndex,ruleIndex,stageIndex,termIndex,field,value){
+ const current=forge.getDraft(),src=current.skills?.[skillIndex];
+ if(!src?.ruleSet||!['strength','rest'].includes(field))return false;
+ const num=Number(value);if(!Number.isFinite(num))return false;
+ const config=JSON.parse(JSON.stringify(src.ruleSet));
+ const r=config.rules?.[ruleIndex];if(!r)return false;
+ const a=stageIndex>=0?r.steps?.[stageIndex]?.action:r.action;
+ if(a?.type!=='phenomenon'||!a.law?.terms?.[termIndex])return false;
+ a.law.terms[termIndex][field]=field==='strength'?
+  Math.max(.05,Math.min(6,num)):Math.max(20,Math.min(240,num));
+ if(stageIndex>=0&&r.action?.type===a.type)r.action.law=a.law;
+ if(stageIndex<0)for(const step of r.steps||[])
+  if(step.kind==='cast'&&step.action?.type===a.type)step.action.law=a.law;
+ const recipe=rules.normalize(config),skills=current.skills.slice();
+ skills[skillIndex]={...src,ruleSet:recipe,actions:rules.preview(recipe),
+  ir:g.SkillIR?.fromRecipe?.(recipe)||undefined};
+ forge.setDraft({...current,skills});return true;
+}
+function lawTuning(a,ri,si){
+ const law=g.PhysicsLawEngine?.normalize?.(a?.law);
+ if(!law)return '';
+ return '<div class="sentence-law-tune"><p><strong>합성 물리 법칙</strong> · '+
+   E(law.anchor==='target'?'상대 중심':'캐릭터 중심')+' · '+
+   E(law.decay)+' 시간 변화</p>'+
+   law.terms.map((t,i)=>{
+    const label=g.PhysicsLawEngine?.OPS?.[t.op]?.label||t.op;
+    return '<div class="sentence-law-term"><strong>'+E(label)+'</strong>'+
+     '<label>힘의 세기<input type="number" min=".05" max="6" step=".05" '+
+     'data-law-key="strength" data-law-index="'+i+'" data-tune-rule="'+ri+'" '+
+     'data-tune-stage="'+si+'" value="'+E(t.strength)+'"></label>'+
+     '<label>기준 거리<input type="number" min="20" max="240" step="5" '+
+     'data-law-key="rest" data-law-index="'+i+'" data-tune-rule="'+ri+'" '+
+     'data-tune-stage="'+si+'" value="'+E(t.rest)+'"></label></div>';
+   }).join('')+'</div>';
+}
 function actionTuning(a,ruleIndex,stageIndex){
  if(!a)return '';
  const supported=new Set(g.ActionRegistry?.get?.(a.type)?.parameters||[
@@ -181,7 +216,7 @@ function actionTuning(a,ruleIndex,stageIndex){
  if(supported.has('pattern'))fields.push('<label>공격 배치<select data-tune-key="pattern" data-tune-rule="'+
     ruleIndex+'" data-tune-stage="'+stageIndex+'">'+Object.entries(g.AbilityAtlas?.PATTERNS||{direct:'직선',radial:'방사형',fan:'부채꼴'}).map(([id,label])=>
     '<option value="'+E(id)+'"'+(a.pattern===id?' selected':'')+'>'+E(label)+'</option>').join('')+'</select></label>');
- return '<div class="sentence-tune-grid">'+fields.join('')+'</div>';
+ return '<div class="sentence-tune-grid">'+fields.join('')+'</div>'+lawTuning(a,ruleIndex,stageIndex);
 }
 function tuneHTML(s){
  if(!s?.ruleSet)return '';
@@ -223,7 +258,7 @@ function render(){
  +'<button type="button" data-rule-example="jaw">🐉 거대한 턱</button>'
  +'<button type="button" data-rule-example="beam">🌑 멘헤라빔</button>'
  +'<button type="button" data-rule-example="chain">💎 연쇄 분열</button>'
- +'<button type="button" data-rule-example="wall">⚡ 벽 충돌 가속</button></div>'
+ +'<button type="button" data-rule-example="wall">⚡ 벽 충돌 가속</button>\n +'<button type="button" data-rule-example="physics">🌀 물리 법칙 만들기</button>'</div>'
  +'<label class="sentence-name" for="rule-name">기술 이름 (선택 사항)'
  +'<input id="rule-name" maxlength="18" type="text" value="'+E(name)+'" placeholder="문장을 해석해 자동으로 이름 붙이기"></label>'
  +'<button type="button" data-rule-command="generate" class="sentence-generate">✨ 문장에서 스킬 구현하기</button>'
@@ -235,6 +270,16 @@ function render(){
  +'<div id="rule-feedback" role="status" aria-live="polite"></div>';
 }
 panel.addEventListener('change',event=>{
+ const lawControl=event.target.closest?.('[data-law-key]');
+ if(lawControl){
+  const ri=Number(lawControl.dataset.tuneRule||0),si=Number(lawControl.dataset.tuneStage??-1);
+  if(tuneLaw(selectedIndex,ri,si,Number(lawControl.dataset.lawIndex),
+    lawControl.dataset.lawKey,lawControl.value)){
+   g.CharacterStudioWorkspace?.refresh?.();render();
+   feedback('생성된 물리 법칙의 힘이 변경되었습니다.');
+  }
+  return;
+ }
  const control=event.target.closest?.('[data-tune-key]');
  if(!control)return;
  const key=control.dataset.tuneKey;
@@ -257,7 +302,8 @@ panel.addEventListener('click',event=>{
    jaw:'공의 한 부분이 거대한 턱처럼 변한 다음 상대를 후려칩니다.',
    beam:'오슬우의 멘헤라가 응축되어 어두운 두꺼운 멘헤라빔을 발사합니다.',
    chain:'분열탄을 5개로 분열시키고 분열할 때마다 새로운 탄환을 발사합니다.',
-   wall:'벽에 튕길 때마다 몸의 속도가 빨라지고 상대와 부딪히면 충격파를 발사합니다.'
+   wall:'벽에 튕길 때마다 몸의 속도가 빨라지고 상대와 부딪히면 충격파를 발사합니다.',
+   physics:'반경 180의 역중력장에 회전력과 진동을 동시에 적용한다. 세기 3, 4초 동안 점점 약해진다.'
   };
   promptDraft=samples[example.dataset.ruleExample]||promptDraft;
   proposal=null;render();panel.querySelector('#rule-prompt')?.focus?.();return;
@@ -284,5 +330,5 @@ panel.addEventListener('click',event=>{
 });
 g.addEventListener?.('studio:open',()=>{syncPrompt(true);render();});
 render();
-g.SignatureRuleStudio={render,apply,tune};
+g.SignatureRuleStudio={render,apply,tune,tuneLaw};
 })(window);
