@@ -584,6 +584,12 @@ function make(profile={},focus=0,actionIndex=-1){
   ctx.fillStyle='rgba(10,22,35,.89)';ctx.fillRect(29,27,W-58,32);
   ctx.textAlign='left';ctx.font='700 12px sans-serif';ctx.fillStyle='#fff';
   ctx.fillText('🎱 미니 핀볼 실험장  ·  스킬만 발동',38,47);
+  const stored=ruleRuns.find(run=>!run.finished&&run.rules.some(r=>r.when==='wallStored'));
+  if(stored){
+   const index=stored.rules.findIndex(r=>r.when==='wallStored');
+   ctx.fillStyle='#ffe2a4';ctx.font='700 12px sans-serif';
+   ctx.fillText('벽 충격 축적 '+stored.wallCharge[index].count+' / '+stored.rules[index].wallHits,38,77);
+  }
   ctx.fillStyle='rgba(9,22,36,.9)';ctx.fillRect(29,H-49,W-58,28);
   ctx.fillStyle='#233c57';ctx.fillRect(35,H-41,166,12);
   ctx.fillStyle='#8ad4ff';ctx.fillRect(35,H-41,166*(energy/100),12);
