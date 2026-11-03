@@ -37,7 +37,8 @@ function apply(result){
  const name=(panel.querySelector('#rule-name')?.value||'').trim().slice(0,18);
  const skills=list.map((item,i)=>{
   if(!item?.ok)throw Error((i+1)+'번째 기술을 해석하지 못했습니다.');
-  const ir=g.SkillIR?.fromRecipe?.(item.recipe);
+  const ir=g.SkillIR?.fromSentence?.(item.sourceText,item.recipe)||
+   g.SkillIR?.fromRecipe?.(item.recipe);
   const recipe=ir?g.SkillIR.toRecipe(ir):rules.normalize(item.recipe);
   if(!recipe.rules.length)throw Error((i+1)+'번째 기술에 실행 동작이 없습니다.');
   return {name:list.length===1&&name?name:item.name||'문장 기술 '+(i+1),
@@ -100,9 +101,20 @@ function resultHTML(result){
    +(t.ending?' · 어미 '+E(t.ending):'')
    +(t.prefix?' · 접두사 '+E(t.prefix):'')
    +(t.suffix?' · 접미사 '+E(t.suffix):'')+'</li>').join('')+'</ul></details>':'';
- const ir=g.SkillIR?.fromRecipe?.(result.recipe);
+ const ir=result.semanticIR||g.SkillIR?.fromRecipe?.(result.recipe);
  const physicsView=ir?.events?.length?'<details class="sentence-more"><summary>물리 동작 설계도 (Skill IR)</summary><ul>'+ir.events.map(x=>
    '<li>'+E(x.action?.type)+' · '+E(x.physics.map(v=>v.op).join(' → '))+'</li>').join('')+'</ul></details>':'';
+ const semanticGraph=result.semanticGraph;
+ const graphView=semanticGraph?.actions?.length?
+  '<details class="sentence-more"><summary>의미 관계 · 인과관계 설계도</summary>'+
+  '<p>이 설계도는 실제 등록된 행동과 연결 관계를 설명합니다. 실행은 기존 전투 엔진에서 수행합니다.</p><ul>'+
+  semanticGraph.actions.map(a=>'<li>'+E(a.type)+' · '+E(a.trigger)+
+   ' → '+E(a.target)+(a.shape?' · 형태 '+E(a.shape):'')+
+   (a.splitTrigger?' · 분열 조건 '+E(a.splitTrigger==='hit'?'명중 순간':'시간 경과'):'')+'</li>').join('')+
+  '</ul><small>연결 관계 '+semanticGraph.relations.length+'개 · 대상 '+semanticGraph.entities.length+'개</small>'+
+  (semanticGraph.references.length?'<p>지시어: '+
+   semanticGraph.references.map(x=>E(x.text)+' → '+E(x.resolved?x.target:'대상 불확실')).join(' / ')+'</p>':'')+
+  '</details>':'';
  const probes=verification?.sandbox?.probes||[];
  const sandboxView=probes.length?'<p class="sentence-local-note">격리 물리 시험: '
   +probes.map(p=>E(g.SkillForge?.TYPE?.[p.type]||p.type)+' · '+
@@ -136,7 +148,7 @@ function resultHTML(result){
   ).join('')+'</div>'
  +(limitations.length?'<div class="sentence-limitations"><strong>현재 구현 범위 안내</strong><ul>'
   +limitations.map(n=>'<li>'+E(n)+'</li>').join('')+'</ul></div>':'')
- +intentView+grammarPreview+auditView+sandboxView+physicsView
+ +intentView+grammarPreview+graphView+auditView+sandboxView+physicsView
  +((result.notes||[]).length?'<details class="sentence-more"><summary>해석과 안전 제한 자세히</summary><ul>'
  +(result.notes||[]).map(x=>'<li>'+E(x)+'</li>').join('')+'</ul></details>':'')
  +'<p class="sentence-local-note">오프라인 개념 해석과 합성 물리 수식을 사용합니다. 지원하지 않는 현상은 설명하며, 모든 상상 속 법칙을 보장하는 범용 AI는 아닙니다.</p>'
