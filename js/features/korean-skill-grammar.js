@@ -107,7 +107,7 @@ const clauseWhen=s=>/벽(?:에|과|을|이)?.*(?:튕기|부딪|충돌|닿)/.test
   /(?:피하|회피)/.test(s)&&/(?:면|때마다)/.test(s)?'dodge':
   /체력.*(?:낮|적|부족|이하)/.test(s)?'hpLow':'pulse';
 const conditional=s=>/(?:면|때마다|경우|때|자마자)$/.test(s.trim());
-const negated=s=>/(?:않|안\s|못\s|말아|말고|금지|하지\s*마)/.test(s);
+const negated=s=>/(?:않|(?:^|\s)안\s|(?:^|\s)못\s|(?:^|\s)말아(?:\s|$)|(?:^|\s)말고(?:\s|$)|금지|하지\s*마)/.test(s);
 const pickType=(text,types,context={})=>{
  const raw=String(text||'');
  const nt=tokenize(raw),supported=k=>Object.hasOwn(types,k);
