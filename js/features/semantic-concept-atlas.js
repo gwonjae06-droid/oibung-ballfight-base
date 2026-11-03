@@ -8,7 +8,7 @@
  */
 (function(g){'use strict';
 const GROUPS=Object.freeze([
- ['physics','물리·에너지',\`
+ ['physics','물리·에너지',`
 진동자~진동자|공진기|공진현상|공명기~wave~rings,coil
 자기력~자기력|로런츠힘|자기력선~phenomenon~orbit,plasma
 정전기~정전기|정전유도|정전기장~bolt~lightning,circuit
@@ -21,8 +21,8 @@ const GROUPS=Object.freeze([
 빛의 굴절~빛의\\s*굴절|프리즘|스펙트럼|분광~beam~shards,stars
 초전도~초전도체|초전도|마이스너\\s*효과~phenomenon~plasma,circuit
 정전용량~전기용량|커패시터|축전용량~shield~circuit,rings
-\`],
- ['chemistry','화학·소재',\`
+`],
+ ['chemistry','화학·소재',`
 산과 염기~강산|염기성|산성용액|산성비|염산~zone~mist,water
 부식~부식성|부식액|산화반응|녹슨\\s*금속~zone~mist,thorns
 촉매~촉매작용|촉매제|반응속도~haste~runes,circuit
@@ -35,8 +35,8 @@ const GROUPS=Object.freeze([
 염소~염소가스|염소구름~zone~mist,wind
 방향족~향기구름|향수구름|꽃향기~zone~mist,petals
 잉크~먹물|잉크폭탄|잉크구름|먹구름\\s*잉크~zone~water,shadow
-\`],
- ['biology','생물·진화',\`
+`],
+ ['biology','생물·진화',`
 세포~세포분열|줄기세포|세포막|세포\\s*덩어리~splitshot~shards,water
 유전자~유전자|DNA|염색체|게놈~regen~coil,runes
 바이러스~바이러스|병원균|감염원|병균~zone~mist,web
@@ -49,8 +49,8 @@ const GROUPS=Object.freeze([
 생체발광~반딧불|발광생물|심해어|생물발광~orbit~stars,water
 자연재생~재생세포|상처재생|조직재생~regen~hearts,petals
 미생물군~세균군집|미생물군집~summon~mist,web
-\`],
- ['medicine','의학·인체',\`
+`],
+ ['medicine','의학·인체',`
 심장박동~심박동|심전도|심장박동|심장\\s*리듬~wave~hearts,rings
 신경~신경신호|뉴런|시냅스|신경망~chain~lightning,circuit
 면역~면역세포|항체|백혈구|면역반응~shield~orbit,hearts
@@ -61,8 +61,8 @@ const GROUPS=Object.freeze([
 골격~뼈조각|뼈다귀|골격파편|골편~shot~shards,thorns
 호흡~호흡파동|폐포|숨결\\s*파동~wave~wind,rings
 혈액순환~혈류|혈액순환|피의\\s*흐름~orbit~hearts,water
-\`],
- ['earth','지구·기상·재해',\`
+`],
+ ['earth','지구·기상·재해',`
 지진~지진파|단층지진|지각진동|지면\\s*균열~wave~rings,shards
 쓰나미~쓰나미|거대해일|해일파도~wave~water,rings
 토네이도~토네이도|깔때기구름|회오리바람~vortex~vortex,wind
@@ -75,8 +75,8 @@ const GROUPS=Object.freeze([
 번개구름~뇌운|적란운|번개구름~bolt~lightning,mist
 조석~밀물과\\s*썰물|조석작용|조류\\s*소용돌이~wave~water,orbit
 빙하~빙산|빙하붕괴|영구동토|동토층~wave~ice,shards
-\`],
- ['ocean','해양·유체',\`
+`],
+ ['ocean','해양·유체',`
 소금물~소금바다|염수|염분결정~zone~water,shards
 심해~심해해류|심해소용돌이|심연의\\s*바다~blackhole~water,shadow
 해파리~해파리떼|해파리촉수|발광해파리~summon~water,coil
@@ -85,8 +85,8 @@ const GROUPS=Object.freeze([
 해류~난류|한류|급류|소용돌이해류~vortex~water,wind
 바다폭풍~폭풍해일|폭풍우|거센\\s*파도~wave~water,rain
 수중압력~수압탄|심해압력|물의\\s*압력~wave~water,rings
-\`],
- ['astronomy','천문·우주',\`
+`],
+ ['astronomy','천문·우주',`
 태양풍~태양풍|코로나질량방출|태양코로나~wave~plasma,wind
 초신성~초신성|성간폭발|별폭발~nova~stars,burst
 행성고리~토성고리|행성고리|소행성\\s*고리~orbit~orbit,shards
@@ -98,8 +98,8 @@ const GROUPS=Object.freeze([
 중성자별~중성자별|펄서|마그네타~phenomenon~stars,rings
 퀘이사~퀘이사|블레이자|강착원반~beam~plasma,orbit
 은하나선~나선은하|은하수|은하\\s*나선~vortex~stars,vortex
-\`],
- ['mathematics','수학·기하',\`
+`],
+ ['mathematics','수학·기하',`
 프랙탈~프랙탈|시에르핀스키|만델브로|재귀도형~splitshot~shards,runes
 무한급수~무한급수|수열|피보나치|황금비~orbit~rings,orbit
 모비우스~뫼비우스|모비우스띠|클라인병~orbit~coil,orbit
@@ -110,8 +110,8 @@ const GROUPS=Object.freeze([
 대칭~거울대칭|회전대칭|대칭축|축대칭~swap~hologram,rings
 위상~위상변환|위상수학|뒤집힌\\s*공간~portal~runes,vortex
 카오스~카오스이론|혼돈계|나비효과~wave~vortex,shards
-\`],
- ['sound','음악·소리',\`
+`],
+ ['sound','음악·소리',`
 음파~음파포|초음파|저주파|고주파~wave~rings,wave
 베이스~베이스드럼|저음진동|베이스비트~wave~rings,hearts
 피아노~피아노건반|피아노음|건반소리~shot~rain,runes
@@ -122,8 +122,8 @@ const GROUPS=Object.freeze([
 불협화음~불협화음|음정붕괴|소음파~wave~rings,shadow
 메아리~에코|잔향|메아리|반향음~chain~rings,trail
 휘파람~휘파람|소리화살|공기휘파람~shot~wind,trail
-\`],
- ['technology','정보·통신',\`
+`],
+ ['technology','정보·통신',`
 데이터비~데이터폭우|데이터스트림|데이터\\s*비~rain~circuit,rain
 방화벽~방화벽|암호방벽|디지털\\s*방벽~shield~circuit,hologram
 신호망~무선신호|와이파이|전파망|송수신기~zone~rings,circuit
@@ -135,8 +135,8 @@ const GROUPS=Object.freeze([
 버그~버그폭탄|컴퓨터\\s*바이러스|글리치|데이터오류~zone~shards,hologram
 레이더~레이더|탐지파|소나탐지~wave~rings,circuit
 광섬유~광섬유|광케이블|유리섬유~beam~plasma,web
-\`],
- ['engineering','기계·산업',\`
+`],
+ ['engineering','기계·산업',`
 톱니기계~기어박스|감속기|변속기|톱니열~orbit~gears,rings
 컨베이어~컨베이어벨트|이송벨트|조립라인~zone~gears,trail
 용접~용접불꽃|아크용접|용접빔~beam~plasma,embers
@@ -148,8 +148,8 @@ const GROUPS=Object.freeze([
 전기모터~전동모터|모터코일|회전자~orbit~gears,circuit
 로봇팔~로봇팔|기계팔|자동화팔~tether~gears,chains
 3D프린팅~3D프린터|적층제조|출력노즐~summon~circuit,shards
-\`],
- ['transport','교통·항공·우주선',\`
+`],
+ ['transport','교통·항공·우주선',`
 자기부상~자기부상열차|마그레브|자기부상~dash~plasma,trail
 열차~고속열차|기관차|철도차량|철도포~dash~gears,trail
 항공기~전투기|제트기|초음속기|비행기엔진~flight~wind,trail
@@ -159,8 +159,8 @@ const GROUPS=Object.freeze([
 레이싱~레이싱카|경주용차|드리프트|엔진부스터~dash~trail,gears
 우주선~우주선|우주함선|스타쉽|광속함~flight~stars,hologram
 풍선~열기구|비행선|거대풍선~hover~water,wind
-\`],
- ['architecture','건축·도시',\`
+`],
+ ['architecture','건축·도시',`
 성벽~성벽|철벽요새|성채|성문~wall~shards,runes
 거울미궁~거울미궁|거울방|반사미로~wall~shards,hologram
 기둥~기둥숲|돌기둥|대리석기둥~wall~shards,rings
@@ -170,8 +170,8 @@ const GROUPS=Object.freeze([
 발전소~발전소|발전시설|전력탑~turret~plasma,circuit
 지하터널~지하터널|비밀통로|지하통로~portal~vortex,shadow
 안전돔~보호돔|돔방어막|돔형\\s*쉴드~shield~hologram,rings
-\`],
- ['art','예술·공예',\`
+`],
+ ['art','예술·공예',`
 붓질~붓놀림|붓질|먹선|서예붓~slash~water,trail
 물감~물감폭풍|물감탄|페인트탄~shot~water,shards
 수채화~수채화|색번짐|수묵화~zone~water,mist
@@ -182,8 +182,8 @@ const GROUPS=Object.freeze([
 영화~영화필름|영상프레임|시네마틱~timeburst~hologram,rain
 연극~가면극|연극무대|인형극~summon~hologram,shadow
 무지개~무지개빛|일곱색|프리즘빛~wave~water,stars
-\`],
- ['emotion','감정·정신·꿈',\`
+`],
+ ['emotion','감정·정신·꿈',`
 꿈~꿈속세계|꿈결|몽환의\\s*꿈|환몽~zone~mist,stars
 악몽~악몽|공포환상|꿈속괴물~summon~shadow,mist
 기억~기억조각|기억구슬|기억의\\s*파편~shot~shards,hologram
@@ -194,8 +194,8 @@ const GROUPS=Object.freeze([
 집중~정신집중|명상에너지|초집중~shield~rings,runes
 혼란~정신혼란|착란|혼돈의\\s*기류~vortex~vortex,hologram
 환영~환영분신|환각분신|허상군단~summon~hologram,shadow
-\`],
- ['magic','신화·초자연',\`
+`],
+ ['magic','신화·초자연',`
 마나~마나결정|마력구슬|마나파동~shot~runes,stars
 성물~성스러운\\s*유물|신성유물|성배~shield~runes,feathers
 주술인형~저주인형|부두인형|마법인형~summon~web,runes
@@ -208,8 +208,8 @@ const GROUPS=Object.freeze([
 거미마법~거미마법|실거미줄|마법거미줄~tether~web,runes
 마법책~마도서|금서|마법책|주문서~summon~runes,hologram
 부적~부적폭풍|부적사슬|도술부적~shot~runes,petals
-\`],
- ['history','역사·문화',\`
+`],
+ ['history','역사·문화',`
 검무~검무|검의\\s*춤|쌍검무~spinslash~trail,petals
 창진~창진|창벽|창의\\s*비~thrust~rain,shards
 활비~화살비|궁수군단|연속궁술~shot~rain,trail
@@ -219,8 +219,8 @@ const GROUPS=Object.freeze([
 봉수~봉수대|봉화연기|횃불신호~zone~embers,mist
 기마~기마돌격|말발굽돌진|기마군단~dash~trail,rings
 비단~비단끈|비단폭풍|천으로\\s*휘감~tether~coil,petals
-\`],
- ['sports','스포츠·놀이',\`
+`],
+ ['sports','스포츠·놀이',`
 축구공~축구공|프리킥|회전슛~shot~orbit,trail
 농구공~농구공|덩크슛|슛포물선~arcshot~orbit,rings
 야구공~야구공|커브볼|강속구~shot~trail,wind
@@ -231,8 +231,8 @@ const GROUPS=Object.freeze([
 주사위~주사위폭탄|주사위마법|거대주사위~shot~shards,orbit
 팽이~팽이돌리기|배틀팽이|회전팽이~vortex~gears,orbit
 요요~요요무기|요요사슬|회전요요~tether~coil,orbit
-\`],
- ['food','음식·생활',\`
+`],
+ ['food','음식·생활',`
 설탕결정~설탕결정|각설탕|설탕가루~shot~shards,stars
 초콜릿~초콜릿폭포|초콜릿구름|초콜릿탄~zone~water,shadow
 캔디~사탕폭풍|별사탕|사탕탄환~shot~shards,stars
@@ -243,7 +243,7 @@ const GROUPS=Object.freeze([
 얼음컵~얼음컵|얼음잔|냉기잔~shot~ice,water
 실타래~실타래|실뭉치|실의\\s*그물~tether~web,coil
 종이폭풍~종이폭풍|종이날개|종이조각\\s*비~shot~petals,rain
-\`]
+`]
 ]);
 const entries=[];
 for(const [domain,domainName,data] of GROUPS){
