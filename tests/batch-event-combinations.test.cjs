@@ -45,7 +45,9 @@ test('Korean AND maps two actual authenticated event sources and ordered actions
  assert.equal(graph.secondary.mode,'and');
  assert.deepEqual(Array.from(graph.actions),['wave','shield']);
  assert.equal(r.when,'hit');
- assert.equal(p.semanticGraph.conditions[0].eventOperator,'and');
+ assert.ok(p.semanticGraph.conditions.some(c=>
+  c.mode==='confirmed_combat_event'&&c.eventOperator==='and'&&
+  c.additionalEvent==='dodge'));
  assert.ok(p.semanticGraph.relations.some(x=>x.type==='verified_event_AND'));
  assert.match(p.summary[0].when,/그리고/);
 });
