@@ -138,7 +138,7 @@ function make(profile={},focus=0,actionIndex=-1){
   group.finished=true;
   const radius=clamp(Number(group.a?.fusion?.radius)||85,35,160);
   const px=clamp(b.x,0,W),py=clamp(b.y,0,H);
-  const tint=group.a?.visual?.color||color;
+  const tint=group.a?.fusion?.finalColor||group.a?.visual?.color||color;
   previewEffect({...group.a,type:'wave',radius},'impact',px,py,35);
   rings.push({x:px,y:py,r:Math.min(96,radius*.7),age:0,
    life:29,color:tint});
@@ -147,7 +147,7 @@ function make(profile={},focus=0,actionIndex=-1){
    hitTarget(px,py,true); // visual preview only, never modify target HP
   recordRuleEvent('finalFragment');
   if(terminalBurstHistory.length>=24)terminalBurstHistory.shift();
-  terminalBurstHistory.push({frame,x:px,y:py,radius});
+  terminalBurstHistory.push({frame,x:px,y:py,radius,color:tint});
  }
  // Splitshots share the REAL combat trajectory: one target-aimed crystal
  // that bursts after 56% of its own flight, not an arbitrary 17-frame timer.
@@ -158,13 +158,17 @@ function make(profile={},focus=0,actionIndex=-1){
   const number=Math.min(4,Math.max(2,Number(b.a.fusion.fragments)||3));
   const dir=Math.atan2(target.y-b.y,target.x-b.x);
   const speed=clamp(Number(b.a.speed)||5,2,14)*.8;
+  const childColor=b.a.fusion.childColor;
   const sub={...b.a,damage:Math.round((Number(b.a.damage)||0)*.55),
-    fusion:{...b.a.fusion,split:false}};
+    ...(childColor&&b.a.visual?{visual:{...b.a.visual,
+      color:childColor,colorMode:'explicit'}}:{}),
+    fusion:{...b.a.fusion,split:false,
+      homing:b.a.fusion.homing||b.a.fusion.childHoming}};
   const terminal=b.a.fusion.finalBurst?{remaining:0,finished:false,a:b.a}:null;
   for(let j=0;j<number&&bullets.length<SPLIT_OWNER_BUDGET;j++){
    const angle=dir+(j-(number-1)/2)*.38;
    bullets.push({...b,x:b.x,y:b.y,vx:Math.cos(angle)*speed,vy:Math.sin(angle)*speed,
-    a:sub,age:0,life:Math.max(28,Math.min(150,b.life)),
+    a:sub,color:childColor||b.color,age:0,life:Math.max(28,Math.min(150,b.life)),
     _fusionChild:true,reflects:0,maxRebounds:0,
     ...(terminal?{_fusionTerminalGroup:terminal}:{})});
    if(terminal)terminal.remaining++;
@@ -637,7 +641,9 @@ function make(profile={},focus=0,actionIndex=-1){
   get wallEvents(){return previewActor._scratchEvents.wall?.count||0;},
   get storedWallImpacts(){return g.WallImpactStore?.serial?.(previewActor)||0;},
   get terminalBurstEvents(){return previewActor._scratchEvents.finalFragment?.count||0;},
-  get terminalBurstHistory(){return terminalBurstHistory.map(x=>({...x}));}};
+  get terminalBurstHistory(){return terminalBurstHistory.map(x=>({...x}));},
+  get fusionChildren(){return bullets.filter(b=>b._fusionChild).map(b=>({x:b.x,y:b.y,
+   color:b.color,homing:!!b.a?.fusion?.homing}));}};
 }
 g.StudioPinballLab=Object.freeze({make,actionsFor,WIDTH:W,HEIGHT:H});
 })(typeof window!=='undefined'?window:globalThis);

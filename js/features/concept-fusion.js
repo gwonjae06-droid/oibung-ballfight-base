@@ -26,12 +26,17 @@ const FORMS=Object.freeze({
 });
 const IMPACTS=Object.freeze({none:'없음',burst:'충돌 폭발',pull:'충돌 흡인',repulse:'충돌 반발',vortex:'충돌 소용돌이'});
 const fusionKeys=new Set(['none',...Object.keys(IMPACTS)]);
+const HEX=/^#[0-9a-f]{6}$/i;
+const safeTint=v=>typeof v==='string'&&HEX.test(v)?v.toLowerCase():undefined;
+// Only references to shards produced by THIS shot can receive child-only motion.
+const shardAnaphora=raw=>/(?:그|이|해당|남은|분열된|생성된|방금\s*생긴)\s*(?:파편|조각|부스러기)(?:들)?(?:은|는|이|가|을|를|도)?/.test(String(raw||''));
+const childChase=raw=>/(?:그|이|해당|남은|분열된|생성된|방금\s*생긴)\s*(?:파편|조각|부스러기)(?:들)?(?:은|는|이|가|을|를|도)?.{0,32}?(?:추적|유도|뒤쫓|쫓아가|따라가|따라붙)/.test(String(raw||''));
 // One recognized temporal chain: after the LAST real child projectile is
 // retired (hit, obstruction, lifetime or perimeter), trigger an area burst.
 // Merely naming shards or explosions does NOT imply this ordered event.
 function terminalIntent(text){
  const raw=String(text||'').normalize('NFC').slice(0,300);
- const shards=/(?:마지막|최후의|모든|전부|모두).{0,12}(?:파편|조각|부스러기)|(?:파편|조각|부스러기).{0,12}(?:모두|전부|마지막)/.test(raw);
+ const shards=/(?:마지막|최후의|모든|전부|모두|남은).{0,14}(?:파편|조각|부스러기)|(?:파편|조각|부스러기)(?:들)?.{0,16}(?:모두|전부|마지막|남은)/.test(raw);
  const ending=/(?:사라지|소멸|없어지|소진|다\s*떨어지|수명.{0,8}끝나).{0,45}(?:폭발|폭파|터지|터뜨|충격파)/.test(raw);
  const negated=/(?:폭발|폭파|터지|터뜨).{0,8}(?:하지\s*않|지\s*않|안\s*하|않는|않는다|하지\s*마)/.test(raw);
  return shards&&ending&&!negated;
@@ -48,6 +53,9 @@ const normalize=v=>{
   // Pre-existing skills default to the original 12-tick midair fracture.
   ...(split&&v.splitTrigger==='hit'?{splitTrigger:'hit'}:{}),
   ...(split&&v.finalBurst===true?{finalBurst:true}:{}),
+  ...(split&&v.childHoming===true?{childHoming:true}:{}),
+  ...(split&&safeTint(v.childColor)?{childColor:safeTint(v.childColor)}:{}),
+  ...(split&&v.finalBurst===true&&safeTint(v.finalColor)?{finalColor:safeTint(v.finalColor)}:{}),
   impact,radius:cap(v.radius,35,160,85)};
 };
 function analyze(input){
@@ -79,18 +87,20 @@ function analyze(input){
   /(번개|전기|뇌전).{0,12}(?:로\s*된|로\s*만든|를\s*두른|가\s*흐르는|사슬|탄환|화살|구슬|투사체|미사일)/.test(raw);
  const splitModifier=split&&isProjectile;
  const homeModifier=home&&isProjectile;
+ const childOnly=splitModifier&&childChase(raw);
  const impactModifier=impact!=='none'&&!sequence;
  const fused=!!(main||elements.length&&forms.length||splitModifier||homeModifier||impactModifier);
  const chosenElement=elements[0]||'none';
  const fusion=normalize({element:chosenElement,form:chain?'chain':
   isProjectile?'projectile':forms[0]||'none',
-  homing:homeModifier,split:splitModifier,
+  homing:homeModifier&&!childOnly,split:splitModifier,
+  childHoming:childOnly,
   finalBurst:splitModifier&&finalBurst,
   fragments:namedFragments??namedCount??3,
   impact:impactModifier?impact:'none',
   radius:g.KoreanSkillParameters?.analyze?.(raw)?.values?.radius||85});
  return {elements,forms,main,homing:homeModifier,split:splitModifier,
-  finalBurst:!!fusion?.finalBurst,
+  childOnly,finalBurst:!!fusion?.finalBurst,
   impact:impactModifier?impact:'none',lightningModifier,sequence,fused,fusion,
   labels:[
    ...elements.map(id=>ELEMENTS[id].label),
@@ -155,6 +165,7 @@ function weave(value,input){
    const adjusted=normalize({...fusion,
     homing:base.type==='shot'?fusion.homing:false,
     split:base.type==='shot'?fusion.split:false,
+    childHoming:base.type==='shot'?fusion.childHoming:false,
     impact:permitted?fusion.impact:'none'});
    if(adjusted)base.fusion=adjusted;
   }
@@ -235,5 +246,5 @@ function impact(attacker,victim,action,api={}){
  }
  return true;
 }
-g.ConceptFusion=Object.freeze({ELEMENTS,FORMS,IMPACTS,normalize,analyze,weave,impact,terminalIntent});
+g.ConceptFusion=Object.freeze({ELEMENTS,FORMS,IMPACTS,normalize,analyze,weave,impact,terminalIntent,shardAnaphora,childChase});
 })(typeof window!=='undefined'?window:globalThis);

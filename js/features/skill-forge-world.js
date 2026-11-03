@@ -22,7 +22,8 @@ function finalFragmentBurst(p,group,x,y,z){
  const xx=Math.max(0,Math.min(canvas.width,Number(x)||0));
  const yy=Math.max(0,Math.min(canvas.height,Number(y)||0));
  const original=p.forge?.effectColor||p.forge?.color||'#b4a3ff';
- const tint=global.SkillColorPolicy?.resolve?.(action.visual,original)?.color||
+ const tint=action.fusion?.finalColor||
+  global.SkillColorPolicy?.resolve?.(action.visual,original)?.color||
   action.visual?.color||original;
  // This effect is spatially anchored on the LAST fragment, not the caster,
  // not the original hit location, and never an invisible textual promise.
@@ -60,8 +61,11 @@ function fracture(p,b,concept,index,victim){
   const direction=foe?Math.atan2(foe.y-b.y,foe.x-b.x):
     Math.atan2(b.vy,b.vx);
   const speed=Math.max(2,Math.min(14,Number(b.a.speed)||5));
+  const childColor=concept.childColor;
   const action={...b.a,damage:Math.round((Number(b.a.damage)||0)*.55),
-    fusion:{...concept,split:false}};
+    ...(childColor&&b.a.visual?{visual:{...b.a.visual,
+      color:childColor,colorMode:'explicit'}}:{}),
+    fusion:{...concept,split:false,homing:concept.homing||concept.childHoming}};
   // A source orb is NOT one of the children. Its own retirement must
   // never decrement the family or trigger the explosion prematurely.
   const terminal=concept.finalBurst?{remaining:count,finished:false,

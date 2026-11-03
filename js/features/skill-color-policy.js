@@ -33,6 +33,66 @@ function explicit(raw){
  hits.sort((a,b)=>a.index-b.index);
  return hits[0]?{color:hits[0].color,term:hits[0].term}:null;
 }
+// Associate explicit color adjectives with named physical objects, not with
+// whichever hue happened to occur first in the whole 300-char sentence.
+// This is intentionally a bounded local grammar, not unrestricted coreference.
+function stages(input){
+ const raw=String(input||'').normalize('NFC').slice(0,300);
+ const hits=[];
+ for(const [color,re] of words){
+  const scan=new RegExp(re.source,'g');let m,n=0;
+  while((m=scan.exec(raw))!==null&&n++<20){
+   // 은색 is also a SUBSTRING of 붉은색/검은색. Never let that
+   // internal match override the actual complete color adjective.
+   if(m[0]==='은색'&&/[가-힣]/.test(raw[m.index-1]||''))continue;
+   hits.push({color,term:m[0],index:m.index,end:m.index+m[0].length});
+  }
+ }
+ const hex=/(#[0-9a-f]{6})(?![0-9a-f])/gi;let m;
+ while((m=hex.exec(raw))!==null&&hits.length<64)
+  hits.push({color:m[1].toLowerCase(),term:m[1],index:m.index,end:m.index+7});
+ // Ignore shorter, overlapping dictionary hits ('보라' within '연보라').
+ hits.sort((a,b)=>a.index-b.index||(b.end-b.index)-(a.end-a.index));
+ const unique=[];
+ for(const hit of hits)if(!unique.some(prev=>hit.index<prev.end&&hit.end>prev.index))
+  unique.push(hit);
+ const nouns={
+  source:/투사체|탄환|탄알|미사일|화살|구슬|발사체|분열탄|추적탄|유도탄/g,
+  fragment:/파편|조각|부스러기/g,
+  terminal:/폭발|폭파|충격파|폭렬/g
+ };
+ const boundaries=/투사체|탄환|미사일|화살|구슬|분열탄|추적탄|유도탄|파편|조각|부스러기|폭발|폭파|충격파|폭렬/;
+ const found={};
+ for(const [role,pattern] of Object.entries(nouns)){
+  const scan=new RegExp(pattern.source,'g');let anchor,best=null,n=0;
+  while((anchor=scan.exec(raw))!==null&&n++<24){
+   const before=unique.filter(h=>{
+    const gap=anchor.index-h.end;
+    if(gap<0||gap>23)return false;
+    const between=raw.slice(h.end,anchor.index);
+    return !/[.!?;\n]/.test(between)&&!boundaries.test(between);
+   }).sort((a,b)=>b.end-a.end)[0];
+   // Also accept direct predication: '그 파편들은 붉게 빛난다',
+   // '폭발은 보라색으로 퍼진다'. No words or unrelated objects may
+   // intervene between the named object and its explicit color.
+   const after=unique.filter(h=>{
+    const gap=h.index-anchor.index-anchor[0].length;
+    if(gap<0||gap>8)return false;
+    const between=raw.slice(anchor.index+anchor[0].length,h.index);
+    return /^(?:들)?(?:이|가|은|는|을|를|도|만)\s*$/.test(between);
+   }).sort((a,b)=>a.index-b.index)[0];
+   // Prefer the nearest grammatical color attachment. An adjective
+   // from a preceding clause must not beat '폭발은 보라색으로' immediately
+   // after the terminal noun.
+   const beforeGap=before?anchor.index-before.end:Infinity;
+   const afterGap=after?after.index-anchor.index-anchor[0].length:Infinity;
+   const near=afterGap<beforeGap?after:before;
+   if(near&&(!best||near.end>best.end))best=near;
+  }
+  if(best)found[role]={color:best.color,term:best.term};
+ }
+ return found;
+}
 function normalized(hex,alternative='#a78bfa'){
  return typeof hex==='string'&&HEX.test(hex)?hex.toLowerCase():alternative;
 }
@@ -52,14 +112,25 @@ function resolve(value,characterColor){
 }
 function decorate(recipe,text){
  if(!recipe||!Array.isArray(recipe.rules))return {recipe,priority:'none',explicit:null};
- const selected=explicit(text);
+ const palette=stages(text);
+ // Only a genuine shard-producing shot supports three differently colored
+ // physical phases. Other legacy skills retain the original first-color rule.
+ const hasSplit=recipe.rules.some(r=>r.action?.type==='shot'&&r.action?.fusion?.split);
+ const scoped=hasSplit&&(palette.fragment||palette.terminal);
+ const selected=palette.source||(!scoped?explicit(text):null);
  const mode=selected?'explicit':'inherit';
  const applyAction=a=>{
   if(!a||typeof a!=='object')return a;
   const old=g.MetaphorVisuals?.normalize?.(a.visual);
   // Existing effect motif is kept; only palette selection changes.
   if(!old)return a;
-  return {...a,visual:{...old,color:selected?.color||old.color,colorMode:mode}};
+  const fusion=a.type==='shot'&&a.fusion?.split?g.ConceptFusion?.normalize?.({
+   ...a.fusion,
+   ...(palette.fragment?{childColor:palette.fragment.color}:{}),
+   ...(a.fusion.finalBurst&&palette.terminal?{finalColor:palette.terminal.color}:{})
+  }):a.fusion;
+  return {...a,visual:{...old,color:selected?.color||old.color,colorMode:mode},
+   ...(fusion?{fusion}:{})};
  };
  const walk=steps=>(steps||[]).map(s=>{
   if(!s||typeof s!=='object')return s;
@@ -73,8 +144,9 @@ function decorate(recipe,text){
   ...(rule.steps?{steps:walk(rule.steps)}:{})
  }))};
  return {recipe:g.SignatureRuleSkill?.normalize?.(raw)||raw,
-  priority:selected?'skill-sentence':'character',
-  explicit:selected};
+  priority:scoped?'phase-specific':selected?'skill-sentence':'character',
+  explicit:selected,
+  stages:scoped?palette:null};
 }
-g.SkillColorPolicy=Object.freeze({explicit,normalized,shade,resolve,decorate});
+g.SkillColorPolicy=Object.freeze({explicit,stages,normalized,shade,resolve,decorate});
 })(typeof window!=='undefined'?window:globalThis);

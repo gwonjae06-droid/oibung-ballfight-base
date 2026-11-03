@@ -60,6 +60,7 @@ function analyze(input){
  // must not be mislabeled as a kinetic battery.
  intent.relay=intent.relayNoun&&intent.relayAbsorb&&intent.relayRelease;
  intent.terminalBurst=!!g.ConceptFusion?.terminalIntent?.(raw);
+ intent.childOnly=!!g.ConceptFusion?.childChase?.(raw);
  // A shard expiry is not the initial source projectile hitting a victim.
  if(intent.terminalBurst&&!/(?:명중|적중|맞으면|착탄).{0,15}(?:폭발|터지)/.test(raw))
   intent.hitExplosion=false;
@@ -71,6 +72,8 @@ function analyze(input){
   /중력/.test(raw)&&/(?:전자석|자기력|자기장|자석)/.test(raw);
  intent.noEffect=/아무\s*(?:효과|기술|스킬|행동).{0,18}(?:않|안|없)|가만히\s*있는다/.test(raw);
  intent.unsupported=UNSUPPORTED.filter(def=>def.re.test(raw)).map(x=>x.label);
+ if(g.ConceptFusion?.shardAnaphora?.(raw)&&!(intent.split||intent.hitSplit))
+  intent.unsupported.push('지시어가 가리킬 기존 파편 생성 단계가 없음');
  if(intent.terminalBurst&&!(intent.split||intent.hitSplit))
   intent.unsupported.push('마지막 소멸을 추적할 실제 파편 생성 단계가 없음');
  // Storage-only/negated releases must not silently invent an attack.
@@ -116,7 +119,7 @@ function verify(input,recipe){
   (a.law?.terms||[]).some(t=>ops.includes(t.op)));
  const shot=actions.some(a=>a.type==='shot'&&a.fusion?.homing);
  const bits=Object.create(null);
- bits.homing=shot||has('homing');
+ bits.homing=shot||has('homing')||actions.some(a=>a.type==='shot'&&a.fusion?.childHoming);
  bits.orbit=has('orbit')||terms(['orbit']);
  bits.attract=has('tether')||has('pull')||has('vortex')||terms(['attract','gravity','orbit']);
  bits.spin=has('vortex')||terms(['spin','orbit']);
@@ -264,7 +267,8 @@ function compose(input){
   actions.push(make('shot',{
    fusion:g.ConceptFusion?.normalize?.({
     element:existing?.fusion?.element||'none',form:'projectile',
-    homing:intent.homing,split:intent.split||intent.hitSplit,
+    homing:intent.homing&&!intent.childOnly,childHoming:intent.childOnly,
+    split:intent.split||intent.hitSplit,
     splitTrigger:intent.hitSplit?'hit':'age',
     finalBurst:intent.terminalBurst,
     fragments:cap(values.fragmentCount??count,2,4,3),
@@ -273,6 +277,7 @@ function compose(input){
     radius:cap(radius,35,160,90)
    })
   }));
+  if(intent.childOnly)notes.push('지시어가 가리키는 파편에만 유도 이동을 적용합니다. 원래 탄환은 일반 비행을 유지합니다.');
   if(intent.terminalBurst)notes.push(
     '마지막 자식 파편이 실제 명중·소멸·장애물 차단·경계 이탈로 사라진 뒤, 그 마지막 좌표에서 한 번만 범위 폭발합니다. 피해량은 원탄 위력의 42%(최대 52)이며 일반 방어 판정을 따릅니다.');
    if(intent.homing&&/레일건|레이저|광선|빔|포탑/.test(raw))

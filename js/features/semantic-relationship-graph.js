@@ -51,6 +51,7 @@ function build(input,recipe){
   const a={id,type,trigger:rule.when||'pulse',target,
    ...(object?{object}:{}),...(theme?{shape:theme}:{}),
    ...(action.visual?.colorMode?{colorMode:action.visual.colorMode}:{}),
+   ...(action.visual?.color?{sourceColor:action.visual.color}:{}),
    ...(isProjectile?{delivery:'projectile'}:isSupport?{delivery:'support'}:{delivery:'contact'})};
   actions.push(a);
   push('caster','performs',id);
@@ -72,7 +73,11 @@ function build(input,recipe){
    if(fragments){
     push(object,a.splitTrigger==='hit'?'fractures_on_hit':'fractures_after_time',fragments,
       {count:a.fragments});
-    if(action.fusion.homing)push(fragments,'tracks','enemy');
+    if(action.fusion.homing||action.fusion.childHoming)
+     push(fragments,'tracks','enemy',{scope:'spawned_children_only'});
+    if(action.fusion.childHoming)a.childOnlyHoming=true;
+    if(action.fusion.childColor)a.childColor=action.fusion.childColor;
+    if(action.fusion.finalColor)a.finalColor=action.fusion.finalColor;
     push(fragments,'may_hit','enemy');
     if(action.fusion.finalBurst){
      const burst=entity('terminal_effect','최종 폭발');
@@ -95,11 +100,17 @@ function build(input,recipe){
  }
  // Resolve simple demonstratives from the *generated* entities rather than
  // guessing a target based on whichever noun appeared last in the sentence.
- const anaphora=/(?:그|이|해당|방금(?:\s*생성한)?)\s*(?:조각|파편|부스러기)(?:들)?/g;
+ const anaphora=/(?:그|이|해당|방금(?:\s*생성한|\s*나뉜)?|남은|분열된|생성된|마지막|최후의)\s*(?:조각|파편|부스러기)(?:들)?(?:은|는|이|가|을|를)?/g;
  let match;while((match=anaphora.exec(raw))!==null&&references.length<8){
   const children=entities.filter(e=>e.role==='fragment');
-  references.push({text:match[0],target:children.length===1?children[0].id:null,
-   resolved:children.length===1});
+  const resolved=children.length===1;
+  references.push({text:match[0],target:resolved?children[0].id:null,
+   resolved,binding:resolved?'actual_child_projectiles':null});
+  if(resolved){
+   const owner=actions.find(a=>a.object&&relations.some(r=>r.from===a.object&&
+    r.to===children[0].id&&r.type.startsWith('fractures_')));
+   if(owner)push(children[0].id,'resolved_reference',owner.id,{text:match[0]});
+  }
  }
  const semantics=g.SemanticIntentComposer?.analyze?.(raw);
  return {version:1,sourceText:raw,entities,actions,relations,conditions,

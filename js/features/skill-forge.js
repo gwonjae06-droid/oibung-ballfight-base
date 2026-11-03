@@ -293,7 +293,9 @@ function drawFighter(p,renderCtx){
     const y=groundY-height-12;
     ink.save();
     const paintShot=ink=>{
-    ink.save();ink.strokeStyle=c;
+    const shotColor=global.SkillColorPolicy?.resolve?.(b.a?.visual,
+      p.forge.effectColor||p.forge.color)?.color||c;
+    ink.save();ink.strokeStyle=shotColor;ink.fillStyle=shotColor;
     if(projectileDetail===2){
       ink.translate(x,y);ink.rotate(heading);ink.globalAlpha=.92;
       ink.beginPath();ink.moveTo(11,0);ink.lineTo(-7,-4);ink.lineTo(-7,4);ink.closePath();
@@ -314,7 +316,7 @@ function drawFighter(p,renderCtx){
         progress:((b.life||0)%60)/60,low:projectileDetail>0});
       ink.restore();return;
     }
-    ink.strokeStyle='#253344';ink.fillStyle=c;ink.lineWidth=2;
+    ink.strokeStyle='#253344';ink.fillStyle=shotColor;ink.lineWidth=2;
     // All projectiles have a physical pointed direction; their status
     // adds a stable silhouette that reads against the white battleground.
     ink.beginPath();

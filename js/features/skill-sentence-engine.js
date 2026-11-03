@@ -52,6 +52,7 @@ function describe(parsed){
    trait.element!=='none'?(g.ConceptFusion?.ELEMENTS?.[trait.element]?.label||trait.element):'',
    trait.homing?'추적':'',trait.split?'분열 '+trait.fragments+'갈래':'',
    trait.finalBurst?'마지막 파편 소멸 시 폭발':'',
+   trait.childHoming?'생성된 파편만 추적':'',
    trait.impact!=='none'?g.ConceptFusion?.IMPACTS?.[trait.impact]||trait.impact:''
   ].filter(Boolean).join(' + '):'';
   const law=r.action?.law||r.steps?.find(s=>s.kind==='cast'&&s.action?.law)?.action.law;
@@ -114,7 +115,8 @@ function parse(input){
  const compiled=intentional||materialized||generatedLaw||engine?.parse?.(raw)||{ok:false,error:'문장 해석기를 불러오지 못했습니다.'};
  const colored=compiled.ok?g.SkillColorPolicy?.decorate?.(compiled.recipe,raw):null;
  const result=colored?{...compiled,recipe:colored.recipe,
-  colorPriority:colored.priority,explicitColor:colored.explicit}:compiled;
+  colorPriority:colored.priority,explicitColor:colored.explicit,
+  stageColors:colored.stages}:compiled;
  const unavailable=capabilities.filter(c=>c.re.test(raw)).map(c=>c.label);
  const limitations=unavailable.map(x=>x+'은(는) 아직 완전하게 구현되지 않았습니다.');
  if(result.ok){
