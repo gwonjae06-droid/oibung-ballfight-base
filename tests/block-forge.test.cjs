@@ -53,7 +53,8 @@ test('block drag move semantics, damage fields and caps',()=>{
  assert.throws(()=>b.modify(d,{kind:'param',skill:1,index:0,key:'status',value:'poison'}),/지원하지 않는/);
  d=b.modify(d,{kind:'new-skill',type:'shield'});
  d=b.modify(d,{kind:'new-skill',type:'dash'});
- assert.throws(()=>b.modify(d,{kind:'new-skill',type:'heal'}),/최대 4개/);
+ d=b.modify(d,{kind:'new-skill',type:'heal'});
+ assert.equal(d.skills.length,5,'fifth independent skill is supported');
 });
 test('same-tick parallel skills and delayed chain have different live effects',()=>{
  const h=setup();
