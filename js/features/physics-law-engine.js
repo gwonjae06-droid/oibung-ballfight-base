@@ -107,7 +107,8 @@ function interpret(input){
 }
 const fields=new WeakMap();
 function fieldFor(p,a,target){
- const spec=normalize(a?.law);if(!spec||!p)return false;
+ const spec=normalize({...a?.law,damage:a?.damage,radius:a?.radius,
+  duration:a?.duration});if(!spec||!p)return false;
  const pool=fields.get(p)||[];
  pool.push({spec,source:a,target:spec.anchor==='target'?target:null,
   origin:spec.anchor==='target'&&target?{x:target.x,y:target.y}:null,
@@ -183,7 +184,7 @@ function tick(p,targets,hit){
    const magnitude=Math.hypot(fx,fy),scale=magnitude>1.65?1.65/magnitude:1;
    e.vx=bound((Number(e.vx)||0)+fx*scale*envelope,-18,18,0);
    e.vy=bound((Number(e.vy)||0)+fy*scale*envelope,-18,18,0);
-   if(s.damage>0&&field.ticks%30===0&&typeof hit==='function')
+   if(s.damage>0&&(field.ticks===1||field.ticks%30===0)&&typeof hit==='function')
     hit(p,e,{...field.source,type:'phenomenon',law:undefined,
      damage:s.damage,knockback:0});
   }
