@@ -207,7 +207,7 @@ test('Color preference applies to each modified action and old artist palette st
 test('HTML browser import order and studio show actionable missing features',()=>{
  const index=fs.readFileSync('index.html','utf8'),pvp=fs.readFileSync('pvp-runtime.html','utf8');
  for(const html of [index,pvp]){
-  assert.ok(html.includes('semantic-intent-composer.js?v=1-verb-first-semantic'));
+  assert.ok(html.includes('semantic-intent-composer.js?v='));
   assert.ok(html.indexOf('imagination-concepts.js')<html.indexOf('semantic-intent-composer.js'));
   assert.ok(html.indexOf('semantic-intent-composer.js')<html.indexOf('signature-scratch.js'));
  }

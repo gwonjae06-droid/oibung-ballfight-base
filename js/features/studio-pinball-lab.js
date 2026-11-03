@@ -726,11 +726,19 @@ function make(profile={},focus=0,actionIndex=-1){
     rule.eventGraph?{trigger:rule.eventGraph.trigger,
      fired:run.graphFires?.[i]||0,windowRemaining:Math.max(0,run.window-run.clock),
      count:run.graphCounts?.[i]||0,required:rule.eventGraph.minCount||1,
+     secondary:rule.eventGraph.secondary?{
+      ...rule.eventGraph.secondary,
+      count:run.secondaryCounts?.[i]||0,
+      required:rule.eventGraph.secondary.minCount||1,
+      verifiedInRealBattle:false
+     }:null,
      hpBelow:rule.eventGraph.hpBelow??null,
      // Practice geometry/HP is not the live authoritative arena.
      thresholdVerified:rule.eventGraph.hpBelow===undefined,
      simulated:rule.eventGraph.trigger==='hit',
-     note:rule.eventGraph.hpBelow!==undefined?
+     note:rule.eventGraph.secondary?
+      '실험장 명중은 위치 근사, 회피·방어 성공은 실제 전투에서만 인증 · 최종 발동 보장 안 함':
+      rule.eventGraph.hpBelow!==undefined?
       '명중 횟수는 미리보기 근사, 체력 조건은 실제 전투 기준 · 최종 발동 보장 안 함':
       rule.eventGraph.trigger==='hit'?'미리보기의 물리 접촉 근사':
       '실제 전투 이벤트 필요 · 미리보기에서 강제 발생시키지 않음'}:null).filter(Boolean));},

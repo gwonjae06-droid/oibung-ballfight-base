@@ -2,18 +2,26 @@
  * One emitted action at a time, max 80 per 100-energy activation. */
 (function(g){'use strict';
 const MAX_ACTIONS=80;
+// Both primary and secondary baselines come from the SAME fighter's
+// confirmed combat events, never VFX/preview and never a different player.
+function serial(p,id){
+ return id==='dodge'?Number(p?._forgeDodgeSerial)||0:
+  Number(p?._scratchEvents?.[id]?.count)||0;
+}
 function begin(config,p){
  const skill=g.SignatureRuleSkill?.normalize?.(config);
  if(!skill?.rules?.length)return null;
  const now=Number(p?._forgeActionClock)||0;
  const observed=skill.rules.map(r=>r.when==='wallStored'?
-  g.WallImpactStore?.serial?.(p)||0:r.when==='dodge'?
-  Number(p?._forgeDodgeSerial)||0:(p?._scratchEvents?.[r.when]?.count)||0);
+  g.WallImpactStore?.serial?.(p)||0:serial(p,r.when));
  return {rules:skill.rules,window:Math.round(skill.window*60),clock:0,actions:0,
   nextAt:skill.rules.map(()=>0),seen:observed,startedAt:now,finished:false,cursor:0,
   pending:[],waitUntil:0,visual:null,tunes:[],
   graphFires:skill.rules.map(()=>0),
   graphCounts:skill.rules.map(()=>0),
+  secondarySeen:skill.rules.map(r=>r.eventGraph?.secondary?
+   serial(p,r.eventGraph.secondary.trigger):0),
+  secondaryCounts:skill.rules.map(()=>0),
   wallCharge:skill.rules.map(()=>({count:0,impulse:0}))};
 }
 function step(run,p,target){
@@ -51,8 +59,7 @@ function step(run,p,target){
    if(run.wallCharge[i].count<r.wallHits)continue;
   }
   const isState=when==='hpLow'||when==='near'||when==='far';
-  const current=when==='dodge'?Number(p._forgeDodgeSerial)||0:
-   (p._scratchEvents?.[when]?.count||0);
+  const current=serial(p,when);
   if(r.eventGraph){
    // Accumulate strictly NEW confirmed events since this momentum activation.
    // Events before activation are already included in run.seen baselines.
@@ -62,7 +69,20 @@ function step(run,p,target){
     run.graphCounts[i]=Math.min(4,(run.graphCounts[i]||0)+increase);
     run.seen[i]=current;
    }
-   if(run.graphCounts[i]<(r.eventGraph.minCount||1))continue;
+   let primaryReady=run.graphCounts[i]>=(r.eventGraph.minCount||1);
+   const secondary=r.eventGraph.secondary;
+   if(secondary){
+    const next=serial(p,secondary.trigger);
+    const delta2=Math.max(0,next-(run.secondarySeen[i]||0));
+    if(delta2>0){
+     run.secondaryCounts[i]=Math.min(4,(run.secondaryCounts[i]||0)+delta2);
+     run.secondarySeen[i]=next;
+    }
+    const secondaryReady=run.secondaryCounts[i]>=(secondary.minCount||1);
+    primaryReady=secondary.mode==='or'?
+     primaryReady||secondaryReady:primaryReady&&secondaryReady;
+   }
+   if(!primaryReady)continue;
    if(r.eventGraph.hpBelow!==undefined&&
     (!(Number(p.maxHp)>0)||!(p.hp>0)||
      p.hp/Number(p.maxHp)*100>r.eventGraph.hpBelow))continue;

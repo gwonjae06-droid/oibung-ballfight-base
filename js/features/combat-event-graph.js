@@ -38,6 +38,10 @@ const forbidden=/(?:하지\s*않|안\s*하|못\s*하|말아|마라|않는다|금
 // Never treat an omitted or malformed threshold as a success.
 const hpPercentPattern=/(?:내|나의|자신의|시전자의)?\s*체력(?:이|은|도)?\s*(\d{1,3})\s*(?:%|퍼센트)\s*이하(?:라면|이라면|라|이면|일\s*때)?/;
 const hitCountPattern=/(?:공격|투사체|탄환|기술|스킬|적|상대)(?:을|를|이|가|에게)?[\s\S]{0,44}?(두|세|네|[2-4])\s*(?:번|회)\s*(?:.{0,13})?(?:명중|적중|맞히|맞추)/;
+// Two confirmed event families may be combined. Deliberately narrow:
+// explicit hit (optionally 2-4 times) AND/OR actual dodge or guard.
+// A loose "or" elsewhere in the sentence must not change semantics.
+const pairEvents=/(?:공격|투사체|탄환|스킬|기술)(?:을|를|이|가)?\s*(?:(두|세|네|[2-4])\s*(?:번|회)\s*)?(?:명중시키|적중시키|명중하|적중하|맞히|맞추)(고|거나)\s*(?:적의|상대의|적|상대)?\s*공격(?:을|를)?\s*(회피하|피하|방어하|막아내)(?:면|다면)/;
 const secondaryConditional=/(?:그\s*다음|그\s*뒤|이어서|한\s*뒤|그\s*후|그리고).{0,40}?(?:하면|이라면|때만|때마다)/;
 function normalize(value){
  if(!value||typeof value!=='object'||Array.isArray(value)||
@@ -50,6 +54,20 @@ function normalize(value){
   threshold<10||threshold>90))return undefined;
  if((count>1||threshold!==undefined)&&value.trigger!=='hit')return undefined;
  if(threshold!==undefined&&count<2)return undefined;
+ const second=value.secondary;
+ let secondary;
+ if(second!==undefined){
+  if(!second||typeof second!=='object'||Array.isArray(second)||
+   !Object.hasOwn(EVENTS,second.trigger)||second.trigger===value.trigger||
+   !['and','or'].includes(second.mode)||threshold!==undefined||
+   Object.keys(second).some(key=>!['trigger','mode','minCount'].includes(key)))
+   return undefined;
+  const n=second.minCount===undefined?1:second.minCount;
+  if(!Number.isInteger(n)||n<1||n>4||
+   (n>1&&second.trigger!=='hit'))return undefined;
+  secondary={trigger:second.trigger,mode:second.mode,
+   ...(n>1?{minCount:n}:{})};
+ }
  const seen=new Set(),actions=[];
  for(const id of value.actions){
   if(typeof id!=='string'||!Object.hasOwn(ACTIONS,id)||seen.has(id))return undefined;
@@ -57,11 +75,23 @@ function normalize(value){
  }
  return {version:1,trigger:value.trigger,actions,
   ...(count>1?{minCount:count}:{}),
-  ...(threshold!==undefined?{hpBelow:threshold}:{})};
+  ...(threshold!==undefined?{hpBelow:threshold}:{}),
+  ...(secondary?{secondary}:{})};
 }
 function parse(text){
  const raw=String(text||'').normalize('NFC').trim().slice(0,300);
- const threshold=hpPercentPattern.exec(raw),hitCount=hitCountPattern.exec(raw);
+ const threshold=hpPercentPattern.exec(raw),hitCount=hitCountPattern.exec(raw),
+  pair=pairEvents.exec(raw);
+ if(/(?:명중시키|적중시키|명중하|적중하|맞히|맞추).{0,10}(?:않|못|안).{0,50}(?:회피|방어|막아내)/.test(raw))
+  return {error:'부정된 명중 사건을 긍정적인 AND·OR 조건으로 바꿀 수 없습니다.'};
+ if(/(?:명중시키|적중시키|명중하|적중하|맞히|맞추).{0,8}(?:또는|혹은).{0,36}(?:회피|방어|막아내)/.test(raw))
+  return {error:'사건 연결 표현이 모호합니다. “명중시키거나 ... 회피하면”으로 작성해 주세요.'};
+ if(pair&&threshold)return {error:'사건의 AND·OR 조합에 체력 비율까지 동시에 거는 문장은 아직 지원하지 않습니다.'};
+ // Do not misread a loosely connected second conditional as the old
+ // single-event skill. Fail closed when its connective is not recognized.
+ if(!pair&&/(?:명중시키|적중시키|명중하|적중하|맞히|맞추)(?:고|거나|다음)/
+   .test(raw)&&/(?:회피하|방어하|막아내)(?:면|다면)/.test(raw))
+  return {error:'명중과 회피·방어의 연결 표현이 모호합니다. “공격을 명중시키고 적의 공격을 회피하면” 형식을 사용하세요.'};
  if(hitCount&&/체력.{0,14}\d{1,3}\s*(?:%|퍼센트)\s*(?:미만|아래|이상|초과)/.test(raw))
   return {error:'체력 조건은 현재 “N% 이하”만 지원하며 미만·이상·초과와 혼동하지 않습니다.'};
  let compound=null;
@@ -78,12 +108,14 @@ function parse(text){
   const m=re.exec(raw);
   if(m)matches.push({trigger,index:m.index,end:m.index+m[0].length,text:m[0]});
  }
- if(!matches.length&&!compound)return null;
+ if(!matches.length&&!compound&&!pair)return null;
  matches.sort((a,b)=>a.index-b.index||a.end-b.end);
- const first=compound?{trigger:'hit',index:hitCount.index,
-  end:compound.end}:matches[0];
+ const first=pair?{trigger:'hit',index:pair.index,
+  end:pair.index+pair[0].length}:
+  compound?{trigger:'hit',index:hitCount.index,
+   end:compound.end}:matches[0];
  const tail=raw.slice(first.end);
- if(matches.some(m=>m.trigger!==first.trigger))
+ if(!pair&&matches.some(m=>m.trigger!==first.trigger))
   return {error:'서로 다른 사건이 한 문장에서 섞여 있어 실행 순서를 확정할 수 없습니다.'};
  if(forbidden.test(tail))
   return {error:'부정·무한 반복을 포함한 사건 연쇄는 자동 실행하지 않습니다.'};
@@ -100,7 +132,12 @@ function parse(text){
  if(tokens.length>MAX_STAGES)
   return {error:'사건 하나에 연결할 후속 행동은 최대 3개입니다.'};
  const graph=normalize({trigger:first.trigger,actions:tokens.map(x=>x.type),
-  ...(compound?{minCount:compound.minCount,hpBelow:compound.hpBelow}:{})});
+  ...(compound?{minCount:compound.minCount,hpBelow:compound.hpBelow}:{}),
+  ...(pair?{
+   ...((pair[1]&&pair[1]!=='1')?{minCount:({두:2,세:3,네:4}[pair[1]]||Number(pair[1]))}:{}),
+   secondary:{trigger:/(?:회피하|피하)/.test(pair[3])?'dodge':'guard',
+    mode:pair[2]==='거나'?'or':'and'}
+  }:{})});
  return graph?{graph}:{
   error:'중복되거나 모호한 후속 행동을 안전하게 하나의 연쇄로 연결할 수 없습니다.'};
 }
@@ -126,20 +163,31 @@ function pack(input){
  const graph=normalize(input);
  return graph?[EVENT_IDS.indexOf(graph.trigger),
   ...graph.actions.map(x=>ACTION_IDS.indexOf(x)),
-  ...(graph.minCount?[-1,graph.minCount,graph.hpBelow??null]:[])]:null;
+  ...(graph.secondary?
+    [-2,graph.minCount||1,EVENT_IDS.indexOf(graph.secondary.trigger),
+     graph.secondary.minCount||1,graph.secondary.mode==='and'?0:1]:
+    graph.minCount?[-1,graph.minCount,graph.hpBelow??null]:[])]:null;
 }
 function unpack(value){
- if(!Array.isArray(value)||value.length<2||value.length>1+MAX_STAGES+3)return undefined;
- const index=value.indexOf(-1),tail=index<0?[]:value.slice(index+1);
+ if(!Array.isArray(value)||value.length<2||value.length>1+MAX_STAGES+5)return undefined;
+ const pos2=value.indexOf(-2),pos1=value.indexOf(-1);
+ if(pos2>=0&&pos1>=0)return undefined;
+ const index=pos2>=0?pos2:pos1;
  const actionIds=index<0?value.slice(1):value.slice(1,index);
+ const tail=index<0?[]:value.slice(index+1);
  if(!Number.isInteger(value[0])||actionIds.length<1||
-  actionIds.length>MAX_STAGES||!actionIds.every(x=>Number.isInteger(x))||
-  (index>=0&&(tail.length!==2||!Number.isInteger(tail[0])||
-   !(tail[1]===null||Number.isInteger(tail[1])))))return undefined;
+  actionIds.length>MAX_STAGES||!actionIds.every(x=>Number.isInteger(x)))return undefined;
+ if(pos1>=0&&(tail.length!==2||!Number.isInteger(tail[0])||
+   !(tail[1]===null||Number.isInteger(tail[1]))))return undefined;
+ if(pos2>=0&&(tail.length!==4||!tail.every(Number.isInteger)||
+   ![0,1].includes(tail[3])))return undefined;
  return normalize({trigger:EVENT_IDS[value[0]],
   actions:actionIds.map(x=>ACTION_IDS[x]),
-  ...(index>=0?{minCount:tail[0],
-   ...(tail[1]!==null?{hpBelow:tail[1]}:{})}:{})});
+  ...(pos1>=0?{minCount:tail[0],
+   ...(tail[1]!==null?{hpBelow:tail[1]}:{})}:{}),
+  ...(pos2>=0?{minCount:tail[0],
+   secondary:{trigger:EVENT_IDS[tail[1]],minCount:tail[2],
+    mode:tail[3]===0?'and':'or'}}:{})});
 }
 // Authorized HP events are derived from actual fighter state, never from
 // damage text, particles or unconfirmed damage estimates.

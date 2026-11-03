@@ -221,7 +221,11 @@ function compose(input){
    plan:{strategy:'verified-combat-event',genre:'causal',
     domains:['combat'],conceptIds:[],action:graph.actions[0],
     visualKinds:['rings'],explanation:'기세 100 활성화 후 '+g.CombatEventGraph.WINDOW+
-     '초 동안 '+g.CombatEventGraph.EVENTS[graph.trigger]+'을(를) 기다립니다.'},
+     '초 동안 '+g.CombatEventGraph.EVENTS[graph.trigger]+
+      (graph.minCount?' '+graph.minCount+'회':'')+
+      (graph.secondary?' '+(graph.secondary.mode==='and'?'AND':'OR')+' '+
+       g.CombatEventGraph.EVENTS[graph.secondary.trigger]:'')+
+      '을(를) 실제 전투에서 검사합니다.'},
    notes:['기세 100을 먼저 소비해 사건 감지 창을 활성화합니다. 기간 내 실제 사건이 없으면 어떤 후속 효과도 발생하지 않습니다.',
     '사건마다 최대 3단계이며, 한 번의 기세 충전에서는 최대 1회만 연쇄를 실행합니다. 평타를 자동 생성하지 않습니다.',
     '방어 성공은 실제 보호막으로 적의 공격을 막았을 때만 인정하며, 회피는 실제 회피 판정·체력 변화는 실 HP를 기준으로 합니다.'],
