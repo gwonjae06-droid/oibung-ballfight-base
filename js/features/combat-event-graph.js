@@ -102,7 +102,7 @@ function parse(text){
   const m=re.exec(raw);
   if(m)matches.push({trigger,index:m.index,end:m.index+m[0].length,text:m[0]});
  }
- if(!matches.length&&!compound)return null;
+ if(!matches.length&&!compound&&!pair)return null;
  matches.sort((a,b)=>a.index-b.index||a.end-b.end);
  const first=pair?{trigger:'hit',index:pair.index,
   end:pair.index+pair[0].length}:
