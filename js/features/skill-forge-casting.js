@@ -15,9 +15,11 @@ const cooldownFrames=(p,s)=>global.BounceMomentum?.enabled?.(p)?1:
 function cast(p,s,target,index){
   // A sentence-authored skill stays alive as a bounded simulation-time rule set.
   if(p.forge?.signatureVersion===1&&s.ruleSet&&global.SignatureRuleLive){
-    if(p.forgeRuleRun&&!p.forgeRuleRun.finished)return false;
+    const runs=p.forgeRuleRuns||=([]);
+    if(runs.some(entry=>entry.index===index&&!entry.run.finished))return false;
     const run=global.SignatureRuleLive.begin(s.ruleSet,p);
     if(!run)return false;
+    runs.push({index,run,castId:++p.forgeSerial});
     p.forgeRuleRun=run;
     global.ArenaCombatV2?.onCast?.(p);
     global.BattleFX?.caption?.(p,s.name,(p.forge.effectColor||p.forge.color));
@@ -80,15 +82,24 @@ function tickQueue(p,target){
   const blocked=!!global.ForgeExpansion?.blocked(p);
   // Exactly one program action may be queued at a time; this preserves a
   // genuine opportunity to observe hit/movement/guard events before branching.
-  const live=p.forgeRuleRun;
-  if(live&&!live.finished&&!blocked){
-    const action=global.SignatureRuleLive?.step?.(live,p,target);
-    if(action){
-      const windup=global.ArenaTelegraph?.leadFrames?.(action)||0;
-      p.forgeQueue.push({remaining:Math.max(windup,1),step:Math.max(0,live.actions-1),
-        castId:p.forgeSerial,skillIndex:0,steps:live.actions,a:action,
-        targetNum:target?.playerNum??null,windup,rule:true});
+  const liveRuns=p.forgeRuleRuns?.length?p.forgeRuleRuns:
+    (p.forgeRuleRun&&!p.forgeRuleRun.finished?
+      [{index:0,run:p.forgeRuleRun,castId:p.forgeSerial}]:[]);
+  if(!blocked){
+    for(const entry of liveRuns){
+      if(entry.run.finished||p.forgeQueue.length>=40)continue;
+      const action=global.SignatureRuleLive?.step?.(entry.run,p,target);
+      if(action){
+        const windup=global.ArenaTelegraph?.leadFrames?.(action)||0;
+        p.forgeQueue.push({remaining:Math.max(windup,1),step:Math.max(0,entry.run.actions-1),
+          castId:entry.castId,skillIndex:entry.index,steps:entry.run.actions,a:action,
+          targetNum:target?.playerNum??null,windup,rule:true});
+      }
     }
+  }
+  if(p.forgeRuleRuns){
+    p.forgeRuleRuns=p.forgeRuleRuns.filter(entry=>!entry.run.finished);
+    p.forgeRuleRun=p.forgeRuleRuns[0]?.run||null;
   }
   const run=p.forgeScratchRun;
   if(run&&!run.finished&&!blocked){
