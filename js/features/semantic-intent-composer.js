@@ -16,10 +16,10 @@ const PATTERNS=Object.freeze({
  shield:/보호막|방어막|실드|장벽|방벽|방어\s*막|보호해/,
  teleport:/순간이동|텔레포트|공간이동|워프하여/,
  damage:/공격|피해|타격|찌르|베어|폭발|발사|쏘|후려|브레스|내리찍|때리/,
- split:/분열|갈라지|쪼개|조각으로\s*나뉘/,
+ split:/분열|갈라지|쪼개|조각으로\s*나뉘|산산이\s*(?:깨지|부서)|파편으로\s*(?:깨지|부서)/,
  area:/영역|구역|장판|범위|반경\s*\d|주변|퍼지|퍼진/,
  hitExplosion:/(?:명중|맞|적중|착탄|충돌|닿).{0,26}(?:폭발|터지|터뜨|터져)/,
- hitSplit:/(?:명중|맞|적중|착탄|충돌|닿).{0,25}(?:분열|갈라지|쪼개)/,
+ hitSplit:/(?:명중|맞|적중|착탄|충돌|닿).{0,35}(?:분열|갈라지|쪼개|깨지|부서지|조각|산산이)/,
  fade:/점점\s*약|서서히\s*약|시간이\s*지날수록\s*약|시간에\s*따라.{0,10}약/,
  law:/물리\s*법칙|새로운?\s*법칙|힘의\s*법칙|힘의\s*장|중력장|자기장|역중력/,
  force:/마찰|중력|자기장|자기력|끌어당|밀어내|회전력|공전|탄성|용수철|진동|파동|인력|척력|가속|감속/,
@@ -109,8 +109,9 @@ function verify(input,recipe){
  bits.split=actions.some(a=>a.type==='splitshot'||a.type==='shot'&&a.fusion?.split);
  bits.area=actions.some(a=>['zone','wave','nova','phenomenon','blackhole','vortex'].includes(a.type));
  bits.hitExplosion=actions.some(a=>a.fusion?.impact==='burst');
- // The current shot split event is lifetime based; an on-impact event is not implemented.
- bits.hitSplit=false;
+ // Actual contact-triggered physical fracture is distinct from timed fracture.
+ bits.hitSplit=actions.some(a=>a.type==='shot'&&
+  a.fusion?.split===true&&a.fusion?.splitTrigger==='hit');
  bits.fade=actions.some(a=>a.type==='phenomenon'&&a.law?.decay==='fade');
  bits.relay=has('kinetic_relay');
  bits.opposed=actions.some(a=>a.type==='phenomenon'&&
@@ -125,7 +126,8 @@ function verify(input,recipe){
   approximations.push('포탑 형태는 기존 회로·기계 이펙트로 근사합니다. 추적탄은 실제 발사체로 구현하지만 자동 포탑 본체가 발사하는 연동 구조는 아닙니다.');
  if(/레일건|레이저|광선|빔/.test(intent.raw||'')&&bits.homing&&has('shot'))
   approximations.push('광선·레일건의 즉시 명중 대신 실제 추적 가능한 탄환을 사용합니다. 원래 무기의 작동 방식과 완전히 같지는 않습니다.');
- if(intent.hitSplit)approximations.push('탄환 분열은 현재 비행 시간 기준입니다. 명중하는 바로 그 순간의 분열은 구현하지 못했습니다.');
+ if(intent.hitSplit&&!bits.hitSplit)
+  approximations.push('요청한 명중 순간 분열을 전투 실행 계획에서 확인하지 못했습니다.');
  const conceptMatches=g.SemanticConceptAtlas?.match?.(intent.raw||'')||[];
  const named=g.ImaginationConcepts?.CATALOG?.some(d=>d.re.test(intent.raw||''))||false;
  if(!named&&!conceptMatches.length&&/(?:의\s*(?:역설|지평선|중력|인과율|마찰|지문|질량)|불가능한\s*|철학적\s*|추억의\s*|서사의\s*)/.test(intent.raw||''))
@@ -214,12 +216,13 @@ function compose(input){
   actions.push(make('tether'));
  }else if(intent.repel){
   actions.push(make('repulse'));
- }else if(intent.homing||intent.split){
+ }else if(intent.homing||intent.split||intent.hitSplit){
   const existing=g.ConceptFusion?.analyze?.(raw);
   actions.push(make('shot',{
    fusion:g.ConceptFusion?.normalize?.({
     element:existing?.fusion?.element||'none',form:'projectile',
-    homing:intent.homing,split:intent.split,
+    homing:intent.homing,split:intent.split||intent.hitSplit,
+    splitTrigger:intent.hitSplit?'hit':'age',
     fragments:cap(count,2,4,3),
     impact:intent.hitExplosion?'burst':existing?.impact||'none',
     radius:cap(radius,35,160,90)
