@@ -51,6 +51,7 @@ function describe(parsed){
   const trait=traits[0],fusion=trait?[
    trait.element!=='none'?(g.ConceptFusion?.ELEMENTS?.[trait.element]?.label||trait.element):'',
    trait.homing?'추적':'',trait.split?'분열 '+trait.fragments+'갈래':'',
+   trait.finalBurst?'마지막 파편 소멸 시 폭발':'',
    trait.impact!=='none'?g.ConceptFusion?.IMPACTS?.[trait.impact]||trait.impact:''
   ].filter(Boolean).join(' + '):'';
   const law=r.action?.law||r.steps?.find(s=>s.kind==='cast'&&s.action?.law)?.action.law;
