@@ -24,6 +24,7 @@ const safeAction=a=>{
   visual:g.MetaphorVisuals?.normalize?.(src.visual),
   fusion:g.ConceptFusion?.normalize?.(src.fusion),
   law:g.PhysicsLawEngine?.normalize?.(src.law),
+  relay:src.type==='kinetic_relay'?g.ImaginationConcepts?.normalizeRelay?.(src.relay):undefined,
   ricochet:type==='shot'?Math.round(clamp(src.ricochet,0,3,0)):0,
   link:['and','after','with'].includes(src.link)?src.link:'after'};
 };
