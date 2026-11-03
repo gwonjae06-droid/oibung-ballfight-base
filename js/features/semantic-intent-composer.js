@@ -28,6 +28,14 @@ const PATTERNS=Object.freeze({
  relayAbsorb:/흡수|저장|모아|축적/,
  relayRelease:/방출|되돌|발산|내보내|반사|폭발/
 });
+const LABELS=Object.freeze({
+ homing:'목표 추적',orbit:'실제 궤도 운동',attract:'흡인력',spin:'회전력',
+ repel:'밀어내기',tether:'실제 속박',heal:'회복',shield:'보호막',
+ teleport:'순간이동',damage:'피해 판정',split:'탄환 분열',
+ area:'영역 동작',hitExplosion:'명중 시 폭발',hitSplit:'명중 순간 분열',
+ fade:'시간에 따른 힘 감쇠',relay:'운동량 흡수·저장·방출',
+ opposed:'서로 반대 방향의 힘'
+});
 const UNSUPPORTED=Object.freeze([
  {label:'웹페이지·브라우저·다른 컴퓨터의 실제 조작',
   re:/(?:웹페이지|브라우저|컴퓨터|PC|탭).{0,35}(?:해킹|조종|멈추|얼리|열어|닫아)|(?:해킹|조종).{0,25}(?:웹페이지|브라우저|컴퓨터|PC)/},
@@ -159,7 +167,9 @@ function compose(input){
   layers:motifs.map(kind=>({kind,color:theme,power:1.15,spin:1}))
  });
  const numeric=g.KoreanSkillParameters?.analyze?.(raw),values=numeric?.values||{};
- const count=values.count??(raw.match(/(\d+)\s*(?:발|개|개의\s*탄환)/)?.[1]||1);
+ const count=values.count??(raw.match(/(\d+)\s*(?:발|개|개의\s*탄환)/)?.[1]||
+  (/세\s*(?:개|발)/.test(raw)?3:/네\s*(?:개|발)/.test(raw)?4:
+    /두\s*(?:개|발)/.test(raw)?2:1));
  const damage=cap(values.damage,0,120,23),radius=cap(values.radius,30,300,155),
   duration=cap(values.duration,.2,8,2);
  const speed=cap(values.speed,2,14,6);
@@ -250,5 +260,5 @@ function compose(input){
   notes:[...notes,...(numeric?.warnings||[])],
   semanticVerification:semantic};
 }
-g.SemanticIntentComposer=Object.freeze({PATTERNS,analyze,flatten,verify,compose,UNSUPPORTED});
+g.SemanticIntentComposer=Object.freeze({PATTERNS,LABELS,analyze,flatten,verify,compose,UNSUPPORTED});
 })(typeof window!=='undefined'?window:globalThis);
