@@ -104,6 +104,16 @@ function unpack(value){
  return normalize({trigger:EVENT_IDS[value[0]],
   actions:value.slice(1).map(x=>ACTION_IDS[x])});
 }
+// Authorized HP events are derived from actual fighter state, never from
+// damage text, particles or unconfirmed damage estimates.
+function observeHealth(p,previous,current){
+ if(!Number.isFinite(Number(previous))||!Number.isFinite(Number(current)))return null;
+ const before=Number(previous),after=Number(current);
+ if(before<0||after<0||before===after)return null;
+ const type=after<before?'hpDrop':'hpGain';
+ g.SignatureLive?.record?.(p,type);
+ return type;
+}
 function verify(input,recipe){
  const gph=normalize(input);
  if(!gph)return false;
@@ -117,5 +127,5 @@ function verify(input,recipe){
  });
 }
 g.CombatEventGraph=Object.freeze({EVENTS,ACTIONS,MAX_STAGES,MAX_FIRES,WINDOW,
- normalize,parse,toSteps,pack,unpack,verify});
+ normalize,parse,toSteps,pack,unpack,verify,observeHealth});
 })(typeof window!=='undefined'?window:globalThis);
