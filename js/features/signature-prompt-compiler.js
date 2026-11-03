@@ -112,7 +112,8 @@ function parse(input){
  const types=new Set(mentions.map(x=>x.id));
  const notes=[];
  const repeat=/무한|계속|연속|반복|끝없이|끊임없이|미친|엄청|마구|초당|난사|폭주/.test(raw);
- const speed=/가속|속도|광속|스피드|초고속|빨라/.test(raw);
+ // Numeric projectile velocity / fire rate should not invent a haste buff.
+ const speed=/가속|광속|스피드|초고속|빨라|(?:몸|나|자신|이동)\s*(?:의)?\s*속도/.test(raw);
  const wall=/벽.*(?:튕|부딪|충돌|닿)/.test(raw);
  const contact=/상대.*(?:부딪|충돌|접촉)|적과.*부딪/.test(raw);
  const split=types.has('splitshot');
@@ -247,6 +248,19 @@ function parse(input){
    for(const r of rows)if(r.action.speed)r.action.speed=Math.min(14,r.action.speed*1.2);
   }
  }
+ // Bind numeric specifications to their matching Korean action clause.
+ const params=g.KoreanSkillParameters,whole=params?.analyze?.(raw);
+ for(const row of rows){
+  const clause=(grammar?.clauses||[]).find(c=>c.chosen?.type===row.action.type&&!c.negated);
+  const local=clause?params?.analyze?.(clause.text):null;
+  // A separate action's numbers never overwrite a sibling action's values.
+  const use=(grammar?.clauses||[]).length>1?local:whole;
+  if(use)row.action=params.apply(row.action,use);
+  if(local?.interval||whole?.interval)row.interval=local?.interval||whole.interval;
+ }
+ if(whole?.recognized?.length)
+  notes.push('수치 해석: '+whole.recognized.join(', ')+'. 안전한 실제 전투 범위 안에서 적용됩니다.');
+ if(whole?.warnings?.length)notes.push(...whole.warnings);
  // A literal sequence becomes one bounded graph, rather than independent
  // simultaneous casts. The existing ruleSet still owns wall/hit triggers.
  let sequence=g.FantasySkillGraph?.fromText?.(raw,{
@@ -293,6 +307,16 @@ function parse(input){
    }
    notes.push('복합 기술은 순서 그래프로 실행됩니다. 반복 횟수·시간·생성 개수에는 안전 제한이 있습니다.');
   }
+ }
+ // The graph copies action nodes; numeric settings must reach every
+ // executable stage, not merely the rule leader's preview action.
+ for(const row of rows)for(const step of row.steps||[]){
+  if(step.kind!=='cast'||!step.action)continue;
+  const matched=rows.find(r=>r.action.type===step.action.type);
+  const clause=(grammar?.clauses||[]).find(c=>c.chosen?.type===step.action.type&&!c.negated);
+  const local=clause?params?.analyze?.(clause.text):null;
+  step.action={...step.action,...(matched?.action||{}),
+   ...(local?params.apply({},local):{})};
  }
  const recipe=R.normalize({window,rules:rows});
  const primary=physicalTypes[0]||activeMetaphor?.type|| (types.has('splitshot')?'splitshot':speed?'haste':jump?'leap':mentions[0].id);
