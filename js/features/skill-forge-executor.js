@@ -89,6 +89,9 @@ function execute(p,a,target) {
     const durationFrames=Math.max(1,Math.round(a.duration*60*(global.ArenaBalance?.defenseFactorOf?.(p)??1)));
    p.invincible=global.ArenaBalance?.shieldWindow?.(p,durationFrames)??Math.max(p.invincible,durationFrames);
    p._forgeImpactGrace=0; // Shields are defense, never impact grace.
+   // A later truly blocked attack can report guard; granting a shield
+   // does not itself count as a successful guard event.
+   p._forgeGuardUntil=(Number(p._forgeActionClock)||0)+Math.max(0,p.invincible||0);
    visual('shield');
   } else if(a.type==='pull'){
     visual('wave',{radius:a.radius});
