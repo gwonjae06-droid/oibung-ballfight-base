@@ -381,6 +381,7 @@ function make(profile={},focus=0,actionIndex=-1){
   const boost=hero.fastTime>0?1.75:hero.hasteTime>0?1.25:1;
   if(hero.fastTime>0)hero.fastTime--;
   if(hero.hasteTime>0)hero.hasteTime--;
+  if(hero.shieldTime>0)hero.shieldTime--;
   if(hero.sizeTime>0&&--hero.sizeTime===0)hero.radius=hero.baseRadius;
   energy=Math.min(100,energy+.29*boost);
   previewActor._forgeActionClock=frame;
