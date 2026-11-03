@@ -125,6 +125,76 @@ function resultHTML(result){
  +'<p class="sentence-local-note">이 결과는 오프라인 동작 사전과 실행 규칙으로 구성됩니다. 새로운 물리 능력이나 연출을 무조건 생성하는 AI는 아닙니다.</p>'
  +'<button type="button" data-rule-command="apply" class="sentence-apply">✓ 문장 속 기술을 생성하고 시연하기</button></section>';
 }
+const NUMERIC=Object.freeze({
+ damage:['피해량',0,120,1],count:['투사체 수',1,8,1],
+ speed:['이동·투사체 속도',2,14,.5],radius:['범위',30,300,5],
+ duration:['지속시간 (초)',.2,8,.1],knockback:['넉백',0,9,.5],
+ delay:['발동 지연 (초)',0,2,.1],ricochet:['벽 반사 횟수',0,3,1]});
+function tune(skillIndex,ruleIndex,stageIndex,key,value){
+ const current=forge.getDraft(),s=current.skills?.[skillIndex];
+ if(!s?.ruleSet)return false;
+ const ruleSet=JSON.parse(JSON.stringify(s.ruleSet));
+ const rule=ruleSet.rules?.[ruleIndex];if(!rule)return false;
+ if(key==='name'){
+  const skills=current.skills.slice();
+  skills[skillIndex]={...s,name:String(value||'').replace(/[<>]/g,'').slice(0,18)||s.name};
+  forge.setDraft({...current,skills});return true;
+ }
+ if(key==='interval'){
+  const n=Number(value);if(!Number.isFinite(n))return false;
+  rule.interval=Math.max(.35,Math.min(4,n));
+ }else{
+  const info=NUMERIC[key],numeric=!!info;
+  if(!info&&!['status','pattern','target'].includes(key))return false;
+  const a=stageIndex>=0?rule.steps?.[stageIndex]?.action:rule.action;
+  if(!a)return false;
+  if(numeric){
+   const n=Number(value);if(!Number.isFinite(n))return false;
+   a[key]=Math.max(info[1],Math.min(info[2],n));
+  }else a[key]=String(value);
+  // The rule and the staged cast are separate data nodes: update the
+  // leader when tuning its corresponding step to preserve preview parity.
+  if(stageIndex>=0&&rule.action?.type===a.type)rule.action[key]=a[key];
+  if(stageIndex<0)for(const step of rule.steps||[])
+   if(step.kind==='cast'&&step.action?.type===a.type)step.action[key]=a[key];
+ }
+ const recipe=rules.normalize(ruleSet),skills=current.skills.slice();
+ skills[skillIndex]={...s,ruleSet:recipe,actions:rules.preview(recipe),
+   ir:g.SkillIR?.fromRecipe?.(recipe)||undefined};
+ forge.setDraft({...current,skills});
+ return true;
+}
+function actionTuning(a,ruleIndex,stageIndex){
+ if(!a)return '';
+ const supported=new Set(g.ActionRegistry?.get?.(a.type)?.parameters||[
+   'damage','count','speed','radius','duration','status','knockback','delay']);
+ const fields=Object.entries(NUMERIC).filter(([key])=>
+   supported.has(key)||key==='delay').map(([key,[name,min,max,step]])=>
+   '<label>'+name+'<input type="number" data-tune-key="'+key+
+   '" data-tune-rule="'+ruleIndex+'" data-tune-stage="'+stageIndex+
+   '" min="'+min+'" max="'+max+'" step="'+step+'" value="'+E(a[key]??(key==='damage'?0:min))+'"></label>');
+ if(supported.has('status'))fields.push('<label>상태이상<select data-tune-key="status" data-tune-rule="'+
+    ruleIndex+'" data-tune-stage="'+stageIndex+'">'+Object.entries(forge.STATUS||{}).map(([id,label])=>
+    '<option value="'+E(id)+'"'+(a.status===id?' selected':'')+'>'+E(label)+'</option>').join('')+'</select></label>');
+ if(supported.has('pattern'))fields.push('<label>공격 배치<select data-tune-key="pattern" data-tune-rule="'+
+    ruleIndex+'" data-tune-stage="'+stageIndex+'">'+Object.entries(g.AbilityAtlas?.PATTERNS||{direct:'직선',radial:'방사형',fan:'부채꼴'}).map(([id,label])=>
+    '<option value="'+E(id)+'"'+(a.pattern===id?' selected':'')+'>'+E(label)+'</option>').join('')+'</select></label>');
+ return '<div class="sentence-tune-grid">'+fields.join('')+'</div>';
+}
+function tuneHTML(s){
+ if(!s?.ruleSet)return '';
+ return '<details class="sentence-tune"><summary>⚙ 생성한 기술의 수치 자세히 수정하기</summary>'
+   +'<p class="sentence-local-note">생성된 동작의 수치만 편집할 수 있습니다. 새로운 동작은 위 한국어 문장에서 다시 생성하세요.</p>'
+   +'<label>스킬 이름<input type="text" maxlength="18" data-tune-key="name" value="'+E(s.name)+'"></label>'
+   +s.ruleSet.rules.map((r,ri)=>'<section class="sentence-tune-action"><strong>'+
+     (ri+1)+'. '+E(forge.TYPE?.[r.action.type]||r.action.type)+'</strong>'
+     +'<label>공격 간격 (초)<input type="number" min=".35" max="4" step=".05" data-tune-key="interval" data-tune-rule="'+ri+'" value="'+E(r.interval)+'"></label>'
+     +(r.steps?.length?r.steps.map((st,si)=>st.kind==='cast'?
+       '<p>'+E(forge.TYPE?.[st.action?.type]||st.action?.type)+'</p>'+actionTuning(st.action,ri,si):'').join(''):
+       actionTuning(r.action,ri,-1))
+     +'</section>').join('')
+   +'</details>';
+}
 function currentHTML(){
  const s=skill();
  if(!s.ruleSet)return '<p class="sentence-current-empty">'+(selectedIndex<0?'새 스킬을 구상 중입니다. 문장을 입력하면 독립 기술로 추가됩니다.':'선택한 스킬은 아직 문장으로 만든 기술이 아닙니다.')+'</p>';
@@ -133,7 +203,7 @@ function currentHTML(){
  +'<div>'+summaryOf(s.ruleSet).map(x=>'<p>'+E(x.when)+' · '+E(x.action)+'</p>').join('')+'</div>'
  +(s.promptText?'<small>원문: '+E(s.promptText)+'</small>':
    '<small>이 기술은 이전 편집기에서 만들어졌습니다. 새 문장으로 변경해도 저장된 원본은 유지됩니다.</small>')
- +'</div>';
+ +tuneHTML(s)+'</div>';
 }
 function render(){
  syncPrompt();
@@ -162,6 +232,16 @@ function render(){
  +'<button type="button" data-rule-command="appearance" class="sentence-apply">③ 기술 확인 완료 · 외형 꾸미기로 이동 →</button>'
  +'<div id="rule-feedback" role="status" aria-live="polite"></div>';
 }
+panel.addEventListener('change',event=>{
+ const control=event.target.closest?.('[data-tune-key]');
+ if(!control)return;
+ const key=control.dataset.tuneKey;
+ const ri=Number(control.dataset.tuneRule||0),si=Number(control.dataset.tuneStage??-1);
+ if(tune(selectedIndex,ri,si,key,control.value)){
+  g.CharacterStudioWorkspace?.refresh?.();
+  render();feedback('생성된 기술의 세부 수치가 업데이트되었습니다. 저장하면 확정됩니다.');
+ }
+});
 panel.addEventListener('input',event=>{
  if(event.target.id==='rule-prompt'){
   promptDraft=event.target.value;
@@ -202,5 +282,5 @@ panel.addEventListener('click',event=>{
 });
 g.addEventListener?.('studio:open',()=>{syncPrompt(true);render();});
 render();
-g.SignatureRuleStudio={render,apply};
+g.SignatureRuleStudio={render,apply,tune};
 })(window);
