@@ -13,7 +13,7 @@ function analyze(input){
  // numeric declarations too. Replace counters only in numeric contexts.
  const numbers={한:1,두:2,세:3,네:4,다섯:5,여섯:6,일곱:7,여덟:8,아홉:9,열:10,스무:20};
  const text=String(input||'').normalize('NFC').replace(
-   /(스무|다섯|여섯|일곱|여덟|아홉|한|두|세|네|열)\s*(?=(?:개|발|줄기|갈래|마리|번|회|타|초)(?:\s|$|마다|간|동안|씩|로|을|를|에|의))/g,
+   /(스무|다섯|여섯|일곱|여덟|아홉|한|두|세|네|열)\s*(?=(?:개|발|줄기|갈래|마리|번|회|타|초)(?:\s|$|마다|간|동안|씩|로|을|를|가|이|는|은|에|의))/g,
    word=>String(numbers[word.trim()]||word));
  const values={},warnings=[],recognized=[];
  function set(key,patterns,lo,hi,integer=false){
