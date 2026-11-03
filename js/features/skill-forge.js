@@ -134,7 +134,15 @@ function update(p,target){
     const chargedBoss=global.BounceMomentum?.isBoss?.(p);
     const chargedMinion=global.BounceMomentum?.isMinion?.(p);
     const chargedPlayer=global.BounceMomentum?.enabled?.(p)&&!p.towerEnemy;
-    p.forge.skills.forEach((s,i)=>{
+    // Energy-driven fighters consider only the next rotating slot. This is
+    // O(1) per idle frame even when a player authored hundreds of skills.
+    const len=p.forge.skills.length;
+    const cursor=chargedBoss?p._bossEnergyCursor||0:
+      chargedMinion?p._minionEnergyCursor||0:p._playerEnergyCursor||0;
+    const indices=(chargedBoss||chargedMinion||chargedPlayer)?
+      (len?[cursor%len]:[]):p.forge.skills.map((_,i)=>i);
+    indices.forEach(i=>{
+      const s=p.forge.skills[i];
       // Each boss has ONE 100-point gauge for its full authored arsenal and
       // its large scripted attacks. Rotate skills after each filled cast.
       if(chargedBoss&&(p._ancientEnergyOnly||
