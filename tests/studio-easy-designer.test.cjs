@@ -43,7 +43,7 @@ test('choosing a starter style retains saved character name, appearance and HP',
 test('simple edits modify exactly the same recipe accepted by the expert BlockForge',()=>{
  const h=world(),easy=h.StudioEasyDesigner,block=h.BlockForge;
  let p=easy.presetPlan('balanced',h.SkillForge.getDraft());
- const untouched=JSON.stringify(p.skills[0].actions[1]);
+ const untouched=JSON.stringify(p.skills[1].actions[0]);
  p=easy.change(p,'type',0,'bolt');
  assert.equal(p.skills[0].actions[0].type,'bolt');
  p=easy.change(p,'cooldown',0,'2.7');
@@ -55,12 +55,12 @@ test('simple edits modify exactly the same recipe accepted by the expert BlockFo
  assert.equal(p.skills[0].trigger,p.signatureVersion===1?'auto':'lowhp',
   'modern signature skills always fire at full momentum; legacy trigger remains selectable');
  assert.equal(p.skills[0].threshold,35);
- assert.equal(JSON.stringify(p.skills[0].actions[1]),untouched,'editing first block must not overwrite other actions');
+ assert.equal(JSON.stringify(p.skills[1].actions[0]),untouched,'editing first skill must not overwrite other skills');
  p=block.modify(p,{kind:'add',skill:0,type:'zone'});
- assert.equal(p.skills[0].actions.length,5);
+ assert.equal(p.skills[0].actions.length,2);
  p=easy.change(p,'type',0,'wave');
- assert.equal(p.skills[0].actions.length,5,'simple edit must not discard expert chain');
- assert.equal(p.skills[0].actions[4].type,'zone');
+ assert.equal(p.skills[0].actions.length,2,'simple edit must not discard expert chain');
+ assert.equal(p.skills[0].actions[1].type,'zone');
 });
 test('adding/removing unlimited skills retains existing settings and order',()=>{
  const h=world(),easy=h.StudioEasyDesigner;
