@@ -114,5 +114,39 @@ function parse(input){
  return {...result,summary:[],grammar,verification:audit(null),
   limitations:[...new Set(limitations)],sourceText:raw,mode:'offline'};
 }
-g.SkillSentenceEngine=Object.freeze({parse,describe,audit,labels});
+/* A paragraph is the authoring unit. "그리고/이어서/그다음" connects
+ * actions into one skill; independent sentences/lines are separate skills.
+ * This is deterministic Korean text grouping, not an unrestricted NLP model.
+ */
+function splitIdeas(raw){
+ const parts=String(raw||'').normalize('NFC').split(/\n+|;|[.!?](?=\s|$)/)
+   .map(x=>x.trim()).filter(Boolean);
+ const groups=[];
+ for(const part of parts){
+  const linked=/^(?:그리고|그러고\s*나서|이어서|그\s*다음|그\s*뒤|한\s*뒤|동시에|그와\s*동시에)/.test(part);
+  const previous=groups[groups.length-1];
+  if(previous&&(linked||/(?:하면|때마다|자마자|한\s*뒤|그\s*후)$/.test(previous)))
+   groups[groups.length-1]+=' 그리고 '+part;
+  else groups.push(part);
+ }
+ return groups;
+}
+function parseBundle(input){
+ const raw=String(input??'').trim();
+ if(!raw)return {ok:false,error:'만들고 싶은 스킬을 문장으로 입력해 주세요.',skills:[]};
+ if(raw.length>2000)return {ok:false,error:'전체 스킬 설명은 2,000자 이하로 작성해 주세요.',skills:[]};
+ const ideas=splitIdeas(raw);
+ if(ideas.some(x=>x.length>300))return {ok:false,error:'하나의 기술 설명은 300자 이하로 나누어 주세요.',skills:[]};
+ const skills=ideas.map(parse);
+ const failed=skills.findIndex(s=>!s.ok);
+ if(failed>=0)return {ok:false,error:(failed+1)+'번째 문장을 구현하지 못했습니다: '+skills[failed].error,
+  skills,sourceText:raw};
+ const primary=skills[0];
+ return {...primary,sourceText:raw,skills,
+  bundleSummary:skills.map((x,i)=>({index:i,name:x.name,
+   sourceText:x.sourceText,summary:x.summary,notes:x.notes,limitations:x.limitations})),
+  notes:[...new Set(skills.flatMap(x=>x.notes||[]))],
+  limitations:[...new Set(skills.flatMap(x=>x.limitations||[]))]};
+}
+g.SkillSentenceEngine=Object.freeze({parse,parseBundle,splitIdeas,describe,audit,labels});
 })(typeof window!=='undefined'?window:globalThis);
