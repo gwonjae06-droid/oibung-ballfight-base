@@ -14,6 +14,7 @@ function normalize(value){
    color:HEX.test(value.color)?value.color:'#a88eff',
    scale:clamp(value.scale,.6,2.8,1.5),
    charge:value.charge===true,
+   ...(['inherit','explicit'].includes(value.colorMode)?{colorMode:value.colorMode}:{}),
    ...(layers.length?{layers}:{})};
 }
 function interpret(input){
