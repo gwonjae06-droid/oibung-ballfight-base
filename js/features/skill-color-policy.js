@@ -51,7 +51,11 @@ function stages(input){
  const hex=/(#[0-9a-f]{6})(?![0-9a-f])/gi;let m;
  while((m=hex.exec(raw))!==null&&hits.length<64)
   hits.push({color:m[1].toLowerCase(),term:m[1],index:m.index,end:m.index+7});
- hits.sort((a,b)=>a.index-b.index);
+ // Ignore shorter, overlapping dictionary hits ('보라' within '연보라').
+ hits.sort((a,b)=>a.index-b.index||(b.end-b.index)-(a.end-a.index));
+ const unique=[];
+ for(const hit of hits)if(!unique.some(prev=>hit.index<prev.end&&hit.end>prev.index))
+  unique.push(hit);
  const nouns={
   source:/투사체|탄환|탄알|미사일|화살|구슬|발사체|분열탄|추적탄|유도탄/g,
   fragment:/파편|조각|부스러기/g,
@@ -62,12 +66,22 @@ function stages(input){
  for(const [role,pattern] of Object.entries(nouns)){
   const scan=new RegExp(pattern.source,'g');let anchor,best=null,n=0;
   while((anchor=scan.exec(raw))!==null&&n++<24){
-   const near=hits.filter(h=>{
+   const before=unique.filter(h=>{
     const gap=anchor.index-h.end;
     if(gap<0||gap>23)return false;
     const between=raw.slice(h.end,anchor.index);
     return !/[.!?;\n]/.test(between)&&!boundaries.test(between);
    }).sort((a,b)=>b.end-a.end)[0];
+   // Also accept direct predication: '그 파편들은 붉게 빛난다',
+   // '폭발은 보라색으로 퍼진다'. No words or unrelated objects may
+   // intervene between the named object and its explicit color.
+   const after=unique.filter(h=>{
+    const gap=h.index-anchor.index-anchor[0].length;
+    if(gap<0||gap>8)return false;
+    const between=raw.slice(anchor.index+anchor[0].length,h.index);
+    return /^(?:들)?(?:이|가|은|는|을|를|도|만)?\s*$/.test(between);
+   }).sort((a,b)=>a.index-b.index)[0];
+   const near=before||after;
    if(near&&(!best||near.end>best.end))best=near;
   }
   if(best)found[role]={color:best.color,term:best.term};
