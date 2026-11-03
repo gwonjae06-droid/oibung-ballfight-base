@@ -18,7 +18,9 @@ const own=(v,k)=>Object.prototype.hasOwnProperty.call(v,k);
 const primitives=action=>{
  const type=String(action?.type||'');
  const definition=g.ActionRegistry?.get?.(type);
- const operations=type==='phenomenon'&&g.PhysicsLawEngine?.normalize?.(action?.law)?
+ const operations=type==='kinetic_relay'&&g.ImaginationConcepts?.normalizeRelay?.(action?.relay)?
+  ['select-radius','capture-velocity','store-kinetic-energy','delay-release','radial-impulse','confirmed-contact-hit']:
+  type==='phenomenon'&&g.PhysicsLawEngine?.normalize?.(action?.law)?
   ['create-force-field',...action.law.terms.map(t=>'force-'+t.op),
    'time-envelope','bounded-motion','confirmed-contact-hit']:
   PRESETS[type]||(
