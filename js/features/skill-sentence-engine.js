@@ -50,7 +50,6 @@ function describe(parsed){
     styles[0]?.shape&&styles[0].shape!=='aura'?
       g.MetaphorVisuals?.SHAPES?.[styles[0].shape]||styles[0].shape:null,
    layers:composite};
-}
  });
 }
 // Compile-time combat readiness check: presentation and damage authorization
