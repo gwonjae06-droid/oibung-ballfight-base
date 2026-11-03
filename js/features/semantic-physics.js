@@ -10,11 +10,12 @@ const PHENOMENA=Object.freeze([
  {type:'repulse',label:'반발 충격',pattern:/(?:상대|적|적군|공).{0,15}(?:밀쳐|밀어내|날려버|튕겨내|쳐내)|(?:밀쳐|밀어내|날려버|튕겨내|쳐내).{0,15}(?:상대|적)|반발력|척력/},
  {type:'vortex',label:'소용돌이 역학',pattern:/(?:상대|적|공).{0,15}(?:빙빙|회전시키|돌려|공전시키|휘말리)|(?:소용돌이|회오리|태풍).{0,16}(?:휘말|끌어들이|가두|돌려|회전시키)/}
 ]);
-function choose(phrase,types=R?.TYPE||{}){
+function matchAll(phrase,types=R?.TYPE||{}){
  const s=String(phrase||'').normalize('NFC');
- const candidate=PHENOMENA.find(x=>Object.hasOwn(types,x.type)&&x.pattern.test(s));
- return candidate?{type:candidate.type,source:'physical-intent',meaning:candidate.label}:null;
+ return PHENOMENA.filter(x=>Object.hasOwn(types,x.type)&&x.pattern.test(s))
+  .map(x=>({type:x.type,source:'physical-intent',meaning:x.label}));
 }
+function choose(phrase,types=R?.TYPE||{}){return matchAll(phrase,types)[0]||null;}
 const fields=new WeakMap(),telemetry=new WeakMap();
 function safeVelocity(e,x,y){
  const vx=clamp((Number(e.vx)||0)+x,-18,18,0);
@@ -179,5 +180,5 @@ if(R?.register){
    execute:castVortex,preview:{duration:1400,pose:'wave',anchor:'caster'}}
  ])if(!R.get(d.id))R.register({...common,...d});
 }
-g.SemanticPhysics=Object.freeze({PHENOMENA,choose,tick,probe,verifyRecipe,noteCast,noteHit,liveReport});
+g.SemanticPhysics=Object.freeze({PHENOMENA,choose,matchAll,tick,probe,verifyRecipe,noteCast,noteHit,liveReport});
 })(typeof window!=='undefined'?window:globalThis);
