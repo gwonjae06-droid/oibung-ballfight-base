@@ -41,6 +41,15 @@ function fromRecipe(value){
    physics:primitives(r.action)
   }))};
 }
+// IR v2 adds an explainable graph; v1 profiles and combat recipes remain
+ // unchanged. Untrusted incoming semantic graphs are always recomputed from
+ // normalized registered actions rather than accepted as executable data.
+function fromSentence(input,recipe){
+ const base=fromRecipe(recipe);
+ const text=String(input||'').normalize('NFC').trim().slice(0,300);
+ return {...base,version:2,sourceText:text,
+  semantics:g.SemanticRelationshipGraph?.build?.(text,recipe)||null};
+}
 function toRecipe(value){
  const rules=g.SignatureRuleSkill;
  if(!rules)throw Error('스킬 규칙 엔진이 필요합니다.');
@@ -55,8 +64,9 @@ function toRecipe(value){
   }))});
 }
 function normalize(value){
- if(!value||value.version!==1)return undefined;
- return fromRecipe(toRecipe(value));
+ if(!value||![1,2].includes(value.version))return undefined;
+ const recipe=toRecipe(value);
+ return value.version===2?fromSentence(value.sourceText,recipe):fromRecipe(recipe);
 }
 function describe(value){
  const ir=normalize(value);
@@ -66,5 +76,5 @@ function describe(value){
   primitives:x.physics.map(y=>y.op),interval:x.interval
  }));
 }
-g.SkillIR=Object.freeze({PRESETS,primitives,fromRecipe,toRecipe,normalize,describe});
+g.SkillIR=Object.freeze({PRESETS,primitives,fromRecipe,fromSentence,toRecipe,normalize,describe});
 })(typeof window!=='undefined'?window:globalThis);
