@@ -93,6 +93,18 @@ function resultHTML(result){
   intent.missing.map(x=>'<li class="sentence-intent-missing">⚠ '+E(g.SemanticIntentComposer?.LABELS?.[x]||x)+' 누락</li>').join('')+
   (intent.approximations||[]).map(x=>'<li class="sentence-intent-approx">≈ '+E(x)+'</li>').join('')+'</ul>'+
   '<small>컴파일된 동작과 선언적 물리 특성을 확인한 것입니다. 실제 전투 명중까지 보장하지 않습니다.</small></section>':'';
+ const fixes=result.autoRepair;
+ const repairView=(fixes?.status==='repaired'||fixes?.status==='unresolved'&&
+  fixes.before?.missing?.length)?'<details class="sentence-more" open>'+
+  '<summary>문장 의미 자동 검증·보완 · '+E(fixes.status==='repaired'?'일부 자동 수정':'자동 수정 보류')+'</summary>'+
+  '<p>수정 전 누락: '+E((fixes.before.missing||[]).map(x=>
+    g.SemanticIntentComposer?.LABELS?.[x]||x).join(', ')||'없음')+'</p>'+
+  (fixes.applied?.length?'<p>실제 동작에 반영: '+E(fixes.applied.map(x=>
+    g.SemanticIntentComposer?.LABELS?.[x]||x).join(', '))+'</p>':'')+
+  '<p>수정 후 누락: '+E((fixes.after.missing||[]).map(x=>
+    g.SemanticIntentComposer?.LABELS?.[x]||x).join(', ')||'없음')+'</p>'+
+  (fixes.reasons?.length?'<p>미수정 사유: '+E(fixes.reasons.join(' / '))+'</p>':'')+
+  '<small>등록된 단일 투사체의 안전한 물리 속성만 변경합니다. 실제 전투 명중·FPS는 보증하지 않습니다.</small></details>':'';
  const parts=(result.grammar?.tokens||[]).filter(t=>
    ['verb','noun','adverb'].includes(t.pos)&&t.semantic).slice(0,14);
  const grammarPreview=parts.length?'<details class="sentence-more"><summary>한국어 문장 분석 보기</summary>'
@@ -155,7 +167,7 @@ function resultHTML(result){
   ).join('')+'</div>'
  +(limitations.length?'<div class="sentence-limitations"><strong>현재 구현 범위 안내</strong><ul>'
   +limitations.map(n=>'<li>'+E(n)+'</li>').join('')+'</ul></div>':'')
- +intentView+grammarPreview+graphView+auditView+sandboxView+physicsView
+ +repairView+intentView+grammarPreview+graphView+auditView+sandboxView+physicsView
  +((result.notes||[]).length?'<details class="sentence-more"><summary>해석과 안전 제한 자세히</summary><ul>'
  +(result.notes||[]).map(x=>'<li>'+E(x)+'</li>').join('')+'</ul></details>':'')
  +'<p class="sentence-local-note">오프라인 개념 해석과 합성 물리 수식을 사용합니다. 지원하지 않는 현상은 설명하며, 모든 상상 속 법칙을 보장하는 범용 AI는 아닙니다.</p>'

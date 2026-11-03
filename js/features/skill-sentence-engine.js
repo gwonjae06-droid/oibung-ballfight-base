@@ -114,9 +114,13 @@ function parse(input){
  const generatedLaw=intentional||materialized?null:g.PhysicsLawEngine?.interpret?.(raw);
  const compiled=intentional||materialized||generatedLaw||engine?.parse?.(raw)||{ok:false,error:'문장 해석기를 불러오지 못했습니다.'};
  const colored=compiled.ok?g.SkillColorPolicy?.decorate?.(compiled.recipe,raw):null;
- const result=colored?{...compiled,recipe:colored.recipe,
+ const base=colored?{...compiled,recipe:colored.recipe,
   colorPriority:colored.priority,explicitColor:colored.explicit,
   stageColors:colored.stages}:compiled;
+ // Exactly one conservative, validated repair pass. Never rewrite source
+ // text, mutate prior skill profiles or bypass the registered action set.
+ const fixed=base.ok?g.SentenceAutoRepair?.repair?.(raw,base.recipe):null;
+ const result=fixed?{...base,recipe:fixed.recipe,autoRepair:fixed.report}:base;
  const unavailable=capabilities.filter(c=>c.re.test(raw)).map(c=>c.label);
  const limitations=unavailable.map(x=>x+'은(는) 아직 완전하게 구현되지 않았습니다.');
  if(result.ok){
@@ -134,6 +138,8 @@ function parse(input){
     ' 동작으로 표현했습니다. 새로운 전투 물리까지 구현한 것은 아닙니다.');
   }
   limitations.push(...proof.warnings);
+  if(result.autoRepair?.status==='unresolved'&&result.autoRepair.before.missing.length)
+   limitations.push(...result.autoRepair.reasons);
   return {...result,summary:describe(result),grammar,verification:proof,
    semanticVerification:semantics,
    semanticGraph:g.SemanticRelationshipGraph?.build?.(raw,result.recipe)||null,
