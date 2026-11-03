@@ -125,8 +125,22 @@ function build(input,recipe){
    push(id,'applies_force','enemy',{operator:t.op,decay:action.law.decay});
  }
  for(const rule of (recipe.rules||[]).slice(0,8)){
+  const first=actions.length;
   if(rule.steps?.length)steps(rule.steps,rule,0);
   else add(rule.action,rule);
+  const verified=g.CombatEventGraph?.normalize?.(rule.eventGraph);
+  if(verified&&verified.trigger===rule.when){
+   conditions.push({trigger:verified.trigger,mode:'confirmed_combat_event',
+    maxFires:1,windowFrames:Math.round((Number(recipe.window)||8)*60)});
+   const triggers=verified.actions;
+   for(let j=0;j<triggers.length&&first+j<actions.length;j++){
+    const next=actions[first+j].id;
+    if(j===0)push('caster','on_verified_combat_event',next,{
+     event:verified.trigger});
+    else push(actions[first+j-1].id,'then_after_execution',next,{
+     stage:j,event:verified.trigger});
+   }
+  }
  }
  // Resolve simple demonstratives from the *generated* entities rather than
  // guessing a target based on whichever noun appeared last in the sentence.
