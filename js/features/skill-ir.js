@@ -36,6 +36,7 @@ function fromRecipe(value){
  return {version:1,trigger:'momentum',window:safe.window,
   events:safe.rules.map(r=>({
    when:r.when,interval:r.interval,fracture:r.fracture,
+   ...(r.when==='wallStored'?{wallHits:r.wallHits}:{}),
    action:{...r.action},
    ...(r.steps?.length?{steps:r.steps}:{}),
    physics:primitives(r.action)
@@ -59,6 +60,7 @@ function toRecipe(value){
  return rules.normalize({window:v.window,
   rules:(Array.isArray(v.events)?v.events:[]).map(event=>({
    when:event?.when,interval:event?.interval,fracture:event?.fracture,
+   ...(event?.when==='wallStored'?{wallHits:event?.wallHits}:{}),
    action:event?.action,
    ...(Array.isArray(event?.steps)?{steps:event.steps}:{})
   }))});
