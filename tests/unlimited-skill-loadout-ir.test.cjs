@@ -109,3 +109,46 @@ test('entrypoint scripts load IR before normalized profiles in both local and Pv
   assert.ok(html.indexOf('skill-ir.js')<html.indexOf('skill-forge-profiles.js'));
  }
 });
+
+test('sentence studio adds distinct skills and preserves edit/delete/IR on the same draft',()=>{
+ const w=boot(),handlers={},messages=[];
+ let typed='적을 사슬로 끌어당긴다';
+ const panel={innerHTML:'',classList:{add(){}},closest(){return null},
+   addEventListener(type,fn){handlers[type]=fn;},
+   querySelector(sel){
+     if(sel==='#rule-prompt')return {value:typed,focus(){}};
+     if(sel==='#rule-name')return {value:'탄성 속박'};
+     if(sel==='#rule-feedback')return {set textContent(v){messages.push(v);}};
+     return null;
+   }};
+ let previews=0,selected=null;
+ w.document={querySelector:sel=>sel==='#scratch-beginner'?panel:null,
+  getElementById:()=>({click(){previews++;}})};
+ w.CharacterStudioWorkspace={refresh(){},selectPreviewSkill(i){selected=i;}};
+ w.addEventListener=(type,fn)=>{handlers[type]=fn;};
+ w.confirm=()=>true;
+ vm.runInContext(read('signature-rule-studio'),w,{filename:'signature-rule-studio.js'});
+ const proposal={ok:true,name:'속박 기술',sourceText:typed,
+  recipe:w.SignatureRuleSkill.normalize({window:5,rules:[{
+   when:'pulse',interval:1.2,action:{type:'tether',damage:20,radius:140}
+  }]})};
+ for(let i=0;i<14;i++){
+  assert.equal(w.SignatureRuleStudio.apply(proposal),true);
+  assert.ok(selected!==null);
+ }
+ const many=w.SkillForge.getDraft();
+ assert.ok(many.skills.length>=14,'skills are added, not overwritten');
+ assert.ok(many.skills.every(s=>s.ruleSet),'all new slots retain executable rules');
+ assert.ok(many.skills.every(s=>s.ir?.version===1),'each sentence has a trusted Skill IR');
+ assert.ok(panel.innerHTML.includes('개수 제한 없음'));
+ function click(q,record){
+  handlers.click({target:{closest:sel=>sel===q?record:null}});
+ }
+ click('[data-rule-skill-index]',{dataset:{ruleSkillIndex:'1'}});
+ assert.ok(panel.innerHTML.includes('선택한 스킬'));
+ click('[data-rule-command]',{dataset:{ruleCommand:'delete'}});
+ assert.equal(w.SkillForge.getDraft().skills.length,many.skills.length-1);
+ click('[data-rule-command]',{dataset:{ruleCommand:'new'}});
+ assert.ok(panel.innerHTML.includes('새 스킬을 구상 중'));
+ assert.ok(previews>=14);
+});
