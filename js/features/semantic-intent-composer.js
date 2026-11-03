@@ -36,6 +36,7 @@ const LABELS=Object.freeze({
  area:'영역 동작',hitExplosion:'명중 시 폭발',hitSplit:'명중 순간 분열',
  fade:'시간에 따른 힘 감쇠',relay:'운동량 흡수·저장·방출',
  wallStore:'벽 충돌 에너지 누적 후 조건부 방출',
+ terminalBurst:'마지막 파편이 실제로 소멸할 때 최종 폭발',
  opposed:'서로 반대 방향의 힘'
 });
 const UNSUPPORTED=Object.freeze([
@@ -58,6 +59,10 @@ function analyze(input){
  // True storage/release requires both phases. "absorbs damage" alone
  // must not be mislabeled as a kinetic battery.
  intent.relay=intent.relayNoun&&intent.relayAbsorb&&intent.relayRelease;
+ intent.terminalBurst=!!g.ConceptFusion?.terminalIntent?.(raw);
+ // A shard expiry is not the initial source projectile hitting a victim.
+ if(intent.terminalBurst&&!/(?:명중|적중|맞으면|착탄).{0,15}(?:폭발|터지)/.test(raw))
+  intent.hitExplosion=false;
  // A stored wall impact is not an enemy projectile's on-hit burst.
  // Distinguish a separately named victim hit from a boundary collision.
  if(intent.wallStore&&!/(?:명중|적중|착탄|맞으면|적에게\s*닿)/.test(raw))
@@ -66,6 +71,8 @@ function analyze(input){
   /중력/.test(raw)&&/(?:전자석|자기력|자기장|자석)/.test(raw);
  intent.noEffect=/아무\s*(?:효과|기술|스킬|행동).{0,18}(?:않|안|없)|가만히\s*있는다/.test(raw);
  intent.unsupported=UNSUPPORTED.filter(def=>def.re.test(raw)).map(x=>x.label);
+ if(intent.terminalBurst&&!(intent.split||intent.hitSplit))
+  intent.unsupported.push('마지막 소멸을 추적할 실제 파편 생성 단계가 없음');
  // Storage-only/negated releases must not silently invent an attack.
  if(intent.wallStore){
   const discharge=/(?:방출|발산|폭발|터뜨|터지|내보내)/.test(raw);
@@ -80,10 +87,10 @@ function analyze(input){
   intent.unsupported.push('시간에 따라 약해질 힘의 종류와 방향이 지정되지 않음');
  const requested=[
   ...['homing','orbit','attract','spin','repel','tether','heal','shield',
-   'teleport','damage','split','area','hitExplosion','hitSplit','fade','relay','opposed','wallStore']
+   'teleport','damage','split','area','hitExplosion','hitSplit','fade','relay','opposed','wallStore','terminalBurst']
    .filter(k=>intent[k])
  ];
- const priority=!!(intent.wallStore||intent.relay||intent.orbit||intent.homing||intent.tether||
+ const priority=!!(intent.terminalBurst||intent.wallStore||intent.relay||intent.orbit||intent.homing||intent.tether||
   intent.repel||(intent.heal&&intent.shield)||(intent.teleport&&intent.damage)||
   intent.opposed||(intent.law&&intent.fade)||(intent.hitSplit)||
   intent.split||(intent.area&&/(?:적|상대).{0,22}피해|(?:피해|공격).{0,15}(?:적|상대)/.test(raw)));
@@ -120,11 +127,14 @@ function verify(input,recipe){
  bits.teleport=has('blink')||has('portal')||has('swap');
  bits.damage=actions.some(a=>a.damage>0&&g.ActionRegistry?.get?.(a.type)?.offense);
  bits.split=actions.some(a=>a.type==='splitshot'||a.type==='shot'&&a.fusion?.split);
- bits.area=actions.some(a=>['zone','wave','nova','phenomenon','blackhole','vortex'].includes(a.type));
+ bits.area=actions.some(a=>['zone','wave','nova','phenomenon','blackhole','vortex'].includes(a.type)||
+  a.type==='shot'&&a.fusion?.finalBurst);
  bits.hitExplosion=actions.some(a=>a.fusion?.impact==='burst');
  // Actual contact-triggered physical fracture is distinct from timed fracture.
  bits.hitSplit=actions.some(a=>a.type==='shot'&&
   a.fusion?.split===true&&a.fusion?.splitTrigger==='hit');
+ bits.terminalBurst=actions.some(a=>a.type==='shot'&&a.fusion?.split===true&&
+  a.fusion?.finalBurst===true);
  bits.fade=actions.some(a=>a.type==='phenomenon'&&a.law?.decay==='fade');
  bits.relay=has('kinetic_relay');
  bits.wallStore=(recipe?.rules||[]).some(r=>r.when==='wallStored'&&
@@ -248,19 +258,23 @@ function compose(input){
   actions.push(make('tether'));
  }else if(intent.repel){
   actions.push(make('repulse'));
- }else if(intent.homing||intent.split||intent.hitSplit){
+ }else if(intent.homing||intent.split||intent.hitSplit||intent.terminalBurst){
   const existing=g.ConceptFusion?.analyze?.(raw);
   actions.push(make('shot',{
    fusion:g.ConceptFusion?.normalize?.({
     element:existing?.fusion?.element||'none',form:'projectile',
     homing:intent.homing,split:intent.split||intent.hitSplit,
     splitTrigger:intent.hitSplit?'hit':'age',
+    finalBurst:intent.terminalBurst,
     fragments:cap(count,2,4,3),
-    impact:intent.hitExplosion?'burst':existing?.impact||'none',
+    impact:intent.hitExplosion?'burst':
+     intent.terminalBurst?'none':existing?.impact||'none',
     radius:cap(radius,35,160,90)
    })
   }));
-  if(intent.homing&&/레일건|레이저|광선|빔|포탑/.test(raw))
+  if(intent.terminalBurst)notes.push(
+    '마지막 자식 파편이 실제 명중·소멸·장애물 차단·경계 이탈로 사라진 뒤, 그 마지막 좌표에서 한 번만 범위 폭발합니다. 피해량은 원탄 위력의 42%(최대 52)이며 일반 방어 판정을 따릅니다.');
+   if(intent.homing&&/레일건|레이저|광선|빔|포탑/.test(raw))
    notes.push('추적 기능을 살리기 위해 광선·포탑 공격을 추적 투사체로 근사합니다. 원래 무기의 정확한 발사 구조는 아닙니다.');
  }else if(intent.teleport&&intent.damage){
   const blink=make('blink',{damage:0});
