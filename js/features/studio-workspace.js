@@ -126,7 +126,7 @@ const preview=document.createElement('section');
 preview.className='studio-motion-preview';
 preview.setAttribute('aria-label','미니 핀볼 스킬 실험장 · 실제 전투 데이터와 분리됨');
 preview.innerHTML=
-  '<div class="studio-motion-header"><strong>🎱 미니 핀볼 실험장</strong><small>벽 반사 · 공 충돌 · 직접 만든 스킬 실험 · 실제 피해 없음</small></div>'
+  '<div class="studio-motion-header"><strong>② 미니 핀볼 실험장 · 스킬 예시</strong><small>기세 100에서 기술을 동시 발동 · 실제 피해 없음</small></div>'
   +'<div class="studio-motion-body"><div class="studio-motion-stage"><canvas id="studio-motion-canvas" width="480" height="300" aria-label="두 공이 벽과 범퍼에 튕기며 제작한 스킬을 사용하는 미니 핀볼 연습장"></canvas></div>'
   +'<div class="studio-motion-info"><label for="studio-motion-select">실험할 스킬</label><select id="studio-motion-select" aria-label="미리보기 스킬 선택"></select>'
   +'<span id="studio-motion-caption" aria-live="off">공이 튕기며 기세를 모읍니다.</span><span id="studio-motion-cooldown"></span></div></div>'
@@ -318,7 +318,7 @@ function refresh(reset=false){
   if(pickerKey!==lastPicker){
     lastPicker=pickerKey;choose.replaceChildren();
     const add=(value,label)=>{const opt=document.createElement('option');opt.value=value;opt.textContent=label;choose.appendChild(opt);};
-    add('all','전체 스킬 실험 · 기세 100마다 하나씩');
+    add('all','전체 스킬 동시 시연 · 최대 24개 (실전은 모두 발동)');
     sequence.skills.forEach((skill,i)=>add(String(i),(i+1)+'. '+String(skill.name||'스킬').slice(0,22)));
   }
   choose.value=String(focus);
@@ -326,7 +326,7 @@ function refresh(reset=false){
   elapsed=Math.min(elapsed,sequence.duration);
   const selected=sequence.skills[focus]||sequence.skills[0];
   cooldown.textContent=global.StudioPinballLab?
-    '미니 핀볼 · 반복 및 사건 반응 예시 · 기세 충전 속도는 실제 전투와 다름 · 피해·명중률 미측정':
+    '미니 핀볼 · 기세 100에 스킬 동시 시연 · 실제 충전 속도·피해·명중률은 다름':
     focus==='all'?'전체 스킬 시연':('발동: '+(global.SkillForge.TRIGGER[selected?.trigger]||'자동'));
   draw(elapsed);
 }

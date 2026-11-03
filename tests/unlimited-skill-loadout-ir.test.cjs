@@ -76,29 +76,25 @@ test('energy rotation counts all spells but balances their average output, inclu
  assert.ok(s.summary(veryStrong,true).multiplier<report.multiplier,
   'sustained overlapping high-power abilities must be softened');
 });
-test('one momentum payment rotates skill slots and distinct sentence rules retain their identity',()=>{
- const w=boot();
- const rules=w.SignatureRuleSkill.normalize({window:5,rules:[
-  {when:'pulse',interval:2,action:{type:'wave',damage:18,radius:120}}]});
+test('one momentum payment begins all independent sentence rules at once, without double-spending energy',()=>{
+ const w=boot(),rules=w.SignatureRuleSkill.normalize({window:5,rules:[
+   {when:'pulse',interval:2,action:{type:'wave',damage:18,radius:120}}]});
  const profile=w.SkillForge.normalize({name:'연쇄',signatureVersion:1,
   skills:Array.from({length:12},(_,i)=>({...single(i),ruleSet:rules}))});
- const id=w.SkillForge.register(profile);
- const p=w.CUSTOM_DEFS.find(x=>x.id===id).createInstance(1);
+ const id=w.SkillForge.register(profile),p=w.CUSTOM_DEFS.find(x=>x.id===id).createInstance(1);
  const foe={playerNum:2,hp:500,maxHp:500,x:210,y:200,radius:24,vx:0,vy:0,invincible:0};
- p.x=120;p.y=200;w.players.push(p,foe);
- p._bounceMomentum=100;
+ p.x=120;p.y=200;w.players.push(p,foe);p._bounceMomentum=100;
  w.SkillForge.autoUpdate(p,foe);
  assert.equal(p._bounceMomentum,0);
+ assert.equal(p._forgeBurstSkills,12);
  assert.equal(p._playerEnergyCursor,1);
- assert.equal(p.forgeRuleRuns.length,1);
- assert.equal(p.forgeRuleRuns[0].index,0);
- // A separate earned gauge payment can activate the next rule without
- // changing the prior rule's clock or replacing the prior cast.
- p._bounceMomentum=100;
- w.SkillForge.autoUpdate(p,foe);
- assert.equal(p._playerEnergyCursor,2);
- assert.ok(p.forgeRuleRuns.some(x=>x.index===0));
- assert.ok(p.forgeRuleRuns.some(x=>x.index===1));
+ assert.equal(p.forgeRuleRuns.length,12);
+ assert.deepEqual(Array.from(p.forgeRuleRuns,x=>x.index),Array.from({length:12},(_,i)=>i));
+ // An unfinished activation cannot be restarted for free during the same
+ // rule window. A fresh gauge stays ready until a new cast is possible.
+ p._bounceMomentum=100;w.SkillForge.autoUpdate(p,foe);
+ assert.equal(p._playerEnergyCursor,1);
+ assert.equal(p._bounceMomentum,100);
  assert.ok(p.forgeQueue.every(q=>q.skillIndex<12));
 });
 test('entrypoint scripts load IR before normalized profiles in both local and PvP runtimes',()=>{
@@ -110,45 +106,43 @@ test('entrypoint scripts load IR before normalized profiles in both local and Pv
  }
 });
 
-test('sentence studio adds distinct skills and preserves edit/delete/IR on the same draft',()=>{
+test('sentence studio creates the parsed loadout as a whole and allows only modifying generated skills',()=>{
  const w=boot(),handlers={},messages=[];
- let typed='적을 사슬로 끌어당긴다';
  const panel={innerHTML:'',classList:{add(){}},closest(){return null},
    addEventListener(type,fn){handlers[type]=fn;},
    querySelector(sel){
-     if(sel==='#rule-prompt')return {value:typed,focus(){}};
-     if(sel==='#rule-name')return {value:'탄성 속박'};
+     if(sel==='#rule-prompt')return {value:'사슬로 묶는다',focus(){}};
+     if(sel==='#rule-name')return {value:'기술'};
      if(sel==='#rule-feedback')return {set textContent(v){messages.push(v);}};
      return null;
    }};
- let previews=0,selected=null;
+ let previews=0,selected=null,appearance=0;
  w.document={querySelector:sel=>sel==='#scratch-beginner'?panel:null,
   getElementById:()=>({click(){previews++;}})};
  w.CharacterStudioWorkspace={refresh(){},selectPreviewSkill(i){selected=i;}};
+ w.CharacterStudioModes={select(mode){if(mode==='appearance')appearance++;}};
  w.addEventListener=(type,fn)=>{handlers[type]=fn;};
  w.confirm=()=>true;
  vm.runInContext(read('signature-rule-studio'),w,{filename:'signature-rule-studio.js'});
- const proposal={ok:true,name:'속박 기술',sourceText:typed,
+ const skill={ok:true,name:'속박 기술',sourceText:'적을 사슬로 끌어당긴다',
   recipe:w.SignatureRuleSkill.normalize({window:5,rules:[{
    when:'pulse',interval:1.2,action:{type:'tether',damage:20,radius:140}
   }]})};
- for(let i=0;i<14;i++){
-  assert.equal(w.SignatureRuleStudio.apply(proposal),true);
-  assert.ok(selected!==null);
- }
- const many=w.SkillForge.getDraft();
- assert.ok(many.skills.length>=14,'skills are added, not overwritten');
- assert.ok(many.skills.every(s=>s.ruleSet),'all new slots retain executable rules');
- assert.ok(many.skills.every(s=>s.ir?.version===1),'each sentence has a trusted Skill IR');
+ const proposal={...skill,skills:Array.from({length:14},(_,i)=>({...skill,name:'자동 기술 '+i}))};
+ assert.equal(w.SignatureRuleStudio.apply(proposal),true);
+ let saved=w.SkillForge.getDraft();
+ assert.equal(saved.skills.length,14);
+ assert.ok(saved.skills.every(s=>s.ruleSet));
+ assert.ok(saved.skills.every(s=>s.ir?.version===1));
  assert.ok(panel.innerHTML.includes('개수 제한 없음'));
- function click(q,record){
-  handlers.click({target:{closest:sel=>sel===q?record:null}});
- }
+ assert.ok(!panel.innerHTML.includes('data-rule-command="new"'));
+ function click(q,record){handlers.click({target:{closest:sel=>sel===q?record:null}});}
  click('[data-rule-skill-index]',{dataset:{ruleSkillIndex:'1'}});
- assert.ok(panel.innerHTML.includes('선택한 스킬'));
- click('[data-rule-command]',{dataset:{ruleCommand:'delete'}});
- assert.equal(w.SkillForge.getDraft().skills.length,many.skills.length-1);
- click('[data-rule-command]',{dataset:{ruleCommand:'new'}});
- assert.ok(panel.innerHTML.includes('새 스킬을 구상 중'));
- assert.ok(previews>=14);
+ assert.equal(w.SignatureRuleStudio.tune(1,0,-1,'damage',43),true);
+ saved=w.SkillForge.getDraft();
+ assert.equal(saved.skills[1].ruleSet.rules[0].action.damage,43);
+ assert.equal(saved.skills[0].ruleSet.rules[0].action.damage,20);
+ click('[data-rule-command]',{dataset:{ruleCommand:'appearance'}});
+ assert.equal(appearance,1);
+ assert.equal(previews,1);
 });

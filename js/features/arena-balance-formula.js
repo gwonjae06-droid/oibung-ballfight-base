@@ -55,13 +55,13 @@ function summary(profile,momentumDriven=false){
  // estimated duration is measured against a 100-point energy cycle.
  const signature=profile?.signatureVersion===1;
  const timeAcceleration=accelerationUptime(skills,energy);
- // Legacy saved loadouts now cast ONE rotating skill per filled 100 energy,
- // not 4 simultaneous .2s cooldown attacks. Budget their average active
- // skill rather than summing all four imaginary cooldown frequencies.
- const rotation=energy?Math.max(1,skills.length):1;
+ // Player loadouts now start ALL skills on the same 100-energy burst.
+ // Enemy boss phase rotation stays separate; do not divide player pressure
+ // by the number of authored slots or many weak attacks bypass balance.
+ const rotation=momentumDriven&&profile?.towerEnemy?Math.max(1,skills.length):1;
  const pressure=perSkill.reduce((sum,x)=>sum+x,0)/rotation*bonus*
   (1+timeAcceleration*(energy?0.75:1));
- const multiplier=cap(pressure>BUDGET?Math.pow(BUDGET/pressure,.82):1,.18,1);
+ const multiplier=cap(pressure>BUDGET?Math.pow(BUDGET/pressure,.82):1,.025,1);
  return {pressure:Number(pressure.toFixed(1)),budget:BUDGET,
   percent:Math.round(multiplier*100),multiplier:Number(multiplier.toFixed(4)),
   excess:pressure>BUDGET,perSkill:perSkill.map(x=>Number(x.toFixed(1)))};
@@ -96,14 +96,14 @@ function defenseSkillPressure(s,signatureMomentum=false){
 function defenseSummary(profile,momentumDriven=false){
  const skills=profile?.allAbilities&&g.SkillForge?.allSkillset?g.SkillForge.allSkillset():profile?.skills||[];
  const energy=profile?.signatureVersion===1||momentumDriven;
- const rotation=energy?Math.max(1,skills.length):1;
+ const rotation=momentumDriven&&profile?.towerEnemy?Math.max(1,skills.length):1;
  const perSkill=skills.map(s=>defenseSkillPressure(s,energy)),
   pressure=perSkill.reduce((a,b)=>a+b,0)/rotation*
    (1+accelerationUptime(skills,energy)*(energy?0.75:1));
  // A gentle soft curve, with a floor instead of a hard cap. Even very long
  // shields can overlap; that is a legitimate authored defense strategy.
  const multiplier=cap(pressure>DEFENSE_BUDGET?
-   Math.pow(DEFENSE_BUDGET/pressure,.48):1,.38,1);
+   Math.pow(DEFENSE_BUDGET/pressure,.55):1,.08,1);
  return {pressure:Number(pressure.toFixed(1)),budget:DEFENSE_BUDGET,
   multiplier:Number(multiplier.toFixed(4)),percent:Math.round(multiplier*100),
   excess:pressure>DEFENSE_BUDGET,perSkill:perSkill.map(v=>Number(v.toFixed(1)))};

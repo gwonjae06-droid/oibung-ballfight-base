@@ -27,7 +27,7 @@ test('very high-frequency defensive loadouts retain healing but at a softer effe
  ]}};
  const score=w.ArenaBalance.defenseSummary(p.forge);
  assert.ok(score.excess);
- assert.ok(score.multiplier>=.38&&score.multiplier<1);
+ assert.ok(score.multiplier>=.08&&score.multiplier<1);
  assert.equal(w.ArenaBalance.summary(p.forge).multiplier,1,'defense must not penalize offensive stats');
  const gained=w.ForgeExpansion.heal(p,100);
  assert.ok(gained>0&&gained<100);
