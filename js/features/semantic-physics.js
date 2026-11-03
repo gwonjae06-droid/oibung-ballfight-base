@@ -7,7 +7,7 @@ const R=g.ActionRegistry;
 const clamp=(n,lo,hi,fallback=lo)=>Number.isFinite(Number(n))?Math.min(hi,Math.max(lo,Number(n))):fallback;
 const PHENOMENA=Object.freeze([
  {type:'tether',label:'탄성 속박',pattern:/(?:상대|적|적군|공).{0,16}(?:붙잡|잡아당|끌어당|포박|휘감아\s*묶|묶어|낚아채)|(?:밧줄|사슬|촉수|덩굴|갈고리|실타래).{0,17}(?:붙잡|묶|포박|끌어|잡아당|낚아채)/},
- {type:'repulse',label:'반발 충격',pattern:/(?:상대|적|적군|공).{0,15}(?:밀쳐|밀어내|날려버|튕겨내|쳐내)|(?:밀쳐|밀어내|날려버|튕겨내|쳐내).{0,15}(?:상대|적)|반발력|척력/},
+ {type:'repulse',label:'반발 충격',pattern:/(?:상대|적|적군|공).{0,15}(?:밀쳐|밀어내|밀어낸|밀어냈|날려버|튕겨내|쳐내)|(?:밀쳐|밀어내|밀어낸|밀어냈|날려버|튕겨내|쳐내).{0,15}(?:상대|적)|반발력|척력/},
  {type:'vortex',label:'소용돌이 역학',pattern:/(?:상대|적|공).{0,15}(?:빙빙|회전시키|돌려|공전시키|휘말리)|(?:소용돌이|회오리|태풍).{0,16}(?:휘말|끌어들이|가두|돌려|회전시키)/}
 ]);
 function matchAll(phrase,types=R?.TYPE||{}){
