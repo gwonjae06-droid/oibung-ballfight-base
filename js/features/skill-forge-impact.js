@@ -44,6 +44,7 @@ function hit(p,e,action,multiplier=1,attackZ) {
     (e._forgeImpactStamps||=new WeakMap()).set(action,{attacker:p,frame});
     const tint=p.forge?.effectColor||p.forge?.color||p.themeColor||'#58687a';
     e.hp=Math.max(0,e.hp-d);
+    global.SemanticPhysics?.noteHit?.(p,e,action,hpBeforeHit-e.hp);
     global.BounceMomentum?.damageTaken?.(e,Math.min(hpBeforeHit,d));
     e.invincible=IMPACT_GRACE_FRAMES;
     e._forgeImpactGrace=IMPACT_GRACE_FRAMES;
