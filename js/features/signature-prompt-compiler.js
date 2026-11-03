@@ -94,7 +94,12 @@ function parse(input){
  // A concrete metaphor takes priority over incidental verbs such as
  // "쏩니다" and "때립니다": choose physics first, then render its image.
  const metaphor=g.MetaphorVisuals?.interpret?.(raw);
- const mentioned=found.filter(t=>Object.hasOwn(supported,t.id));
+ // "공격 속도 2회/초" and "투사체 속도 12" tune existing
+ // attacks; they never request a separate self-haste skill.
+ const numericVelocity=/(?:공격\s*속도|공속|연사\s*속도|발사\s*속도|투사체\s*속도|탄속|(?:^|\s)속도\s*\d)/.test(raw)
+   &&!/가속|초고속|질주|광속|스피드|빨라|속도.*증가/.test(raw);
+ const mentioned=found.filter(t=>Object.hasOwn(supported,t.id)&&
+   !(numericVelocity&&t.id==='haste'));
  const activeMetaphor=metaphor&&!excluded.has(metaphor.type)?metaphor:null;
  const physicalTypes=[...new Set([
   ...(grammar?.clauses||[]).filter(c=>c.chosen?.source==='physical-intent'&&!c.negated)
@@ -254,7 +259,7 @@ function parse(input){
   const clause=(grammar?.clauses||[]).find(c=>c.chosen?.type===row.action.type&&!c.negated);
   const local=clause?params?.analyze?.(clause.text):null;
   // A separate action's numbers never overwrite a sibling action's values.
-  const use=(grammar?.clauses||[]).length>1?local:whole;
+  const use=mentions.length===1?whole:(grammar?.clauses||[]).length>1?local:whole;
   if(use)row.action=params.apply(row.action,use);
   if(local?.interval||whole?.interval)row.interval=local?.interval||whole.interval;
  }
@@ -265,6 +270,10 @@ function parse(input){
  // simultaneous casts. The existing ruleSet still owns wall/hit triggers.
  let sequence=g.FantasySkillGraph?.fromText?.(raw,{
   types:supported,action:rows[0]?.action});
+ if(numericVelocity&&sequence?.length){
+  sequence=sequence.filter(step=>step.kind!=='cast'||step.action?.type!=='haste');
+  if(sequence.filter(step=>step.kind==='cast').length<2)sequence=null;
+ }
  // Temporal participles ("휘감다가 폭발한다") form a REAL sequential
  // program. Only when every clause is unconditional: reactive rules stay
  // separately triggered, so wall/contact conditions never turn into pulses.
