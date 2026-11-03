@@ -36,10 +36,30 @@
    homing:v[2]===1,split:v[3]===1,fragments:v[4],
    impact:impacts[v[5]],radius:v[6]});
  };
+ const opIds=['attract','repel','spin','spring','pulse','drag','propel','gravity','orbit','wave'];
+ const falls=['constant','linear','quadratic','inverse','edge'];
+ const decays=['steady','fade','grow','beat'];
+ const packLaw=raw=>{
+  const l=g.PhysicsLawEngine?.normalize?.(raw);
+  return l?[l.anchor==='target'?1:0,decays.indexOf(l.decay),l.radius,l.duration,
+   l.period,l.damage,l.terms.map(t=>[
+     opIds.indexOf(t.op),round(t.strength),falls.indexOf(t.falloff),t.sign,t.rest])]:null;
+ };
+ const unpackLaw=raw=>{
+  if(!Array.isArray(raw)||raw.length!==7||!Array.isArray(raw[6]))return undefined;
+  return g.PhysicsLawEngine?.normalize?.({
+   version:1,anchor:raw[0]===1?'target':'caster',decay:decays[raw[1]],
+   radius:raw[2],duration:raw[3],period:raw[4],damage:raw[5],
+   terms:raw[6].map(t=>({op:opIds[t?.[0]],strength:t?.[1],
+    falloff:falls[t?.[2]],sign:t?.[3],rest:t?.[4]}))
+  });
+ };
  const encode=a=>{
   const data=keys.map(k=>k==='visual'?packVisual(a?.visual):a?.[k]??null);
   const fusion=packFusion(a?.fusion);
-  if(fusion)data.push(fusion);
+  const law=packLaw(a?.law);
+  if(law)data.push(fusion,law); // optional index 14, old index 13 preserved
+  else if(fusion)data.push(fusion);
   return data;
  };
  const decode=a=>{
@@ -47,6 +67,8 @@
    k,k==='visual'?unpackVisual(a?.[i]):a?.[i]??undefined]));
   const fusion=unpackFusion(a?.[keys.length]);
   if(fusion)result.fusion=fusion;
+  const law=unpackLaw(a?.[keys.length+1]);
+  if(law)result.law=law;
   return result;
  };
  // Compact Scratch AST rather than repeating long field names in the queue.

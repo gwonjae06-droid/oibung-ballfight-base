@@ -135,3 +135,17 @@
 .sentence-tune label{display:flex;flex-direction:column;gap:5px;font-size:.86rem;margin-top:8px}
 .sentence-tune input,.sentence-tune select{width:100%;min-width:0;max-width:100%;border:1px solid rgba(160,176,216,.4);background:rgba(10,17,36,.32);color:inherit;border-radius:8px;padding:7px}
 .sentence-collection-list{max-height:220px}
+
+/* Generated field-law editor: terms are produced by Korean interpretation.
+ * Users can only tune bounded parameters, not inject executable code. */
+.sentence-law-tune{margin:12px 0;padding:12px;border:1px solid rgba(153,133,222,.32);
+ background:rgba(78,63,132,.12);border-radius:12px}
+.sentence-law-tune>p{margin:0 0 10px;font-size:.88rem}
+.sentence-law-term{display:grid;grid-template-columns:minmax(130px,1fr) repeat(2,minmax(95px,130px));
+ align-items:center;gap:9px;margin-top:9px;padding:9px;border-radius:9px;
+ background:rgba(30,37,72,.22)}
+.sentence-law-term strong{font-size:.82rem}
+.sentence-law-term label{font-size:.77rem;margin:0}
+.sentence-law-term input{min-width:0;width:100%}
+@media(max-width:560px){.sentence-law-term{grid-template-columns:1fr 1fr}
+.sentence-law-term strong{grid-column:1 / -1}}

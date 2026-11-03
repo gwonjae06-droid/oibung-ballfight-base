@@ -100,7 +100,7 @@ test('one momentum payment begins all independent sentence rules at once, withou
 test('entrypoint scripts load IR before normalized profiles in both local and PvP runtimes',()=>{
  for(const path of ['index.html','pvp-runtime.html']){
   const html=fs.readFileSync(path,'utf8');
-  assert.ok(html.includes('skill-ir.js?v=1-momentum-loadouts'),path);
+  assert.ok(html.includes('skill-ir.js?v=physics-law1'),path);
   assert.ok(html.indexOf('signature-rule-skill.js')<html.indexOf('skill-ir.js'));
   assert.ok(html.indexOf('skill-ir.js')<html.indexOf('skill-forge-profiles.js'));
  }
