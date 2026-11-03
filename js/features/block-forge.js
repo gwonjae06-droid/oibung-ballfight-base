@@ -52,8 +52,6 @@ function modify(profile,op){
       break;
     }
     case 'new-skill':
-      if(signature)throw Error('고유 스킬은 한 개만 만들 수 있습니다. 행동 블록을 추가하세요.');
-      if(skills.length>=4)throw Error('독립 스킬은 최대 4개까지 만들 수 있습니다.');
       skills.push({name:'새 스킬 '+(skills.length+1),trigger:'auto',cooldown:3,threshold:40,actions:[action(op.type&&TYPES[op.type]?op.type:'wave')]});break;
     case 'remove-skill':
       if(!idOk(skills,i))throw Error('존재하지 않는 스킬입니다.');
@@ -69,16 +67,13 @@ function modify(profile,op){
     case 'link':{
       if(!idOk(skills,i)||!idOk(skills[i].actions,j)||j===0)throw Error('첫 동작에는 연결사가 없습니다.');
       if(op.value==='separate'){
-        if(signature)throw Error('고유 스킬은 분리할 수 없습니다.');
         return modify(d,{kind:'split',skill:i,index:j});
       }
       if(!allowedLinks.has(op.value))throw Error('연결 방식을 선택해 주세요.');
       skills[i].actions[j].link=op.value;break;
     }
     case 'split':{
-      if(signature)throw Error('한 개의 고유 스킬 안에서 연결 방식을 선택하세요.');
       if(!idOk(skills,i)||j<=0||!idOk(skills[i].actions,j))throw Error('분리할 동작을 골라 주세요.');
-      if(skills.length>=4)throw Error('독립 스킬은 최대 4개까지 만들 수 있습니다.');
       const separated=skills[i].actions.splice(j);
       separated[0].link='and';
       skills.splice(i+1,0,{name:(skills[i].name+' 후속').slice(0,18),
@@ -87,7 +82,7 @@ function modify(profile,op){
     }
     case 'merge':{
       if(i<=0||!idOk(skills,i))throw Error('합칠 이전 스킬이 없습니다.');
-      if(skills[i-1].actions.length+skills[i].actions.length>3)throw Error('합친 스킬의 동작은 3개를 넘길 수 없습니다.');
+      if(skills[i-1].actions.length+skills[i].actions.length>limit)throw Error('합친 스킬의 동작은 '+limit+'개를 넘길 수 없습니다.');
       skills[i].actions[0].link='and';
       skills[i-1].actions.push(...skills[i].actions);skills.splice(i,1);break;
     }
@@ -263,13 +258,13 @@ function draw(){
     +'<strong>🛡 회복·보호 밸런스</strong><span>유지력 지수 '+defense.pressure+' / 기준 '+defense.budget+'</span>'
     +'<p>'+(defense.excess?'회복량·보호막 지속시간·방어 효율에 약 '+defense.percent+'%가 적용됩니다.':'유지력 효과가 100% 적용됩니다.')
     +' 스킬 설정값은 그대로 저장되며, 방어형 조합과 지속 보호막은 계속 사용할 수 있습니다.</p></div>':'';
-  const signatureHeader=signature?'<div class="signature-program-intro"><strong>🧩 나만의 고유 스킬 · 1 / 1</strong><p>블록을 원하는 순서로 연결하고, 각 행동 앞에 조건을 넣어 자동전투를 코딩하세요. 조건이 거짓이면 해당 행동은 발동하지 않습니다. 최대 12블록 · 별도 쿨타임 없이 ⚡ 기세 100마다 필살기를 1회 실행합니다.</p></div>':'<div class="signature-program-legacy"><strong>기존 캐릭터의 독립 스킬</strong><p>기존 캐릭터는 변함없이 전투합니다. 새 고유 스킬 방식으로 전환하면 행동들을 하나로 합치고 공통 쿨타임을 사용합니다. 저장 전에는 원래 스킬을 복구할 수 있습니다.</p><button type="button" data-op="migrate-signature">고유 스킬 1개로 전환</button></div>';
+  const signatureHeader=signature?'<div class="signature-program-intro"><strong>🧩 독립 스킬 '+skills.length+'개 · 개수 제한 없음</strong><p>기세 100마다 스킬 하나를 순서대로 발동합니다. 한 스킬에 무리하게 효과를 겹치기보다 독립 스킬로 나누세요. 스킬별 최대 12블록과 안전 제한은 유지합니다.</p></div>':'<div class="signature-program-legacy"><strong>기존 캐릭터의 독립 스킬</strong><p>기존 캐릭터는 변함없이 전투합니다. 새 고유 스킬 방식으로 전환하면 행동들을 하나로 합치고 공통 쿨타임을 사용합니다. 저장 전에는 원래 스킬을 복구할 수 있습니다.</p><button type="button" data-op="migrate-signature">고유 스킬 1개로 전환</button></div>';
   workspace.innerHTML=signatureHeader+allNotice+balanceNotice+defensiveNotice+skills.map((s,i)=>
     '<section class="block-quick-skill '+(i===selectedSkill?'is-selected':'')+(signature?' signature-single':'')+'">'
     +'<div class="block-quick-skill-head">'
-    +'<button type="button" class="block-quick-select" data-op="select" data-skill="'+i+'" aria-pressed="'+String(i===selectedSkill)+'">'+(i===selectedSkill?'◆ ':'◇ ')+(signature?'고유 스킬':'스킬 '+(i+1))+'</button>'
+    +'<button type="button" class="block-quick-select" data-op="select" data-skill="'+i+'" aria-pressed="'+String(i===selectedSkill)+'">'+(i===selectedSkill?'◆ ':'◇ ')+(signature?'고유 스킬 '+(i+1):'스킬 '+(i+1))+'</button>'
     +'<input type="text" maxlength="18" data-edit="meta" data-key="name" data-skill="'+i+'" aria-label="스킬 이름" value="'+escape(s.name)+'">'
-    +(signature?'':'<button type="button" data-op="remove-skill" data-skill="'+i+'" aria-label="스킬 삭제" '+(skills.length===1?'disabled':'')+'>삭제</button>')+'</div>'
+    +'<button type="button" data-op="remove-skill" data-skill="'+i+'" aria-label="스킬 삭제" '+(skills.length===1?'disabled':'')+'>삭제</button>'+'</div>'
     +'<div class="block-quick-facts"><span>'+(signature?'⚡ 기세 100':escape(TRIGGER[s.trigger]||TRIGGER.auto))+'</span><span>'+(signature?'공 충돌·벽 반사 충전':'↻ '+escape(s.cooldown)+'초')+'</span><span>'+s.actions.length+'개 동작</span></div>'
     +'<div class="block-quick-stack">'+s.actions.map((a,j)=>actionRow(a,i,j,s.actions.length,signature)).join('')+'</div>'
     +(i===selectedSkill?inspector(s,i):'')
@@ -281,8 +276,8 @@ function draw(){
     +(signature?'':'</div></details>')
     +(!signature&&i>0?'<button type="button" class="block-quick-merge" data-op="merge" data-skill="'+i+'" '+(skills[i-1].actions.length+s.actions.length>3?'disabled':'')+'>↑ 이전 스킬과 합치기</button>':'')
     +'</section>').join('')
-    +(signature?'<p class="signature-execution">공은 벽과 충돌하며 기세를 모으고, 이 고유 스킬 하나가 조건에 따라 공격·이동·방어를 연계합니다. 시간 정지는 상대 기세를 봉쇄·흡수하고, 시간 가속·되감기는 내 기세에 작용합니다.</p>':
-      '<button type="button" class="block-quick-new" data-op="new-skill" '+(skills.length>=4?'disabled':'')+'>+ 별도 스킬 만들기 ('+skills.length+'/4)</button>');
+    +'<p class="signature-execution">스킬 수에 제한이 없습니다. 기세 100마다 독립 스킬 하나를 순서대로 사용하고, 총 효율에 맞춰 피해·방어가 자동 보정됩니다.</p>'
+    +'<button type="button" class="block-quick-new" data-op="new-skill">+ 독립 스킬 추가 ('+skills.length+'개)</button>';
 }
 function refreshTypes(){
   if(!movePicker)return;
