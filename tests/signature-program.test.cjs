@@ -15,16 +15,16 @@ const act=(type='shot')=>({type,damage:20,radius:140,count:1,speed:5,duration:2,
 const skill=(i=0)=>({name:'기술'+i,trigger:'auto',cooldown:3,threshold:40,actions:[act()]});
 const profile=(sig=1)=>({name:'시그니처',signatureVersion:sig,archetype:'melee',
  color:'#aabbcc',effectColor:'#aabbcc',skills:[skill()]});
-test('new profile is one unique skill with up to 12 condition-bearing actions',()=>{
+test('new profile retains independent signature skills with up to twelve conditions per skill',()=>{
  const g=harness();
  const d={...profile(),skills:[{...skill(),actions:Array.from({length:12},(_,i)=>({...act(),condition:i%2?'near':'always'}))},skill(1)]};
  const n=g.SkillForge.normalize(d);
- assert.equal(n.signatureVersion,1);assert.equal(n.skills.length,1);
+ assert.equal(n.signatureVersion,1);assert.equal(n.skills.length,2);
  assert.equal(n.skills[0].actions.length,12);
  assert.equal(n.skills[0].actions[1].condition,'near');
  assert.equal(g.SkillForge.normalize({...d,skills:[{...skill(),actions:[{...act(),condition:'arbitrary-code'}]}]}).skills[0].actions[0].condition,'always');
 });
-test('block editor allows conditional actions, twelve blocks and refuses a second unique skill',()=>{
+test('block editor enforces twelve blocks per skill but allows separate signature skills',()=>{
  const g=harness(),forge=g.BlockForge;
  let p=profile();
  p=forge.modify(p,{kind:'condition',skill:0,index:0,value:'danger'});
@@ -32,9 +32,11 @@ test('block editor allows conditional actions, twelve blocks and refuses a secon
  for(let i=0;i<11;i++)p=forge.modify(p,{kind:'add',skill:0,type:'shot'});
  assert.equal(p.skills[0].actions.length,12);
  assert.throws(()=>forge.modify(p,{kind:'add',skill:0,type:'wave'}),/최대 12/);
- assert.throws(()=>forge.modify(p,{kind:'new-skill',type:'shot'}),/한 개/);
- assert.throws(()=>forge.modify(p,{kind:'split',skill:0,index:1}),/한 개/);
- assert.equal(p.skills.length,1);
+ p=forge.modify(p,{kind:'new-skill',type:'shot'});
+ p=forge.modify(p,{kind:'split',skill:0,index:1});
+ assert.equal(p.skills.length,3);
+ assert.equal(p.skills[0].actions.length,1);
+ assert.equal(p.skills[1].actions.length,11);
 });
 test('stored four-skill profiles stay intact and can explicitly migrate and restore',()=>{
  const g=harness();
@@ -86,5 +88,5 @@ test('five roles coexist with the signature program and page loads the runtime f
  assert.match(html,/signature-program\.css/);
  const designer=src('js/features/studio-modes.js');
  assert.match(designer,/signatureVersion:1/);
- assert.match(designer,/actions=rolled\.skills\.map/);
+ assert.match(designer,/skills=rolled\.skills\.map/);
 });
