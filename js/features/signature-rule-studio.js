@@ -110,6 +110,11 @@ function resultHTML(result){
    +'<br>실제 피해는 명중·거리·방어·무적 판정에 따라 달라집니다.</p>':'';
  return '<section class="sentence-interpretation" aria-label="문장 해석 결과">'
  +'<h4>이 문장을 이렇게 구현합니다</h4>'
+ +(result.colorPriority?'<div class="sentence-color-choice"><strong>이펙트 주력 색상 · </strong>'+
+   (result.explicitColor?'<span class="sentence-color-swatch" style="background-color:'+
+    E(result.explicitColor.color)+'"></span>문장 속 '+E(result.explicitColor.term)+' ('+
+    E(result.explicitColor.color)+') 우선':
+    '캐릭터가 선택한 이펙트 색을 따라갑니다 (외형에서 변경 가능)')+'</div>':'')
  +(result.plan?'<div class="sentence-materialization-plan"><strong>'+
     (result.plan.strategy==='new-primitive'?'✦ 신규 물리 동작 생성':'♻ 기존 동작·효과의 조합')+'</strong><p>'+
     E(result.plan.explanation)+'</p><small>'+E(result.plan.conceptIds.join(' + '))+
@@ -266,7 +271,11 @@ function render(){
  +'<button type="button" data-rule-example="physics">🌀 물리 법칙 만들기</button>'
  +'<button type="button" data-rule-example="fantasy">🐉 판타지</button>'
  +'<button type="button" data-rule-example="machine">⚙ 현대 기계</button>'
- +'<button type="button" data-rule-example="relay">🔋 신규 물리 개념</button></div>'
+ +'<button type="button" data-rule-example="relay">🔋 신규 물리 개념</button>'
+ +'<button type="button" data-rule-example="science">🧪 과학·생물</button>'
+ +'<button type="button" data-rule-example="music">🎵 음악·수학</button>'
+ +'<button type="button" data-rule-example="everyday">🍫 생활·우주</button>'
+ +'<button type="button" data-rule-example="color">🎨 스킬 지정 색상</button></div>'
  +'<label class="sentence-name" for="rule-name">기술 이름 (선택 사항)'
  +'<input id="rule-name" maxlength="18" type="text" value="'+E(name)+'" placeholder="문장을 해석해 자동으로 이름 붙이기"></label>'
  +'<button type="button" data-rule-command="generate" class="sentence-generate">✨ 문장에서 스킬 구현하기</button>'
@@ -314,7 +323,11 @@ panel.addEventListener('click',event=>{
    physics:'반경 180의 역중력장에 회전력과 진동을 동시에 적용한다. 세기 3, 4초 동안 점점 약해진다.',
    fantasy:'드래곤이 거대한 화염 브레스를 내뿜고, 적에게 명중하면 폭발한다. 범위 180, 피해 35',
    machine:'레일건에서 전자기 광선을 발사한다. 위력 42, 범위 220',
-   relay:'기계식 축전기가 상대의 운동량을 흡수해 저장했다가 충격파로 방출한다.'
+   relay:'기계식 축전기가 상대의 운동량을 흡수해 저장했다가 충격파로 방출한다.',
+   science:'유전자의 DNA 나선을 타고 바이러스가 안개처럼 퍼지며 적에게 피해를 준다.',
+   music:'황금빛 피보나치 나선이 바이올린 소리에 맞춰 적을 휘감으며 소용돌이친다.',
+   everyday:'초콜릿 폭포에서 별가루가 폭발해 해일처럼 밀려온다.',
+   color:'붉은색 플라스마 레일건을 발사한다. 이 스킬만 빨강이고 다른 기술은 캐릭터 색을 따른다.'
   };
   promptDraft=samples[example.dataset.ruleExample]||promptDraft;
   proposal=null;render();panel.querySelector('#rule-prompt')?.focus?.();return;
