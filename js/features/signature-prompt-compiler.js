@@ -94,8 +94,15 @@ function parse(input){
  const metaphor=g.MetaphorVisuals?.interpret?.(raw);
  const mentioned=found.filter(t=>Object.hasOwn(supported,t.id));
  const activeMetaphor=metaphor&&!excluded.has(metaphor.type)?metaphor:null;
- const mentions=activeMetaphor&&Object.hasOwn(supported,activeMetaphor.type)?
-  [{id:activeMetaphor.type}]:mentioned;
+ const physicalTypes=[...new Set((grammar?.clauses||[]).filter(c=>
+  c.chosen?.source==='physical-intent').map(c=>c.chosen.type))];
+ const redundant={tether:['pull'],repulse:['wave'],vortex:['orbit','pull']};
+ const replaced=new Set(physicalTypes.flatMap(type=>redundant[type]||[]));
+ const mentions=physicalTypes.length?
+  [...physicalTypes.map(id=>({id})),...mentioned.filter(x=>
+   !physicalTypes.includes(x.id)&&!replaced.has(x.id))]:
+  activeMetaphor&&Object.hasOwn(supported,activeMetaphor.type)?
+   [{id:activeMetaphor.type}]:mentioned;
  if(!mentions.length)return {ok:false,error:'설명한 동작은 현재 게임에서 실행할 수 없습니다.'};
  const types=new Set(mentions.map(x=>x.id));
  const notes=[];
@@ -186,6 +193,7 @@ function parse(input){
  // unsolicited periodic cast. The exact condition should drive the skill.
  if(event.length===1&&rows.length===1&&rows[0].when==='pulse')
   rows[0].when=event[0];
+ if(physicalTypes.length)notes.push('신규 물리 동작: '+physicalTypes.map(id=>supported[id]).join(' + ')+'. 거리와 접촉 판정에 따라 실제 힘이 적용됩니다.');
  if(activeMetaphor&&rows.some(r=>r.action.type===activeMetaphor.type))
   notes.unshift('비유 해석: '+activeMetaphor.meaning+'. 공 일부 변형과 빛의 질감은 전투와 미리보기 양쪽에 표시됩니다.');
  if(!rows.length)return {ok:false,error:'전투에서 실행할 수 있는 동작을 찾지 못했습니다.'};
@@ -272,7 +280,7 @@ function parse(input){
   }
  }
  const recipe=R.normalize({window,rules:rows});
- const primary=activeMetaphor?.type|| (types.has('splitshot')?'splitshot':speed?'haste':jump?'leap':mentions[0].id);
+ const primary=physicalTypes[0]||activeMetaphor?.type|| (types.has('splitshot')?'splitshot':speed?'haste':jump?'leap':mentions[0].id);
  return {ok:true,name:safeName[primary]||'나만의 폭주 기술',recipe,notes,
   recognized:mentions.map(x=>x.id),method:'offline-rule-parser'};
 }
