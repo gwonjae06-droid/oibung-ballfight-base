@@ -202,7 +202,8 @@ function compose(input){
  const damage=cap(values.damage,0,120,23),radius=cap(values.radius,30,300,155),
   duration=cap(values.duration,.2,8,2);
  const speed=cap(values.speed,2,14,6);
- const status=older?.status||'none';
+ const status=older?.status&&older.status!=='none'?older.status:
+  numeric?.values?.status||'none';
  const make=(type,override={})=>g.SignatureScratch?.safeAction?.({
   type,target:'nearest',pattern:'direct',damage,
   count,radius,duration,speed,knockback:1.8,
