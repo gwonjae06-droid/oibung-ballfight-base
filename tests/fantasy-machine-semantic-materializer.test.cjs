@@ -220,3 +220,14 @@ test('trailing numeric sentences are merged into one generated skill in real stu
  const a=s.skills[0].recipe.rules[0].action;
  assert.equal(a.radius,180);assert.equal(a.damage,35);
 });
+
+test('fantasy rune combined with modern drone retains both concepts and has a real summon action',()=>{
+ const g=boot(lang),result=g.SkillSentenceEngine.parse('룬 마법진에서 자동 드론을 소환한다');
+ assert.equal(result.ok,true,result.error);
+ assert.equal(result.plan.strategy,'reuse');
+ assert.equal(result.recipe.rules[0].action.type,'summon');
+ const motifs=result.recipe.rules[0].action.visual.layers.map(x=>x.kind);
+ assert.ok(motifs.includes('runes')&&motifs.includes('circuit'));
+ assert.ok(result.plan.conceptIds.includes('rune'));
+ assert.ok(result.plan.conceptIds.includes('drone'));
+});
