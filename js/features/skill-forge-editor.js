@@ -49,7 +49,7 @@ function render(){
       +'</section>';
     }).join('');
     return '<section class="forge-skill">'
-      +'<div class="forge-top"><span>'+(state.draft.signatureVersion===1?'고유 스킬 1 / 1':'SKILL '+String(i+1).padStart(2,'0'))+'</span>'+(state.draft.signatureVersion===1?'':'<button type="button" class="forge-delete" data-command="remove-skill" '+si+'>스킬 삭제</button>')+'</div>'
+      +'<div class="forge-top"><span>'+(state.draft.signatureVersion===1?'고유 스킬 '+(i+1):'SKILL '+String(i+1).padStart(2,'0'))+'</span>'+'<button type="button" class="forge-delete" data-command="remove-skill" '+si+' '+(state.draft.skills.length===1?'disabled':'')+'>스킬 삭제</button>'+'</div>'
       +'<label>스킬 이름'+field('name',s.name,si+' maxlength="18"')+'</label>'
       +'<div class="forge-grid">'
       +'<label>발동 조건'+choice('trigger',TRIGGER,s.trigger,si)+'</label>'
@@ -59,8 +59,8 @@ function render(){
       +'<button type="button" class="forge-add" data-command="add-action" '+si+' '+(s.actions.length>=(state.draft.signatureVersion===1?12:3)?'disabled':'')+'>+ 행동 블록 연결 ('+s.actions.length+'/'+(state.draft.signatureVersion===1?12:3)+')</button>'
       +'</section>';
   }).join('');
-  document.getElementById('forge-add-skill').disabled=state.draft.signatureVersion===1||state.draft.allAbilities||state.draft.skills.length>=4;
-  document.getElementById('forge-add-skill').hidden=state.draft.signatureVersion===1;
+  document.getElementById('forge-add-skill').disabled=state.draft.allAbilities;
+  document.getElementById('forge-add-skill').hidden=false;
 }
 function initializeUI(){
   const panel=document.querySelector('.bf-tools');
@@ -183,7 +183,7 @@ function initializeUI(){
     render();global.NaturalForge?.refreshGenerated?.(state.draft);
   });
   $('forge-add-skill').addEventListener('click',()=>{
-    sync();if(state.draft.signatureVersion!==1&&!state.draft.allAbilities&&state.draft.skills.length<4){state.draft.skills.push(skill());render();global.NaturalForge?.refreshGenerated?.(state.draft);}
+    sync();if(!state.draft.allAbilities){state.draft.skills.push(skill());render();global.NaturalForge?.refreshGenerated?.(state.draft);}
   });
   $('bf-analyze').addEventListener('click',()=>{
     try{

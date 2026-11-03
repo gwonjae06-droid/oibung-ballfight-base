@@ -52,8 +52,20 @@ function healingWindow(p,desired){
  p._forgeHealingEnergy=Math.max(0,available-granted);
  return granted;
 }
-function factorOf(p){return !p?.forge||p.towerEnemy?1:summary(p.forge,!!g.BounceMomentum?.enabled?.(p)).multiplier;}
-function defenseFactorOf(p){return !p?.forge||p.towerEnemy?1:defenseSummary(p.forge,!!g.BounceMomentum?.enabled?.(p)).multiplier;}
+// Match fighters retain an immutable forge profile. Cache only live fighters,
+ // not editable studio drafts, so hundreds of authored slots do not trigger
+ // an O(skills * actions) formula evaluation on every projectile impact.
+const factorCache=new WeakMap(),defenseCache=new WeakMap();
+function cachedFactor(p,store,calc){
+  if(!p?.forge||p.towerEnemy)return 1;
+  const momentum=!!g.BounceMomentum?.enabled?.(p);
+  const previous=store.get(p);
+  if(previous?.profile===p.forge&&previous.momentum===momentum)return previous.value;
+  const value=calc(p.forge,momentum).multiplier;
+  store.set(p,{profile:p.forge,momentum,value});return value;
+}
+function factorOf(p){return cachedFactor(p,factorCache,summary);}
+function defenseFactorOf(p){return cachedFactor(p,defenseCache,defenseSummary);}
 g.ArenaBalance=Object.freeze({summary,skillPressure,actionPressure,factorOf,
  defenseSummary,defenseSkillPressure,defenseFactorOf,tickShield,shieldWindow,shieldCapacity,
  tickHealing,healingWindow,healingCapacity,

@@ -102,3 +102,12 @@
  #character-studio-dialog .sentence-hero{padding:14px}
  #character-studio-dialog #rule-prompt{font-size:16px}
 }
+
+/* Unlimited sentence-skill collection: compact, selectable and scrollable. */
+.sentence-collection{margin:12px 0;padding:12px;border:1px solid rgba(150,171,218,.24);border-radius:12px;background:rgba(20,27,46,.35)}
+.sentence-collection-header{display:flex;gap:10px;justify-content:space-between;align-items:center;flex-wrap:wrap}
+.sentence-collection-header>button{border:1px solid rgba(130,166,229,.48);border-radius:10px;padding:8px 12px;background:rgba(53,81,139,.22);color:inherit;font:inherit;cursor:pointer}
+.sentence-collection-list{display:flex;gap:6px;flex-wrap:wrap;overflow-y:auto;max-height:176px;margin:10px 0 0;padding:3px}
+.sentence-collection-list>button{padding:7px 10px;border:1px solid rgba(150,171,218,.3);border-radius:9px;background:rgba(80,103,145,.11);color:inherit;font:inherit;cursor:pointer;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sentence-collection-list>button[aria-pressed="true"]{border-color:#9ebcff;background:rgba(77,112,191,.35)}
+.sentence-collection button:focus-visible,.sentence-interpretation button:focus-visible{outline:2px solid #a9c6ff;outline-offset:2px}

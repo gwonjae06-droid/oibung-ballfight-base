@@ -22,7 +22,7 @@ function normalize(value,{towerEnemy=false}={}){
     signatureVersion:signature?1:0,
     signatureTiming:signature&&['instant','contact','danger'].includes(value.signatureTiming)?
       value.signatureTiming:'instant',
-    legacySkills:signature&&Array.isArray(value.legacySkills)?value.legacySkills.slice(0,4).map(s=>({
+    legacySkills:signature&&Array.isArray(value.legacySkills)?value.legacySkills.map(s=>({
       ...s,actions:(s.actions||[]).slice(0,3).map(a=>({...a}))
     })):undefined,
     legacyAllAbilities:signature&&value.legacyAllAbilities===true,
@@ -37,13 +37,14 @@ function normalize(value,{towerEnemy=false}={}){
     allAbilities:signature?false:value.allAbilities===true,
     // Signature fighters have one skill/program with up to twelve action blocks.
     // Legacy profiles and transient tower enemies retain their original slots.
-    skills:value.skills.slice(0,towerEnemy?6:signature?1:4).map((s,i)=>{
+    skills:(towerEnemy?value.skills.slice(0,6):value.skills).map((s,i)=>{
       if(!Array.isArray(s.actions)||!s.actions.length)throw Error((i+1)+'번 스킬에 동작이 없습니다.');
       return {name:clean(s.name,18)||'스킬 '+(i+1),
         promptText:signature?String(s.promptText||'').slice(0,300):undefined,
         // Block program is an inert, validated AST; saved and exported with the fighter.
         program:signature&&Array.isArray(s.program)?global.SignatureScratch?.normalize?.(s.program):undefined,
         ruleSet:signature&&s.ruleSet&&global.SignatureRuleSkill?.normalize?.(s.ruleSet)||undefined,
+         ir:signature&&s.ir&&global.SkillIR?.normalize?.(s.ir)||undefined,
         trigger:signature?'auto':TRIGGER[s.trigger]?s.trigger:'auto',
         cooldown:number(s.cooldown,.2,30,3),threshold:number(s.threshold,5,95,40),
         actions:s.actions.slice(0,signature?global.SignatureProgram?.MAX_ACTIONS||12:3).map(a=>({

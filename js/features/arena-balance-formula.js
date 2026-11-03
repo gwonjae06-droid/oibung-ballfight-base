@@ -3,8 +3,8 @@
  */
 (function(g){'use strict';
 // Movement and protective walls do not do damage. Charge/timeburst affect only relevant budgets.
-const TYPES=new Set('wave shot beam bolt pull orbit zone homing pierce boomerang chain nova meteor mine drain blackhole starfall dung flight burrow dive uppercut slash spinslash thrust aircombo arcshot splitshot summon turret trap burrowdash erupt'.split(' '));
-const REPEAT=new Set('zone orbit mine blackhole starfall dung turret summon trap'.split(' '));
+const TYPES=new Set('wave shot beam bolt pull orbit zone homing pierce boomerang chain nova meteor mine drain blackhole starfall dung flight burrow dive uppercut slash spinslash thrust aircombo arcshot splitshot summon turret trap burrowdash erupt tether repulse vortex'.split(' '));
+const REPEAT=new Set('zone orbit mine blackhole starfall dung turret summon trap tether vortex'.split(' '));
 const cap=(n,l,h)=>Math.min(h,Math.max(l,n)),n=(v,d=0)=>Number.isFinite(Number(v))?Number(v):d;
 const BUDGET=65;
 function actionPressure(a){
@@ -58,7 +58,7 @@ function summary(profile,momentumDriven=false){
  // Legacy saved loadouts now cast ONE rotating skill per filled 100 energy,
  // not 4 simultaneous .2s cooldown attacks. Budget their average active
  // skill rather than summing all four imaginary cooldown frequencies.
- const rotation=momentumDriven&&!signature?Math.max(1,skills.length):1;
+ const rotation=energy?Math.max(1,skills.length):1;
  const pressure=perSkill.reduce((sum,x)=>sum+x,0)/rotation*bonus*
   (1+timeAcceleration*(energy?0.75:1));
  const multiplier=cap(pressure>BUDGET?Math.pow(BUDGET/pressure,.82):1,.18,1);
@@ -96,7 +96,7 @@ function defenseSkillPressure(s,signatureMomentum=false){
 function defenseSummary(profile,momentumDriven=false){
  const skills=profile?.allAbilities&&g.SkillForge?.allSkillset?g.SkillForge.allSkillset():profile?.skills||[];
  const energy=profile?.signatureVersion===1||momentumDriven;
- const rotation=momentumDriven&&profile?.signatureVersion!==1?Math.max(1,skills.length):1;
+ const rotation=energy?Math.max(1,skills.length):1;
  const perSkill=skills.map(s=>defenseSkillPressure(s,energy)),
   pressure=perSkill.reduce((a,b)=>a+b,0)/rotation*
    (1+accelerationUptime(skills,energy)*(energy?0.75:1));

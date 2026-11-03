@@ -28,13 +28,13 @@ test('tower-only registration keeps all six boss skills and independent clocks',
     assert.equal(instance.forge.skills.filter(x=>x.trigger==='auto').length,4);
   }
 });
-test('normal custom characters still have four skills maximum',()=>{
+test('normal custom characters retain all authored skills without limiting tower boss profiles',()=>{
   const h=world(),foe=h.ArenaTowerModel.makeEnemy(10);
-  assert.equal(h.SkillForge.normalize(foe).skills.length,4);
+  assert.equal(h.SkillForge.normalize(foe).skills.length,6);
   const id=h.SkillForge.register(foe);
   const def=h.CUSTOM_DEFS.find(x=>x.id===id);
-  assert.equal(def.forgeData.skills.length,4);
-  assert.equal(def.createInstance(1).forgeTicks.length,4);
+  assert.equal(def.forgeData.skills.length,6);
+  assert.equal(def.createInstance(1).forgeTicks.length,6);
 });
 test('transient tower enemies work alongside an unlimited player roster',()=>{
   const h=world();
@@ -43,7 +43,7 @@ test('transient tower enemies work alongside an unlimited player roster',()=>{
   const normalId=h.SkillForge.register(foe);
   const id=h.SkillForge.register(foe,{towerEnemy:true});
   assert.equal(h.CUSTOM_DEFS.length,24);
-  assert.equal(h.CUSTOM_DEFS.find(x=>x.id===normalId).forgeData.skills.length,4);
+  assert.equal(h.CUSTOM_DEFS.find(x=>x.id===normalId).forgeData.skills.length,6);
   const index=h.CUSTOM_DEFS.findIndex(x=>x.id===id);
   assert.equal(h.CUSTOM_DEFS[index].createInstance(2).forge.skills.length,6);
   h.CUSTOM_DEFS.splice(index,1);
