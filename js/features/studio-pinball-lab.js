@@ -710,7 +710,24 @@ function make(profile={},focus=0,actionIndex=-1){
   ctx.restore();
  }
  return {advanceTo,render,fire:()=>{energy=100;},get frame(){return frame;},
-  get energy(){return energy;},get casts(){return casts;},get title(){return frame<activity?active:'벽·공 충돌로 기세 충전 중';},
+  get energy(){return energy;},get casts(){return casts;},get title(){
+    const armed=ruleRuns.find(r=>!r.finished&&r.rules?.some(rule=>rule.eventGraph));
+    if(armed){
+     const graph=armed.rules.find(rule=>rule.eventGraph)?.eventGraph;
+     const label=g.CombatEventGraph?.EVENTS?.[graph?.trigger]||'실제 전투 사건';
+     return '기세 사용 완료 · '+label+' 대기 중';
+    }
+    return frame<activity?active:'벽·공 충돌로 기세 충전 중';
+   },
+   // Only observed collision events have physically simulated preview input.
+   // A dodge, actual shield block and real HP loss cannot be fabricated
+   // by a geometry-only preview; show the explicit verification limit.
+   get combatEventAudit(){return ruleRuns.flatMap(run=>run.rules.map((rule,i)=>
+    rule.eventGraph?{trigger:rule.eventGraph.trigger,
+     fired:run.graphFires?.[i]||0,windowRemaining:Math.max(0,run.window-run.clock),
+     simulated:rule.eventGraph.trigger==='hit',
+     note:rule.eventGraph.trigger==='hit'?'미리보기의 물리 접촉 근사':
+      '실제 전투 이벤트 필요 · 미리보기에서 강제 발생시키지 않음'}:null).filter(Boolean));},
   get projectiles(){return bullets.length;},get walls(){return walls.length;},get portals(){return portals.length;},get balls(){return [hero,target];},
   get ruleActions(){return ruleRuns.reduce((n,r)=>n+r.actions,0)||ruleRun?.actions||0;},
   get splitEvents(){return previewActor._scratchEvents.split?.count||0;},

@@ -39,6 +39,7 @@ const LABELS=Object.freeze({
  terminalBurst:'마지막 파편이 실제로 소멸할 때 최종 폭발',
  terminalShield:'마지막 파편이 실제로 소멸할 때 시전자 보호막',
  terminalChain:'파편 소멸 후 순차 후속 동작·조건 검증',
+ combatEventGraph:'실제 전투 사건 발생 후 순차 실행',
  opposed:'서로 반대 방향의 힘'
 });
 const UNSUPPORTED=Object.freeze([
@@ -58,6 +59,18 @@ const UNSUPPORTED=Object.freeze([
 function analyze(input){
  const raw=String(input||'').normalize('NFC').trim().slice(0,300);
  const intent=Object.fromEntries(Object.entries(PATTERNS).map(([id,re])=>[id,re.test(raw)]));
+ const realEvent=g.CombatEventGraph?.parse?.(raw);
+ intent.combatEventGraph=realEvent?.graph||null;
+ if(intent.combatEventGraph){
+  // The trigger's wording is NOT a requested action: e.g. in
+  // '체력이 회복되면 보호막', the word 회복 names a condition.
+  const requested=new Set(intent.combatEventGraph.actions);
+  intent.heal=requested.has('heal');intent.shield=requested.has('shield');
+  intent.tether=requested.has('tether');intent.damage=requested.has('wave');
+  intent.hitExplosion=false;intent.hitSplit=false;
+  intent.area=requested.has('wave');
+ }
+
  // True storage/release requires both phases. "absorbs damage" alone
  // must not be mislabeled as a kinetic battery.
  intent.relay=intent.relayNoun&&intent.relayAbsorb&&intent.relayRelease;
@@ -78,6 +91,7 @@ function analyze(input){
  intent.noEffect=/아무\s*(?:효과|기술|스킬|행동).{0,18}(?:않|안|없)|가만히\s*있는다/.test(raw);
  intent.unsupported=UNSUPPORTED.filter(def=>def.re.test(raw)).map(x=>x.label);
  if(chain?.error)intent.unsupported.push(chain.error);
+ if(realEvent?.error)intent.unsupported.push(realEvent.error);
  if(intent.terminalChain&&!(intent.split||intent.hitSplit))
   intent.unsupported.push('순차 후속 동작에 연결할 실제 파편 생성 단계가 없음');
  if(g.ConceptFusion?.shardAnaphora?.(raw)&&!(intent.split||intent.hitSplit))
@@ -100,10 +114,10 @@ function analyze(input){
   intent.unsupported.push('시간에 따라 약해질 힘의 종류와 방향이 지정되지 않음');
  const requested=[
   ...['homing','orbit','attract','spin','repel','tether','heal','shield',
-   'teleport','damage','split','area','hitExplosion','hitSplit','fade','relay','opposed','wallStore','terminalBurst','terminalShield','terminalChain']
+   'teleport','damage','split','area','hitExplosion','hitSplit','fade','relay','opposed','wallStore','terminalBurst','terminalShield','terminalChain','combatEventGraph']
    .filter(k=>intent[k])
  ];
- const priority=!!(intent.terminalChain||intent.terminalShield||intent.terminalBurst||intent.wallStore||intent.relay||intent.orbit||intent.homing||intent.tether||
+ const priority=!!(intent.combatEventGraph||intent.terminalChain||intent.terminalShield||intent.terminalBurst||intent.wallStore||intent.relay||intent.orbit||intent.homing||intent.tether||
   intent.repel||(intent.heal&&intent.shield)||(intent.teleport&&intent.damage)||
   intent.opposed||(intent.law&&intent.fade)||(intent.hitSplit)||
   intent.split||(intent.area&&/(?:적|상대).{0,22}피해|(?:피해|공격).{0,15}(?:적|상대)/.test(raw)));
@@ -153,6 +167,8 @@ function verify(input,recipe){
   (a.fusion?.finalBurst===true||a.fusion?.terminalChain?.some(s=>s.type==='burst')));
  bits.terminalShield=actions.some(a=>a.type==='shot'&&a.fusion?.split===true&&
   (a.fusion?.finalShield===true||a.fusion?.terminalChain?.some(s=>s.type==='shield')));
+ bits.combatEventGraph=!!intent.combatEventGraph&&
+  g.CombatEventGraph?.verify?.(intent.combatEventGraph,recipe)===true;
  bits.terminalChain=!!intent.terminalChain&&actions.some(a=>a.type==='shot'&&a.fusion?.split&&
   JSON.stringify(g.TerminalEventChain?.normalize?.(a.fusion?.terminalChain))===
   JSON.stringify(intent.terminalChain));
@@ -190,6 +206,27 @@ function compose(input){
   error:'이 문장의 일부 요구는 실제 구현할 수 없습니다: '+intent.unsupported.join(' / ')+
    '. 지원하는 전투 안의 행동과 표현으로 다시 설명해 주세요.'};
  if(!intent.priority)return null;
+ if(intent.combatEventGraph){
+  if(!g.SignatureRuleSkill||!g.CombatEventGraph)
+   return {ok:false,error:'전투 사건 그래프 실행기가 준비되지 않았습니다.'};
+  const graph=intent.combatEventGraph;
+  const recipe=g.SignatureRuleSkill.normalize({
+   window:g.CombatEventGraph.WINDOW,
+   rules:[{when:graph.trigger,interval:.35,eventGraph:graph}]
+  });
+  if(!g.CombatEventGraph.verify(graph,recipe))
+   return {ok:false,error:'실제 전투 사건과 후속 행동을 검증된 실행 규칙으로 만들지 못했습니다.'};
+  return {ok:true,name:'전투 사건 연쇄 기술',recipe,
+   method:'offline-confirmed-combat-event-graph',
+   plan:{strategy:'verified-combat-event',genre:'causal',
+    domains:['combat'],conceptIds:[],action:graph.actions[0],
+    visualKinds:['rings'],explanation:'기세 100 활성화 후 '+g.CombatEventGraph.WINDOW+
+     '초 동안 '+g.CombatEventGraph.EVENTS[graph.trigger]+'을(를) 기다립니다.'},
+   notes:['기세 100을 먼저 소비해 사건 감지 창을 활성화합니다. 기간 내 실제 사건이 없으면 어떤 후속 효과도 발생하지 않습니다.',
+    '사건마다 최대 3단계이며, 한 번의 기세 충전에서는 최대 1회만 연쇄를 실행합니다. 평타를 자동 생성하지 않습니다.',
+    '방어 성공은 실제 보호막으로 적의 공격을 막았을 때만 인정하며, 회피는 실제 회피 판정·체력 변화는 실 HP를 기준으로 합니다.'],
+   semanticVerification:verify(intent,recipe)};
+ }
  // Existing compilers remain authoritative when they already implement
  // every explicit action/relationship, preserving legacy and saved skills.
  const prior=g.ImaginationConcepts?.interpret?.(raw)||

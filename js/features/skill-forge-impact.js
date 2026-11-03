@@ -23,7 +23,11 @@ function hit(p,e,action,multiplier=1,attackZ) {
   // Post-impact grace is not defense. A shield or a distinct invulnerability
   // lasts longer than this tag and must still block every attempted strike.
   if(e.invincible>0 && (!(e._forgeImpactGrace>0)||e.invincible>e._forgeImpactGrace)){
-    if(e._scratchShieldUntil>=(Number(e._forgeActionClock)||0))global.SignatureLive?.record?.(e,'guard');
+    // Only a shield that is STILL ACTIVE counts as a guard.
+    // Impact grace, boss immunity and decorative FX never qualify.
+    const clock=Number(e._forgeActionClock)||0;
+    if(e._scratchShieldUntil>=clock||e._forgeGuardUntil>=clock)
+      global.SignatureLive?.record?.(e,'guard');
     return false;
   }
   if(global.AdvancedCombat&&!AdvancedCombat.canHit(p,e,attackZ))return false;

@@ -38,6 +38,7 @@ function fromRecipe(value){
    when:r.when,interval:r.interval,fracture:r.fracture,
    ...(r.when==='wallStored'?{wallHits:r.wallHits}:{}),
    action:{...r.action},
+   ...(r.eventGraph?{eventGraph:r.eventGraph}:{}),
    ...(r.steps?.length?{steps:r.steps}:{}),
    physics:primitives(r.action)
   }))};
@@ -62,6 +63,7 @@ function toRecipe(value){
    when:event?.when,interval:event?.interval,fracture:event?.fracture,
    ...(event?.when==='wallStored'?{wallHits:event?.wallHits}:{}),
    action:event?.action,
+   ...(event?.eventGraph?{eventGraph:event.eventGraph}:{}),
    ...(Array.isArray(event?.steps)?{steps:event.steps}:{})
   }))});
 }

@@ -7,7 +7,8 @@
 const labels=Object.freeze({pulse:'일정 간격',wall:'벽에 튕기면',
  contact:'상대와 충돌하면',hit:'공격이 적중하면',land:'착지하면',
  split:'탄환이 분열하면',guard:'방어에 성공하면',dodge:'회피하면',
- status:'상태이상을 걸면',move:'이동하면',hpLow:'체력이 낮으면',
+ status:'상태이상을 걸면',move:'이동하면',
+ hpDrop:'실제 체력이 감소하면',hpGain:'실제 체력이 회복되면',hpLow:'체력이 낮으면',
  near:'상대가 가까우면',far:'상대가 멀면'});
 const capabilities=[
  {label:'실제 물리 관절·신체 일부의 독립 충돌',re:/관절|팔이?\s*(?:나오|뻗)|촉수(?:가|로)\s*(?:감싸|묶|붙잡)|턱(?:으로)?\s*(?:물고|붙잡)|손(?:으로)?\s*(?:잡고|붙잡)/},

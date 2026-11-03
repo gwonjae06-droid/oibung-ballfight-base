@@ -12,6 +12,7 @@ function begin(config,p){
  return {rules:skill.rules,window:Math.round(skill.window*60),clock:0,actions:0,
   nextAt:skill.rules.map(()=>0),seen:observed,startedAt:now,finished:false,cursor:0,
   pending:[],waitUntil:0,visual:null,tunes:[],
+  graphFires:skill.rules.map(()=>0),
   wallCharge:skill.rules.map(()=>({count:0,impulse:0}))};
 }
 function step(run,p,target){
@@ -32,6 +33,9 @@ function step(run,p,target){
   const i=(run.cursor+t)%run.rules.length,r=run.rules[i];
   if(run.clock<run.nextAt[i])continue;
   const when=r.when;
+  // This listener was already armed by consuming momentum. It may react
+  // to one genuine event, never re-trigger itself via its own HP recovery.
+  if(r.eventGraph&&(run.graphFires[i]||0)>=1)continue;
   // This condition listens to accepted physical arena-wall bounces,
   // not to generic hit VFX or a fixed timer masquerading as a collision.
   if(when==='wallStored'){
@@ -57,6 +61,7 @@ function step(run,p,target){
   run.nextAt[i]=run.clock+delta;
   if(!isState&&when!=='pulse'&&when!=='wallStored')run.seen[i]=current;
   run.cursor=(i+1)%run.rules.length;
+  if(r.eventGraph)run.graphFires[i]=(run.graphFires[i]||0)+1;
   if(r.steps?.length&&graph){
    run.pending=graph.compile(r.steps,p,target);
    run.visual=null;run.tunes=[];run.waitUntil=0;
