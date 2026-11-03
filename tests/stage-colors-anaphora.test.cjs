@@ -105,7 +105,9 @@ test('the LAST real child expiry causes precisely one violet impact, not a root 
  assert.equal(effects.length,1);
  assert.equal(effects[0].type,'wave');
  assert.equal(effects[0].color,'#a855f7');
- assert.ok(Math.abs(effects[0].x-201)<.01);
+ assert.ok(Math.abs(effects[0].x-201)<15,
+  'the last homing child travels during its final physical tick');
+ assert.ok(Math.abs(effects[0].x-p.x)>40,'explosion must not be centered on caster');
  world.tick(p,e);assert.equal(effects.length,1);
 });
 test('old single-color skills and explicit origin hue remain backwards-compatible',()=>{
@@ -120,6 +122,7 @@ test('old single-color skills and explicit origin hue remain backwards-compatibl
  assert.equal(onlyChild.a.fusion.childColor,'#4ade80');
  assert.equal(onlyChild.a.fusion.finalColor,undefined);
  assert.equal(g.SkillColorPolicy.explicit('검은 레일건을 발사한다').color,'#101827');
+ assert.equal(g.SkillColorPolicy.stages('은색 파편으로 분열한다').fragment.color,'#9ca3af');
 });
 test('an orphan demonstrative does not invent earlier physical shards',()=>{
  const g=boot(parser);
@@ -180,7 +183,8 @@ test('invalid phase colors never enter saved physics or online compact packets',
 });
 test('mini pinball sandbox inherits all three stage colors from the saved recipe',()=>{
  const g=boot([...parser,'arena-body-physics','studio-pinball-lab']);
- const {r,a}=parsed(g);
+ const {r,a}=parsed(g,
+  '파란색 투사체가 공중에서 붉은색 파편으로 분열하고 모든 파편이 사라지면 보라색 폭발한다');
  const profile={name:'삼색탄',color:'#444444',effectColor:'#eeeeee',
   signatureVersion:1,skills:[{name:'삼색 파편탄',trigger:'auto',
    actions:[a],ruleSet:r.recipe}]};
