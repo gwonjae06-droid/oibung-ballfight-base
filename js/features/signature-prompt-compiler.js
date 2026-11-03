@@ -81,9 +81,11 @@ function parse(input){
  const understood=(grammar?.clauses||[]).filter(c=>c.chosen)
   .map(c=>({id:c.chosen.type}));
  const recognized=g.NaturalForge?.recognize?.(raw)||[];
+ const physicalMatches=g.SemanticPhysics?.matchAll?.(raw,supported)||[];
  const ids=new Set();
  const found=[...patterns.filter(t=>t.match.test(raw)),
-   ...recognized.map(x=>({id:x.type})),...understood].filter(x=>{
+   ...recognized.map(x=>({id:x.type})),...understood,
+  ...physicalMatches.map(x=>({id:x.type}))].filter(x=>{
      if(excluded.has(x.id))return false;
      if(ids.has(x.id))return false;
      ids.add(x.id);return true;
@@ -94,8 +96,11 @@ function parse(input){
  const metaphor=g.MetaphorVisuals?.interpret?.(raw);
  const mentioned=found.filter(t=>Object.hasOwn(supported,t.id));
  const activeMetaphor=metaphor&&!excluded.has(metaphor.type)?metaphor:null;
- const physicalTypes=[...new Set((grammar?.clauses||[]).filter(c=>
-  c.chosen?.source==='physical-intent').map(c=>c.chosen.type))];
+ const physicalTypes=[...new Set([
+  ...(grammar?.clauses||[]).filter(c=>c.chosen?.source==='physical-intent'&&!c.negated)
+   .map(c=>c.chosen.type),
+  ...physicalMatches.filter(c=>!excluded.has(c.type)).map(c=>c.type)
+ ])];
  const redundant={tether:['pull'],repulse:['wave'],vortex:['orbit','pull']};
  const replaced=new Set(physicalTypes.flatMap(type=>redundant[type]||[]));
  const mentions=physicalTypes.length?
@@ -265,6 +270,16 @@ function parse(input){
    if(stage.filter(v=>v.kind==='cast').length>=2)
     sequence=g.FantasySkillGraph?.normalize?.(stage)||stage;
   }
+ }
+ // Two physically distinct verbs must stay in the SAME actual cast graph,
+ // even when the legacy graph lexicon does not understand their new names.
+ if(physicalTypes.length>=2&&!(grammar?.clauses||[]).some(c=>
+   c.when!=='pulse'&&c.chosen?.source==='physical-intent')){
+  const physicalSteps=physicalTypes.map(type=>{
+   const row=rows.find(r=>r.action.type===type);
+   return row?{kind:'cast',action:row.action}:null;
+  }).filter(Boolean);
+  if(physicalSteps.length>=2)sequence=g.FantasySkillGraph?.normalize?.(physicalSteps)||physicalSteps;
  }
  if(sequence?.length>=2){
   const leader=rows.find(r=>r.when==='pulse')||rows[0];
