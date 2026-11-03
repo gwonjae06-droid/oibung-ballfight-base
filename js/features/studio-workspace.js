@@ -126,7 +126,7 @@ const preview=document.createElement('section');
 preview.className='studio-motion-preview';
 preview.setAttribute('aria-label','미니 핀볼 스킬 실험장 · 실제 전투 데이터와 분리됨');
 preview.innerHTML=
-  '<div class="studio-motion-header"><strong>② 스킬 예시 확인 · 미니 핀볼</strong><small>기세 100에서 기술을 동시 발동 · 실제 피해 없음</small></div>'
+  '<div class="studio-motion-header"><strong>② 미니 핀볼 실험장 · 스킬 예시</strong><small>기세 100에서 기술을 동시 발동 · 실제 피해 없음</small></div>'
   +'<div class="studio-motion-body"><div class="studio-motion-stage"><canvas id="studio-motion-canvas" width="480" height="300" aria-label="두 공이 벽과 범퍼에 튕기며 제작한 스킬을 사용하는 미니 핀볼 연습장"></canvas></div>'
   +'<div class="studio-motion-info"><label for="studio-motion-select">실험할 스킬</label><select id="studio-motion-select" aria-label="미리보기 스킬 선택"></select>'
   +'<span id="studio-motion-caption" aria-live="off">공이 튕기며 기세를 모읍니다.</span><span id="studio-motion-cooldown"></span></div></div>'
