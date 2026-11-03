@@ -123,6 +123,8 @@ function verify(input,recipe){
  const approximations=[];
  if(intent.requestedTurret&&bits.homing&&has('shot')&&!has('turret'))
   approximations.push('포탑 형태는 기존 회로·기계 이펙트로 근사합니다. 추적탄은 실제 발사체로 구현하지만 자동 포탑 본체가 발사하는 연동 구조는 아닙니다.');
+ if(/레일건|레이저|광선|빔/.test(intent.raw||'')&&bits.homing&&has('shot'))
+  approximations.push('광선·레일건의 즉시 명중 대신 실제 추적 가능한 탄환을 사용합니다. 원래 무기의 작동 방식과 완전히 같지는 않습니다.');
  if(intent.hitSplit)approximations.push('탄환 분열은 현재 비행 시간 기준입니다. 명중하는 바로 그 순간의 분열은 구현하지 못했습니다.');
  const conceptMatches=g.SemanticConceptAtlas?.match?.(intent.raw||'')||[];
  const named=g.ImaginationConcepts?.CATALOG?.some(d=>d.re.test(intent.raw||''))||false;
