@@ -45,7 +45,7 @@ test('Forge impact, casting and world authorities load before the runtime in bot
  assert.ok(core.includes('global.SkillForgeWorldFactory({hit,hitGround,enemies})'));
  assert.ok(hit.includes('function hit(p,e,action,multiplier=1,attackZ)'));
  assert.ok(queue.includes('function tickQueue(p,target)'));
- assert.ok(core.includes("const {hit,hitGround,groundImpactZ}=global.SkillForgeImpactFactory({MOVEMENT_ONLY});"));
+ assert.ok(core.includes("const {hit,hitGround,groundImpactZ}=global.SkillForgeImpactFactory({MOVEMENT_ONLY,enemies});"));
 });
 test('the same JavaScript modules use identical versions across PvE and PvP',()=>{
  const local=new Map(entries('index.html').map(url=>[file(url),url]));
