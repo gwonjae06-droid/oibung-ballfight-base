@@ -9,7 +9,12 @@ const first=(text,patterns)=>{
  return null;
 };
 function analyze(input){
- const text=String(input||'').normalize('NFC');
+ // Native Korean counters: "다섯 발", "초당 두 번", "세 초" are
+ // numeric declarations too. Replace counters only in numeric contexts.
+ const numbers={한:1,두:2,세:3,네:4,다섯:5,여섯:6,일곱:7,여덟:8,아홉:9,열:10,스무:20};
+ const text=String(input||'').normalize('NFC').replace(
+   /(스무|다섯|여섯|일곱|여덟|아홉|한|두|세|네|열)\s*(?=(?:개|발|줄기|갈래|번|회|타|초)(?:\s|$|마다|간|동안|씩|로|을|를|에|의))/g,
+   word=>String(numbers[word.trim()]||word));
  const values={},warnings=[],recognized=[];
  function set(key,patterns,lo,hi,integer=false){
   const raw=first(text,patterns);
@@ -68,7 +73,7 @@ function analyze(input){
   interval=safe;recognized.push('attackInterval');
  }
  const status=/빙결|얼리|얼음|냉기|서리/.test(text)?'ice':
-   /독|중독|맹독|독가스/.test(text)?'poison':
+   /(?:맹독|중독|독성|독액|독구름|독가스|독을|독이|독\s*피해)/.test(text)?'poison':
    /화상|불태|화염|불꽃/.test(text)?'fire':null;
  if(status){values.status=status;recognized.push('status');}
  const pattern=/방사형|사방|360도/.test(text)?'radial':
