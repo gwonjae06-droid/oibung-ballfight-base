@@ -42,7 +42,10 @@ test('Forge impact, casting and world authorities load before the runtime in bot
  assert.ok(!core.includes('for(let i=p.forgeShots.length-1;i>=0;i--)'));
  assert.ok(world.includes('for(let i=p.forgeShots.length-1;i>=0;i--)'));
  assert.ok(core.includes('world.tick(p,target);'));
- assert.ok(core.includes('global.SkillForgeWorldFactory({hit,hitGround,enemies})'));
+ assert.ok(core.includes('global.SkillForgeWorldFactory({hit,hitGround,enemies,execute})'));
+ assert.ok(core.indexOf('const {execute}=global.SkillForgeExecutorFactory')<
+  core.indexOf('const world=global.SkillForgeWorldFactory'),
+  'world must receive real executor before it can run terminal conditional shields');
  assert.ok(hit.includes('function hit(p,e,action,multiplier=1,attackZ)'));
  assert.ok(queue.includes('function tickQueue(p,target)'));
  assert.ok(core.includes("const {hit,hitGround,groundImpactZ}=global.SkillForgeImpactFactory({MOVEMENT_ONLY,enemies});"));

@@ -77,10 +77,11 @@ if(!global.SkillForgeImpactFactory||!global.SkillForgeCastingFactory)
 const {hit,hitGround,groundImpactZ}=global.SkillForgeImpactFactory({MOVEMENT_ONLY,enemies});
 if(!global.SkillForgeWorldFactory)
   throw Error('Forge dependency missing: load skill-forge-world.js before skill-forge.js');
-const world=global.SkillForgeWorldFactory({hit,hitGround,enemies});
 if(!global.SkillForgeExecutorFactory)
   throw Error('Forge dependency missing: load skill-forge-executor.js before skill-forge.js');
 const {execute}=global.SkillForgeExecutorFactory({MOVEMENT_ONLY,hit,enemies});
+// The world needs the real action executor for child-family post-events.
+const world=global.SkillForgeWorldFactory({hit,hitGround,enemies,execute});
 const {cast,tickQueue,tickSkills,cooldownFrames}=
   global.SkillForgeCastingFactory({MOVEMENT_ONLY,execute});
 function update(p,target){

@@ -52,6 +52,7 @@ function describe(parsed){
    trait.element!=='none'?(g.ConceptFusion?.ELEMENTS?.[trait.element]?.label||trait.element):'',
    trait.homing?'추적':'',trait.split?'분열 '+trait.fragments+'갈래':'',
    trait.finalBurst?'마지막 파편 소멸 시 폭발':'',
+   trait.finalShield?'마지막 파편 소멸 시 보호막':'',
    trait.childHoming?'생성된 파편만 추적':'',
    trait.impact!=='none'?g.ConceptFusion?.IMPACTS?.[trait.impact]||trait.impact:''
   ].filter(Boolean).join(' + '):'';

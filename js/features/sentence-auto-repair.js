@@ -79,6 +79,9 @@ function repair(input,original){
  fix('terminalBurst',!negativeBurst&&!!intent.terminalBurst&&!!f.split,()=>{
   f.finalBurst=true;
  },'파편 소멸 후 폭발');
+ fix('terminalShield',!!intent.terminalShield&&!!f.split,()=>{
+  f.finalShield=true;
+ },'파편 소멸 후 보호막');
  fix('hitExplosion',!negativeBurst&&!!intent.hitExplosion&&
   f.impact==='none',()=>{f.impact='burst';},'명중 폭발');
  if(!applied.length)

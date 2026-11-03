@@ -40,7 +40,7 @@ function make(profile={},focus=0,actionIndex=-1){
  hero.baseRadius=hero.radius;
  const bullets=[],rings=[],sparks=[],queue=[],walls=[],portals=[],activeEffects=[];
  let lastContact=-100,lastWall=-100,ruleRun=null,ruleRuns=[];
- const splitHistory=[],terminalBurstHistory=[];
+ const splitHistory=[],terminalBurstHistory=[],terminalShieldHistory=[];
  // The shared graph tests proximity and HP against simulated actors,
  // never empty placeholder coordinates, so mini-lab conditions match combat.
  const previewActor={hp:100,maxHp:100,x:hero.x,y:hero.y,radius:hero.radius,
@@ -139,15 +139,28 @@ function make(profile={},focus=0,actionIndex=-1){
   const radius=clamp(Number(group.a?.fusion?.radius)||85,35,160);
   const px=clamp(b.x,0,W),py=clamp(b.y,0,H);
   const tint=group.a?.fusion?.finalColor||group.a?.visual?.color||color;
-  previewEffect({...group.a,type:'wave',radius},'impact',px,py,35);
-  rings.push({x:px,y:py,r:Math.min(96,radius*.7),age:0,
-   life:29,color:tint});
-  spark(px,py,tint,20);
-  if(Math.hypot(px-target.x,py-target.y)<=radius+target.radius)
-   hitTarget(px,py,true); // visual preview only, never modify target HP
-  recordRuleEvent('finalFragment');
-  if(terminalBurstHistory.length>=24)terminalBurstHistory.shift();
-  terminalBurstHistory.push({frame,x:px,y:py,radius,color:tint});
+  if(group.a?.fusion?.finalBurst){
+   previewEffect({...group.a,type:'wave',radius},'impact',px,py,35);
+   rings.push({x:px,y:py,r:Math.min(96,radius*.7),age:0,
+    life:29,color:tint});
+   spark(px,py,tint,20);
+   if(Math.hypot(px-target.x,py-target.y)<=radius+target.radius)
+    hitTarget(px,py,true); // visual preview only, never modify target HP
+   recordRuleEvent('finalFragment');
+   if(terminalBurstHistory.length>=24)terminalBurstHistory.shift();
+   terminalBurstHistory.push({frame,x:px,y:py,radius,color:tint});
+  }
+  if(group.a?.fusion?.finalShield&&hero.hp>0){
+   const duration=clamp(Number(group.a.duration)||1.3,.4,2);
+   hero.shieldTime=Math.max(hero.shieldTime||0,Math.round(duration*60));
+   previewEffect({type:'shield',damage:0,duration,
+    visual:group.a.visual},'cast',hero.x,hero.y,42);
+   rings.push({x:hero.x,y:hero.y,r:44,age:0,life:35,
+    color:group.a?.visual?.color||color});
+   recordRuleEvent('finalShield');
+   if(terminalShieldHistory.length>=24)terminalShieldHistory.shift();
+   terminalShieldHistory.push({frame,x:hero.x,y:hero.y,expires:frame+hero.shieldTime});
+  }
  }
  // Splitshots share the REAL combat trajectory: one target-aimed crystal
  // that bursts after 56% of its own flight, not an arbitrary 17-frame timer.
@@ -164,7 +177,7 @@ function make(profile={},focus=0,actionIndex=-1){
       color:childColor,colorMode:'explicit'}}:{}),
     fusion:{...b.a.fusion,split:false,
       homing:b.a.fusion.homing||b.a.fusion.childHoming}};
-  const terminal=b.a.fusion.finalBurst?{remaining:0,finished:false,a:b.a}:null;
+  const terminal=(b.a.fusion.finalBurst||b.a.fusion.finalShield)?{remaining:0,finished:false,a:b.a}:null;
   for(let j=0;j<number&&bullets.length<SPLIT_OWNER_BUDGET;j++){
    const angle=dir+(j-(number-1)/2)*.38;
    bullets.push({...b,x:b.x,y:b.y,vx:Math.cos(angle)*speed,vy:Math.sin(angle)*speed,
@@ -368,6 +381,7 @@ function make(profile={},focus=0,actionIndex=-1){
   const boost=hero.fastTime>0?1.75:hero.hasteTime>0?1.25:1;
   if(hero.fastTime>0)hero.fastTime--;
   if(hero.hasteTime>0)hero.hasteTime--;
+  if(hero.shieldTime>0)hero.shieldTime--;
   if(hero.sizeTime>0&&--hero.sizeTime===0)hero.radius=hero.baseRadius;
   energy=Math.min(100,energy+.29*boost);
   previewActor._forgeActionClock=frame;
@@ -642,6 +656,9 @@ function make(profile={},focus=0,actionIndex=-1){
   get storedWallImpacts(){return g.WallImpactStore?.serial?.(previewActor)||0;},
   get terminalBurstEvents(){return previewActor._scratchEvents.finalFragment?.count||0;},
   get terminalBurstHistory(){return terminalBurstHistory.map(x=>({...x}));},
+   get terminalShieldEvents(){return previewActor._scratchEvents.finalShield?.count||0;},
+   get terminalShieldHistory(){return terminalShieldHistory.map(x=>({...x}));},
+   get shieldFrames(){return hero.shieldTime||0;},
   get fusionChildren(){return bullets.filter(b=>b._fusionChild).map(b=>({x:b.x,y:b.y,
    color:b.color,homing:!!b.a?.fusion?.homing}));}};
 }

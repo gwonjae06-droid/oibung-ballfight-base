@@ -7,11 +7,11 @@
  * Do not schedule timers, modify saved profiles, or create render DOM here.
  */
 (function(global){'use strict';
-global.SkillForgeWorldFactory=function({hit,hitGround,enemies}){
+global.SkillForgeWorldFactory=function({hit,hitGround,enemies,execute}){
 // Terminal bursts are bound to ONE real fracture family. The group lives
 // only on its in-flight child objects: no global timers, map, or stale IDs.
 // An expiry, shielded/blocked collision, or perimeter exit retires one child.
-function finalFragmentBurst(p,group,x,y,z){
+function finalFragmentEvent(p,group,x,y,z){
  if(group.finished||group.remaining!==0)return;
  group.finished=true;
  const frame=Number(p._forgeActionClock)||Number(p._forgeBalanceFrame)||0;
@@ -19,12 +19,14 @@ function finalFragmentBurst(p,group,x,y,z){
  if(count>=4)return; // a large 100-momentum volley cannot flood the scene
  p._fusionFinalAt=frame;p._fusionFinalCount=count+1;
  const action=group.action||{},radius=Math.max(35,Math.min(160,group.radius||85));
+ const fusion=action.fusion||{};
  const xx=Math.max(0,Math.min(canvas.width,Number(x)||0));
  const yy=Math.max(0,Math.min(canvas.height,Number(y)||0));
  const original=p.forge?.effectColor||p.forge?.color||'#b4a3ff';
  const tint=action.fusion?.finalColor||
   global.SkillColorPolicy?.resolve?.(action.visual,original)?.color||
   action.visual?.color||original;
+ if(fusion.finalBurst){
  // This effect is spatially anchored on the LAST fragment, not the caster,
  // not the original hit location, and never an invisible textual promise.
  global.BattleFX?.cast?.(p,'wave',{x:xx,y:yy,radius,color:tint});
@@ -41,6 +43,20 @@ function finalFragmentBurst(p,group,x,y,z){
   }
  }
  global.SignatureLive?.record?.(p,'finalFragment');
+ }
+ // Separate post-event, emitted only after the SAME authoritative family
+ // reaches zero. Never award shields on mere source contact or fixed age.
+ if(fusion.finalShield&&p.hp>0&&typeof execute==='function'){
+  const defense=global.SignatureScratch?.safeAction?.({
+   type:'shield',target:'self',damage:0,count:1,
+   duration:Math.max(.4,Math.min(2.0,Number(action.duration)||1.3)),
+   status:'none',visual:action.visual
+  })||{type:'shield',target:'self',damage:0,
+   duration:Math.max(.4,Math.min(2,Number(action.duration)||1.3)),
+   status:'none',visual:action.visual};
+  execute(p,defense,p); // SAME registered combat action executor.
+  global.SignatureLive?.record?.(p,'finalShield');
+ }
 }
 function retire(p,b,index){
  p.forgeShots.splice(index,1);
@@ -49,7 +65,7 @@ function retire(p,b,index){
  b._fusionTerminalRetired=true;
  if(group.remaining<=0||group.finished)return;
  group.remaining--;
- if(group.remaining===0)finalFragmentBurst(p,group,b.x,b.y,b.z);
+ if(group.remaining===0)finalFragmentEvent(p,group,b.x,b.y,b.z);
 }
 // The event source is the authoritative collision callback below. Merely
 // displaying a burst VFX never counts as a hit or spawns fragment objects.
@@ -68,7 +84,7 @@ function fracture(p,b,concept,index,victim){
     fusion:{...concept,split:false,homing:concept.homing||concept.childHoming}};
   // A source orb is NOT one of the children. Its own retirement must
   // never decrement the family or trigger the explosion prematurely.
-  const terminal=concept.finalBurst?{remaining:count,finished:false,
+  const terminal=(concept.finalBurst||concept.finalShield)?{remaining:count,finished:false,
    action:b.a,radius:concept.radius}:null;
   // Remove parent first; new children are visited on the NEXT world tick.
   p.forgeShots.splice(index,1);

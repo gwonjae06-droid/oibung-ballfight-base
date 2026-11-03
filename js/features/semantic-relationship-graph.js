@@ -79,6 +79,14 @@ function build(input,recipe){
     if(action.fusion.childColor)a.childColor=action.fusion.childColor;
     if(action.fusion.finalColor)a.finalColor=action.fusion.finalColor;
     push(fragments,'may_hit','enemy');
+    if(action.fusion.finalShield){
+     const guard=entity('terminal_guard','파편 소멸 후 보호막');
+     a.finalShield=true;
+     if(guard){
+      push(fragments,'when_all_retired',guard,{event:'last_fragment_retired'});
+      push(guard,'grants_shield','caster',{target:'caster',trigger:'confirmed_child_family_end'});
+     }
+    }
     if(action.fusion.finalBurst){
      const burst=entity('terminal_effect','최종 폭발');
      a.finalBurst=true;
