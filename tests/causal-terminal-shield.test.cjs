@@ -27,7 +27,7 @@ function parsed(g,raw=sentence){
 }
 function actors(a){
  const p={playerNum:1,x:80,y:160,radius:20,hp:220,maxHp:220,
-  invincible:0,forge:{color:'#276df0',effectColor:'#276df0'},
+  invincible:0,forge:{signatureVersion:1,color:'#276df0',effectColor:'#276df0'},
   _forgeActionClock:1,_forgeBalanceFrame:1,
   forgeShots:[{x:146,y:160,prevX:146,prevY:160,
    vx:6,vy:0,z:0,life:100,a,targetNum:2}],
