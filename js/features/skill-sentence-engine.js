@@ -53,6 +53,9 @@ function describe(parsed){
    trait.homing?'추적':'',trait.split?'분열 '+trait.fragments+'갈래':'',
    trait.finalBurst?'마지막 파편 소멸 시 폭발':'',
    trait.finalShield?'마지막 파편 소멸 시 보호막':'',
+   trait.terminalChain?'파편 소멸 후 '+trait.terminalChain.map((step,i)=>
+    (i>0&&step.gate==='damage'?'실제 피해 시 ':i>0&&step.gate==='near'?'적이 가까우면 ':'')+
+    (g.TerminalEventChain?.TYPES?.[step.type]||step.type)).join(' → '):'',
    trait.childHoming?'생성된 파편만 추적':'',
    trait.impact!=='none'?g.ConceptFusion?.IMPACTS?.[trait.impact]||trait.impact:''
   ].filter(Boolean).join(' + '):'';
