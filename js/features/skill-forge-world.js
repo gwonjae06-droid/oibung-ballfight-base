@@ -154,13 +154,21 @@ function fracture(p,b,concept,index,victim){
   return true;
 }
 function tick(p,target){
+  // One current roster lookup per 60Hz simulation tick, no repeated sorts.
+  const opponents=enemies(p)||[];
   for(let i=p.forgeShots.length-1;i>=0;i--){
     const b=p.forgeShots[i];
     const concept=global.ConceptFusion?.normalize?.(b.a?.fusion);
     if(concept?.homing&&b.a?.type==='shot'){
-      const foe=enemies(p).find(e=>e.playerNum===b.targetNum&&e.hp>0)||
-        enemies(p).filter(e=>e.hp>0).sort((x,y)=>
-          Math.hypot(x.x-b.x,x.y-b.y)-Math.hypot(y.x-b.x,y.y-b.y))[0];
+      let foe=opponents.find(e=>e.playerNum===b.targetNum&&e.hp>0);
+      if(!foe){
+        let nearestSq=Infinity;
+        for(const enemy of opponents){
+          if(!enemy||enemy.hp<=0)continue;
+          const dx=enemy.x-b.x,dy=enemy.y-b.y,d2=dx*dx+dy*dy;
+          if(d2<nearestSq){nearestSq=d2;foe=enemy;}
+        }
+      }
       if(foe){
         const dx=foe.x-b.x,dy=foe.y-b.y,d=Math.hypot(dx,dy)||1;
         const speed=Math.max(2,Math.min(14,Number(b.a.speed)||5));
@@ -179,7 +187,7 @@ function tick(p,target){
     }
     b.prevX=b.x;b.prevY=b.y;b.x+=b.vx;b.y+=b.vy;
     if(Number.isFinite(b.heightVelocity)){
-      if(b.targetNum!==undefined){const victim=enemies(p).find(e=>e.playerNum===b.targetNum&&e.hp>0);
+      if(b.targetNum!==undefined){const victim=opponents.find(e=>e.playerNum===b.targetNum&&e.hp>0);
         if(victim){const alt=global.AdvancedCombat?.height?.(victim)||0;
           const distance=Math.hypot(victim.x-b.x,victim.y-b.y);
           const remain=Math.max(1,distance/Math.max(1,b.a?.speed||5));
@@ -220,7 +228,7 @@ function tick(p,target){
     if(blocked){retire(p,b,i);continue;}
     // Ground-level bullets use a ground-level hit check, not the firing
     // character's current jump height. Swept contact prevents tunneling.
-    const e=enemies(p).find(e=>(global.ActionRegistry?.sweptCircle?.(
+    const e=opponents.find(e=>(global.ActionRegistry?.sweptCircle?.(
       b.prevX,b.prevY,b.x,b.y,e.x,e.y,e.radius+8)??
       Math.hypot(e.x-b.x,e.y-b.y)<=e.radius+8)&&hit(p,e,b.a,1,b.z||0));
     if(e&&concept?.split&&concept.splitTrigger==='hit'&&
@@ -234,11 +242,11 @@ function tick(p,target){
     const z=p.forgeZones[i];z.timer--;z.ticks++;
     if(z.type==='bolt'&&z.timer<=0){
       if(global.BattleFX)BattleFX.cast(p,'lightning',{x:z.x,y:z.y,color:(p.forge.effectColor||p.forge.color)});
-      enemies(p).filter(e=>Math.hypot(e.x-z.x,e.y-z.y)<z.a.radius*.4+e.radius).forEach(e=>hitGround(p,e,z.a));
+      opponents.filter(e=>Math.hypot(e.x-z.x,e.y-z.y)<z.a.radius*.4+e.radius).forEach(e=>hitGround(p,e,z.a));
     }
     if(z.type==='zone'&&z.timer>0&&z.ticks%30===0){
       const actualRadius=z.r??z.a.radius;
-      enemies(p).filter(e=>Math.hypot(e.x-z.x,e.y-z.y)<actualRadius+e.radius).forEach(e=>hitGround(p,e,z.a,.4));
+      opponents.filter(e=>Math.hypot(e.x-z.x,e.y-z.y)<actualRadius+e.radius).forEach(e=>hitGround(p,e,z.a,.4));
     }
     if(z.timer<=0)p.forgeZones.splice(i,1);
   }
@@ -249,7 +257,7 @@ function tick(p,target){
       // actually touches an enemy; there is no invisible central AoE.
       const count=Math.max(1,Math.min(8,Math.round(o.a.count||1)));
       const orbitRadius=o.a.radius*.75;
-      enemies(p).forEach(e=>{
+      opponents.forEach(e=>{
         for(let j=0;j<count;j++){
           const theta=o.phase+j*2*Math.PI/count;
           const ox=p.x+Math.cos(theta)*orbitRadius,oy=p.y+Math.sin(theta)*orbitRadius;
@@ -261,12 +269,12 @@ function tick(p,target){
   }
   // Persistent semantic forces use the same clock and hit resolver as
   // projectiles, zones and all other authored combat actions.
-  global.SemanticPhysics?.tick?.(p,enemies(p),hit);
+  global.SemanticPhysics?.tick?.(p,opponents,hit);
   // Compose generated field equations in the authoritative 60Hz world.
-  global.PhysicsLawEngine?.tick?.(p,enemies(p),hit);
+  global.PhysicsLawEngine?.tick?.(p,opponents,hit);
   // Stateful storage/release is the one new primitive not representable by
   // existing one-shot attacks or stateless field algebra.
-  global.ImaginationConcepts?.relayTick?.(p,enemies(p),hit);
+  global.ImaginationConcepts?.relayTick?.(p,opponents,hit);
 
 }
 return Object.freeze({tick});
