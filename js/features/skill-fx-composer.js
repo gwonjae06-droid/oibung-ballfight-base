@@ -12,7 +12,8 @@ const KINDS=Object.freeze({
  chains:'사슬',thorns:'가시',hearts:'심장 파동',rain:'낙하 빛줄기',
  orbit:'회전 위성',trail:'속도 잔상',web:'거미줄',
  gears:'톱니 회전',circuit:'회로·기판',hologram:'홀로그램',
- steam:'증기',feathers:'불사조 깃털',plasma:'플라스마 아크'});
+ steam:'증기',feathers:'불사조 깃털',plasma:'플라스마 아크',
+ rebound:'운동량 반사 파면',shear:'교차 전단 흐름'});
 const PALETTE=Object.freeze({dark:'#54306d',fire:'#ff7941',ice:'#a4e5ff',
  lightning:'#a19dff',nature:'#74d9a6',water:'#56b9ec',
  blood:'#d25172',gold:'#ffd779',machine:'#66d7f0',
@@ -46,7 +47,9 @@ const NAMES=[
  ['hologram',/홀로그램|투영|증강현실|AR\s|디지털|데이터/],
  ['steam',/증기|스팀|피스톤|보일러|압축기/],
  ['feathers',/불사조|피닉스|천사|깃털|날개/],
- ['plasma',/플라스마|플라즈마|테슬라|고전압|레이저포/]
+ ['plasma',/플라스마|플라즈마|테슬라|고전압|레이저포/],
+ ['rebound',/탄성\s*반사|운동량\s*반사|다가오면\s*튕겨|반사하는\s*힘/],
+ ['shear',/전단력|전단\s*흐름|서로\s*다른\s*속도로\s*회전/]
 ];
 const limit=(v,min,max,alt)=>Number.isFinite(Number(v))?
  Math.max(min,Math.min(max,Number(v))):alt;
@@ -261,6 +264,39 @@ function paint(ctx,options={}){
      }
      path(ctx,coords);
     }break;
+   }
+   case 'rebound':{
+    // The impact front expands outward while a second ring contracts.
+    // Phase and spin deterministically produce distinct frames with
+    // no textures, random allocations or extra renderer dependencies.
+    const pulse=impact?Math.max(.15,1-t):Math.min(1,t*2.2);
+    const rr=r*(.15+.82*pulse);
+    ctx.beginPath();ctx.ellipse(0,0,rr,rr*.62,theta*.15,0,Math.PI*2);ctx.stroke();
+    ctx.beginPath();ctx.ellipse(0,0,rr*.62,rr*.38,-theta*.12,0,Math.PI*2);ctx.stroke();
+    const spokes=options.low===true?4:8;
+    for(let j=0;j<spokes;j++){
+     const a=j*Math.PI*2/spokes+theta*.25;
+     const from=rr*.82,to=rr*1.14;
+     path(ctx,[[Math.cos(a)*from,Math.sin(a)*from*.62],
+      [Math.cos(a)*to,Math.sin(a)*to*.62]]);
+    }
+    break;
+   }
+   case 'shear':{
+    // Counter-rotating concentric bands make radial shear legible.
+    const bands=options.low===true?2:3;
+    for(let j=0;j<bands;j++){
+     const rr=r*(.36+j*.26);
+     const clockwise=j%2===0?1:-1;
+     for(let arcIndex=0;arcIndex<3;arcIndex++){
+      const a=theta*clockwise+arcIndex*Math.PI*2/3;
+      ctx.beginPath();ctx.arc(0,0,rr,a,a+Math.PI*.40);ctx.stroke();
+      const tip=a+Math.PI*.40,dir=clockwise;
+      path(ctx,[[Math.cos(tip)*rr,Math.sin(tip)*rr],
+       [Math.cos(tip-dir*.15)*(rr-5),Math.sin(tip-dir*.15)*(rr-5)]]);
+     }
+    }
+    break;
    }
    case 'trail':
    case 'rain':{

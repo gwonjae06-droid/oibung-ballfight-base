@@ -60,7 +60,7 @@
    childColor:v[9],finalColor:v[10],childHoming:v[11]===1,
    terminalChain:g.TerminalEventChain?.unpack?.(v[13])});
  };
- const opIds=['attract','repel','spin','spring','pulse','drag','propel','gravity','orbit','wave'];
+ const opIds=['attract','repel','spin','spring','pulse','drag','propel','gravity','orbit','wave','reflect','shear'];
  const falls=['constant','linear','quadratic','inverse','edge'];
  const decays=['steady','fade','grow','beat'];
  const packLaw=raw=>{
@@ -200,7 +200,7 @@
   if(promise)return promise;
   promise=new Promise((resolve,reject)=>{
    frame=document.createElement('iframe');frame.title='원래 오이붕 온라인 전투';frame.style.cssText='width:100%;aspect-ratio:1;border:0;pointer-events:none;display:none';
-   frame.src='pvp-runtime.html?v=pvp-event-combo3';
+   frame.src='pvp-runtime.html?v=pvp-physics-v4';
    const timer=setTimeout(()=>reject(Error('전투 엔진 로딩 시간 초과')),15000);
    frame.onload=()=>{clearTimeout(timer);const r=frame.contentWindow.PvpRuntime;if(!r)return reject(Error('전투 엔진 로딩 실패'));resolve({...r,normalizeProfile:unpack});};
    document.getElementById('pvp-canvas').after(frame);

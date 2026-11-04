@@ -21,10 +21,10 @@ function boot(){
 const names=['lightning','coil','burst','embers','mist','ice','vortex',
  'stars','wind','water','runes','petals','shards','shadow','rings','chains',
  'thorns','hearts','rain','orbit','trail','web',
- 'gears','circuit','hologram','steam','feathers','plasma'];
+ 'gears','circuit','hologram','steam','feathers','plasma','rebound','shear'];
 test('28 visual primitives are discoverable, rendered in bounded layers',()=>{
  const g=boot(),C=g.SkillFXComposer;
- assert.equal(Object.keys(C.KINDS).length,28);
+ assert.equal(Object.keys(C.KINDS).length,30);
  for(const name of names)assert.ok(C.KINDS[name]);
  const raw={shape:'aura',color:'#54306d',scale:3,charge:true,layers:
   names.map(kind=>({kind,color:'#abcdef',power:999,spin:99}))};
