@@ -15,7 +15,7 @@ const scripts=['action-registry','semantic-physics','physics-law-engine','signat
  'concept-fusion','imagination-concepts','signature-scratch','fantasy-skill-graph',
  'signature-rule-skill','skill-ir','signature-rule-live','korean-skill-grammar',
  'korean-skill-parameters','signature-prompt-compiler','skill-sentence-engine'];
-test('19 domains and 198 reusable concept atoms share only the 28 existing Canvas motifs',()=>{
+test('19 domains and 198 reusable concept atoms share a bounded 30-motif Canvas library',()=>{
  const g=boot(scripts),a=g.SemanticConceptAtlas;
  assert.equal(a.CATALOG.length,198);
  assert.equal(a.domains.length,19);
@@ -23,7 +23,7 @@ test('19 domains and 198 reusable concept atoms share only the 28 existing Canva
   assert.ok(def.visual.length>=1&&def.visual.length<=3,def.id);
   for(const kind of def.visual)assert.ok(g.SkillFXComposer.KINDS[kind],def.name+': '+kind);
  }
- assert.equal(Object.keys(g.SkillFXComposer.KINDS).length,28,
+ assert.equal(Object.keys(g.SkillFXComposer.KINDS).length,30,
   'hundreds of concepts must not generate hundreds of separate renderers');
  const atlas=String(src('semantic-concept-atlas'));
  assert.ok(atlas.includes('new RegExp(words'));
