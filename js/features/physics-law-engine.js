@@ -49,13 +49,18 @@ function interpret(input){
  if(!raw||raw.length>300)return null;
  // A skill may contain named legacy actions. Select the new generative
  // language only when the sentence establishes a law/force relationship.
- const relational=/법칙|물리|역중력|힘이\s*(?:작용|생겨|발생)|힘으로|힘을|힘의|끌어당기면서|밀어내면서|회전시키면서|동시에\s*(?:당기|밀|회전)|중심.{0,14}(?:당기|밀|회전)|거리가.{0,14}(?:멀|가까)|거리.{0,14}(?:힘|세기|강해|약해)|마찰력|탄성력|자기장|힘의\s*장|중력장|역제곱|사인파|시간.{0,14}(?:힘|세기|강해|약해)/.test(raw);
+ const relational=/법칙|물리|역중력|힘이\s*(?:작용|생겨|발생)|힘으로|힘을|힘의|끌어당기면서|밀어내면서|회전시키면서|동시에\s*(?:당기|밀|회전)|중심.{0,14}(?:당기|밀|회전)|거리가.{0,14}(?:멀|가까)|거리.{0,14}(?:힘|세기|강해|약해)|마찰력|탄성력|탄성\s*반사|전단력|전단\s*흐름|자기장|힘의\s*장|중력장|역제곱|사인파|시간.{0,14}(?:힘|세기|강해|약해)/.test(raw);
  if(!relational)return null;
  let selected=Object.entries(OPS).filter(([,def])=>def.pattern.test(raw));
  // An inverse-square gravity law is ONE force, not an extra copy of
  // generic attraction merely because the word "인력" appears in its name.
  if(selected.some(([id])=>id==='gravity'))
   selected=selected.filter(([id])=>id!=='attract');
+ // The noun 탄성 in '탄성 반사장' is a rebound, not an
+ // additional long-distance spring-restoration field.
+ if(selected.some(([id])=>id==='reflect')&&
+   !/용수철|스프링|고무줄|늘어난\s*만큼|복원력/.test(raw))
+  selected=selected.filter(([id])=>id!=='spring');
  // A single fictional noun without a force verb cannot be compiled.
  if(!selected.length)return null;
  const radius=number(raw,/(?:반경|범위|영향\s*거리|반지름)\s*(?:은|는|을|를|:|=)?\s*(\d+(?:\.\d+)?)/);
