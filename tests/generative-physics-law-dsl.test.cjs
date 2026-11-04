@@ -169,7 +169,7 @@ test('same generated law drives world simulation and the pinball preview',()=>{
 test('native script entrypoints and sentence studio expose law creation without manual coding',()=>{
  for(const page of ['index.html','pvp-runtime.html']){
   const html=fs.readFileSync(page,'utf8');
-  assert.ok(html.includes('physics-law-engine.js?v=1-generated-field-algebra'));
+  assert.ok(html.includes('physics-law-engine.js?v=2-force-rebound-shear'));
   assert.ok(html.indexOf('physics-law-engine.js')<html.indexOf('signature-scratch.js'));
   assert.ok(html.indexOf('physics-law-engine.js')<html.indexOf('skill-forge-profiles.js'));
  }
