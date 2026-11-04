@@ -60,7 +60,7 @@
    childColor:v[9],finalColor:v[10],childHoming:v[11]===1,
    terminalChain:g.TerminalEventChain?.unpack?.(v[13])});
  };
- const opIds=['attract','repel','spin','spring','pulse','drag','propel','gravity','orbit','wave'];
+ const opIds=['attract','repel','spin','spring','pulse','drag','propel','gravity','orbit','wave','reflect','shear'];
  const falls=['constant','linear','quadratic','inverse','edge'];
  const decays=['steady','fade','grow','beat'];
  const packLaw=raw=>{
