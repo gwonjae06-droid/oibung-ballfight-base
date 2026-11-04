@@ -18,7 +18,9 @@ const OPS=Object.freeze({
  propel:{label:'운동 증가·가속',pattern:/가속|속도를\s*높|더\s*빨라|추진력|속력을\s*키|속력이\s*커/},
  gravity:{label:'거리제곱 반비례 인력',pattern:/만유인력|거리.{0,8}제곱.{0,8}반비례|역제곱|중력법칙/},
  orbit:{label:'일정 반경으로 회귀하는 궤도력',pattern:/궤도|일정한\s*거리.{0,10}회전|행성처럼\s*돌|원궤도/},
- wave:{label:'시간에 따라 진동하는 힘',pattern:/시간.{0,12}(?:진동|요동|파동)|주기.{0,10}(?:강해|약해|흔들)|사인파|진자/}
+ wave:{label:'시간에 따라 진동하는 힘',pattern:/시간.{0,12}(?:진동|요동|파동)|주기.{0,10}(?:강해|약해|흔들)|사인파|진자/},
+ reflect:{label:'접근 운동량을 반사하는 탄성장',pattern:/탄성\s*반사|운동량\s*반사|들어오는\s*(?:공|대상|상대).{0,14}(?:튕겨내|반사)|다가오면\s*튕겨|반사하는\s*힘/},
+ shear:{label:'반경에 따라 방향이 달라지는 전단력',pattern:/전단력|전단\s*흐름|안쪽과\s*바깥쪽.{0,18}(?:반대로|반대\s*방향).{0,12}(?:회전|돌)|서로\s*다른\s*속도로\s*회전/}
 });
 const decayOptions=['steady','fade','grow','beat'];
 const falloffs=['constant','linear','quadratic','inverse','edge'];
@@ -83,11 +85,13 @@ function interpret(input){
  const palette=g.SkillFXComposer?.infer?.(raw);
  const baseLayers=palette?.layers||[];
  const colors=palette?.color||'#999eea';
- const motif=terms.some(t=>['spin','orbit'].includes(t.op))?'vortex':
+ const motif=terms.some(t=>t.op==='reflect')?'rebound':
+  terms.some(t=>t.op==='shear')?'shear':
+  terms.some(t=>['spin','orbit'].includes(t.op))?'vortex':
   terms.some(t=>t.op==='spring')?'coil':
   terms.some(t=>['pulse','wave'].includes(t.op))?'rings':'trail';
  const layers=g.SkillFXComposer?.normalize?.([
-  ...baseLayers,{kind:motif,color:colors,power:1.25,spin:1}
+  {kind:motif,color:colors,power:1.25,spin:1},...baseLayers
  ])||[];
  const visual=g.MetaphorVisuals?.normalize?.({
   shape:'aura',color:colors,scale:1.75,charge:true,layers
@@ -109,7 +113,7 @@ function interpret(input){
    '수식은 안전한 연산자로 합성되며, 임의 코드·새로운 자바스크립트를 생성하지 않습니다.'],
   concepts:{fused:true,labels:selected.map(([,d])=>d.label)}};
 }
-const fields=new WeakMap();
+const fields=new WeakMap(),telemetry=new WeakMap();
 function fieldFor(p,a,target){
  const spec=normalize({...a?.law,damage:a?.damage,radius:a?.radius,
   duration:a?.duration});if(!spec||!p)return false;
@@ -129,9 +133,11 @@ function attenuation(type,d,r){
  if(type==='inverse')return Math.min(1,1/(1+20*u*u));
  return Math.max(.08,1-u);
 }
-function acceleration(term,e,center,time,spec){
- const dx=e.x-center.x,dy=e.y-center.y,r=Math.hypot(dx,dy)||1;
- const ux=dx/r,uy=dy/r,tx=-uy,ty=ux;
+function acceleration(term,e,center,time,spec,geometry){
+ // One shared geometry calculation per target/field, rather than per term.
+ const dx=geometry?.dx??e.x-center.x,dy=geometry?.dy??e.y-center.y;
+ const r=geometry?.r??(Math.hypot(dx,dy)||1);
+ const ux=geometry?.ux??dx/r,uy=geometry?.uy??dy/r,tx=-uy,ty=ux;
  const dist=attenuation(term.falloff,r,spec.radius);
  const k=term.strength*dist*term.sign;
  if(term.op==='attract'||term.op==='gravity'){
@@ -151,6 +157,22 @@ function acceleration(term,e,center,time,spec){
  }
  if(term.op==='drag')return [-(Number(e.vx)||0)*k*.12,-(Number(e.vy)||0)*k*.12];
  if(term.op==='propel')return [(Number(e.vx)||ux)*k*.09,(Number(e.vy)||uy)*k*.09];
+ if(term.op==='reflect'){
+  // Genuine inbound relative velocity: the field does NOTHING to balls
+  // already leaving the center. Reversal passes through the per-frame
+  // impulse cap in tick() and cannot manufacture HP damage.
+  const relVx=(Number(e.vx)||0)-(Number(center.vx)||0);
+  const relVy=(Number(e.vy)||0)-(Number(center.vy)||0);
+  const inbound=Math.max(0,-(relVx*ux+relVy*uy));
+  const rebound=Math.min(5,inbound*(.55+Math.abs(k)*.3))*dist;
+  return [ux*rebound,uy*rebound];
+ }
+ if(term.op==='shear'){
+  // Two counter-rotating bands create an actual differential torque.
+  // The center and perimeter have opposite signed tangential acceleration.
+  const band=bound((r/spec.radius-.5)*2,-1,1,0);
+  return [tx*k*band,ty*k*band];
+ }
  if(term.op==='pulse'){
   const osc=Math.sin(time*2*Math.PI/spec.period);
   return [ux*k*osc,uy*k*osc];
@@ -164,6 +186,7 @@ function acceleration(term,e,center,time,spec){
 function tick(p,targets,hit){
  const pool=fields.get(p);if(!pool?.length)return;
  const enemies=Array.isArray(targets)?targets:[];
+ const perf={tested:0,inside:0,terms:0,hitChecks:0};
  for(let i=pool.length-1;i>=0;i--){
   const field=pool[i];field.ticks++;
   if(--field.ttl<=0){pool.splice(i,1);continue;}
@@ -176,11 +199,18 @@ function tick(p,targets,hit){
     s.decay==='beat'?.5+.5*Math.sin(time*2*Math.PI/s.period):1;
   for(const e of enemies){
    if(!e||e===p||e.hp<=0||!Number.isFinite(e.x)||!Number.isFinite(e.y))continue;
-   const dist=Math.hypot(e.x-center.x,e.y-center.y);
-   if(dist>s.radius+(e.radius||0))continue;
+   perf.tested++;
+   const dx=e.x-center.x,dy=e.y-center.y;
+   const reach=s.radius+(e.radius||0);
+   // Squared-distance broad phase avoids sqrt/trig on faraway targets.
+   if(dx*dx+dy*dy>reach*reach)continue;
+   perf.inside++;
+   const dist=Math.hypot(dx,dy)||1;
+   const geometry={dx,dy,r:dist,ux:dx/dist,uy:dy/dist};
    let fx=0,fy=0;
    for(const term of s.terms){
-    const [x,y]=acceleration(term,e,center,time,s);
+    perf.terms++;
+    const [x,y]=acceleration(term,e,center,time,s,geometry);
     fx+=x;fy+=y;
    }
    // Physical field equations may be arbitrary compositions of safe
@@ -188,11 +218,18 @@ function tick(p,targets,hit){
    const magnitude=Math.hypot(fx,fy),scale=magnitude>1.65?1.65/magnitude:1;
    e.vx=bound((Number(e.vx)||0)+fx*scale*envelope,-18,18,0);
    e.vy=bound((Number(e.vy)||0)+fy*scale*envelope,-18,18,0);
-   if(s.damage>0&&(field.ticks===1||field.ticks%30===0)&&typeof hit==='function')
+   if(s.damage>0&&(field.ticks===1||field.ticks%30===0)&&typeof hit==='function'){
+    perf.hitChecks++;
     hit(p,e,{...field.source,type:'phenomenon',law:undefined,
      damage:s.damage,knockback:0});
+   }
   }
  }
+ telemetry.set(p,perf);
+}
+function metrics(p){
+ const t=telemetry.get(p);
+ return t?{...t}:{tested:0,inside:0,terms:0,hitChecks:0};
 }
 function report(p){return (fields.get(p)||[]).map(x=>({
  remaining:x.ttl,ticks:x.ticks,terms:x.spec.terms.map(v=>v.op)
@@ -205,5 +242,5 @@ if(registry?.register&&!registry.get('phenomenon'))registry.register({
  audio:{cast:'energy',impact:'hit'},preview:{duration:1700,pose:'wave',anchor:'caster'},
  execute:(p,a,target)=>fieldFor(p,a,target)
 });
-g.PhysicsLawEngine=Object.freeze({OPS,normalize,interpret,fieldFor,tick,report,acceleration,maxTerms,maxFields});
+g.PhysicsLawEngine=Object.freeze({OPS,normalize,interpret,fieldFor,tick,report,metrics,acceleration,maxTerms,maxFields});
 })(typeof window!=='undefined'?window:globalThis);
